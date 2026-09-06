@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Dipendenze e build (dalla fase di sviluppo in poi)
+node_modules/
+dist/
+build/
+*.log
+
+# Segreti e credenziali
+*.pem
+*.p8
+*.p12
+*.mobileprovision
