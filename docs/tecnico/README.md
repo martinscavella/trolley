@@ -6,28 +6,26 @@ Il comportamento atteso sta in [`../prodotto/`](../prodotto/); qui c'è come si 
 
 Lo stack è deciso: **Flutter**, un solo codice per iOS e Android. Il ragionamento e le alternative scartate sono in [ADR-001](adr/001-stack.md).
 
-## Capitoli previsti
+## Capitoli
 
 | # | Capitolo | Contenuto |
 |---|---|---|
-| 00 | Architettura | Cosa gira sul telefono e cosa su un server, e perché. I confini |
-| 01 | Modello dati | Entità, relazioni, stati, invarianti. La parte da cui dipende tutto il resto |
-| 02 | Sincronizzazione e offline | Cosa è essenziale senza rete, cosa è a scelta, come si risolvono i conflitti fra più autori |
-| 03 | Documenti sul dispositivo | Dove stanno, come sono protetti, cosa succede cambiando telefono |
-| 04 | Integrazioni | Tasso di cambio, invio SMS, deep link differito, mappe. Per ciascuna: costo, limiti, comportamento senza rete |
-| 05 | Community e sicurezza | Profili pubblici, ricerca, collegamenti, segnalazione e blocco lato dati |
-| 06 | Privacy e conformità | Dati trattati, basi giuridiche, conservazione, età, cosa non esce mai dal telefono |
-| 07 | Misurazione | Eventi, dove finiscono, come si leggono contro le soglie delle ipotesi |
+| 00 | [Architettura](00-architettura.md) | Cosa gira sul telefono e cosa su un server, e perché. I confini |
+| 01 | [Modello dati](01-modello-dati.md) | Entità, relazioni, stati, invarianti. La parte da cui dipende tutto il resto |
+| 02 | [Sincronizzazione e offline](02-sincronizzazione-e-offline.md) | Cosa è essenziale senza rete, cosa è a scelta, come si risolvono i conflitti fra più autori |
+| 03 | [Documenti sul dispositivo](03-documenti-sul-dispositivo.md) | Dove stanno, come sono protetti, cosa succede cambiando telefono |
+| 04 | [Integrazioni](04-integrazioni.md) | Tasso di cambio, invio SMS, deep link differito, mappe. Per ciascuna: costo, limiti, comportamento senza rete |
+| 05 | [Community e sicurezza](05-community-e-sicurezza.md) | Profili pubblici, ricerca, collegamenti, segnalazione e blocco lato dati |
+| 06 | [Privacy e conformità](06-privacy-e-conformita.md) | Dati trattati, basi giuridiche, conservazione, età, cosa non esce mai dal telefono |
+| 07 | [Misurazione](07-misurazione.md) | Eventi, dove finiscono, come si leggono contro le soglie delle ipotesi |
 
 ## ADR
 
 Le decisioni architetturali che vale la pena motivare per iscritto vivono in `adr/`, una per file, con la forma: contesto, opzioni considerate, scelta, conseguenze.
 
-Le prime due già previste dalla discovery:
-
 - [**ADR-001** — Stack e piattaforma](adr/001-stack.md) ✅
-- **ADR-002** — Persistenza locale e libreria SQLite
-- **ADR-003** — Backend: autenticazione e sincronizzazione
-- **ADR-004** — Deep link differito — il pezzo da cui dipende H3
-- **ADR-005** — Dati geografici: elenco incorporato o servizio esterno
-- **ADR-006** — Fornitore di mappe e percorsi, e come si mette un tetto al costo per utente
+- [**ADR-002** — Persistenza locale](adr/002-persistenza-locale.md) ✅
+- [**ADR-003** — Backend](adr/003-backend.md) ✅
+- [**ADR-004** — Deep link differito](adr/004-deep-link-differito.md) ✅
+- [**ADR-005** — Dati geografici](adr/005-dati-geografici.md) ✅
+- [**ADR-006** — Mappe, percorsi e il tetto alla spesa](adr/006-mappe-e-percorsi.md) ✅ *(fornitore da confermare alla realizzazione)*

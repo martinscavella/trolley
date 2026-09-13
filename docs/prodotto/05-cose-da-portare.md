@@ -19,7 +19,7 @@ Non dimenticare niente. È la funzione più semplice dell'app ed è una di quell
 2. **La lista del viaggio serve a dividersi le cose**: una voce può essere assegnata a un partecipante, così due persone non portano due caricabatterie e nessuno porta l'adattatore.
 3. **La lista personale non è mai visibile agli altri**, nemmeno al creatore del viaggio.
 4. **Le liste esistono anche allo stato idea.** Non hanno bisogno di date, quindi non aspettano il passaggio a definito.
-5. **Le liste funzionano senza rete**, in lettura e in scrittura: sono nell'insieme essenziale offline.
+5. **Senza rete le liste si leggono e si spuntano.** Modificare il testo di una voce o assegnarla richiede la rete: spuntare è il gesto che capita mentre si fa la valigia, riscrivere è quello che capita al tavolo.
 6. **Le voci spuntate non spariscono**, si spostano in fondo. Fare la valigia è un'operazione che si controlla due volte.
 7. **Nessun limite di voci**, in nessun piano.
 
@@ -31,7 +31,7 @@ Non dimenticare niente. È la funzione più semplice dell'app ed è una di quell
 |---|---|
 | Un partecipante assegnatario esce dal viaggio | Le sue voci tornano non assegnate, con un avviso |
 | Due persone spuntano la stessa voce offline | Non è un conflitto: spuntato è spuntato |
-| Due persone modificano il testo della stessa voce offline | È un conflitto, e si applica la regola generale: si mostrano le due versioni |
+| Due persone modificano il testo della stessa voce insieme, online | Conflitto: si mostrano le due versioni e si sceglie |
 
 ---
 

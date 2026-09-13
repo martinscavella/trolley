@@ -22,7 +22,7 @@ Sapere quanto si sta spendendo mentre lo si spende, e alla fine sapere chi deve 
 4. **La valuta predefinita è quella scelta dalla persona** nelle impostazioni, con l'euro come valore iniziale — non quella della destinazione. Il motivo è pratico: il cambio lo fa spesso la banca al momento del pagamento, quindi la spesa arriva già convertita nella valuta del conto, ed è quella che la persona si ritrova davanti.
 5. **Il tasso di cambio arriva da un servizio esterno** e si aggiorna quando c'è rete.
 6. **Senza rete si usa l'ultimo tasso noto**, dicendolo esplicitamente: il valore mostrato può essere cambiato, perché non è in tempo reale. L'importo nella valuta originale è il dato vero e non cambia mai.
-7. **Le spese funzionano senza rete**, in lettura e in scrittura. Sono nell'insieme essenziale offline.
+7. **Senza rete si leggono le spese e se ne registrano di nuove.** Modificare o cancellare una spesa già registrata richiede la rete: registrare è il gesto che capita al mercato, correggere è quello che capita la sera in albergo.
 8. **Una spesa si divide fra i partecipanti scelti**, non necessariamente tutti. Si può dividere in parti uguali o per importi diversi.
 9. **I saldi si calcolano riducendo il numero di movimenti**: se tre persone si devono qualcosa a giro, si propone il giro più corto.
 10. **Chi esce dal viaggio lascia le sue spese dov'erano.** I saldi restano calcolati come prima: sparire non cancella un debito.
@@ -37,7 +37,8 @@ Sapere quanto si sta spendendo mentre lo si spende, e alla fine sapere chi deve 
 | La stessa spesa registrata da due persone | Non si può impedire, ma si segnala: stesso importo, stessa valuta, a pochi minuti di distanza |
 | Il tasso di cambio non è mai stato scaricato per quella valuta | Si registra la spesa nella valuta originale e si mostra la conversione come non disponibile. Non si inventa un tasso |
 | Il tasso cambia fra la registrazione e il saldo | Il saldo si calcola sull'ultimo tasso noto, e si dice quale. L'importo originale resta la verità |
-| Una spesa viene modificata offline da due persone | Conflitto, si mostrano le due versioni |
+| Due persone modificano la stessa spesa insieme, online | Conflitto: si mostrano le due versioni. Sui soldi non si indovina mai |
+| Una spesa registrata offline arriva giorni dopo | Entra con la sua data originale, non con quella dell'invio. I saldi si ricalcolano |
 | Un partecipante viene rimosso con saldi aperti | Si avvisa chi rimuove prima di procedere. La rimozione non azzera nulla |
 
 ---

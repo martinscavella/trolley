@@ -38,7 +38,7 @@ Costruire il programma dei giorni. È la funzione con più attrito potenziale de
 ### Stato delle tappe
 
 15. **Ogni tappa ha uno stato**: *da fare*, *completata*, *saltata*.
-16. **Si marca durante il viaggio**, dalla schermata di oggi o dalla mappa, in un tocco solo.
+16. **Si marca durante il viaggio**, dalla schermata di oggi o dalla mappa, in un tocco solo. **Funziona anche senza rete**, come aggiungere una tappa.
 17. **Marcare dopo la chiusura si può, ma non conta per la verifica.** La verifica misura cosa è successo durante, non cosa è stato ricostruito dopo.
 18. **A fine giornata, se restano tappe non marcate, l'app lo ricorda una volta.** È il gesto da cui dipende la verifica del viaggio: vale un promemoria, non vale un assillo.
 
@@ -51,7 +51,8 @@ Costruire il programma dei giorni. È la funzione con più attrito potenziale de
 | L'interpretazione del testo incollato fallisce | Il testo si salva come nota, si spiega cosa non si è capito, si propone di riprovare. Mai una schermata di errore che non lascia niente |
 | L'itinerario generato riguarda una destinazione diversa | Si segnala prima di importare. Capita quando qualcuno riusa un prompt vecchio |
 | La durata stimata è palesemente sbagliata | È modificabile sempre, e la stima proposta non è mai vincolante |
-| Due persone modificano la stessa giornata | Si applicano le regole sui conflitti: si mostrano le due versioni e si sceglie |
+| Due persone modificano la stessa tappa insieme, online | Conflitto: si mostrano le due versioni e si sceglie |
+| Una tappa aggiunta senza rete sfora la capienza, perché nel frattempo altri ne hanno aggiunte | Entra comunque, **segnalata come eccedente**, e si chiede cosa togliere. Rifiutarla dopo che è stata nell'app per due giorni sarebbe peggio |
 
 ---
 

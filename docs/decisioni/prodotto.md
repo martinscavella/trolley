@@ -51,7 +51,7 @@ L'organizzatore con poteri estesi su tutto resta invece una tipologia di viaggio
 
 Quando due persone modificano lo stesso punto del viaggio si mostrano le due versioni affiancate e si fa scegliere, come un diff. Chi salva per primo su un viaggio vuoto fa semplicemente il primo salvataggio; dal secondo in poi si confronta.
 
-È la risposta al costo che il modello paritario ha aggiunto a H4: con più autori e poca rete i conflitti esistono davvero, e una fusione automatica silenziosa fa sparire il lavoro di qualcuno senza che se ne accorga. Il dettaglio si progetta insieme al modello di sincronizzazione, nella documentazione tecnica.
+Con il server autoritativo i conflitti nascono solo fra **due persone entrambe online** che modificano la stessa cosa: offline si può soltanto aggiungere. Si riconoscono con un controllo di versione al salvataggio, e a decidere è la persona — mai una fusione automatica, che produrrebbe una terza versione che nessuno ha scritto. Il dettaglio è in [02 — Copia locale, coda e conflitti](../tecnico/02-sincronizzazione-e-offline.md).
 
 ---
 
@@ -225,6 +225,8 @@ Queste sono decise, ma il loro posto naturale è dentro il documento che le moti
 | Niente bundle di gruppo nell'MVP | [Modello di business](../discovery/05-modello-di-business.md) |
 | Esportazione gratuita, reimportazione a pagamento | [Modello di business](../discovery/05-modello-di-business.md) |
 | Booking come ricavo da commissioni, separato dall'abbonamento | [Modello di business](../discovery/05-modello-di-business.md) |
+| Server autoritativo con copia locale e quattro gesti scrivibili offline | [Tecnico 00 — Architettura](../tecnico/00-architettura.md) |
+| Beta in due ondate: prima tutto tranne la parte pubblica, poi matching e sicurezza | [Punti aperti](../punti-aperti.md) |
 | Regola di verifica del viaggio, con deroga amministrativa per le prove | [Funzionale 02 — Il viaggio](../prodotto/02-il-viaggio.md) |
 | Navigazione disegnata dentro Trolley, con percorso e posizione in tempo reale | [Funzionale 08 — Mappa](../prodotto/08-mappa.md) |
 | Valuta predefinita scelta dalla persona, euro iniziale | [Funzionale 06 — Spese](../prodotto/06-spese.md) |

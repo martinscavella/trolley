@@ -42,14 +42,11 @@ Siccome H3 è l'unico canale di acquisizione e non ha un piano B, questo è il p
 
 L'obiettivo dichiarato è **sei mesi alla beta**, su uno scope che la visione stima già in nove. Aggiungere tre settimane e mezzo non rompe un piano solido: rende esplicito che il piano non lo era. Va detto che togliendo gli esperimenti preliminari si sono liberate un paio di settimane, che però non compensano — quelle servivano a evitare di costruire la cosa sbagliata, non a costruire più in fretta.
 
-Tre modi di assorbirle:
-
-1. **Spostare la data** di circa un mese. Onesto, ma resta ottimista per tutti i motivi già scritti altrove.
-2. **Tenere la data e tagliare altro.** Il candidato naturale sarebbe il matching, che però è stato rimesso dentro apposta: il ragionamento gira in tondo.
-3. **Beta in due ondate.** ← è quella che consiglio
+**Decisione presa: beta in due ondate.** Le alternative erano spostare la data di un mese, oppure tenerla tagliando qualcosa — e l'unico candidato al taglio sarebbe stato il matching, che era stato rimesso dentro apposta.
 
 **Come funziona.**
 
+- **Fase interna**, prima di tutto: solo il team. Serve a vedere se l'app regge un viaggio vero, non a validare niente — i suoi numeri restano fuori da ogni soglia.
 - **Ondata 1**, alla data prevista: tutto tranne la parte pubblica. Viaggi, stato idea e stato definito, itinerario, spese, liste, documenti, funzionamento senza rete, passaporto e mappamondo. Nessun profilo pubblico e nessun matching, quindi **nessuna voce di sicurezza è bloccante**.
 - **Ondata 2**, quattro-sei settimane dopo: profilo pubblico, matching, modalità città, con tutto l'impianto di sicurezza.
 

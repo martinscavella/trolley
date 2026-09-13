@@ -76,8 +76,8 @@ Dieci invarianti. Se una funzione ne viola una, è la funzione a essere sbagliat
 5. **I documenti non lasciano il telefono.** Non sono su un nostro server, non si sincronizzano, non si condividono fra partecipanti.
 6. **I viaggi futuri non sono mai pubblici.** Né sul profilo, né nella ricerca, né da nessuna altra parte.
 7. **Niente si cancella da solo.** Le idee abbandonate si archiviano, i viaggi chiusi restano.
-8. **Senza rete l'essenziale c'è.** Documenti, programma di oggi e domani, dati base del viaggio e ultimo tasso di cambio noto. Il resto si scarica a scelta.
-9. **I conflitti si mostrano, non si fondono in silenzio.** Quando due persone toccano lo stesso punto si vedono le due versioni e si sceglie.
+8. **Senza rete si legge l'essenziale e si fanno quattro gesti.** Si legge: documenti, programma di oggi e domani, dati base del viaggio, spese e liste, ultimo tasso di cambio noto. Si scrive: **registrare una spesa, marcare una tappa, spuntare una voce, aggiungere una tappa**. Tutto il resto richiede rete, e lo dice prima invece di fallire dopo.
+9. **I conflitti si mostrano, non si fondono in silenzio.** Quando due persone modificano la stessa cosa mentre sono entrambe online, si vedono le due versioni e si sceglie.
 10. **Quello che una soglia deve misurare, l'app lo registra.** Senza esperimenti preliminari la strumentazione è l'unico strumento di verifica rimasto, e nasce insieme alla funzione, non dopo.
 
 ---

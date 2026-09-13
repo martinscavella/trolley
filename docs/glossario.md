@@ -24,6 +24,10 @@ I termini che in questi documenti hanno un significato preciso. Quando compaiono
 
 **Pacchetto viaggio** — L'acquisto una tantum da €9,99 che sblocca tutto per un singolo viaggio, per sempre e per tutti i partecipanti. Si compra solo prima del viaggio.
 
+**I quattro gesti** — Le uniche scritture possibili senza rete: registrare una spesa, marcare una tappa come completata o saltata, spuntare una voce di lista, aggiungere una tappa. Sono aggiunte o cambi di stato ripetibili, e questo è ciò che permette di non avere nessuna macchina di risoluzione dei conflitti offline.
+
+**Copia locale** — Quello che l'app tiene sul telefono per poter leggere senza rete. È una copia: si può cancellare e riscaricare. Non è la fonte di verità, che sta sul server.
+
 **Deep link differito** — Il meccanismo che fa sì che, dopo aver installato l'app da un link d'invito, si apra proprio il viaggio a cui si era invitati. È il pezzo da cui dipende H3, e l'unico che si rompe senza dare errore.
 
 **Ondata 1 / Ondata 2** — Le due uscite della beta. La prima porta tutto tranne la parte pubblica; la seconda, quattro-sei settimane dopo, porta profilo pubblico, matching e il loro impianto di sicurezza.

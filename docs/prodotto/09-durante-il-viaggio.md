@@ -18,14 +18,16 @@
 
 1. **Quando un viaggio è in corso, l'app si apre su quello.** Non sull'elenco dei viaggi.
 2. **La schermata "adesso" mostra tre cose**: cosa sta succedendo, cosa viene dopo con quanto manca, e il documento che serve adesso se ce n'è uno agganciato a questo momento.
-3. **Tutto quello che serve adesso funziona senza rete.** L'insieme essenziale è: documenti, programma di oggi e domani, dati base del viaggio, ultimo tasso di cambio noto, liste e spese.
-4. **Il resto si scarica a scelta**, e la scelta si chiede prima della partenza, non quando la rete manca già.
-5. **Quando manca la rete l'app lo dice una volta e continua a funzionare.** Non mostra errori ripetuti e non blocca niente che sia nell'insieme essenziale.
-6. **Quello che si scrive offline si sincronizza da solo** appena torna la rete, senza che nessuno debba premere niente.
-7. **Registrare una spesa dalla schermata "adesso" deve costare un tocco più l'importo.**
-8. **Marcare una tappa come completata o saltata deve costare un tocco**, dalla schermata "adesso" o dalla mappa. È il gesto da cui dipende la verifica del viaggio: se è nascosto, i traguardi non li prende nessuno.
-9. **A fine giornata, se restano tappe non marcate, l'app lo ricorda una volta sola.**
-10. **Nessun limite commerciale tocca il viaggio in corso**, mai.
+3. **Senza rete si legge tutto quello che serve adesso**: documenti, programma di oggi e domani, dati base del viaggio, spese già registrate, liste, ultimo tasso di cambio noto.
+4. **Senza rete si possono fare quattro gesti**: registrare una spesa, marcare una tappa, spuntare una voce, aggiungere una tappa. Sono quelli che capitano mentre si è in giro.
+5. **Tutto il resto richiede rete, e lo dice prima.** Un campo che non si può modificare offline si mostra disabilitato con il motivo: non fallisce dopo che qualcuno ha già scritto.
+6. **Il viaggio per intero si può preparare** per l'uso senza rete, e la scelta si chiede prima della partenza — non quando la rete manca già.
+7. **Quando manca la rete l'app lo dice una volta e continua a funzionare.** Nessun errore ripetuto.
+8. **Quello che si scrive offline parte da solo** al ritorno della rete, senza che nessuno debba premere niente.
+9. **Registrare una spesa dalla schermata "adesso" deve costare un tocco più l'importo.**
+10. **Marcare una tappa come completata o saltata deve costare un tocco**, dalla schermata "adesso" o dalla mappa. È il gesto da cui dipende la verifica del viaggio: se è nascosto, i traguardi non li prende nessuno.
+11. **A fine giornata, se restano tappe non marcate, l'app lo ricorda una volta sola.**
+12. **Nessun limite commerciale tocca il viaggio in corso**, mai.
 
 ---
 
@@ -36,8 +38,8 @@
 | Non c'è nessuna tappa oggi | La schermata mostra la giornata libera e cosa viene dopo, senza sembrare rotta |
 | Il programma è in ritardo rispetto all'orologio | L'app non riorganizza niente da sola e non rimprovera nessuno. Mostra cosa resta |
 | Due viaggi in corso contemporaneamente | Si sceglie quale aprire, e la scelta resta fino a fine giornata |
-| La sincronizzazione trova un conflitto al ritorno della rete | Si mostrano le due versioni e si sceglie. Mai una fusione silenziosa |
-| Il telefono è offline da giorni | Tutto l'essenziale continua a funzionare. Il tasso di cambio dichiara la propria età |
+| Il telefono è offline da giorni | Si legge tutto l'essenziale e i quattro gesti continuano a funzionare. I dati dichiarano la propria età: "aggiornato due giorni fa" |
+| Al ritorno della rete la coda si svuota | Sono aggiunte e cambi di stato: nessuna richiesta di scelta, nessun conflitto |
 
 ---
 

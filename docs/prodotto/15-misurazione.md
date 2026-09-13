@@ -35,6 +35,8 @@ Non è un capitolo accessorio. Non essendoci esperimenti prima di costruire, **l
 | Quale delle tre condizioni di verifica è mancata | Serve a capire se la regola è troppo severa e, soprattutto, *dove* si rompe |
 | Tappe marcate durante il viaggio, sul totale | La leva su cui agire se quasi nessuno supera la verifica |
 | Verifiche concesse per deroga amministrativa | Sempre escluse da ogni altro numero. Si contano solo per sapere quante sono |
+
+**Gli account interni non entrano nei numeri.** La prima fase d'uso è il team: i viaggi del team, le sue verifiche e i suoi inviti vanno marcati come interni ed esclusi da ogni soglia. Una decina di persone che usano l'app tutti i giorni farebbero sembrare vera qualunque ipotesi, ed è l'unico modo garantito di ingannarsi da soli.
 | Percentuale di chiusure che **non** superano la verifica | Termometro della regola dei traguardi |
 | Apertura dell'app senza viaggi attivi da ≥30 giorni, e da ≥6 mesi | Ritorno fuori stagione |
 | Passaporto compilato entro 7 giorni dalla registrazione | Curiosità iniziale — **non** adozione |
