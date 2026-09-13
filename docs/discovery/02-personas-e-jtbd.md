@@ -31,15 +31,27 @@ Nel gruppo è quella che organizza. Non perché le sia stato chiesto, ma perché
 
 ## Persona secondaria — chi viene invitato
 
-**Marco, 29 anni.** Va in viaggio con Giulia, e non ha organizzato niente. Non per pigrizia: si fida, e il suo contributo lo dà in altro modo.
+**Marco, 29 anni.** Va in viaggio con Giulia, e non è stato lui ad aprire il viaggio. Non per pigrizia: si fida, e il suo contributo lo dà in altro modo.
 
 **Il suo problema è opposto**: non ha troppe informazioni da gestire, ne ha troppo poche. Sa che si parte giovedì, non sa a che ora né da quale aeroporto. Ogni volta deve chiedere. Se Giulia dorme, aspetta.
 
-**Cosa gli serve da Trolley**: aprire e vedere il viaggio, senza dover inserire niente. Sapere cosa succede oggi. Avere il proprio biglietto sul proprio telefono, non nella chat di qualcun altro.
+**Cosa gli serve da Trolley**: aprire e vedere il viaggio completo senza dover inserire niente per capirlo. Sapere cosa succede oggi. Avere il proprio biglietto sul proprio telefono, non nella chat di qualcun altro. E poi, quando gli serve, **metterci la sua parte** — la cena che ha pagato lui, le cose che deve ricordarsi di portare, i suoi documenti — senza chiedere il permesso a nessuno.
+
+**L'ingresso è lo stesso schermo per entrambi.** Non serve un'esperienza separata per chi arriva su un viaggio già pieno: chi salva per primo su un viaggio vuoto fa semplicemente il primo salvataggio, e dalle modifiche successive in poi le versioni si confrontano come un diff.
+
+**Dentro Trolley non è un ospite.** Sul viaggio ha gli stessi poteri di Giulia: aggiunge, modifica, e matura gli stessi traguardi. La differenza tra i due non è nei permessi, è nel lavoro che si prendono — Giulia fa il coordinamento, Marco no.
 
 **Perché conta più di quanto sembri.** Marco è il canale di acquisizione: Giulia porta tre Marco a ogni viaggio. Se l'esperienza dell'invitato è un contorno mal progettato — un'app che gli chiede di registrarsi per poi mostrargli una schermata vuota — il motore di diffusione si spegne. E Marco è anche il Giulia del prossimo viaggio, quello che organizza lui.
 
 **Obiezione principale**: *"perché devo installare un'app per un viaggio che ha organizzato lei?"*. La risposta deve essere visibile nei primi dieci secondi.
+
+---
+
+## Chi viaggia da solo
+
+Non è un caso marginale: il pacchetto minimo di funzioni deve reggere sia il viaggio in solitaria sia quello con gli amici.
+
+Le **spese restano**, cambia solo il nome di quello che fanno — da "dividere" a "tenere il conto", che per chi viaggia da solo è comunque un bisogno vero. Cade la condivisione in tempo reale durante il viaggio, resta quella dopo, con gli amici. E resta il matching, che per chi parte da solo è anzi il caso d'uso più forte — compresa la possibilità di scoprire chi altro sta viaggiando nella stessa città, che entra nella beta in versione smussata: granularità solo città, attivazione esplicita per singolo viaggio, nessuno storico.
 
 ---
 
@@ -69,7 +81,11 @@ Formula: *quando [situazione], voglio [motivazione], così posso [risultato]*.
 **Fase dopo**
 
 - **JTBD 8** — Quando torno, voglio vedere cosa ha significato quel viaggio — dove sono stata, quanto ho speso, cosa ho sbloccato — così posso chiuderlo invece di lasciarlo svanire.
-- **JTBD 9** — Quando ho accumulato viaggi, voglio poterli mostrare come una storia mia, così posso dire chi sono come viaggiatrice senza raccontarlo ogni volta.
+- **JTBD 9** — Quando ho accumulato viaggi, voglio poterli mostrare come una storia mia, così posso dire chi sono come viaggiatrice senza raccontarlo ogni volta. *(Con il matching nella prima release il profilo pubblico entra con esso: senza qualcosa da mostrare non c'è niente su cui collegarsi. Resta di fase successiva la parte più elaborata del racconto di sé.)*
+
+**Trasversale — chi non ha aperto il viaggio**
+
+- **JTBD 10** — Quando sono in un viaggio che ha creato qualcun altro, voglio poterci aggiungere la mia parte — quello che ho pagato, quello che devo portare, i miei documenti — senza passare da chi l'ha aperto, così posso essere utile invece che assistito.
 
 ---
 
@@ -87,14 +103,6 @@ Formula: *quando [situazione], voglio [motivazione], così posso [risultato]*.
 |---|---|---|
 | "È un'altra app da riempire" | Giulia | Il primo gesto deve dare valore da solo: carichi un PDF e il viaggio esiste già, senza compilare moduli |
 | "Il gruppo continuerà a scriversi su WhatsApp" | Giulia | Trolley non compete con la chat, compete con lo screenshot e con il documento condiviso. La chat resta dov'è |
-| "Perché devo installarla se non organizzo io?" | Marco | Deve vedere il viaggio completo entro dieci secondi dall'accesso, senza inserire nulla |
-| "Se devo scrivere tutto a mano, tanto vale il blocco note" | entrambi | È l'obiezione più pericolosa e in MVP non ha una risposta tecnica, solo una risposta di design: l'inserimento deve costare pochissimo. È l'ipotesi H2 |
-| "Non voglio che si sappia dove sono" | entrambi | Solo i viaggi chiusi diventano pubblici, mai quelli futuri, e la parte pubblica è una scelta esplicita |
-
----
-
-## Domande aperte
-
-- Giulia e Marco hanno bisogni abbastanza diversi da giustificare due esperienze diverse dentro la stessa app, o basta che l'invitato veda meno cose?
-- Chi viaggia da solo — assente da queste due personas — è un caso marginale o un segmento suo? Cambia il peso della condivisione, che nell'MVP è centrale.
-- Il bisogno sociale di JTBD 9 è reale o è una proiezione? È l'unico non osservato direttamente nel comportamento attuale delle persone, e sostiene tutta la parte community.
+| "Perché devo installarla se non organizzo io?" | Marco | Deve vedere il viaggio completo entro dieci secondi dall'accesso, senza inserire nulla — e trovarci subito qualcosa che è solo suo da fare: la sua spesa, la sua lista, il suo biglietto |
+| "Se devo scrivere tutto a mano, tanto vale il blocco note" | entrambi | In MVP si chiede pochissimo: destinazione e un periodo bastano a far esistere il viaggio, e lo scheletro completo — date, giorni, orari — serve solo per sbloccare il resto. L'itinerario si aggiunge se si vuole, oppure si fa generare: Trolley prepara il prompt per l'LLM che la persona già usa e rende leggibile il risultato incollato. È l'ipotesi H2 |
+| "Non voglio che si sappia dove sono" | entrambi | Solo i viaggi chiusi diventano pubblici, mai quelli futuri, e la parte pubblica è una scelta esplicita. I collegamenti sono reciproci: nessuno può seguirti senza che tu abbia accettato |
