@@ -2,6 +2,8 @@
 
 **Stato**: accettata
 
+> **Rivista** dopo la scelta di un'architettura con server autoritativo ([00 — Architettura](../00-architettura.md)). La decisione non cambia; cambia il secondo vincolo qui sotto: offline si fanno solo quattro gesti che non confliggono, e i conflitti da mostrare nascono solo fra modifiche concorrenti **online**.
+
 ---
 
 ## Contesto

@@ -43,7 +43,7 @@ La regola che tiene ordinata questa cartella è una sola: **una domanda, una dec
 | Qualcosa da costruire, stimare o misurare | `punti-aperti.md` |
 | Un termine che va definito una volta sola | `glossario.md` |
 
-Le cartelle `prodotto/` e `tecnico/` sono vuote per ora e aspettano la fase dopo: `prodotto/` le specifiche funzionali e la mappa delle schermate, `tecnico/` l'architettura e gli ADR — quello sullo stack e quello sui dati geografici sono già citati nei documenti di discovery.
+Le cartelle `prodotto/` e `tecnico/` contengono la documentazione di costruzione: `prodotto/` le specifiche funzionali, capitolo per capitolo; `tecnico/` l'architettura e gli ADR.
 
 ---
 

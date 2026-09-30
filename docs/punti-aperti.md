@@ -13,6 +13,18 @@ Due sezioni:
 
 ## A fare
 
+### Prerequisiti operativi — prima della Fase 0
+
+Cose fuori dal codice senza le quali la [Fase 0](piano-di-costruzione.md) non parte.
+
+| Voce | Perché blocca |
+|---|---|
+| **Iscrizione all'Apple Developer Program** | Senza, niente link universali, accesso con Apple e TestFlight: il deep link differito non si può provare su un'installazione vera |
+| **Dominio per i link d'invito** | Ospita il file di associazione per iOS e la pagina che rimanda allo store. Cambiarlo dopo rompe i link già inviati: meglio un dominio neutro subito, indipendente dal nome definitivo |
+| **Organizzazione Supabase dedicata**, region UE | Separa Trolley dagli altri progetti — anche nei limiti del piano gratuito, che contano i progetti attivi per organizzazione |
+| **Strumenti locali**: Flutter, Supabase CLI, CocoaPods | Il minimo per compilare l'app e far girare il backend in locale |
+| **Data dell'ondata 1** | "Sei mesi alla beta" va ancorato a una data scritta, altrimenti non si vede quando slitta |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.
