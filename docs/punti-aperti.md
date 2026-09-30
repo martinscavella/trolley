@@ -15,15 +15,17 @@ Due sezioni:
 
 ### Prerequisiti operativi — prima della Fase 0
 
-Cose fuori dal codice senza le quali la [Fase 0](piano-di-costruzione.md) non parte.
+Cose fuori dal codice senza le quali la [Fase 0](piano-di-costruzione.md) non si chiude.
 
-| Voce | Perché blocca |
-|---|---|
-| **Iscrizione all'Apple Developer Program** | Senza, niente link universali, accesso con Apple e TestFlight: il deep link differito non si può provare su un'installazione vera |
-| **Dominio per i link d'invito** | Ospita il file di associazione per iOS e la pagina che rimanda allo store. Cambiarlo dopo rompe i link già inviati: meglio un dominio neutro subito, indipendente dal nome definitivo |
-| **Organizzazione Supabase dedicata**, region UE | Separa Trolley dagli altri progetti — anche nei limiti del piano gratuito, che contano i progetti attivi per organizzazione |
-| **Strumenti locali**: Flutter, Supabase CLI, CocoaPods | Il minimo per compilare l'app e far girare il backend in locale |
-| **Data dell'ondata 1** | "Sei mesi alla beta" va ancorato a una data scritta, altrimenti non si vede quando slitta |
+| Voce | Perché blocca | Stato |
+|---|---|---|
+| **Iscrizione all'Apple Developer Program** | Senza, niente link universali, accesso con Apple e TestFlight: il deep link differito non si può provare su un'installazione vera. Serve anche per far provare l'app al team | Rimandata di proposito: si va avanti con l'account gratuito finché si prova da soli |
+| **Dominio per i link d'invito** | Ospita il file di associazione per iOS e la pagina che rimanda allo store. Cambiarlo dopo rompe i link già inviati: meglio un dominio neutro, indipendente dal nome definitivo | Provvisorio: `trolleyapp.vercel.app`. Il dominio proprio va preso prima di mandare inviti fuori dal team |
+| **Progetto Supabase**, region UE | Il server dei dati | ✅ `trolley-db`, eu-west-1 |
+| **Strumenti locali**: Flutter, Supabase CLI, CocoaPods | Il minimo per compilare l'app | ✅ |
+| **Conferma email in Supabase** | Il link di conferma deve tornare nell'app: `trolley://accesso` va tra gli URL consentiti (Authentication → URL Configuration) | Da fare |
+| **Accesso con Google** | Credenziali OAuth di Google configurate in Supabase | Da fare |
+| **Data dell'ondata 1** | "Sei mesi alla beta" va ancorato a una data scritta, altrimenti non si vede quando slitta | Da fissare |
 
 ### Impianto di sicurezza del matching — stima
 

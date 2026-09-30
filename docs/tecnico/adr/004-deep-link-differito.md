@@ -2,6 +2,8 @@
 
 **Stato**: accettata
 
+> **Realizzazione, 30 settembre 2026.** Finché si usa l'account Apple gratuito i link universali non esistono: l'app non può dichiarare un dominio associato. Nel frattempo il link d'invito (`trolleyapp.vercel.app/i/CODICE`) apre una pagina con il codice e un pulsante che apre l'app con lo schema `trolley://invito/CODICE`, più l'inserimento manuale del codice nell'app. Costa un tocco in più e non prova l'installazione vera dallo store: quella prova resta da fare, e richiede il programma a pagamento. Il passaggio ai link universali tocca solo l'ingresso da invito (`app/lib/invito/`), che riconosce già entrambi i formati.
+
 ## Contesto
 
 L'invito è un link. Se chi lo riceve ha l'app, si apre il viaggio. Se non ce l'ha, va sullo store — e **dopo l'installazione deve aprirsi quel viaggio**, non una schermata vuota.

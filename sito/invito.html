@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Invito a un viaggio · Trolley</title>
+  <!--
+    Pagina d'arrivo dei link d'invito (ADR-004).
+    Non mostra niente del viaggio: l'invitato decide sulla fiducia in chi lo invita
+    (03-partecipanti-e-inviti.md, regola 3). Nessuna misurazione qui: gli eventi
+    dell'invito si registrano nell'app.
+  -->
+  <style>
+    :root {
+      --sfondo: #f7f5f1;
+      --carta: #ffffff;
+      --testo: #1d1b18;
+      --attenuato: #6b665e;
+      --bordo: #e4dfd6;
+      --accento: #1f5f4a;
+      --accento-testo: #ffffff;
+      --errore: #9b2c2c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --sfondo: #141312;
+        --carta: #1e1d1b;
+        --testo: #f1eee8;
+        --attenuato: #a39d93;
+        --bordo: #34312d;
+        --accento: #5fb391;
+        --accento-testo: #0f1a15;
+        --errore: #e08a8a;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--sfondo);
+      color: var(--testo);
+      font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 48px 16px;
+    }
+    main { width: 100%; max-width: 420px; }
+    h1 { font-size: 26px; line-height: 1.25; margin: 0 0 8px; }
+    p { margin: 0 0 16px; }
+    .attenuato { color: var(--attenuato); }
+    .carta {
+      background: var(--carta);
+      border: 1px solid var(--bordo);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 24px 0;
+    }
+    .codice {
+      font: 600 28px/1.2 ui-monospace, "SF Mono", Menlo, monospace;
+      letter-spacing: 0.08em;
+      margin: 4px 0 12px;
+    }
+    .pulsante {
+      display: block;
+      width: 100%;
+      text-align: center;
+      text-decoration: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font: 600 17px/1.2 inherit;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .primario { background: var(--accento); color: var(--accento-testo); }
+    .secondario { background: transparent; color: var(--accento); border: 1px solid var(--bordo); margin-top: 8px; }
+    ol { padding-left: 20px; margin: 0; }
+    li { margin-bottom: 8px; }
+    .errore { color: var(--errore); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <section id="valido" hidden>
+      <h1>Ti hanno invitato a un viaggio</h1>
+      <p class="attenuato">Lo trovi in Trolley, l'app che tiene insieme tappe, spese e cose da portare.</p>
+
+      <div class="carta">
+        <p class="attenuato">Codice d'invito</p>
+        <p class="codice" id="codice"></p>
+        <a class="pulsante primario" id="apri">Apri in Trolley</a>
+        <button class="pulsante secondario" id="copia" type="button">Copia il codice</button>
+      </div>
+
+      <h2 style="font-size: 19px; margin: 0 0 12px;">Non hai ancora Trolley?</h2>
+      <ol>
+        <li id="installa">Trolley è in prova privata: chiedi a chi ti ha invitato come installarla.</li>
+        <li>Torna nella chat e <strong>tocca di nuovo questo link</strong>: si aprirà il viaggio.</li>
+        <li>Se il link non funziona, apri Trolley e inserisci il codice qui sopra.</li>
+      </ol>
+    </section>
+
+    <section id="non-valido" hidden>
+      <h1>Questo link non è completo</h1>
+      <p class="errore">Il codice d'invito manca o non è scritto correttamente.</p>
+      <p class="attenuato">Chiedi a chi ti ha invitato di mandartelo di nuovo.</p>
+    </section>
+  </main>
+
+  <script>
+    // Quando l'app sarà sullo store, questo diventa il link alla sua pagina.
+    const LINK_STORE = null;
+    const ALFABETO = /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/;
+
+    const grezzo = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+    const codice = grezzo.replace(/[\s-]/g, '').toUpperCase();
+
+    if (ALFABETO.test(codice)) {
+      const leggibile = codice.slice(0, 4) + '-' + codice.slice(4);
+      document.getElementById('codice').textContent = leggibile;
+      document.getElementById('apri').href = 'trolley://invito/' + codice;
+
+      if (LINK_STORE) {
+        const voce = document.getElementById('installa');
+        voce.textContent = '';
+        const a = document.createElement('a');
+        a.href = LINK_STORE;
+        a.textContent = 'Installa Trolley';
+        voce.append(a, ' dallo store.');
+      }
+
+      const copia = document.getElementById('copia');
+      copia.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(leggibile);
+          copia.textContent = 'Codice copiato';
+        } catch {
+          copia.textContent = leggibile;
+        }
+      });
+      document.getElementById('valido').hidden = false;
+    } else {
+      document.getElementById('non-valido').hidden = false;
+    }
+  </script>
+</body>
+</html>

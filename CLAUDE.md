@@ -10,6 +10,17 @@ La documentazione in `docs/` è la fonte di verità: si parte da [docs/README.md
 - Locale: SQLite con Drift — è una **copia**, non la fonte di verità ([ADR-002](docs/tecnico/adr/002-persistenza-locale.md))
 - Backend: Supabase (Postgres, Auth, regole di accesso per riga) — è **l'autorità** ([ADR-003](docs/tecnico/adr/003-backend.md))
 
+## Struttura e comandi
+
+| Cartella | Cosa | Comandi |
+|---|---|---|
+| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale e server, `lib/schermate/` | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart` |
+| `supabase/migrations/` | Lo schema del server, una migrazione per file | Applicate a `trolley-db` (ref `nhdgxlynnudwkmxrrokp`). Il nome del file porta la versione registrata sul server |
+| `supabase/tests/` | Le prove delle regole di accesso | Girano dentro un blocco che si annulla da solo: si possono lanciare anche sul progetto remoto |
+| `sito/` | La pagina dei link d'invito, su `trolleyapp.vercel.app` | `vercel deploy --prod` dalla cartella |
+
+Nomi di tabelle, colonne ed eventi sono in italiano, uguali a quelli di `docs/tecnico/01-modello-dati.md`: sul server e nella copia locale sono gli stessi, così scaricare è tradurre righe.
+
 ## Regole che valgono per ogni modifica
 
 1. **Ogni funzione nasce con il suo evento** ([07 — Misurazione](docs/tecnico/07-misurazione.md)). Una funzione senza evento non è finita. Eventi: azioni, mai contenuti; niente coordinate, testi, nomi di documenti.
