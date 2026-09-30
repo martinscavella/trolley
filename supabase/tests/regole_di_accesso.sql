@@ -147,6 +147,16 @@ begin
   if n <> 1 then raise exception 'FALLITA: l''invitato non vede il nome del creatore'; end if;
   log := log || E'\nok  l''invitato vede il viaggio e chi c''è';
 
+  fallita := false;
+  begin
+    perform data_nascita from public.utente where id = a;
+  exception when insufficient_privilege then fallita := true;
+  end;
+  if not fallita then raise exception 'FALLITA: un compagno di viaggio legge la data di nascita'; end if;
+  select count(*) into n from public.mio_profilo() where id = b and data_nascita = '1994-07-20';
+  if n <> 1 then raise exception 'FALLITA: il proprio profilo completo non si legge'; end if;
+  log := log || E'\nok  dei compagni si vede il nome, non la data di nascita';
+
   select count(*) into n from public.voce_lista where viaggio_id = v;
   if n <> 1 then raise exception 'FALLITA: l''invitato vede % voci, doveva vederne 1 (la personale è di A)', n; end if;
   log := log || E'\nok  le voci personali restano del proprietario';
@@ -172,10 +182,17 @@ begin
   if not fallita then raise exception 'FALLITA: si cancella una riga invece di marcarla'; end if;
   log := log || E'\nok  nessuna cancellazione vera';
 
-  insert into public.evento (id, nome, avvenuto_il) values (gen_random_uuid(), 'viaggio_corretto_aperto', now());
+  -- Un lotto di eventi che riparte non duplica niente.
+  r := gen_random_uuid();
+  insert into public.evento (id, nome, avvenuto_il) values (r, 'viaggio_corretto_aperto', now())
+    on conflict (id) do nothing;
+  insert into public.evento (id, nome, avvenuto_il) values (r, 'viaggio_corretto_aperto', now())
+    on conflict (id) do nothing;
+  log := log || E'\nok  un evento reinviato non dà errore';
+
   fallita := false;
   begin
-    perform count(*) from public.evento;
+    perform nome from public.evento;
   exception when insufficient_privilege then fallita := true;
   end;
   if not fallita then raise exception 'FALLITA: gli eventi si rileggono dall''app'; end if;
