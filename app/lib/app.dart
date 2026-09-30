@@ -57,6 +57,8 @@ class _TrolleyAppState extends State<TrolleyApp> {
     _codici = _servizi.ingresso.codici.listen(
       (codice) => _riceviInvito(codice, ViaInvito.link),
     );
+    // Non si aspetta il primo evento dell'accesso per uscire dal caricamento.
+    unawaited(_valutaFase());
   }
 
   @override
