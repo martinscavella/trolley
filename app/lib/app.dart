@@ -1,18 +1,23 @@
 import 'dart:async';
 
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'aspetto/elementi.dart';
+import 'aspetto/movimento.dart';
+import 'aspetto/piattaforma.dart';
+import 'aspetto/tema.dart';
 import 'dati/database.dart';
 import 'dati/errori.dart';
 import 'misurazione/misurazione.dart';
 import 'schermate/accesso.dart';
+import 'schermate/benvenuto.dart';
 import 'schermate/nuovo_profilo.dart';
 import 'schermate/viaggi.dart';
 import 'schermate/viaggio.dart';
 import 'servizi.dart';
-import 'tema.dart';
 
 enum _Fase { caricamento, accesso, profilo, pronto, errore }
 
@@ -29,7 +34,6 @@ class TrolleyApp extends StatefulWidget {
 
 class _TrolleyAppState extends State<TrolleyApp> {
   final _navigatore = GlobalKey<NavigatorState>();
-  final _messaggi = GlobalKey<ScaffoldMessengerState>();
 
   late Servizi _servizi;
   StreamSubscription<AuthState>? _accesso;
@@ -150,19 +154,17 @@ class _TrolleyAppState extends State<TrolleyApp> {
         'via': via.name,
       });
       unawaited(_servizi.misurazione.invia());
-      _navigatore.currentState?.popUntil((r) => r.isFirst);
-      await _navigatore.currentState?.push(
-        MaterialPageRoute<void>(
-          builder: (_) => SchermataViaggio(viaggioId: viaggioId),
-        ),
-      );
+      _navigatore.currentState
+        ?..popUntil((r) => r.isFirst)
+        ..push(rotta<void>(SchermataViaggio(viaggioId: viaggioId)));
     } on ErroreTrolley catch (e) {
       // Senza rete l'invito resta in attesa e si riprova al prossimo ingresso;
       // un codice sbagliato invece si scarta, e la persona lo sa.
       if (!e.serveLaRete) _invitoInAttesa = null;
-      _messaggi.currentState?.showSnackBar(
-        SnackBar(content: Text(e.messaggio)),
-      );
+      final contesto = _navigatore.currentState?.overlay?.context;
+      if (contesto != null && contesto.mounted) {
+        mostraMessaggio(contesto, e.messaggio, errore: true);
+      }
     } finally {
       _invitoInCorso = false;
       if (mounted) setState(() {});
@@ -172,62 +174,38 @@ class _TrolleyAppState extends State<TrolleyApp> {
   @override
   Widget build(BuildContext context) {
     final invitoInAttesa = _invitoInAttesa != null;
-    return MaterialApp(
+    return AdaptiveApp(
       title: 'Trolley',
       navigatorKey: _navigatore,
-      scaffoldMessengerKey: _messaggi,
-      theme: temaChiaro,
-      darkTheme: temaScuro,
+      themeMode: ThemeMode.system,
+      materialLightTheme: temaMaterialChiaro,
+      materialDarkTheme: temaMaterialScuro,
+      cupertinoLightTheme: temaCupertinoChiaro,
+      cupertinoDarkTheme: temaCupertinoScuro,
       locale: const Locale('it'),
       supportedLocales: const [Locale('it')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: switch (_fase) {
-        _Fase.caricamento => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-        _Fase.accesso => SchermataAccesso(invitoInAttesa: invitoInAttesa),
-        _Fase.profilo => SchermataNuovoProfilo(
-          invitoInAttesa: invitoInAttesa,
-          onCreato: _entra,
-        ),
-        _Fase.pronto => SchermataViaggi(
-          onCodice: (codice) => _riceviInvito(codice, ViaInvito.codice),
-        ),
-        _Fase.errore => _SchermataSenzaRete(onRiprova: _valutaFase),
-      },
-    );
-  }
-}
-
-/// Primo ingresso su questo telefono, e manca la rete per sapere chi sei.
-class _SchermataSenzaRete extends StatelessWidget {
-  const _SchermataSenzaRete({required this.onRiprova});
-
-  final VoidCallback onRiprova;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Serve la connessione',
-              style: Theme.of(context).textTheme.headlineSmall,
+      // Fra una fase e l'altra (avvio, accesso, profilo, viaggi) si dissolve.
+      home: AnimatedSwitcher(
+        duration: Ritmo.lungo,
+        switchInCurve: Ritmo.curva,
+        switchOutCurve: Curves.easeIn,
+        child: KeyedSubtree(
+          key: ValueKey(_fase),
+          child: switch (_fase) {
+            _Fase.caricamento => const SchermataAvvio(),
+            _Fase.accesso => SchermataAccesso(invitoInAttesa: invitoInAttesa),
+            _Fase.profilo => SchermataNuovoProfilo(
+              invitoInAttesa: invitoInAttesa,
+              onCreato: _entra,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'È la prima volta che entri da questo telefono: per scaricare i '
-              'tuoi viaggi serve la rete. Dopo, li potrai leggere anche offline.',
+            _Fase.pronto => SchermataViaggi(
+              onCodice: (codice) => _riceviInvito(codice, ViaInvito.codice),
             ),
-            const SizedBox(height: 24),
-            FilledButton(onPressed: onRiprova, child: const Text('Riprova')),
-          ],
+            _Fase.errore => SchermataSenzaRete(onRiprova: _valutaFase),
+          },
         ),
       ),
-    ),
-  );
+    );
+  }
 }

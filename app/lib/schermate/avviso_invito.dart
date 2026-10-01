@@ -1,6 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
-/// Ricorda a chi arriva da un invito che il viaggio lo sta aspettando.
+import '../aspetto/elementi.dart';
+import '../aspetto/movimento.dart';
+import '../aspetto/piattaforma.dart';
+
+/// Ricorda a chi arriva da un invito che il viaggio lo sta aspettando. Entra
+/// con un riflesso, per farsi notare una volta sola.
 class AvvisoInvito extends StatelessWidget {
   const AvvisoInvito({super.key, required this.testo});
 
@@ -8,25 +15,19 @@ class AvvisoInvito extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colori = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colori.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
+    final avviso = Avviso(
+      icona: icona(
+        ios: CupertinoIcons.envelope_open_fill,
+        android: Icons.mark_email_unread,
       ),
-      child: Row(
-        children: [
-          Icon(Icons.mail_outline, color: colori.onPrimaryContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              testo,
-              style: TextStyle(color: colori.onPrimaryContainer),
-            ),
-          ),
-        ],
-      ),
+      testo: testo,
     );
+    if (movimentoRidotto(context)) return avviso;
+    return avviso
+        .animate()
+        .fadeIn(duration: Ritmo.medio)
+        .slideY(begin: -0.2, end: 0, curve: Ritmo.curva)
+        .then(delay: 200.ms)
+        .shimmer(duration: 1200.ms, color: const Color(0x33FFFFFF));
   }
 }

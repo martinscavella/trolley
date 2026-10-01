@@ -41,6 +41,11 @@ void main() {
   });
 
   Future<void> avvia(WidgetTester tester) async {
+    // Con "Riduci movimento" lo sfondo resta fermo e l'app si assesta: è anche
+    // la prova che le schermate funzionano senza animazioni.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await tester.pumpWidget(
       Servizi(
         db: db,

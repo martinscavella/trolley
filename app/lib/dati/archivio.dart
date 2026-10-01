@@ -12,6 +12,14 @@ import 'package:uuid/uuid.dart';
 import 'database.dart';
 import 'errori.dart';
 
+/// Un viaggio come compare nell'elenco: con i nomi di chi c'è.
+class ViaggioInElenco {
+  const ViaggioInElenco(this.viaggio, this.persone);
+
+  final Viaggio viaggio;
+  final List<String> persone;
+}
+
 class Archivio {
   Archivio(this._db, this._supabase);
 
@@ -116,11 +124,48 @@ class Archivio {
     });
   }
 
-  Stream<List<Viaggio>> osservaViaggi() =>
-      (_db.select(_db.viaggi)
-            ..where((v) => v.eliminatoIl.isNull())
-            ..orderBy([(v) => OrderingTerm.desc(v.creatoIl)]))
-          .watch();
+  Stream<Utente?> osservaProfilo() {
+    final io = _io;
+    if (io == null) return Stream.value(null);
+    return (_db.select(
+      _db.utenti,
+    )..where((u) => u.id.equals(io))).watchSingleOrNull();
+  }
+
+  /// I viaggi, dal più recente, ciascuno con i nomi di chi partecipa: il
+  /// creatore per primo.
+  Stream<List<ViaggioInElenco>> osservaViaggiInElenco() {
+    final query =
+        _db.select(_db.viaggi).join([
+            leftOuterJoin(
+              _db.partecipazioni,
+              _db.partecipazioni.viaggioId.equalsExp(_db.viaggi.id) &
+                  _db.partecipazioni.stato.equals('attivo'),
+            ),
+            leftOuterJoin(
+              _db.utenti,
+              _db.utenti.id.equalsExp(_db.partecipazioni.utenteId),
+            ),
+          ])
+          ..where(_db.viaggi.eliminatoIl.isNull())
+          ..orderBy([
+            OrderingTerm.desc(_db.viaggi.creatoIl),
+            OrderingTerm.asc(_db.partecipazioni.ruolo),
+          ]);
+    return query.watch().map((righe) {
+      final perViaggio = <String, ViaggioInElenco>{};
+      for (final r in righe) {
+        final viaggio = r.readTable(_db.viaggi);
+        final elenco = perViaggio.putIfAbsent(
+          viaggio.id,
+          () => ViaggioInElenco(viaggio, []),
+        );
+        final nome = r.readTableOrNull(_db.utenti)?.nome;
+        if (nome != null) elenco.persone.add(nome);
+      }
+      return perViaggio.values.toList();
+    });
+  }
 
   Stream<Viaggio?> osservaViaggio(String id) => (_db.select(
     _db.viaggi,

@@ -14,7 +14,7 @@ La documentazione in `docs/` è la fonte di verità: si parte da [docs/README.md
 
 | Cartella | Cosa | Comandi |
 |---|---|---|
-| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale e server, `lib/schermate/` | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart` |
+| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale e server, `lib/aspetto/` colori, testi, movimento e componenti, `lib/schermate/` | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart`. Sul telefono: `flutter build ios --release` e `xcrun devicectl device install app` |
 | `supabase/migrations/` | Lo schema del server, una migrazione per file | Applicate a `trolley-db` (ref `nhdgxlynnudwkmxrrokp`). Il nome del file porta la versione registrata sul server |
 | `supabase/tests/` | Le prove delle regole di accesso | Girano dentro un blocco che si annulla da solo: si possono lanciare anche sul progetto remoto |
 | `sito/` | La pagina dei link d'invito, su `trolleyapp.vercel.app` | `vercel deploy --prod` dalla cartella |
@@ -31,6 +31,7 @@ Nomi di tabelle, colonne ed eventi sono in italiano, uguali a quelli di `docs/te
 6. **Le regole di accesso per riga si scrivono con i loro test.** Sono la vera superficie di sicurezza.
 7. **La coda di scrittura è preziosa**: ogni migrazione del database locale deve preservarla, e va provato.
 8. **Mai fondere due testi** in un conflitto: si mostrano le due versioni e sceglie la persona.
+9. **Il vetro è per la navigazione, non per i contenuti** ([ADR-007](docs/tecnico/adr/007-interfaccia-e-liquid-glass.md)): barre, pulsanti flottanti e dialoghi sono componenti di sistema; schede e pannelli si fanno con `lib/aspetto/`. Ogni animazione passa da `aspetto/movimento.dart`, che rispetta "Riduci movimento".
 
 ## Dove si scrive cosa
 

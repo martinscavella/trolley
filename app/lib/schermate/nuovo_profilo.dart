@@ -1,9 +1,18 @@
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../aspetto/elementi.dart';
+import '../aspetto/formati.dart';
+import '../aspetto/movimento.dart';
+import '../aspetto/piattaforma.dart';
+import '../aspetto/tavolozza.dart';
+import '../aspetto/testi.dart';
 import '../dati/errori.dart';
 import '../dominio/eta.dart';
 import '../servizi.dart';
 import 'avviso_invito.dart';
+import 'benvenuto.dart';
 
 /// Nome e data di nascita, la prima volta (01-account-e-profilo.md).
 ///
@@ -36,15 +45,13 @@ class _SchermataNuovoProfiloState extends State<SchermataNuovoProfilo> {
 
   Future<void> _scegliData() async {
     final oggi = DateTime.now();
-    final scelta = await showDatePicker(
+    final scelta = await AdaptiveDatePicker.show(
       context: context,
       initialDate: _nascita ?? DateTime(oggi.year - 30, oggi.month, oggi.day),
       firstDate: DateTime(1900),
       lastDate: oggi,
-      initialEntryMode: DatePickerEntryMode.input,
-      helpText: 'Data di nascita',
     );
-    if (scelta != null) setState(() => _nascita = scelta);
+    if (scelta != null && mounted) setState(() => _nascita = scelta);
   }
 
   Future<void> _salva() async {
@@ -78,65 +85,77 @@ class _SchermataNuovoProfiloState extends State<SchermataNuovoProfilo> {
 
   @override
   Widget build(BuildContext context) {
-    final testo = Theme.of(context).textTheme;
+    final t = Tavolozza.of(context);
     final nascita = _nascita;
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          TextButton(
-            onPressed: () => Servizi.of(context).supabase.auth.signOut(),
-            child: const Text('Esci'),
-          ),
-        ],
+    return LayoutBenvenuto(
+      titolo: 'Come ti chiami?',
+      sottotitolo: 'Il nome lo vedono i compagni dei tuoi viaggi.',
+      inAlto: CupertinoButton(
+        onPressed: () => Servizi.of(context).supabase.auth.signOut(),
+        child: Text(
+          'Esci',
+          style: Testi.evidenza.copyWith(color: Colors.white),
+        ),
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
+      pannello: Pannello(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Come ti chiami?', style: testo.headlineSmall),
-            const SizedBox(height: 8),
-            const Text('Il nome lo vedono i compagni dei tuoi viaggi.'),
-            const SizedBox(height: 24),
             if (widget.invitoInAttesa) ...[
               const AvvisoInvito(
                 testo:
                     'Ancora un passo e il viaggio a cui ti hanno invitato '
                     'si apre.',
               ),
-              const SizedBox(height: 24),
-            ],
-            TextField(
-              controller: _nome,
-              decoration: const InputDecoration(labelText: 'Nome'),
-              textCapitalization: TextCapitalization.words,
-              autofillHints: const [AutofillHints.givenName],
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _scegliData,
-              icon: const Icon(Icons.cake_outlined),
-              label: Text(
-                nascita == null
-                    ? 'Data di nascita'
-                    : MaterialLocalizations.of(context)
-                          .formatMediumDate(nascita),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Servono $etaMinimaAccount anni compiuti. Dopo averla salvata, '
-              'la data di nascita si può cambiare solo tramite l\'assistenza.',
-              style: testo.bodySmall,
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _inCorso ? null : _salva,
-              child: const Text('Continua'),
-            ),
-            if (_messaggio != null) ...[
               const SizedBox(height: 16),
-              Text(_messaggio!),
             ],
+            Campo(
+              controller: _nome,
+              segnaposto: 'Nome',
+              icona: icona(
+                ios: CupertinoIcons.person,
+                android: Icons.person_outline,
+              ),
+              maiuscole: TextCapitalization.words,
+              suggerimenti: const [AutofillHints.givenName],
+            ),
+            const SizedBox(height: 10),
+            CampoScelta(
+              simbolo: icona(
+                ios: CupertinoIcons.gift,
+                android: Icons.cake_outlined,
+              ),
+              segnaposto: 'Data di nascita',
+              valore: nascita == null ? null : dataEstesa(nascita),
+              onTap: _scegliData,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Servono $etaMinimaAccount anni compiuti. Dopo averla salvata, la '
+              'data di nascita si può cambiare solo tramite l\'assistenza.',
+              style: Testi.didascalia.copyWith(color: t.testoSecondario),
+            ),
+            const SizedBox(height: 20),
+            PulsanteGrande(
+              etichetta: 'Continua',
+              inCorso: _inCorso,
+              onPressed: _salva,
+            ),
+            AnimatedSize(
+              duration: Ritmo.medio,
+              curve: Ritmo.curva,
+              child: _messaggio == null
+                  ? const SizedBox(width: double.infinity)
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Text(
+                        _messaggio!,
+                        textAlign: TextAlign.center,
+                        style: Testi.secondario.copyWith(color: t.pericolo),
+                      ).entra(context, da: 6),
+                    ),
+            ),
           ],
         ),
       ),

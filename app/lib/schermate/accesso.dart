@@ -1,9 +1,16 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../aspetto/elementi.dart';
+import '../aspetto/movimento.dart';
+import '../aspetto/piattaforma.dart';
+import '../aspetto/tavolozza.dart';
+import '../aspetto/testi.dart';
 import '../configurazione.dart';
 import '../dati/errori.dart';
 import '../servizi.dart';
 import 'avviso_invito.dart';
+import 'benvenuto.dart';
 
 /// Accesso con email e password (01-account-e-profilo.md).
 ///
@@ -73,57 +80,81 @@ class _SchermataAccessoState extends State<SchermataAccesso> {
 
   @override
   Widget build(BuildContext context) {
-    final testo = Theme.of(context).textTheme;
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 32),
-            Text('Trolley', style: testo.displaySmall),
-            const SizedBox(height: 8),
-            Text(
-              'Il viaggio, dall\'idea al ritorno, in un posto solo.',
-              style: testo.bodyLarge,
-            ),
-            const SizedBox(height: 24),
-            if (widget.invitoInAttesa) ...[
-              const AvvisoInvito(
-                testo:
-                    'Hai un invito. Entra o crea un account e il viaggio '
-                    'si aprirà da solo.',
+    final t = Tavolozza.of(context);
+    return LayoutBenvenuto(
+      titolo: 'Il viaggio, in un posto solo',
+      sottotitolo:
+          'Dall\'idea al ritorno: tappe, spese, cose da portare e chi viene '
+          'con te.',
+      pannello: Pannello(
+        padding: const EdgeInsets.all(20),
+        child: AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (widget.invitoInAttesa) ...[
+                const AvvisoInvito(
+                  testo:
+                      'Hai un invito. Entra o crea un account e il viaggio '
+                      'si aprirà da solo.',
+                ),
+                const SizedBox(height: 16),
+              ],
+              Campo(
+                controller: _email,
+                segnaposto: 'Email',
+                icona: icona(
+                  ios: CupertinoIcons.mail,
+                  android: Icons.mail_outline,
+                ),
+                tastiera: TextInputType.emailAddress,
+                correzione: false,
+                suggerimenti: const [AutofillHints.email],
+                azione: TextInputAction.next,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
+              Campo(
+                controller: _password,
+                segnaposto: 'Password',
+                icona: icona(
+                  ios: CupertinoIcons.lock,
+                  android: Icons.lock_outline,
+                ),
+                oscura: true,
+                suggerimenti: const [AutofillHints.password],
+                azione: TextInputAction.done,
+                onInvio: (_) => _esegui(nuovoAccount: false),
+              ),
+              const SizedBox(height: 20),
+              PulsanteGrande(
+                etichetta: 'Accedi',
+                inCorso: _inCorso,
+                onPressed: () => _esegui(nuovoAccount: false),
+              ),
+              const SizedBox(height: 6),
+              PulsanteGrande(
+                etichetta: 'Crea un account',
+                secondario: true,
+                onPressed: _inCorso ? null : () => _esegui(nuovoAccount: true),
+              ),
+              AnimatedSize(
+                duration: Ritmo.medio,
+                curve: Ritmo.curva,
+                child: _messaggio == null
+                    ? const SizedBox(width: double.infinity)
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 14),
+                        child: Text(
+                          _messaggio!,
+                          textAlign: TextAlign.center,
+                          style: Testi.secondario.copyWith(
+                            color: t.testoSecondario,
+                          ),
+                        ).entra(context, da: 6),
+                      ),
+              ),
             ],
-            TextField(
-              controller: _email,
-              decoration: const InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              autofillHints: const [AutofillHints.email],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _password,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-              autofillHints: const [AutofillHints.password],
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _inCorso ? null : () => _esegui(nuovoAccount: false),
-              child: const Text('Accedi'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: _inCorso ? null : () => _esegui(nuovoAccount: true),
-              child: const Text('Crea un account'),
-            ),
-            if (_messaggio != null) ...[
-              const SizedBox(height: 16),
-              Text(_messaggio!, style: testo.bodyMedium),
-            ],
-          ],
+          ),
         ),
       ),
     );
