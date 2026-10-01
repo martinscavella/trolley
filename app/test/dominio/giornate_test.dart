@@ -104,4 +104,65 @@ void main() {
       );
     });
   });
+
+  group('Programma', () {
+    Programma programma(
+      DateTime inizio,
+      DateTime fine, {
+      int arrivo = 10,
+      int partenza = 18,
+    }) => Programma(
+      inizio: inizio,
+      fine: fine,
+      arrivo: Duration(hours: arrivo),
+      partenza: Duration(hours: partenza),
+    );
+
+    test('un programma normale sta in piedi e dà i suoi giorni', () {
+      final p = programma(DateTime(2026, 10, 10), DateTime(2026, 10, 12));
+      expect(p.problema, isNull);
+      expect(p.durataGiorni, 3);
+      expect(p.giorni, hasLength(3));
+    });
+
+    test('dice cosa non va, invece di lanciare un errore', () {
+      expect(
+        programma(DateTime(2026, 10, 12), DateTime(2026, 10, 10)).problema,
+        contains('prima del primo'),
+      );
+      expect(
+        programma(
+          DateTime(2026, 10, 10),
+          DateTime(2026, 10, 10),
+          arrivo: 18,
+          partenza: 9,
+        ).problema,
+        contains('giorno solo'),
+      );
+      expect(
+        programma(
+          DateTime(2026, 10, 10),
+          DateTime(2026, 10, 12),
+          partenza: 0,
+        ).problema,
+        contains('mezzanotte'),
+      );
+    });
+
+    test('ogni programma senza problema genera i giorni senza errori', () {
+      for (final arrivo in [0, 9, 23]) {
+        for (final partenza in [1, 12, 23]) {
+          for (final durata in [0, 1, 6]) {
+            final p = programma(
+              DateTime(2026, 10, 10),
+              DateTime(2026, 10, 10 + durata),
+              arrivo: arrivo,
+              partenza: partenza,
+            );
+            if (p.problema == null) expect(p.giorni, hasLength(durata + 1));
+          }
+        }
+      }
+    });
+  });
 }

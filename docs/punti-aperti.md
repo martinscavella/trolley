@@ -26,6 +26,19 @@ Cose fuori dal codice senza le quali la [Fase 0](piano-di-costruzione.md) non si
 | **Conferma email in Supabase** | Il link di conferma deve tornare nell'app: `trolley://accesso` va tra gli URL consentiti (Authentication → URL Configuration) | Da fare |
 | **Accesso con Google** | Credenziali OAuth di Google configurate in Supabase | Da fare |
 | **Data dell'ondata 1** | "Sei mesi alla beta" va ancorato a una data scritta, altrimenti non si vede quando slitta | Da fissare |
+| **Protezione dalle password compromesse** (Supabase Auth) | Con l'accesso via email è la difesa più economica contro le password già rubate altrove. La segnala il controllo di sicurezza di Supabase | Da attivare (Authentication → Policies) |
+| **Funzione `public.rls_auto_enable()`** | Non viene dalle nostre migrazioni: l'ha creata Supabase, ed è eseguibile anche senza accesso. Il controllo di sicurezza la segnala | Da capire se serve; se no, togliere l'esecuzione ad `anon` |
+
+### Rimasto fuori dalla 1.1
+
+La fase 1.1 (stati idea e definito, giorni, capienza) è costruita. Restano, ciascuno con la sua fase:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Notifica "è ancora un'idea?"** | Oggi il sollecito sta dentro l'app, sulla scheda e nell'idea. La notifica ha bisogno del permesso, che si chiede quando serve davvero ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **Schermata dei conflitti** | Una modifica su versione superata oggi si rifiuta, la copia si riscarica e la persona riprova. Mostrare le due versioni affiancate è la 2.2 | Fase 2.2 |
+| **Chiusura del viaggio** | "In corso" e "concluso" si ricavano dalle date; scriverli sul server, con verifica e traguardi, è la 4.1 | Fase 4.1 |
+| **Tappe da ricollocare** | Spostando le date, i giorni che escono si marcano senza perdere niente; mostrare le tappe da ricollocare arriva con le tappe | Fase 1.2 |
 
 ### Impianto di sicurezza del matching — stima
 

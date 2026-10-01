@@ -4,24 +4,16 @@ library;
 import 'package:flutter/widgets.dart' show StringCharacters;
 
 import '../dati/database.dart';
-
-const _mesi = [
-  'gennaio',
-  'febbraio',
-  'marzo',
-  'aprile',
-  'maggio',
-  'giugno',
-  'luglio',
-  'agosto',
-  'settembre',
-  'ottobre',
-  'novembre',
-  'dicembre',
-];
+import '../dati/destinazioni.dart';
+import '../dati/lettura.dart';
+import '../dominio/calendario.dart';
+import '../dominio/giornate.dart';
+import '../dominio/periodo.dart';
+import '../dominio/stato_viaggio.dart';
 
 /// `12 ottobre 2026`.
-String dataEstesa(DateTime d) => '${d.day} ${_mesi[d.month - 1]} ${d.year}';
+String dataEstesa(DateTime d) =>
+    '${d.day} ${nomiDeiMesi[d.month - 1]} ${d.year}';
 
 /// L'intervallo più corto che non lascia dubbi:
 /// `10–12 ottobre 2026`, `28 ottobre – 3 novembre 2026`,
@@ -31,22 +23,13 @@ String intervalloDate(DateTime inizio, DateTime fine) {
     return '${dataEstesa(inizio)} – ${dataEstesa(fine)}';
   }
   if (inizio.month != fine.month) {
-    return '${inizio.day} ${_mesi[inizio.month - 1]} – ${dataEstesa(fine)}';
+    return '${inizio.day} ${nomiDeiMesi[inizio.month - 1]} – ${dataEstesa(fine)}';
   }
   if (inizio.day != fine.day) {
     return '${inizio.day}–${dataEstesa(fine)}';
   }
   return dataEstesa(inizio);
 }
-
-/// Quanti giorni di calendario tocca il viaggio, estremi compresi.
-int giorniDiViaggio(DateTime inizio, DateTime fine) =>
-    DateTime.utc(
-      fine.year,
-      fine.month,
-      fine.day,
-    ).difference(DateTime.utc(inizio.year, inizio.month, inizio.day)).inDays +
-    1;
 
 /// Le iniziali per un avatar: `Giulia Rossi` → `GR`, `marco` → `M`.
 String iniziali(String nome) {
@@ -66,21 +49,117 @@ String? bandiera(String? paese) {
 String quanti(int n, String singolare, String plurale) =>
     '$n ${n == 1 ? singolare : plurale}';
 
-String titoloViaggio(Viaggio v) => v.destinazioneCitta ?? 'Viaggio senza meta';
+/// Il titolo di un viaggio: la città, oppure il paese se si va in un paese
+/// intero.
+String titoloViaggio(Viaggio v) =>
+    v.destinazioneCitta ??
+    nomeDelPaese(v.destinazionePaese) ??
+    'Viaggio senza meta';
 
-String descrizioneStato(String stato) => switch (stato) {
-  'idea' => 'Idea',
-  'definito' => 'Definito',
-  'in_corso' => 'In corso',
-  'chiuso' => 'Chiuso',
-  'archiviato' => 'Archiviato',
-  _ => stato,
+/// Il nome dello stato, come compare sull'etichetta del viaggio e sulle
+/// sezioni dell'elenco (02-il-viaggio.md, "Elenco viaggi").
+String descrizioneStato(StatoViaggio stato) => switch (stato) {
+  StatoViaggio.idea => 'Idea',
+  StatoViaggio.definito => 'In programma',
+  StatoViaggio.inCorso => 'In corso',
+  StatoViaggio.chiuso => 'Concluso',
+  StatoViaggio.archiviato => 'In archivio',
 };
 
-/// Quando: le date se ci sono, altrimenti il periodo detto a parole.
+/// `agosto 2027` → `Agosto 2027`.
+String conMaiuscola(String testo) => testo.isEmpty
+    ? testo
+    : '${testo.characters.first.toUpperCase()}${testo.characters.skip(1)}';
+
+/// Quando: le date se ci sono, altrimenti il periodo.
 String quandoViaggio(Viaggio v) {
-  final inizio = DateTime.tryParse(v.dataInizio ?? '');
-  final fine = DateTime.tryParse(v.dataFine ?? '');
+  final (inizio, fine) = (v.inizio, v.fine);
   if (inizio != null && fine != null) return intervalloDate(inizio, fine);
-  return v.periodoApprossimativo ?? 'Date da decidere';
+  final periodo = v.periodoApprossimativo;
+  return periodo == null ? 'Date da decidere' : conMaiuscola(periodo);
+}
+
+/// Un periodo detto nel modo più corto che non lascia dubbi rispetto a
+/// [oggi]: `Novembre`, `Gennaio 2027`, `Autunno`, `Inverno 2026–27`.
+String etichettaPeriodo(Periodo periodo, DateTime oggi) {
+  final nome = conMaiuscola(periodo.testo);
+  return switch (periodo) {
+    MeseDi(:final anno) when anno == oggi.year => nome.substring(
+      0,
+      nome.lastIndexOf(' '),
+    ),
+    StagioneDi(:final anno, :final stagione)
+        when anno == oggi.year && stagione != Stagione.inverno =>
+      nome.substring(0, nome.lastIndexOf(' ')),
+    _ => nome,
+  };
+}
+
+const _giorniDellaSettimana = [
+  'lunedì',
+  'martedì',
+  'mercoledì',
+  'giovedì',
+  'venerdì',
+  'sabato',
+  'domenica',
+];
+
+/// `sabato`.
+String giornoDellaSettimana(DateTime d) => _giorniDellaSettimana[d.weekday - 1];
+
+/// `ott`.
+String meseBreve(DateTime d) => nomiDeiMesi[d.month - 1].substring(0, 3);
+
+/// `10:00`. La fine del giorno è mezzanotte.
+String ora(Duration o) => o >= const Duration(hours: 24)
+    ? 'mezzanotte'
+    : '${o.inHours.toString().padLeft(2, '0')}:'
+          '${(o.inMinutes % 60).toString().padLeft(2, '0')}';
+
+/// `14 h`, `13 h 30 min`, `45 min`.
+String durata(Duration d) {
+  final (ore, minuti) = (d.inHours, d.inMinutes % 60);
+  if (ore == 0) return '$minuti min';
+  if (minuti == 0) return '$ore h';
+  return '$ore h $minuti min';
+}
+
+/// Quanto dura una giornata del viaggio, a parole: `dalle 10:00`, `fino alle
+/// 18:00`, `dalle 10:00 alle 18:00`, `tutto il giorno`.
+String finestraDelGiorno(FinestraGiorno g) {
+  final daInizio = g.inizio == inizioGiornata;
+  final finoAllaFine = g.fine >= fineGiornata;
+  if (daInizio && finoAllaFine) return 'tutto il giorno';
+  if (finoAllaFine) return 'dalle ${ora(g.inizio)}';
+  if (daInizio) return 'fino alle ${ora(g.fine)}';
+  return 'dalle ${ora(g.inizio)} alle ${ora(g.fine)}';
+}
+
+/// Il programma in una riga: `3 giorni · arrivi alle 10:00, riparti alle 18:00`.
+String riassuntoProgramma(Programma p) => [
+  quanti(p.durataGiorni, 'giorno', 'giorni'),
+  'arrivi alle ${ora(p.arrivo)}, riparti alle ${ora(p.partenza)}',
+].join(' · ');
+
+/// Il titolo della sezione dell'elenco che raccoglie i viaggi in [stato].
+String titoloSezione(StatoViaggio stato) => switch (stato) {
+  StatoViaggio.idea => 'Idee',
+  StatoViaggio.chiuso => 'Conclusi',
+  _ => descrizioneStato(stato),
+};
+
+/// Quanto tempo fa, detto come lo si dice: `poco fa`, `5 minuti fa`, `3 ore
+/// fa`, `ieri`, `4 giorni fa`.
+String quantoFa(DateTime quando, DateTime adesso) {
+  final passato = adesso.difference(quando);
+  if (passato.inMinutes < 2) return 'poco fa';
+  if (passato.inHours < 1) return '${passato.inMinutes} minuti fa';
+  if (passato.inHours < 24) {
+    return passato.inHours == 1 ? 'un\'ora fa' : '${passato.inHours} ore fa';
+  }
+  final giorni = soloData(adesso.toLocal())
+      .difference(soloData(quando.toLocal()))
+      .inDays;
+  return giorni <= 1 ? 'ieri' : '$giorni giorni fa';
 }

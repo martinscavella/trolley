@@ -7,9 +7,12 @@ import 'package:supabase_flutter/supabase_flutter.dart'
 import 'package:trolley/app.dart';
 import 'package:trolley/dati/archivio.dart';
 import 'package:trolley/dati/database.dart';
+import 'package:trolley/dati/errori.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
 import 'package:trolley/servizi.dart';
+
+import 'aiuti.dart';
 
 /// Un ingresso da invito che si comanda dal test, al posto dei link veri.
 class _IngressoFinto implements IngressoDaInvito {
@@ -40,7 +43,7 @@ void main() {
     await db.close();
   });
 
-  Future<void> avvia(WidgetTester tester) async {
+  Future<void> avvia(WidgetTester tester, {bool conRete = true}) async {
     // Con "Riduci movimento" lo sfondo resta fermo e l'app si assesta: è anche
     // la prova che le schermate funzionano senza animazioni.
     tester.platformDispatcher.accessibilityFeaturesTestValue =
@@ -53,6 +56,7 @@ void main() {
         archivio: Archivio(db, supabase),
         misurazione: Misurazione(db, supabase, versioneApp: 'prova'),
         ingresso: ingresso,
+        rete: ReteFinta(disponibile: conRete),
         child: const TrolleyApp(),
       ),
     );
@@ -65,6 +69,11 @@ void main() {
     await avvia(tester);
     expect(find.text('Accedi'), findsOneWidget);
     expect(find.textContaining('Hai un invito'), findsNothing);
+  });
+
+  testWidgets('senza rete l\'accesso lo dice prima di provare', (tester) async {
+    await avvia(tester, conRete: false);
+    expect(find.text(motivoSenzaRete), findsOneWidget);
   });
 
   testWidgets(

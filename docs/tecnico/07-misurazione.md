@@ -29,7 +29,7 @@ Non essendoci esperimenti prima di costruire, **questa è l'unica verifica rimas
 | Evento | Campi oltre ai comuni | Alimenta |
 |---|---|---|
 | `viaggio_creato` | stato iniziale, durata prevista | H2, H5, conteggio separato delle idee |
-| `idea_definita` | giorni trascorsi dalla creazione | Peso della fase decisione |
+| `idea_definita` | giorni trascorsi dalla creazione, durata prevista | Peso della fase decisione; **H5** per i viaggi nati come idee |
 | `primo_elemento_aggiunto` | tipo, ore dalla creazione | **H2** — >60% entro 7 giorni |
 | `funzione_usata_nel_viaggio` | quale funzione | **H1** — >50% dei viaggi ne usa almeno 3 |
 | `invito_creato` · `installazione_da_invito` · `viaggio_corretto_aperto` | — | **H3** e sorveglianza del deep link differito |

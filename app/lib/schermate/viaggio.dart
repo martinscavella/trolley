@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
@@ -15,12 +16,21 @@ import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
+import '../dati/lettura.dart';
+import '../dominio/calendario.dart';
 import '../dominio/codice_invito.dart';
+import '../dominio/giornate.dart';
+import '../dominio/stato_viaggio.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
+import 'con_la_rete.dart';
+import 'date_viaggio.dart';
+import 'scelta_periodo.dart';
 
-/// Un viaggio: quando, chi c'è, l'invito. Tappe, spese e liste arrivano con la
-/// fase 1.
+/// Un viaggio. La schermata cambia forma con lo stato (02-il-viaggio.md): da
+/// idea c'è il periodo e l'invito a fissare le date; da definito ci sono le
+/// date e i giorni, ciascuno con il suo tempo. Si legge dalla copia locale,
+/// anche senza rete.
 class SchermataViaggio extends StatefulWidget {
   const SchermataViaggio({super.key, required this.viaggioId});
 
@@ -45,6 +55,15 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
       final inBarra = _scorrimento.offset > _altezzaTestata - 40;
       if (inBarra != _titoloInBarra) setState(() => _titoloInBarra = inBarra);
     });
+    // Aprire il viaggio aggiorna la copia (02 §1). Senza rete resta quella che
+    // c'è, e va bene così.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(
+          Servizi.of(context).archivio.aggiornaCopia().catchError((_) {}),
+        );
+      }
+    });
   }
 
   @override
@@ -56,6 +75,10 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
   Future<void> _invita() async {
     if (_invitoInCorso) return;
     final servizi = Servizi.of(context);
+    if (!servizi.rete.disponibile) {
+      mostraMessaggio(context, 'Per invitare qualcuno serve la connessione.');
+      return;
+    }
     // Il foglio di condivisione su iPad vuole sapere da dove parte.
     final box = _origineInvito.currentContext?.findRenderObject() as RenderBox?;
     setState(() => _invitoInCorso = true);
@@ -98,6 +121,7 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
             ),
           );
         }
+        final stato = viaggio.statoA(DateTime.now());
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: _titoloInBarra
               ? (Tavolozza.of(context).scuro
@@ -128,6 +152,7 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                   SliverToBoxAdapter(
                     child: _Testata(
                       viaggio: viaggio,
+                      stato: stato,
                       altezza: sopra + _altezzaTestata,
                       scorrimento: _scorrimento,
                     ),
@@ -137,18 +162,30 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                       offset: const Offset(0, -28),
                       child: _Foglio(
                         children: [
-                          _Quando(viaggio: viaggio).entra(context),
+                          _Quando(
+                            viaggio: viaggio,
+                            stato: stato,
+                          ).entra(context),
+                          if (stato == StatoViaggio.idea)
+                            _Sollecito(viaggio: viaggio),
+                          if (stato.haGiorni) ...[
+                            const SizedBox(height: 24),
+                            const TitoloSezione('Giorni')
+                                .entra(context, ritardo: Ritmo.passo),
+                            _Giorni(viaggioId: viaggio.id)
+                                .entra(context, ritardo: Ritmo.passo * 2),
+                          ],
                           const SizedBox(height: 24),
                           const TitoloSezione('Chi c\'è')
-                              .entra(context, ritardo: Ritmo.passo),
-                          _Partecipanti(viaggioId: widget.viaggioId)
                               .entra(context, ritardo: Ritmo.passo * 2),
+                          _Partecipanti(viaggioId: widget.viaggioId)
+                              .entra(context, ritardo: Ritmo.passo * 3),
                           const SizedBox(height: 24),
                           _Invito(
                             chiave: _origineInvito,
                             inCorso: _invitoInCorso,
                             onInvita: _invita,
-                          ).entra(context, ritardo: Ritmo.passo * 3),
+                          ).entra(context, ritardo: Ritmo.passo * 4),
                           SizedBox(
                             height: MediaQuery.paddingOf(context).bottom + 24,
                           ),
@@ -171,11 +208,13 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
 class _Testata extends StatelessWidget {
   const _Testata({
     required this.viaggio,
+    required this.stato,
     required this.altezza,
     required this.scorrimento,
   });
 
   final Viaggio viaggio;
+  final StatoViaggio stato;
   final double altezza;
   final ScrollController scorrimento;
 
@@ -223,7 +262,7 @@ class _Testata extends StatelessWidget {
           children: [
             Row(
               children: [
-                Pillola(descrizioneStato(viaggio.stato), suCopertina: true),
+                Pillola(descrizioneStato(stato), suCopertina: true),
                 if (segno != null) ...[
                   const SizedBox(width: 8),
                   Text(segno, style: const TextStyle(fontSize: 22)),
@@ -275,51 +314,328 @@ class _Foglio extends StatelessWidget {
   );
 }
 
+/// Quando: il periodo di un'idea, o le date di un viaggio. Si tocca per
+/// cambiarli, e richiede la rete: senza, lo dice.
 class _Quando extends StatelessWidget {
-  const _Quando({required this.viaggio});
+  const _Quando({required this.viaggio, required this.stato});
 
   final Viaggio viaggio;
+  final StatoViaggio stato;
+
+  Future<void> _cambia(BuildContext context) async {
+    if (stato == StatoViaggio.idea) {
+      final archivio = Servizi.of(context).archivio;
+      await apri<bool>(
+        context,
+        SchermataPeriodo(
+          titolo: 'Il periodo',
+          spiegazione:
+              'Anche vago va bene: serve a ricordarvelo, e a non lasciare '
+              'l\'idea in vista per sempre se il periodo passa.',
+          conferma: 'Salva il periodo',
+          iniziale: viaggio.periodo,
+          onConferma: (periodo) => archivio.cambiaPeriodo(viaggio, periodo),
+        ),
+        dalBasso: true,
+      );
+    } else {
+      await apri<bool>(
+        context,
+        SchermataDate(viaggio: viaggio),
+        dalBasso: true,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = Tavolozza.of(context);
-    final inizio = DateTime.tryParse(viaggio.dataInizio ?? '');
-    final fine = DateTime.tryParse(viaggio.dataFine ?? '');
-    final conDate = inizio != null && fine != null;
-    return Pannello(
-      child: Row(
-        children: [
-          IconaTonda(
-            icona(
-              ios: CupertinoIcons.calendar,
-              android: Icons.calendar_month_outlined,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  conDate ? intervalloDate(inizio, fine) : 'Date da decidere',
-                  style: Testi.evidenza.copyWith(color: t.testo),
+    final idea = stato == StatoViaggio.idea;
+    final programma = viaggio.programma;
+    return ConLaRete(
+      builder: (context, rete) {
+        final modificabile = stato.dateModificabili;
+        return Pannello(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Premibile(
+                onTap: modificabile && rete ? () => _cambia(context) : null,
+                scala: 0.985,
+                etichetta: idea ? 'Cambia il periodo' : 'Cambia le date',
+                child: Row(
+                  children: [
+                    IconaTonda(
+                      idea
+                          ? icona(
+                              ios: CupertinoIcons.lightbulb,
+                              android: Icons.lightbulb_outline,
+                            )
+                          : icona(
+                              ios: CupertinoIcons.calendar,
+                              android: Icons.calendar_month_outlined,
+                            ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            quandoViaggio(viaggio),
+                            style: Testi.evidenza.copyWith(color: t.testo),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            idea || programma == null
+                                ? 'È un\'idea: con le date diventa un viaggio '
+                                      'in programma.'
+                                : riassuntoProgramma(programma),
+                            style: Testi.secondario.copyWith(
+                              color: t.testoSecondario,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (modificabile && rete)
+                      Icon(
+                        icona(
+                          ios: CupertinoIcons.chevron_right,
+                          android: Icons.chevron_right,
+                        ),
+                        size: 16,
+                        color: t.testoTerziario,
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  conDate
-                      ? quanti(
-                          giorniDiViaggio(inizio, fine),
-                          'giorno',
-                          'giorni',
-                        )
-                      : 'È ancora un\'idea: quando fissate le date, il viaggio '
-                            'diventa definito.',
-                  style: Testi.secondario.copyWith(color: t.testoSecondario),
+              ),
+              if (modificabile && !rete)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    idea
+                        ? 'Per cambiare il periodo o fissare le date serve la '
+                              'connessione.'
+                        : 'Per spostare le date serve la connessione.',
+                    style: Testi.didascalia.copyWith(color: t.testoSecondario),
+                  ),
+                ),
+              if (idea && rete) ...[
+                const SizedBox(height: 16),
+                PulsanteGrande(
+                  etichetta: 'Fissa le date',
+                  onPressed: () => apri<bool>(
+                    context,
+                    SchermataDate(viaggio: viaggio),
+                    dalBasso: true,
+                  ),
                 ),
               ],
-            ),
+            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+}
+
+/// "È ancora un'idea?": nelle ultime due settimane del periodo, e dopo. È
+/// l'avviso che precede l'archivio, e si mostra prima che l'idea ci vada
+/// (02-il-viaggio.md, regola 6).
+class _Sollecito extends StatefulWidget {
+  const _Sollecito({required this.viaggio});
+
+  final Viaggio viaggio;
+
+  @override
+  State<_Sollecito> createState() => _SollecitoState();
+}
+
+class _SollecitoState extends State<_Sollecito> {
+  DateTime? _sollecitataIl;
+  bool _letto = false;
+
+  /// La scadenza per cui si è già letto: un periodo cambiato si rilegge.
+  DateTime? _scadenzaLetta;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _leggi();
+  }
+
+  @override
+  void didUpdateWidget(_Sollecito vecchio) {
+    super.didUpdateWidget(vecchio);
+    _leggi();
+  }
+
+  Future<void> _leggi() async {
+    if (_scadenzaLetta == widget.viaggio.scadenza) return;
+    _scadenzaLetta = widget.viaggio.scadenza;
+    final oggi = DateTime.now();
+    final viaggio = widget.viaggio;
+    if (!sollecitoDovuto(scadenza: viaggio.scadenza, oggi: oggi)) {
+      if (mounted) setState(() => _letto = true);
+      return;
+    }
+    final archivio = Servizi.of(context).archivio;
+    // Mostrarlo è il sollecito: da qui partono le due settimane.
+    await archivio.segnaSollecitata(viaggio, oggi);
+    final il = await archivio.sollecitataIl(viaggio);
+    if (mounted) {
+      setState(() {
+        _sollecitataIl = il;
+        _letto = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final il = _sollecitataIl;
+    if (!_letto || il == null) return const SizedBox.shrink();
+    final scadenza = widget.viaggio.scadenza;
+    final passato = soloData(DateTime.now()).isAfter(scadenza);
+    final archivio = giornoDellArchivio(scadenza: scadenza, sollecitataIl: il);
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Avviso(
+        icona: icona(
+          ios: CupertinoIcons.hourglass,
+          android: Icons.hourglass_bottom,
+        ),
+        colore: Tavolozza.of(context).pericolo,
+        testo: [
+          passato
+              ? 'Il periodo di questa idea è passato.'
+              : 'È ancora un\'idea? Il periodo finisce il '
+                    '${dataEstesa(scadenza)}.',
+          'Fissate le date o sceglietene un altro: se no, il '
+              '${dataEstesa(archivio)} andrà in archivio, da dove si può '
+              'sempre riprendere.',
+        ].join(' '),
+      ).entra(context, da: 6),
+    );
+  }
+}
+
+/// I giorni del viaggio, ciascuno con il tempo che ha: dall'arrivo alla
+/// ripartenza (01-modello-dati.md, capienza della giornata).
+class _Giorni extends StatelessWidget {
+  const _Giorni({required this.viaggioId});
+
+  final String viaggioId;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Tavolozza.of(context);
+    final oggi = soloData(DateTime.now());
+    return StreamBuilder<List<Giorno>>(
+      stream: Servizi.of(context).archivio.osservaGiorni(viaggioId),
+      builder: (context, snapshot) {
+        final giorni = [
+          for (final g in snapshot.data ?? const <Giorno>[]) g.finestra,
+        ];
+        if (giorni.isEmpty) return const SizedBox.shrink();
+        return Pannello(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Column(
+            children: [
+              for (final (i, g) in giorni.indexed) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    indent: 58,
+                    color: t.separatore,
+                  ),
+                _RigaGiorno(giorno: g, oggi: g.data == oggi),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RigaGiorno extends StatelessWidget {
+  const _RigaGiorno({required this.giorno, required this.oggi});
+
+  final FinestraGiorno giorno;
+  final bool oggi;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Tavolozza.of(context);
+    final d = giorno.data;
+    return Semantics(
+      label:
+          '${giornoDellaSettimana(d)} ${dataEstesa(d)}, '
+          '${finestraDelGiorno(giorno)}, ${durata(giorno.capienza)}',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: ShapeDecoration(
+                color: oggi ? t.accento : t.accento.withValues(alpha: 0.12),
+                shape: RoundedSuperellipseBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${d.day}',
+                    style: Testi.evidenza.copyWith(
+                      color: oggi ? t.suAccento : t.accento,
+                      height: 1.05,
+                    ),
+                  ),
+                  Text(
+                    meseBreve(d).toUpperCase(),
+                    style: Testi.etichetta.copyWith(
+                      fontSize: 10,
+                      color: oggi ? t.suAccento : t.accento,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    conMaiuscola(giornoDellaSettimana(d)),
+                    style: Testi.evidenza.copyWith(color: t.testo),
+                  ),
+                  Text(
+                    oggi
+                        ? 'Oggi, ${finestraDelGiorno(giorno)}'
+                        : conMaiuscola(finestraDelGiorno(giorno)),
+                    style: Testi.didascalia.copyWith(color: t.testoSecondario),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              durata(giorno.capienza),
+              style: Testi.secondario.copyWith(
+                color: t.testoSecondario,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -424,10 +740,13 @@ class _Invito extends StatelessWidget {
             style: Testi.secondario.copyWith(color: t.testoSecondario),
           ),
           const SizedBox(height: 16),
-          PulsanteGrande(
-            etichetta: 'Invita qualcuno',
-            inCorso: inCorso,
-            onPressed: onInvita,
+          ConLaRete(
+            builder: (context, rete) => PulsanteGrande(
+              etichetta: 'Invita qualcuno',
+              inCorso: inCorso,
+              motivo: rete ? null : motivoSenzaRete,
+              onPressed: onInvita,
+            ),
           ),
         ],
       ),

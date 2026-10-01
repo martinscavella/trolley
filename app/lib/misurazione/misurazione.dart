@@ -24,6 +24,7 @@ abstract final class Eventi {
   static const installazioneDaInvito = 'installazione_da_invito';
   static const viaggioCorrettoAperto = 'viaggio_corretto_aperto';
   static const viaggioCreato = 'viaggio_creato';
+  static const ideaDefinita = 'idea_definita';
 }
 
 class Misurazione {
@@ -32,6 +33,9 @@ class Misurazione {
   final DatabaseLocale _db;
   final SupabaseClient _supabase;
   final String versioneApp;
+
+  /// Come in Archivio: `rest`, perché applica le opzioni del client.
+  PostgrestClient get _server => _supabase.rest;
 
   static const _chiaveAttiva = 'misurazione_attiva';
   static const _dimensioneLotto = 200;
@@ -89,7 +93,7 @@ class Misurazione {
                 .get();
         if (lotto.isEmpty) return;
 
-        await _supabase
+        await _server
             .from('evento')
             .upsert(
               [

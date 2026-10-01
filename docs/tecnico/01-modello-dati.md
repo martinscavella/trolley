@@ -32,9 +32,9 @@ Convenzione: ogni entità sincronizzata ha `id` (UUID generato dal client), `cre
 
 | Campo | Note |
 |---|---|
-| `stato` | `idea` · `definito` · `in_corso` · `chiuso` · `archiviato` |
+| `stato` | `idea` · `definito` · `in_corso` · `chiuso` · `archiviato`. *In corso* e *chiuso* li ricava l'app dalle date finché la chiusura (4.1) non li scrive: vedi [decisioni](../decisioni/prodotto.md) |
 | `destinazione_citta`, `destinazione_paese` | Servono al mappamondo e alla verifica |
-| `periodo_approssimativo` | Testo libero. Solo allo stato idea |
+| `periodo_approssimativo` | Solo allo stato idea. Testo nella forma in cui si legge — `agosto 2027`, `estate 2027`, `inverno 2027–28` — scelto fra mesi e stagioni, perché l'app deve sapere quando passa. Un testo che non riconosce vale come nessun periodo |
 | `data_inizio`, `data_fine` | Obbligatorie dallo stato definito in poi |
 | `ora_arrivo`, `ora_partenza` | Definiscono la finestra del primo e dell'ultimo giorno |
 | `creatore_id` | Uno solo, sempre presente |
@@ -51,6 +51,8 @@ Convenzione: ogni entità sincronizzata ha `id` (UUID generato dal client), `cre
 ### `giorno`
 
 Generato quando il viaggio diventa definito, uno per data.
+
+I giorni li calcola l'app e **si scrivono insieme alle date, in una transazione**: `crea_viaggio`, `programma_viaggio`, `torna_idea`. Così un viaggio definito non resta mai senza giorni. Un giorno che esce dalle date — perché si spostano, o perché si torna a idea — **si marca, non si cancella**: se le date tornano a comprenderlo ritorna la stessa riga, con quello che vi è agganciato.
 
 | Campo | Note |
 |---|---|

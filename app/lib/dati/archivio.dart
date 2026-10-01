@@ -2,15 +2,25 @@
 ///
 /// Le schermate leggono **sempre** dalla copia (così leggere non richiede mai la
 /// rete) e scrivono attraverso questo archivio. Le scritture che non sono uno dei
-/// quattro gesti richiedono la rete e lo dicono con un [ErroreTrolley].
+/// quattro gesti richiedono la rete e lo dicono con un [ErroreTrolley]. Quelle
+/// riuscite ricevono dal server le righe che hanno scritto e le mettono nella
+/// copia così come sono: la copia non resta indietro nemmeno se la rete cade un
+/// istante dopo.
 library;
 
 import 'package:drift/drift.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../dominio/calendario.dart';
+import '../dominio/giornate.dart';
+import '../dominio/periodo.dart';
+import '../dominio/stato_viaggio.dart';
 import 'database.dart';
+import 'destinazioni.dart';
 import 'errori.dart';
+import 'lettura.dart';
+import 'rete.dart';
 
 /// Un viaggio come compare nell'elenco: con i nomi di chi c'è.
 class ViaggioInElenco {
@@ -21,12 +31,36 @@ class ViaggioInElenco {
 }
 
 class Archivio {
-  Archivio(this._db, this._supabase);
+  Archivio(this._db, this._supabase, {this.rete});
 
   final DatabaseLocale _db;
   final SupabaseClient _supabase;
 
+  /// A cui dire com'è andata ogni chiamata (rete.dart).
+  final Rete? rete;
+
   String? get _io => _supabase.auth.currentUser?.id;
+
+  /// Le tabelle e le funzioni del server. Si passa da `rest` perché
+  /// `SupabaseClient.from` (supabase 2.16) non applica le opzioni del client:
+  /// ritenterebbe da solo, contro configurazione.dart.
+  PostgrestClient get _server => _supabase.rest;
+
+  Future<T> _alServer<T>(
+    Future<T> Function() chiamata, {
+    Map<String, String> messaggi = const {},
+  }) async {
+    try {
+      return await alServer(chiamata, messaggi: messaggi, rete: rete);
+    } on ErroreTrolley catch (e) {
+      // Qualcuno ha cambiato il viaggio nel frattempo: si riscarica, così la
+      // persona vede la versione nuova prima di riprovare (02 §3).
+      if (e.codice == CodiciServer.versioneSuperata) {
+        await aggiornaCopia().catchError((_) {});
+      }
+      rethrow;
+    }
+  }
 
   // ─── Profilo ────────────────────────────────────────────────────────────
 
@@ -42,8 +76,8 @@ class Archivio {
   /// Chiede al server il proprio profilo e lo mette nella copia.
   /// `null` se la persona ha un accesso ma non ha ancora un profilo.
   Future<Utente?> scaricaProfilo() async {
-    final righe = await alServer(
-      () => _supabase.rpc<List<dynamic>>('mio_profilo'),
+    final righe = await _alServer(
+      () => _server.rpc<List<dynamic>>('mio_profilo'),
     );
     if (righe.isEmpty) return null;
     final riga = righe.single as Map<String, dynamic>;
@@ -57,11 +91,11 @@ class Archivio {
     required String nome,
     required DateTime dataNascita,
   }) async {
-    await alServer(
-      () => _supabase.from('utente').insert({
+    await _alServer(
+      () => _server.from('utente').insert({
         'id': _io,
         'nome': nome.trim(),
-        'data_nascita': _data(dataNascita),
+        'data_nascita': scriviData(dataNascita),
       }),
       messaggi: {
         CodiciServer.nonPermesso: 'Per usare Trolley servono 16 anni.',
@@ -72,33 +106,41 @@ class Archivio {
 
   // ─── Copia di lettura ───────────────────────────────────────────────────
 
-  /// Riscarica la copia dei viaggi attivi. Se qualcosa va storto la copia resta
-  /// quella di prima: meglio vecchia e dichiarata tale che vuota.
+  /// Riscarica la copia dei viaggi, con i loro giorni e chi partecipa. Le idee
+  /// archiviate ci sono anche loro: pesano pochi byte, e così l'archivio si
+  /// legge anche senza rete. Se qualcosa va storto la copia resta quella di
+  /// prima: meglio vecchia e dichiarata tale che vuota.
   Future<void> aggiornaCopia() async {
-    final (viaggi, partecipazioni, utenti) = await alServer(() async {
-      final viaggi = await _supabase
+    final (viaggi, partecipazioni, utenti, giorni) = await _alServer(() async {
+      final viaggi = await _server
           .from('viaggio')
           .select()
-          .isFilter('eliminato_il', null)
-          .neq('stato', 'archiviato');
+          .isFilter('eliminato_il', null);
       final ids = [for (final v in viaggi) v['id'] as String];
-      final partecipazioni = ids.isEmpty
-          ? <Map<String, dynamic>>[]
-          : await _supabase
-                .from('partecipazione')
-                .select()
-                .inFilter('viaggio_id', ids);
-      final utenti = partecipazioni.isEmpty
-          ? <Map<String, dynamic>>[]
-          : await _supabase
-                .from('utente')
-                .select('id, nome, versione, eliminato_il')
-                .inFilter(
-                  'id',
-                  {for (final p in partecipazioni) p['utente_id'] as String}
-                      .toList(),
-                );
-      return (viaggi, partecipazioni, utenti);
+      if (ids.isEmpty) {
+        return (
+          viaggi,
+          <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
+        );
+      }
+      final (partecipazioni, giorni) = await (
+        _server.from('partecipazione').select().inFilter('viaggio_id', ids),
+        _server
+            .from('giorno')
+            .select()
+            .inFilter('viaggio_id', ids)
+            .isFilter('eliminato_il', null),
+      ).wait;
+      final utenti = await _server
+          .from('utente')
+          .select('id, nome, versione, eliminato_il')
+          .inFilter(
+            'id',
+            {for (final p in partecipazioni) p['utente_id'] as String}.toList(),
+          );
+      return (viaggi, partecipazioni, utenti, giorni);
     });
 
     final adesso = DateTime.now().toUtc();
@@ -106,6 +148,7 @@ class Archivio {
     await _db.transaction(() async {
       await _db.delete(_db.viaggi).go();
       await _db.delete(_db.partecipazioni).go();
+      await _db.delete(_db.giorni).go();
       // Il proprio profilo completo non si butta: dagli altri arriva solo il nome.
       await (_db.delete(
         _db.utenti,
@@ -116,9 +159,34 @@ class Archivio {
         b.insertAll(_db.partecipazioni, [
           for (final r in partecipazioni) _partecipazione(r, adesso),
         ]);
+        b.insertAll(_db.giorni, [for (final r in giorni) _giorno(r, adesso)]);
         b.insertAllOnConflictUpdate(_db.utenti, [
           for (final r in utenti)
             if (r['id'] != io) _utente(r, adesso),
+        ]);
+      });
+    });
+  }
+
+  /// Mette nella copia le righe di un viaggio restituite dal server dopo una
+  /// scrittura: il viaggio, i suoi giorni attivi, chi partecipa.
+  Future<void> _nellaCopia(Map<String, dynamic> righe) async {
+    final viaggio = righe['viaggio'] as Map<String, dynamic>;
+    final id = viaggio['id'] as String;
+    final adesso = DateTime.now().toUtc();
+    await _db.transaction(() async {
+      await _db
+          .into(_db.viaggi)
+          .insertOnConflictUpdate(_viaggio(viaggio, adesso));
+      await (_db.delete(_db.giorni)..where((g) => g.viaggioId.equals(id))).go();
+      await _db.batch((b) {
+        b.insertAll(_db.giorni, [
+          for (final r in righe['giorni'] as List)
+            _giorno(r as Map<String, dynamic>, adesso),
+        ]);
+        b.insertAllOnConflictUpdate(_db.partecipazioni, [
+          for (final r in (righe['partecipazioni'] as List?) ?? const [])
+            _partecipazione(r as Map<String, dynamic>, adesso),
         ]);
       });
     });
@@ -133,8 +201,11 @@ class Archivio {
   }
 
   /// I viaggi, dal più recente, ciascuno con i nomi di chi partecipa: il
-  /// creatore per primo.
-  Stream<List<ViaggioInElenco>> osservaViaggiInElenco() {
+  /// creatore per primo. Le idee archiviate stanno a parte: si chiedono con
+  /// [archiviati].
+  Stream<List<ViaggioInElenco>> osservaViaggiInElenco({
+    bool archiviati = false,
+  }) {
     final query =
         _db.select(_db.viaggi).join([
             leftOuterJoin(
@@ -147,7 +218,12 @@ class Archivio {
               _db.utenti.id.equalsExp(_db.partecipazioni.utenteId),
             ),
           ])
-          ..where(_db.viaggi.eliminatoIl.isNull())
+          ..where(
+            _db.viaggi.eliminatoIl.isNull() &
+                (archiviati
+                    ? _db.viaggi.stato.equals('archiviato')
+                    : _db.viaggi.stato.equals('archiviato').not()),
+          )
           ..orderBy([
             OrderingTerm.desc(_db.viaggi.creatoIl),
             OrderingTerm.asc(_db.partecipazioni.ruolo),
@@ -170,6 +246,15 @@ class Archivio {
   Stream<Viaggio?> osservaViaggio(String id) => (_db.select(
     _db.viaggi,
   )..where((v) => v.id.equals(id))).watchSingleOrNull();
+
+  /// I giorni del viaggio, in ordine.
+  Stream<List<Giorno>> osservaGiorni(String viaggioId) =>
+      (_db.select(_db.giorni)
+            ..where(
+              (g) => g.viaggioId.equals(viaggioId) & g.eliminatoIl.isNull(),
+            )
+            ..orderBy([(g) => OrderingTerm.asc(g.data)]))
+          .watch();
 
   /// Chi partecipa, con il nome. Chi è uscito o è stato rimosso non compare qui,
   /// ma i suoi contributi restano nel viaggio.
@@ -198,27 +283,110 @@ class Archivio {
 
   // ─── Scritture che richiedono la rete ───────────────────────────────────
 
-  /// Un viaggio allo stato idea: basta una destinazione, anche vaga.
-  Future<String> creaIdea({String? citta}) async {
+  /// Un viaggio nuovo. Con un [programma] nasce definito, con i suoi giorni;
+  /// senza, è un'idea con il suo [periodo], anche nessuno (02, regola 1).
+  Future<String> creaViaggio({
+    required Destinazione destinazione,
+    Periodo? periodo,
+    Programma? programma,
+  }) async {
     final id = const Uuid().v4();
-    await alServer(
-      () => _supabase.from('viaggio').insert({
-        'id': id,
-        'stato': 'idea',
-        'destinazione_citta': (citta?.trim().isEmpty ?? true)
-            ? null
-            : citta!.trim(),
-        'creatore_id': _io,
-      }),
+    final righe = await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'crea_viaggio',
+        params: {
+          'p_id': id,
+          'p_destinazione_citta': destinazione.citta,
+          'p_destinazione_paese': destinazione.paese,
+          'p_periodo': programma == null ? periodo?.testo : null,
+          ..._dateDelProgramma(programma),
+          'p_giorni': programma == null
+              ? const []
+              : _giorniPerIlServer(programma),
+        },
+      ),
     );
-    await aggiornaCopia();
+    await _nellaCopia(righe);
     return id;
+  }
+
+  /// Fissa o sposta le date. Un'idea diventa definita; i giorni che escono si
+  /// marcano e tornano se le date tornano a comprenderli.
+  Future<void> programma(Viaggio viaggio, Programma programma) async {
+    final righe = await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'programma_viaggio',
+        params: {
+          'p_viaggio': viaggio.id,
+          'p_versione': viaggio.versione,
+          ..._dateDelProgramma(programma),
+          'p_giorni': _giorniPerIlServer(programma),
+        },
+      ),
+    );
+    await _nellaCopia(righe);
+  }
+
+  /// Da definito a idea: le date spariscono, quello che vi era agganciato resta
+  /// e torna se si rifissano le stesse date (02, casi limite).
+  Future<void> tornaIdea(Viaggio viaggio, {Periodo? periodo}) async {
+    final righe = await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'torna_idea',
+        params: {
+          'p_viaggio': viaggio.id,
+          'p_versione': viaggio.versione,
+          'p_periodo': periodo?.testo,
+        },
+      ),
+    );
+    await _nellaCopia(righe);
+  }
+
+  /// Cambia il periodo di un'idea.
+  Future<void> cambiaPeriodo(Viaggio viaggio, Periodo? periodo) =>
+      _aggiornaViaggio(viaggio, statoAtteso: 'idea', {
+        'periodo_approssimativo': periodo?.testo,
+      });
+
+  /// Riprende un'idea dall'archivio, con un periodo nuovo: quello vecchio è
+  /// passato (02, casi limite).
+  Future<void> riprendi(Viaggio viaggio, Periodo? periodo) => _aggiornaViaggio(
+    viaggio,
+    statoAtteso: 'archiviato',
+    {'stato': 'idea', 'periodo_approssimativo': periodo?.testo},
+  );
+
+  /// Aggiorna il viaggio solo se è ancora nello stato in cui la persona l'ha
+  /// visto, con la versione su cui ha deciso.
+  Future<void> _aggiornaViaggio(
+    Viaggio viaggio,
+    Map<String, Object?> valori, {
+    required String statoAtteso,
+  }) async {
+    final righe = await _alServer(
+      () => _server
+          .from('viaggio')
+          .update({...valori, 'versione': viaggio.versione})
+          .eq('id', viaggio.id)
+          .eq('stato', statoAtteso)
+          .select(),
+    );
+    if (righe.isEmpty) {
+      await aggiornaCopia().catchError((_) {});
+      throw const ErroreTrolley(
+        'Questo viaggio è cambiato nel frattempo. Ora vedi com\'è adesso.',
+      );
+    }
+    await _db
+        .into(_db.viaggi)
+        .insertOnConflictUpdate(_viaggio(righe.single, DateTime.now().toUtc()));
   }
 
   /// Un nuovo codice d'invito per il viaggio.
   Future<String> creaInvito(String viaggioId) async {
-    final riga = await alServer(
-      () => _supabase
+    final riga = await _alServer(
+      () => _server
           .from('invito')
           .insert({'id': const Uuid().v4(), 'viaggio_id': viaggioId})
           .select('token')
@@ -229,9 +397,8 @@ class Archivio {
 
   /// Entra nel viaggio del codice e restituisce il suo id.
   Future<String> accettaInvito(String codice) async {
-    final viaggioId = await alServer(
-      () =>
-          _supabase.rpc<String>('accetta_invito', params: {'p_token': codice}),
+    final viaggioId = await _alServer(
+      () => _server.rpc<String>('accetta_invito', params: {'p_token': codice}),
       messaggi: {
         CodiciServer.nonTrovato:
             'Questo codice non corrisponde a nessun viaggio. Controlla di averlo '
@@ -245,7 +412,87 @@ class Archivio {
     return viaggioId;
   }
 
+  // ─── Idee e archivio ────────────────────────────────────────────────────
+
+  /// Il giorno in cui questo telefono ha mostrato il sollecito "è ancora
+  /// un'idea?" per la scadenza attuale dell'idea, se l'ha mostrato. Una scadenza
+  /// nuova (un periodo cambiato) vuole un sollecito nuovo.
+  Future<DateTime?> sollecitataIl(Viaggio idea) async {
+    final riga =
+        await (_db.select(_db.impostazioni)
+              ..where((i) => i.chiave.equals(_chiaveSollecito(idea.id))))
+            .getSingleOrNull();
+    final parti = (riga?.valore ?? '').split('|');
+    if (parti.length != 2 || parti.first != scriviData(idea.scadenza)) {
+      return null;
+    }
+    return leggiData(parti.last);
+  }
+
+  /// Segna che il sollecito è stato mostrato [il], se non lo era già.
+  Future<void> segnaSollecitata(Viaggio idea, DateTime il) async {
+    if (await sollecitataIl(idea) != null) return;
+    await _db
+        .into(_db.impostazioni)
+        .insertOnConflictUpdate(
+          ImpostazioniCompanion.insert(
+            chiave: _chiaveSollecito(idea.id),
+            valore: '${scriviData(idea.scadenza)}|${scriviData(il)}',
+          ),
+        );
+  }
+
+  /// Manda in archivio le idee il cui periodo è passato, se il sollecito c'è
+  /// stato (02, regole 5 e 6). Restituisce quelle archiviate, per dirlo.
+  /// Senza rete non fa niente: riproverà.
+  Future<List<Viaggio>> archiviaIdeeScadute(DateTime oggi) async {
+    final idee = await (_db.select(
+      _db.viaggi,
+    )..where((v) => v.stato.equals('idea') & v.eliminatoIl.isNull())).get();
+    final archiviate = <Viaggio>[];
+    for (final idea in idee) {
+      if (!daArchiviare(
+        scadenza: idea.scadenza,
+        sollecitataIl: await sollecitataIl(idea),
+        oggi: oggi,
+      )) {
+        continue;
+      }
+      try {
+        await _aggiornaViaggio(idea, statoAtteso: 'idea', {
+          'stato': 'archiviato',
+        });
+        archiviate.add(idea);
+      } on ErroreTrolley catch (e) {
+        if (e.serveLaRete) break;
+        // Cambiata nel frattempo: il suo destino si rivaluta con i dati nuovi.
+      }
+    }
+    return archiviate;
+  }
+
+  static String _chiaveSollecito(String viaggioId) => 'sollecito:$viaggioId';
+
   // ─── Traduzione delle righe ─────────────────────────────────────────────
+
+  static Map<String, String?> _dateDelProgramma(Programma? p) => {
+    'p_data_inizio': p == null ? null : scriviData(p.inizio),
+    'p_data_fine': p == null ? null : scriviData(p.fine),
+    'p_ora_arrivo': p == null ? null : scriviOra(p.arrivo),
+    'p_ora_partenza': p == null ? null : scriviOra(p.partenza),
+  };
+
+  /// I giorni come li applica il server. L'id conta solo per le date nuove: una
+  /// data che il viaggio ha già avuto riprende la sua riga.
+  static List<Map<String, String>> _giorniPerIlServer(Programma p) => [
+    for (final g in p.giorni)
+      {
+        'id': const Uuid().v4(),
+        'data': scriviData(g.data),
+        'inizio': scriviOra(g.inizio),
+        'fine': scriviOra(g.fine),
+      },
+  ];
 
   UtentiCompanion _utente(Map<String, dynamic> r, [DateTime? adesso]) =>
       UtentiCompanion.insert(
@@ -292,8 +539,15 @@ class Archivio {
     stato: r['stato'] as String,
   );
 
-  static String _data(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
+  GiorniCompanion _giorno(Map<String, dynamic> r, DateTime adesso) =>
+      GiorniCompanion.insert(
+        id: r['id'] as String,
+        versione: r['versione'] as int,
+        eliminatoIl: Value(r['eliminato_il'] as String?),
+        scaricatoIl: adesso,
+        viaggioId: r['viaggio_id'] as String,
+        data: r['data'] as String,
+        finestraInizio: r['finestra_inizio'] as String,
+        finestraFine: r['finestra_fine'] as String,
+      );
 }

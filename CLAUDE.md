@@ -14,7 +14,7 @@ La documentazione in `docs/` è la fonte di verità: si parte da [docs/README.md
 
 | Cartella | Cosa | Comandi |
 |---|---|---|
-| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale e server, `lib/aspetto/` colori, testi, movimento e componenti, `lib/schermate/` | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart`. Sul telefono: `flutter build ios --release` e `xcrun devicectl device install app` |
+| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale, server, rete e destinazioni, `lib/aspetto/` colori, testi, movimento e componenti, `lib/schermate/`. `tool/genera_destinazioni.dart` rigenera l'elenco incorporato delle destinazioni (ADR-005) | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart`. Sul telefono: `flutter build ios --release` e `xcrun devicectl device install app` |
 | `supabase/migrations/` | Lo schema del server, una migrazione per file | Applicate a `trolley-db` (ref `nhdgxlynnudwkmxrrokp`). Il nome del file porta la versione registrata sul server |
 | `supabase/tests/` | Le prove delle regole di accesso | Girano dentro un blocco che si annulla da solo: si possono lanciare anche sul progetto remoto |
 | `sito/` | La pagina dei link d'invito, su `trolleyapp.vercel.app` | `vercel deploy --prod` dalla cartella |
@@ -24,7 +24,7 @@ Nomi di tabelle, colonne ed eventi sono in italiano, uguali a quelli di `docs/te
 ## Regole che valgono per ogni modifica
 
 1. **Ogni funzione nasce con il suo evento** ([07 — Misurazione](docs/tecnico/07-misurazione.md)). Una funzione senza evento non è finita. Eventi: azioni, mai contenuti; niente coordinate, testi, nomi di documenti.
-2. **Ogni funzione sa da che parte sta rispetto alla rete**: leggibile offline, uno dei quattro gesti scrivibili offline (registrare una spesa, marcare una tappa, spuntare una voce, aggiungere una tappa), oppure dipendente dalla rete — e in quel caso lo dice prima, disabilitando il controllo con il motivo ([02](docs/tecnico/02-sincronizzazione-e-offline.md)).
+2. **Ogni funzione sa da che parte sta rispetto alla rete**: leggibile offline, uno dei quattro gesti scrivibili offline (registrare una spesa, marcare una tappa, spuntare una voce, aggiungere una tappa), oppure dipendente dalla rete — e in quel caso lo dice prima, disabilitando il controllo con il motivo ([02](docs/tecnico/02-sincronizzazione-e-offline.md)): `schermate/con_la_rete.dart` e il `motivo` di `PulsanteGrande`. Le chiamate al server passano da `alServer` con la `Rete`, e da `supabase.rest`, non da `supabase.from` (che ignora le opzioni del client).
 3. **I documenti non lasciano mai il telefono.** Nessun percorso di codice li carica o li sincronizza; il backend non ha object storage ([03](docs/tecnico/03-documenti-sul-dispositivo.md)).
 4. **Le regole di dominio vivono nell'app, in un posto solo** (capienza della giornata, stati del viaggio, verifica). Il server fa rispettare solo chi può leggere e scrivere cosa.
 5. **Ogni servizio esterno sta dietro un'interfaccia interna** — mappe, SMS, tassi di cambio, ingresso da invito. Nessuna schermata parla direttamente con un fornitore ([04](docs/tecnico/04-integrazioni.md)).

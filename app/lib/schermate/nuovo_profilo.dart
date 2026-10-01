@@ -13,6 +13,7 @@ import '../dominio/eta.dart';
 import '../servizi.dart';
 import 'avviso_invito.dart';
 import 'benvenuto.dart';
+import 'con_la_rete.dart';
 
 /// Nome e data di nascita, la prima volta (01-account-e-profilo.md).
 ///
@@ -137,10 +138,13 @@ class _SchermataNuovoProfiloState extends State<SchermataNuovoProfilo> {
               style: Testi.didascalia.copyWith(color: t.testoSecondario),
             ),
             const SizedBox(height: 20),
-            PulsanteGrande(
-              etichetta: 'Continua',
-              inCorso: _inCorso,
-              onPressed: _salva,
+            ConLaRete(
+              builder: (context, rete) => PulsanteGrande(
+                etichetta: 'Continua',
+                inCorso: _inCorso,
+                motivo: rete ? null : motivoSenzaRete,
+                onPressed: _salva,
+              ),
             ),
             AnimatedSize(
               duration: Ritmo.medio,

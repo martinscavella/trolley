@@ -18,10 +18,46 @@ IconData icona({required IconData ios, required IconData android}) =>
     suIOS ? ios : android;
 
 /// Una pagina con la transizione della piattaforma: su iOS si torna indietro
-/// trascinando dal bordo.
-Route<T> rotta<T>(Widget pagina) => suIOS
-    ? CupertinoPageRoute<T>(builder: (_) => pagina)
-    : MaterialPageRoute<T>(builder: (_) => pagina);
+/// trascinando dal bordo. [dalBasso] per le schermate che creano qualcosa:
+/// salgono dal basso e si chiudono con [PulsanteChiudi].
+Route<T> rotta<T>(Widget pagina, {bool dalBasso = false}) => suIOS
+    ? CupertinoPageRoute<T>(builder: (_) => pagina, fullscreenDialog: dalBasso)
+    : MaterialPageRoute<T>(builder: (_) => pagina, fullscreenDialog: dalBasso);
 
-Future<T?> apri<T>(BuildContext context, Widget pagina) =>
-    Navigator.of(context).push<T>(rotta<T>(pagina));
+Future<T?> apri<T>(
+  BuildContext context,
+  Widget pagina, {
+  bool dalBasso = false,
+}) => Navigator.of(context).push<T>(rotta<T>(pagina, dalBasso: dalBasso));
+
+/// Il pulsante in alto a sinistra di una schermata salita dal basso. Su iOS 26
+/// è un pulsante di sistema, di vetro come quello per tornare indietro.
+class PulsanteChiudi extends StatelessWidget {
+  const PulsanteChiudi({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    void chiudi() => Navigator.of(context).maybePop();
+    if (conVetroNativo) {
+      return SizedBox.square(
+        dimension: 38,
+        child: AdaptiveButton.sfSymbol(
+          onPressed: chiudi,
+          sfSymbol: const SFSymbol('xmark', size: 17),
+        ),
+      );
+    }
+    if (suIOS) {
+      return CupertinoButton(
+        padding: EdgeInsets.zero,
+        onPressed: chiudi,
+        child: const Text('Annulla'),
+      );
+    }
+    return IconButton(
+      onPressed: chiudi,
+      icon: const Icon(Icons.close),
+      tooltip: 'Chiudi',
+    );
+  }
+}

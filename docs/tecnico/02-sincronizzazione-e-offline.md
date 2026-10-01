@@ -23,6 +23,16 @@ Ogni riga della copia porta **quando è stata scaricata**. Serve per dire "aggio
 
 ---
 
+### Come l'app sa se c'è la rete
+
+Due fonti, e basta una delle due per dire che manca: il telefono, che sa se c'è una connessione, e **l'esito delle chiamate al server**, che sa se funziona davvero — il wi-fi d'albergo c'è ma non porta da nessuna parte. È da qui che i controlli che richiedono rete si spengono prima, con il motivo scritto sotto.
+
+Le richieste non si ripetono da sole: una che fallisce lo dice subito, e una ferma si interrompe dopo pochi secondi. A riprovare è l'app, nei momenti giusti: quando torna la rete, quando si riapre, quando si tira giù l'elenco.
+
+### Dopo una scrittura
+
+Le scritture che richiedono rete ricevono dal server **le righe che hanno scritto** e le mettono nella copia così come sono. Non serve una seconda chiamata per riscaricare, e se la rete cade un istante dopo la copia non resta indietro.
+
 ## 2. La coda di scrittura
 
 Quattro operazioni, e nessun'altra: **registrare una spesa**, **marcare una tappa**, **spuntare una voce**, **aggiungere una tappa**.

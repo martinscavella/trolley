@@ -11,6 +11,7 @@ import '../dati/errori.dart';
 import '../servizi.dart';
 import 'avviso_invito.dart';
 import 'benvenuto.dart';
+import 'con_la_rete.dart';
 
 /// Accesso con email e password (01-account-e-profilo.md).
 ///
@@ -39,7 +40,8 @@ class _SchermataAccessoState extends State<SchermataAccesso> {
   }
 
   Future<void> _esegui({required bool nuovoAccount}) async {
-    final auth = Servizi.of(context).supabase.auth;
+    final servizi = Servizi.of(context);
+    final auth = servizi.supabase.auth;
     final email = _email.text.trim();
     final password = _password.text;
     if (email.isEmpty || password.isEmpty) {
@@ -58,6 +60,7 @@ class _SchermataAccessoState extends State<SchermataAccesso> {
             password: password,
             emailRedirectTo: redirectAccesso,
           ),
+          rete: servizi.rete,
         );
         if (risposta.session == null && mounted) {
           setState(
@@ -69,6 +72,7 @@ class _SchermataAccessoState extends State<SchermataAccesso> {
       } else {
         await alServer(
           () => auth.signInWithPassword(email: email, password: password),
+          rete: servizi.rete,
         );
       }
     } on ErroreTrolley catch (e) {
@@ -126,16 +130,28 @@ class _SchermataAccessoState extends State<SchermataAccesso> {
                 onInvio: (_) => _esegui(nuovoAccount: false),
               ),
               const SizedBox(height: 20),
-              PulsanteGrande(
-                etichetta: 'Accedi',
-                inCorso: _inCorso,
-                onPressed: () => _esegui(nuovoAccount: false),
-              ),
-              const SizedBox(height: 6),
-              PulsanteGrande(
-                etichetta: 'Crea un account',
-                secondario: true,
-                onPressed: _inCorso ? null : () => _esegui(nuovoAccount: true),
+              // Entrare richiede la rete: senza, i pulsanti si spengono e
+              // lo dicono, invece di provare e fallire.
+              ConLaRete(
+                builder: (context, rete) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    PulsanteGrande(
+                      etichetta: 'Accedi',
+                      inCorso: _inCorso,
+                      motivo: rete ? null : motivoSenzaRete,
+                      onPressed: () => _esegui(nuovoAccount: false),
+                    ),
+                    const SizedBox(height: 6),
+                    PulsanteGrande(
+                      etichetta: 'Crea un account',
+                      secondario: true,
+                      onPressed: _inCorso || !rete
+                          ? null
+                          : () => _esegui(nuovoAccount: true),
+                    ),
+                  ],
+                ),
               ),
               AnimatedSize(
                 duration: Ritmo.medio,

@@ -4,6 +4,8 @@
 /// spostamenti** fra una tappa e l'altra: è una semplificazione dichiarata.
 library;
 
+import 'calendario.dart';
+
 /// Una giornata intera: da mezzanotte a mezzanotte.
 const inizioGiornata = Duration.zero;
 const fineGiornata = Duration(hours: 24);
@@ -49,8 +51,8 @@ List<FinestraGiorno> generaGiorni({
   required Duration oraArrivo,
   required Duration oraPartenza,
 }) {
-  final primo = _soloData(dataInizio);
-  final ultimo = _soloData(dataFine);
+  final primo = soloData(dataInizio);
+  final ultimo = soloData(dataFine);
   if (ultimo.isBefore(primo)) {
     throw ArgumentError('La data di fine viene prima di quella di inizio');
   }
@@ -91,7 +93,68 @@ bool entraNellaGiornata({
   return occupati + nuovaMinuti <= capienza.inMinutes;
 }
 
-DateTime _soloData(DateTime d) => DateTime.utc(d.year, d.month, d.day);
+/// Gli orari proposti finché la persona non dice altro: si arriva in
+/// mattinata, si riparte nel tardo pomeriggio. Precompilati, mai chiesti a
+/// vuoto (decisioni/prodotto.md, "Tetto strutturale alle tappe").
+const arrivoProposto = Duration(hours: 10);
+const partenzaProposta = Duration(hours: 18);
+
+/// Lo scheletro di un viaggio definito (glossario): le date, l'ora in cui si
+/// arriva il primo giorno e quella in cui si riparte l'ultimo. I giorni ne
+/// discendono.
+class Programma {
+  const Programma({
+    required this.inizio,
+    required this.fine,
+    required this.arrivo,
+    required this.partenza,
+  });
+
+  final DateTime inizio;
+  final DateTime fine;
+  final Duration arrivo;
+  final Duration partenza;
+
+  int get durataGiorni => giorniDiCalendario(inizio, fine);
+
+  /// Cosa non va, detto a chi lo sta scrivendo. `null` se sta in piedi.
+  String? get problema {
+    if (soloData(fine).isBefore(soloData(inizio))) {
+      return 'L\'ultimo giorno viene prima del primo.';
+    }
+    if (durataGiorni == 1 && partenza <= arrivo) {
+      return 'In un giorno solo si riparte dopo essere arrivati.';
+    }
+    if (partenza <= inizioGiornata) {
+      return 'Ripartendo a mezzanotte l\'ultimo giorno non resta tempo: '
+          'scegli un\'ora più tarda, o fai finire il viaggio il giorno prima.';
+    }
+    if (arrivo >= fineGiornata) {
+      return 'Arrivando a mezzanotte il primo giorno non resta tempo.';
+    }
+    return null;
+  }
+
+  /// I giorni, uno per data. Solo per un programma senza [problema].
+  List<FinestraGiorno> get giorni => generaGiorni(
+    dataInizio: inizio,
+    dataFine: fine,
+    oraArrivo: arrivo,
+    oraPartenza: partenza,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is Programma &&
+      soloData(other.inizio) == soloData(inizio) &&
+      soloData(other.fine) == soloData(fine) &&
+      other.arrivo == arrivo &&
+      other.partenza == partenza;
+
+  @override
+  int get hashCode =>
+      Object.hash(soloData(inizio), soloData(fine), arrivo, partenza);
+}
 
 void _controllaOra(Duration ora, String nome) {
   if (ora < inizioGiornata || ora > fineGiornata) {

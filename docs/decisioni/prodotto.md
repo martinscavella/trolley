@@ -31,6 +31,28 @@ A quel punto, dopo un sollecito ("questo viaggio è ancora un'idea?"), l'idea fi
 
 I 12 mesi del piano gratuito partono dalla **chiusura** del viaggio, quindi un'idea non si chiude mai e non viene mai alleggerita.
 
+### Il periodo si sceglie, non si scrive
+
+Il periodo di un'idea si sceglie fra **i dodici mesi che vengono e le quattro stagioni che vengono**, oppure "non lo so ancora". Non si scrive a mano.
+
+Il motivo è la regola dell'archivio: un'idea ci va quando il suo periodo è passato, e "un weekend di primavera" scritto a mano non dice quando passa. Un mese o una stagione sì. "Non lo so ancora" vale dodici mesi dalla creazione, come già deciso.
+
+Sul server il periodo resta testo, nella forma in cui si legge — `agosto 2027`, `estate 2027`, `inverno 2027–28` — e l'app sa rileggerlo. Le stagioni sono quelle meteorologiche, tre mesi interi ciascuna: l'inverno comincia a dicembre e prende il nome da due anni. Quello che si perde è la sfumatura del "weekend": si recupera con le note dell'idea, quando ci saranno.
+
+### Come si avvisa prima di archiviare
+
+"Prima di archiviare si avvisa, una volta sola" diventa così:
+
+- **Il sollecito compare nelle ultime due settimane del periodo**, e dopo: sulla scheda nell'elenco ("Ancora un'idea?") e dentro l'idea, con il giorno in cui andrà in archivio. È un avviso che sta dove si guarda, non una notifica che interrompe: quella arriva con le notifiche ([14](../prodotto/14-notifiche.md)).
+- **L'idea va in archivio quando il periodo è passato e il sollecito è stato visibile da almeno due settimane.** Chi riapre l'app dopo mesi non trova l'idea già sparita: trova il sollecito, e due settimane per decidere.
+- Il sollecito si conta **per telefono**: è la persona che deve averlo visto. Un periodo cambiato vuole un sollecito nuovo.
+
+Dall'archivio un'idea si riprende con un periodo nuovo — quello vecchio è passato — oppure fissando direttamente le date.
+
+### "In corso" e "chiuso" li decide il calendario
+
+Un viaggio definito è **in corso** dal primo all'ultimo giorno ed è **concluso** dal giorno dopo: l'app lo ricava dalle date ogni volta che lo mostra, senza scrivere niente. Sul server lo stato resta "definito" finché non arriva la chiusura ([piano di costruzione](../piano-di-costruzione.md), 4.1), che ha conseguenze sue — verifica, traguardi, riepilogo — e allora lo scriverà.
+
 ### Tetto strutturale alle tappe, invece di un campanello d'allarme
 
 Nessun monitoraggio di chi mette troppe tappe: ognuno riempie il viaggio come vuole. Il limite è nel modello — ogni tappa ha un tempo stimato, e se la somma sfora la giornata la tappa non si aggiunge.

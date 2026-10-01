@@ -9,6 +9,7 @@ environment:
 dependencies:
   adaptive_platform_ui: ^1.0.1
   app_links: ^7.2.1
+  connectivity_plus: ^7.3.1
   cupertino_icons: ^2.0.0
   drift: ^2.35.0
   drift_flutter: ^0.3.1
@@ -27,6 +28,11 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev: ^2.35.0
   build_runner: ^2.16.1
+  http: ^1.6.0
 
 flutter:
   uses-material-design: true
+  assets:
+    # Paesi e città per scegliere la destinazione, anche senza rete (ADR-005).
+    # Si rigenera con tool/genera_destinazioni.dart.
+    - assets/destinazioni.tsv

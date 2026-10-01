@@ -243,6 +243,8 @@ class Campo extends StatelessWidget {
     this.correzione = true,
     this.azione,
     this.onInvio,
+    this.onCambia,
+    this.fuoco = false,
   });
 
   final TextEditingController controller;
@@ -255,6 +257,10 @@ class Campo extends StatelessWidget {
   final bool correzione;
   final TextInputAction? azione;
   final ValueChanged<String>? onInvio;
+  final ValueChanged<String>? onCambia;
+
+  /// Prende la tastiera appena compare.
+  final bool fuoco;
 
   @override
   Widget build(BuildContext context) {
@@ -284,6 +290,11 @@ class Campo extends StatelessWidget {
         autocorrect: correzione,
         textInputAction: azione,
         onSubmitted: onInvio,
+        onChanged: onCambia,
+        autofocus: fuoco,
+        clearButtonMode: onCambia == null
+            ? OverlayVisibilityMode.never
+            : OverlayVisibilityMode.editing,
       );
     }
     return TextField(
@@ -306,6 +317,8 @@ class Campo extends StatelessWidget {
       autocorrect: correzione,
       textInputAction: azione,
       onSubmitted: onInvio,
+      onChanged: onCambia,
+      autofocus: fuoco,
     );
   }
 }
@@ -378,6 +391,8 @@ class PulsanteGrande extends StatelessWidget {
     required this.onPressed,
     this.secondario = false,
     this.inCorso = false,
+    this.motivo,
+    this.pericolo = false,
   });
 
   final String etichetta;
@@ -387,22 +402,95 @@ class PulsanteGrande extends StatelessWidget {
   /// Mentre l'azione è in corso il pulsante si spegne e lo dice.
   final bool inCorso;
 
+  /// Perché il pulsante è spento, scritto sotto: un controllo che non si può
+  /// usare lo dice prima, non dopo (00-architettura.md, regola 3).
+  final String? motivo;
+
+  /// Un'azione che toglie qualcosa: in rosso.
+  final bool pericolo;
+
   @override
   Widget build(BuildContext context) {
     final t = Tavolozza.of(context);
-    return SizedBox(
+    final attivo = !inCorso && motivo == null && onPressed != null;
+    final colore = pericolo ? t.pericolo : t.accento;
+    final pulsante = SizedBox(
       width: double.infinity,
       child: AdaptiveButton(
         label: inCorso ? 'Un attimo…' : etichetta,
-        onPressed: inCorso ? null : onPressed,
-        enabled: !inCorso && onPressed != null,
+        onPressed: attivo ? onPressed : null,
+        enabled: attivo,
         style: secondario
             ? AdaptiveButtonStyle.plain
             : AdaptiveButtonStyle.filled,
         size: AdaptiveButtonSize.large,
-        color: t.accento,
-        textColor: secondario ? t.accento : t.suAccento,
+        color: colore,
+        textColor: secondario ? colore : t.suAccento,
         useSmoothRectangleBorder: false,
+      ),
+    );
+    return AnimatedSize(
+      duration: Ritmo.medio,
+      curve: Ritmo.curva,
+      alignment: Alignment.topCenter,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          pulsante,
+          if (motivo != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              motivo!,
+              textAlign: TextAlign.center,
+              style: Testi.didascalia.copyWith(color: t.testoSecondario),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Una scelta fra poche: una capsula che si accende quando è scelta. Per i
+/// periodi di un'idea, per esempio.
+class Gettone extends StatelessWidget {
+  const Gettone({
+    super.key,
+    required this.etichetta,
+    required this.scelto,
+    required this.onTap,
+  });
+
+  final String etichetta;
+  final bool scelto;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Tavolozza.of(context);
+    return Semantics(
+      selected: scelto,
+      child: Premibile(
+        onTap: onTap,
+        scala: 0.94,
+        etichetta: etichetta,
+        child: AnimatedContainer(
+          duration: Ritmo.breve,
+          curve: Ritmo.curva,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: ShapeDecoration(
+            color: scelto ? t.accento : t.riempimento,
+            shape: const StadiumBorder(),
+          ),
+          child: Text(
+            etichetta,
+            style: Testi.secondario.copyWith(
+              color: scelto ? t.suAccento : t.testo,
+              fontWeight: scelto ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
+        ),
       ),
     );
   }

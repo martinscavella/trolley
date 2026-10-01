@@ -104,11 +104,8 @@ class _TrolleyAppState extends State<TrolleyApp> {
           ),
         );
     unawaited(_servizi.misurazione.invia());
-    if (_invitoInAttesa != null) {
-      await _apriInvito();
-    } else {
-      unawaited(_servizi.archivio.aggiornaCopia().catchError((_) {}));
-    }
+    // La copia la aggiorna l'elenco dei viaggi, che compare adesso.
+    if (_invitoInAttesa != null) await _apriInvito();
   }
 
   void _cambiaFase(_Fase fase) {

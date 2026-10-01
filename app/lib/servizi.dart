@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'dati/archivio.dart';
 import 'dati/database.dart';
+import 'dati/rete.dart';
 import 'invito/ingresso_da_invito.dart';
 import 'misurazione/misurazione.dart';
 
@@ -15,6 +16,7 @@ class Servizi extends InheritedWidget {
     required this.archivio,
     required this.misurazione,
     required this.ingresso,
+    required this.rete,
     required super.child,
   });
 
@@ -23,6 +25,7 @@ class Servizi extends InheritedWidget {
   final Archivio archivio;
   final Misurazione misurazione;
   final IngressoDaInvito ingresso;
+  final Rete rete;
 
   static Servizi of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<Servizi>()!;
