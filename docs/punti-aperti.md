@@ -51,6 +51,19 @@ La fase 1.2 (tappe: durata, ordine, stato, la coda per aggiungerle e segnarle se
 | **Spostare una tappa trascinandola in un altro giorno** | Oggi si sposta dal foglio della tappa, scegliendo il giorno; trascinare vale dentro la giornata | Se la beta lo chiede |
 | **La capienza di una giornata intera è di 24 ore** | È la regola scritta (01): in mezzo, giornata intera. Ma con 24 ore il "non entra" capita quasi solo il primo e l'ultimo giorno. Se si vuole che il tetto morda, serve una finestra di veglia (per esempio 8–22) | Da decidere |
 
+### Rimasto fuori dalla 1.3
+
+La fase 1.3 (documenti sul telefono: scansione, foto, file; elenco con oggi in cima; a un tocco dal viaggio in corso) è costruita, solo iOS. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Android** | Il canale `trolley/documenti` esiste solo in Swift ([ADR-008](tecnico/adr/008-documenti-sul-telefono.md)): va scritto in Kotlin, e va capito il backup (l'Auto Backup si ferma a 25 MB per app) | Prima della prima build Android |
+| **Schermata di chiusura account** | 03 vuole che dica che disinstallare porta via i documenti. Oggi l'avviso sta al primo documento e nel dialogo "Esci"; la chiusura account non esiste ancora | Con la chiusura account |
+| **Rimuovere un viaggio dal telefono** | `eliminaViaggio` cancella cartella e righe, ma nessun gesto oggi toglie un viaggio: si chiamerà uscendo da un viaggio (2.1). Un viaggio che sparisse dal server lascerebbe i documenti sul disco, non visibili: si è scelto di non cancellarli da soli, perché sono l'unica copia | Fase 2.1 |
+| **Il documento di adesso** | La schermata "adesso" mostrerà il documento agganciato a questo momento ([09](prodotto/09-durante-il-viaggio.md)) | Fase 3.1 |
+| **Luminosità al massimo** mostrando un codice a barre | Comodo al gate; non chiesto dai documenti | Se la beta lo chiede |
+| **Rivedere sulla tela le schermate 10–14** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.3 |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.

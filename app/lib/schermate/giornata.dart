@@ -67,6 +67,7 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
     if (_avviata) return;
     _avviata = true;
     final archivio = Servizi.of(context).archivio;
+    unawaited(segnaAperturaSenzaRete(context, 'giornata'));
     _viaggio = archivio.osservaViaggio(widget.viaggioId);
     _giorni = archivio.osservaGiorni(widget.viaggioId);
     _tappe = archivio.osservaTappe(widget.viaggioId);

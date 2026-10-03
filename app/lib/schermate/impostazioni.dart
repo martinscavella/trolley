@@ -37,13 +37,21 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
   }
 
   Future<void> _esci() async {
-    final auth = Servizi.of(context).supabase.auth;
+    final servizi = Servizi.of(context);
+    final auth = servizi.supabase.auth;
+    // I documenti non sono sul server: chi esce deve sapere dove restano.
+    final documenti = await servizi.documenti.osservaQuanti().first;
+    if (!mounted) return;
     await AdaptiveAlertDialog.show(
       context: context,
       title: 'Vuoi uscire?',
-      message:
-          'I tuoi viaggi restano salvati: li ritrovi quando rientri, anche da '
-          'un altro telefono.',
+      message: [
+        'I tuoi viaggi restano salvati: li ritrovi quando rientri, anche da '
+            'un altro telefono.',
+        if (documenti > 0)
+          'I documenti invece restano solo su questo telefono: li ritrovi '
+              'qui, rientrando.',
+      ].join(' '),
       actions: [
         AlertAction(
           title: 'Annulla',

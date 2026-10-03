@@ -119,7 +119,16 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 
 ### `documento` — locale, mai sincronizzato
 
-`viaggio_id`, `giorno_id`, `nome`, `percorso_locale`, `proprietario_id`.
+| Campo | Note |
+|---|---|
+| `viaggio_id`, `giorno_id` | Nessun giorno: serve per tutto il viaggio. Un giorno uscito dalle date vale come nessuno |
+| `ora` | Opzionale, solo con un giorno |
+| `nome` | Lo sceglie la persona; non entra mai in un evento |
+| `percorso_locale` | **Relativo** alla cartella dell'app, mai assoluto |
+| `formato` | `pdf` · `immagine` |
+| `pagine` | Per un PDF |
+| `sorgente` | `scansione` · `foto` · `file` |
+| `proprietario_id`, `creato_il` | |
 
 **Invariante**: nessun percorso di codice invia questa entità o il file a cui punta. Non ha `id` condiviso perché non esiste per nessun altro.
 

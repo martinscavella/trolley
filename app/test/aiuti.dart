@@ -5,6 +5,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:drift/drift.dart' show DatabaseConnection;
@@ -18,9 +19,13 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthClientOptions, SupabaseClient;
 import 'package:trolley/aspetto/tema.dart';
 import 'package:trolley/configurazione.dart';
+import 'package:trolley/dati/acquisizione.dart';
 import 'package:trolley/dati/archivio.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/destinazioni.dart';
+import 'package:trolley/dati/documenti.dart';
+import 'package:trolley/dati/errori.dart';
+import 'package:trolley/dati/file_del_telefono.dart';
 import 'package:trolley/dati/rete.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
@@ -178,6 +183,9 @@ class ServerFinto {
   final giorni = <Map<String, Object?>>[];
   final partecipazioni = <Map<String, Object?>>[];
   final tappe = <Map<String, Object?>>[];
+
+  /// Gli altri: degli altri il server manda solo il nome.
+  final utenti = <Map<String, Object?>>[];
   final richieste = <http.Request>[];
 
   /// Percorsi con una risposta data dal test, che vince sulle altre.
@@ -218,6 +226,8 @@ class ServerFinto {
         return risposta(viaggi);
       case 'GET /rest/v1/partecipazione':
         return risposta(partecipazioni);
+      case 'GET /rest/v1/utente':
+        return risposta(_filtra(utenti, r.url.queryParameters));
       case 'GET /rest/v1/giorno':
         return risposta(_filtra(giorni, r.url.queryParameters));
       case 'GET /rest/v1/tappa':
@@ -447,6 +457,105 @@ http.Response risposta(Object? corpo, [int stato = 200]) =>
 Map<String, dynamic> corpoDi(http.Request r) =>
     jsonDecode(r.body) as Map<String, dynamic>;
 
+/// Il telefono finto per i documenti: protegge come gli si dice, conta le
+/// pagine, "comprime" copiando, e disegna ogni pagina come un pixel bianco.
+class TelefonoFinto implements FileDelTelefono {
+  /// Come resta un file protetto: si cambia per provare il rifiuto.
+  StatoFile stato = const StatoFile(protezione: 'completa', nelBackup: true);
+  final protetti = <String>[];
+  final compressi = <String>[];
+  int pagineDeiPdf = 2;
+
+  /// Lanciato contando le pagine: un PDF con la password, per esempio.
+  ErroreTrolley? erroreDelPdf;
+
+  /// Comprimere trova il disco pieno.
+  bool discoPieno = false;
+  bool codiceDiSblocco = true;
+
+  @override
+  Future<StatoFile> proteggi(String percorso) async {
+    protetti.add(percorso);
+    return stato;
+  }
+
+  @override
+  Future<int> pagine(String percorso) async {
+    if (erroreDelPdf case final errore?) throw errore;
+    return pagineDeiPdf;
+  }
+
+  @override
+  Future<Uint8List> pagina(
+    String percorso, {
+    required int indice,
+    required int larghezza,
+  }) async => pixelBianco;
+
+  @override
+  Future<void> comprimi({
+    required String da,
+    required String a,
+    int lato = 2800,
+    double qualita = 0.85,
+  }) async {
+    if (discoPieno) {
+      // Come lo dice il sistema: a metà file.
+      await File(a).writeAsString('meta');
+      throw FileSystemException(
+        'No space left on device',
+        a,
+        const OSError('No space left on device', 28),
+      );
+    }
+    compressi.add(da);
+    await File(da).copy(a);
+  }
+
+  @override
+  Future<bool> haCodiceDiSblocco() async => codiceDiSblocco;
+}
+
+/// Un PNG di un pixel bianco: quello che "disegna" il telefono finto.
+final pixelBianco = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC',
+);
+
+/// Un'acquisizione finta: invece di aprire la fotocamera o i selettori crea
+/// un file nella sua cartella, come farebbe il sistema.
+class AcquisizioneFinta implements Acquisizione {
+  AcquisizioneFinta(this.cartella);
+
+  final Directory cartella;
+
+  /// Il nome del file che arriva da ciascuna sorgente; `null` per una persona
+  /// che ci ripensa.
+  final nomi = <Sorgente, String?>{
+    Sorgente.scansione: 'DOCUMENT_SCAN_20261003-101500.pdf',
+    Sorgente.foto: 'IMG_0042.HEIC',
+    Sorgente.file: 'Carta imbarco.pdf',
+  };
+  final chieste = <Sorgente>[];
+  int pulizie = 0;
+
+  @override
+  Future<FileAcquisito?> acquisisci(Sorgente sorgente) async {
+    chieste.add(sorgente);
+    final nome = nomi[sorgente];
+    if (nome == null) return null;
+    final file = File('${cartella.path}/$nome');
+    await file.writeAsString('contenuto di $nome');
+    return FileAcquisito(
+      percorso: file.path,
+      sorgente: sorgente,
+      nome: sorgente == Sorgente.scansione ? null : nome,
+    );
+  }
+
+  @override
+  Future<void> pulisci() async => pulizie++;
+}
+
 /// Tutto quello che serve a una schermata per funzionare in un test: il
 /// database in memoria, il server finto, la rete comandabile.
 class Ambiente {
@@ -471,6 +580,19 @@ class Ambiente {
     versioneApp: 'prova',
   );
 
+  /// La cartella dell'app per i documenti, e quella dove "arrivano" i file.
+  late final cartella = Directory.systemTemp.createTempSync('trolley-prova');
+  final telefono = TelefonoFinto();
+  late final documenti = CartellaDocumenti(
+    db,
+    telefono: telefono,
+    cartellaApp: () async => Directory('${cartella.path}/app')..createSync(),
+    io: () => server.supabase.auth.currentUser?.id ?? idDiProva,
+  );
+  late final acquisizione = AcquisizioneFinta(
+    Directory('${cartella.path}/arrivi')..createSync(),
+  );
+
   Widget servizi(Widget figlio) => Servizi(
     db: db,
     supabase: server.supabase,
@@ -478,6 +600,8 @@ class Ambiente {
     misurazione: misurazione,
     ingresso: ingresso,
     rete: rete,
+    documenti: documenti,
+    acquisizione: acquisizione,
     child: figlio,
   );
 
@@ -528,5 +652,6 @@ class Ambiente {
     await rete.chiudi();
     await ingresso.controllo.close();
     await db.close();
+    if (cartella.existsSync()) cartella.deleteSync(recursive: true);
   }
 }

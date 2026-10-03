@@ -4,6 +4,7 @@
 library;
 
 import '../dominio/calendario.dart';
+import '../dominio/documenti.dart';
 import '../dominio/giornate.dart';
 import '../dominio/periodo.dart';
 import '../dominio/stato_viaggio.dart';
@@ -68,4 +69,12 @@ extension LetturaTappa on Tappa {
 
   /// L'ora a cui comincia, se la si è detta.
   Duration? get ora => leggiOra(oraInizio);
+}
+
+extension LetturaDocumento on Documento {
+  FormatoDocumento get formatoDocumento => FormatoDocumento.leggi(formato);
+  Sorgente get sorgenteDocumento => Sorgente.leggi(sorgente);
+
+  /// A che ora serve, se si è detto.
+  Duration? get momento => leggiOra(ora);
 }

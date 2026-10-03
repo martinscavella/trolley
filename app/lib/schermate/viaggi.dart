@@ -68,6 +68,7 @@ class _SchermataViaggiState extends State<SchermataViaggi>
       _rete = Servizi.of(context).rete.cambi.listen((disponibile) {
         if (disponibile) _aggiorna();
       });
+      unawaited(segnaAperturaSenzaRete(context, 'viaggi'));
       _aggiorna();
     });
   }

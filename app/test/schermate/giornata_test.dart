@@ -138,14 +138,20 @@ void main() {
 
     final eventi = await ambiente.eventi(tester);
     expect(eventi.map((e) => e.nome), [
+      // Aprire la giornata senza rete si conta (H4).
+      'apertura_senza_rete',
       'primo_elemento_aggiunto',
       'funzione_usata_nel_viaggio',
     ]);
+    expect(jsonDecode(eventi.first.proprieta), {
+      'schermata': 'giornata',
+      'mancante': null,
+    });
     // Azioni, mai contenuti: il titolo della tappa non c'è.
     for (final e in eventi) {
       expect(e.proprieta, isNot(contains('Torre')));
     }
-    expect(jsonDecode(eventi.first.proprieta), containsPair('tipo', 'tappa'));
+    expect(jsonDecode(eventi[1].proprieta), containsPair('tipo', 'tappa'));
   });
 
   testWidgets('una tappa che non entra non si aggiunge: si dice quanto manca '

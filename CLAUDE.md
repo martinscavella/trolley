@@ -14,7 +14,7 @@ La documentazione in `docs/` è la fonte di verità: si parte da [docs/README.md
 
 | Cartella | Cosa | Comandi |
 |---|---|---|
-| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale, coda dei gesti senza rete (`coda.dart`), server, rete e destinazioni, `lib/aspetto/` colori, testi, movimento e componenti, `lib/schermate/`. `tool/genera_destinazioni.dart` rigenera l'elenco incorporato delle destinazioni (ADR-005) | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart`. Sul telefono: `flutter build ios --release` e `xcrun devicectl device install app` |
+| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale, coda dei gesti senza rete (`coda.dart`), documenti sul telefono (`documenti.dart`, mai in rete), server, rete e destinazioni, `lib/aspetto/` colori, testi, movimento e componenti, `lib/schermate/`. `tool/genera_destinazioni.dart` rigenera l'elenco incorporato delle destinazioni (ADR-005) | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart`. Sul telefono: `flutter build ios --release` e `xcrun devicectl device install app`. Il canale nativo dei documenti (`ios/Runner/DocumentiDelTelefono.swift`) si prova sull'iPhone con `xcodebuild test` (ADR-008) |
 | `supabase/migrations/` | Lo schema del server, una migrazione per file | Applicate a `trolley-db` (ref `nhdgxlynnudwkmxrrokp`). Il nome del file porta la versione registrata sul server |
 | `supabase/tests/` | Le prove delle regole di accesso | Girano dentro un blocco che si annulla da solo: si possono lanciare anche sul progetto remoto |
 | `sito/` | La pagina dei link d'invito, su `trolleyapp.vercel.app` | `vercel deploy --prod` dalla cartella |

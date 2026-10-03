@@ -7,6 +7,7 @@ import '../dati/database.dart';
 import '../dati/destinazioni.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
+import '../dominio/documenti.dart';
 import '../dominio/giornate.dart';
 import '../dominio/periodo.dart';
 import '../dominio/stato_viaggio.dart';
@@ -186,6 +187,10 @@ String nomeDelGiorno(DateTime d) =>
 String giornoBreve(DateTime d) =>
     '${conMaiuscola(giornoDellaSettimana(d))} ${d.day}';
 
+/// Un giorno ancora più in breve, per una capsula: `Sab 11`.
+String giornoCorto(DateTime d) =>
+    '${conMaiuscola(giornoDellaSettimana(d).substring(0, 3))} ${d.day}';
+
 /// Quanto dura una giornata del viaggio, a parole: `dalle 10:00`, `fino alle
 /// 18:00`, `dalle 10:00 alle 18:00`, `tutto il giorno`.
 String finestraDelGiorno(FinestraGiorno g) {
@@ -223,4 +228,40 @@ String quantoFa(DateTime quando, DateTime adesso) {
       .difference(soloData(quando.toLocal()))
       .inDays;
   return giorni <= 1 ? 'ieri' : '$giorni giorni fa';
+}
+
+/// Che cos'è un documento, in breve: `PDF · 2 pagine`, `Scansione`, `Foto`.
+String dettaglioDocumento({
+  required FormatoDocumento formato,
+  required Sorgente sorgente,
+  int? pagine,
+}) {
+  final cosa = switch (sorgente) {
+    Sorgente.scansione => 'Scansione',
+    Sorgente.foto => 'Foto',
+    Sorgente.file => formato == FormatoDocumento.pdf ? 'PDF' : 'Immagine',
+  };
+  return pagine != null && pagine > 1 ? '$cosa · $pagine pagine' : cosa;
+}
+
+/// Il titolo di un gruppo dell'elenco dei documenti: `OGGI · VENERDÌ 10`,
+/// `PER TUTTO IL VIAGGIO`, `DOMENICA 12 OTTOBRE`.
+String titoloGruppo(TipoGruppo tipo, DateTime? data) => switch (tipo) {
+  TipoGruppo.oggi => 'Oggi · ${giornoBreve(data!)}',
+  TipoGruppo.domani => 'Domani · ${giornoBreve(data!)}',
+  TipoGruppo.tuttoIlViaggio => 'Per tutto il viaggio',
+  TipoGruppo.giorno || TipoGruppo.passato => nomeDelGiorno(data!),
+}.toUpperCase();
+
+/// Quando serve un documento, detto rispetto a [oggi]: `Oggi alle 07:05`,
+/// `Domani`, `Sabato 11 ottobre alle 10:00`, `Per tutto il viaggio`.
+String quandoServe({DateTime? data, Duration? alle, required DateTime oggi}) {
+  if (data == null) return 'Per tutto il viaggio';
+  final distanza = soloData(data).difference(soloData(oggi)).inDays;
+  final giorno = switch (distanza) {
+    0 => 'Oggi',
+    1 => 'Domani',
+    _ => nomeDelGiorno(data),
+  };
+  return alle == null ? giorno : '$giorno alle ${ora(alle)}';
 }

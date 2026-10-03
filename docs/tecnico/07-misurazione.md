@@ -46,6 +46,8 @@ Non essendoci esperimenti prima di costruire, **questa è l'unica verifica rimas
 | `interesse_piano` | quale piano | **H6** — >10% degli attivati |
 | `conflitto_mostrato` · `conflitto_risolto` | tipo di entità, scelta fatta | Salute della sincronizzazione |
 
+Valori in uso: `primo_elemento_aggiunto.tipo` e `primo_contributo_invitato.tipo` sono `tappa` o `documento`; `funzione_usata_nel_viaggio.funzione` è `itinerario` o `documenti`; `apertura_senza_rete.schermata` è `viaggi`, `viaggio`, `giornata`, `documenti` o `documento`, e `mancante` è `viaggio` quando il viaggio non è sul telefono, `documento` quando il suo file non c'è più, altrimenti vuoto.
+
 Il campo **"quale condizione di verifica è mancata"** è il più importante della tabella. La regola di verifica è severa per scelta, e il rischio probabile è che non la superi quasi nessuno: senza sapere *dove* si rompe, l'unica reazione possibile sarebbe ammorbidirla — che è la reazione sbagliata.
 
 ---

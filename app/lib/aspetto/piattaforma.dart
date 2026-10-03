@@ -34,3 +34,11 @@ Future<T?> apri<T>(
 }) => dalBasso
     ? apriFoglio<T>(context, pagina)
     : Navigator.of(context).push<T>(rotta<T>(pagina));
+
+/// Apre [pagina] a tutto schermo, salendo dal basso: un documento da guardare.
+Future<T?> apriAPienoSchermo<T>(BuildContext context, Widget pagina) =>
+    Navigator.of(context).push<T>(
+      suIOS
+          ? CupertinoPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true)
+          : MaterialPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true),
+    );

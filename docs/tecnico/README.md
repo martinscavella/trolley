@@ -30,3 +30,4 @@ Le decisioni architetturali che vale la pena motivare per iscritto vivono in `ad
 - [**ADR-005** — Dati geografici](adr/005-dati-geografici.md) ✅
 - [**ADR-006** — Mappe, percorsi e il tetto alla spesa](adr/006-mappe-e-percorsi.md) ✅ *(fornitore da confermare alla realizzazione)*
 - [**ADR-007** — Interfaccia: componenti di sistema e Liquid Glass](adr/007-interfaccia-e-liquid-glass.md) ✅
+- [**ADR-008** — Documenti sul telefono: dove, come si proteggono, come si leggono](adr/008-documenti-sul-telefono.md) ✅

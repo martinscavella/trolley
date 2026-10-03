@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 
 /// Ricostruisce quando la rete va e viene. Serve ai controlli che la
@@ -19,4 +20,20 @@ class ConLaRete extends StatelessWidget {
       builder: (context, _) => builder(context, rete.disponibile),
     );
   }
+}
+
+/// Una schermata aperta senza rete, e il contenuto che mancava se mancava
+/// (07: `apertura_senza_rete`, per H4). Con la rete non si registra niente.
+/// Azioni, mai contenuti: il nome della schermata, non quello che mostra.
+Future<void> segnaAperturaSenzaRete(
+  BuildContext context,
+  String schermata, {
+  String? mancante,
+}) async {
+  final servizi = Servizi.of(context);
+  if (servizi.rete.disponibile) return;
+  await servizi.misurazione.registra(Eventi.aperturaSenzaRete, {
+    'schermata': schermata,
+    'mancante': mancante,
+  });
 }

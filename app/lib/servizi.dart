@@ -1,8 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'dati/acquisizione.dart';
 import 'dati/archivio.dart';
 import 'dati/database.dart';
+import 'dati/documenti.dart';
 import 'dati/rete.dart';
 import 'invito/ingresso_da_invito.dart';
 import 'misurazione/misurazione.dart';
@@ -17,6 +19,8 @@ class Servizi extends InheritedWidget {
     required this.misurazione,
     required this.ingresso,
     required this.rete,
+    required this.documenti,
+    required this.acquisizione,
     required super.child,
   });
 
@@ -26,6 +30,12 @@ class Servizi extends InheritedWidget {
   final Misurazione misurazione;
   final IngressoDaInvito ingresso;
   final Rete rete;
+
+  /// I documenti, che stanno solo sul telefono (dati/documenti.dart).
+  final CartellaDocumenti documenti;
+
+  /// Da dove arriva un documento nuovo: scansione, foto, file.
+  final Acquisizione acquisizione;
 
   static Servizi of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<Servizi>()!;

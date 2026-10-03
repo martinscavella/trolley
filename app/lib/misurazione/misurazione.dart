@@ -29,6 +29,7 @@ abstract final class Eventi {
   static const funzioneUsataNelViaggio = 'funzione_usata_nel_viaggio';
   static const primoContributoInvitato = 'primo_contributo_invitato';
   static const tappaMarcata = 'tappa_marcata';
+  static const aperturaSenzaRete = 'apertura_senza_rete';
 }
 
 class Misurazione {

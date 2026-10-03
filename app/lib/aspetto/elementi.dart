@@ -718,10 +718,14 @@ class Avviso extends StatelessWidget {
     this.inizio,
     this.azioni = const [],
     this.errore = false,
+    this.fondo,
   });
 
   final IconData icona;
   final String testo;
+
+  /// Il fondo al posto del bianco: dentro un foglio bianco, il grigio dei campi.
+  final Color? fondo;
 
   /// Il colore dell'icona: grafite se non si dice altro.
   final Color? colore;
@@ -739,7 +743,7 @@ class Avviso extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     decoration: BoxDecoration(
-      color: errore ? Colori.rosa : Colori.bianco,
+      color: fondo ?? (errore ? Colori.rosa : Colori.bianco),
       borderRadius: BorderRadius.circular(16),
     ),
     child: Column(

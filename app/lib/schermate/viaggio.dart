@@ -29,6 +29,7 @@ import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'date_viaggio.dart';
+import 'documenti.dart';
 import 'giornata.dart';
 import 'impostazioni.dart';
 import 'nuovo_viaggio.dart';
@@ -58,10 +59,18 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
     super.initState();
     // Aprire il viaggio aggiorna la copia (02 §1). Senza rete resta quella che
     // c'è, e va bene così.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        unawaited(
-          Servizi.of(context).archivio.aggiornaCopia().catchError((_) {}),
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final archivio = Servizi.of(context).archivio;
+      unawaited(archivio.aggiornaCopia().catchError((_) {}));
+      // Senza rete, si conta l'apertura e se il viaggio mancava (07, H4).
+      final c = context;
+      final presente = await archivio.osservaViaggio(widget.viaggioId).first;
+      if (c.mounted) {
+        await segnaAperturaSenzaRete(
+          c,
+          'viaggio',
+          mancante: presente == null ? 'viaggio' : null,
         );
       }
     });
@@ -159,6 +168,13 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
               children: [
                 _Testata(viaggio: viaggio, stato: stato).entra(context),
                 if (stato == StatoViaggio.idea) _Sollecito(viaggio: viaggio),
+                if (!stato.haGiorni) _DocumentiInAttesa(viaggioId: viaggio.id),
+                if (stato.haGiorni) ...[
+                  const SizedBox(height: 28),
+                  SezioneDocumenti(
+                    viaggio: viaggio,
+                  ).entra(context, ritardo: Ritmo.passo),
+                ],
                 if (stato.haGiorni) ...[
                   const SizedBox(height: 28),
                   const TitoloSezione('Giorni')
@@ -353,6 +369,38 @@ class _Testata extends StatelessWidget {
       },
     );
   }
+}
+
+/// Un viaggio tornato idea con dei documenti: restano sul telefono, fuori
+/// vista finché non ci sono di nuovo le date (02-il-viaggio.md, casi limite).
+/// In un'idea non se ne aggiungono: hanno bisogno dei giorni (07, casi limite).
+class _DocumentiInAttesa extends StatelessWidget {
+  const _DocumentiInAttesa({required this.viaggioId});
+
+  final String viaggioId;
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<List<Documento>>(
+    stream: Servizi.of(context).documenti.osserva(viaggioId),
+    builder: (context, documenti) {
+      final n = documenti.data?.length ?? 0;
+      if (n == 0) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: Avviso(
+          icona: icona(
+            ios: CupertinoIcons.doc_text,
+            android: Icons.description_outlined,
+          ),
+          testo: n == 1
+              ? 'Un documento resta su questo telefono: torna in vista quando '
+                    'fissate le date.'
+              : '$n documenti restano su questo telefono: tornano in vista '
+                    'quando fissate le date.',
+        ),
+      );
+    },
+  );
 }
 
 /// "È ancora un'idea?": nelle ultime due settimane del periodo, e dopo. È

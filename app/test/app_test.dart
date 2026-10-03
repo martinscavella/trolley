@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
 import 'package:trolley/app.dart';
 import 'package:trolley/dati/archivio.dart';
 import 'package:trolley/dati/database.dart';
+import 'package:trolley/dati/documenti.dart';
 import 'package:trolley/dati/errori.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
@@ -57,6 +59,13 @@ void main() {
         misurazione: Misurazione(db, supabase, versioneApp: 'prova'),
         ingresso: ingresso,
         rete: ReteFinta(disponibile: conRete),
+        documenti: CartellaDocumenti(
+          db,
+          telefono: TelefonoFinto(),
+          cartellaApp: () async => Directory.systemTemp,
+          io: () => null,
+        ),
+        acquisizione: AcquisizioneFinta(Directory.systemTemp),
         child: const TrolleyApp(),
       ),
     );

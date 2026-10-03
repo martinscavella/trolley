@@ -6,7 +6,7 @@ I documenti sono il dato più delicato che Trolley tocca — carte d'identità, 
 
 ## Dove stanno
 
-Nella cartella documenti del contenitore dell'app, in una sottocartella per viaggio. Solo il percorso e i metadati finiscono nel database locale; il file sta sul disco.
+Nella cartella `Application Support/documenti` del contenitore dell'app, in una sottocartella per viaggio ([ADR-008](adr/008-documenti-sul-telefono.md)): entra nel backup come `Documents`, ma non compare mai nell'app File. Solo il percorso e i metadati finiscono nel database locale; il file sta sul disco.
 
 Due proprietà vengono gratis dal sistema, e vanno **verificate invece che date per scontate**:
 
@@ -14,6 +14,8 @@ Due proprietà vengono gratis dal sistema, e vanno **verificate invece che date 
 - rientra nel backup di sistema, quindi cambiare telefono li porta con sé.
 
 Se la verifica dicesse il contrario su una delle due piattaforme, la cifratura va aggiunta esplicitamente: è un requisito, non un vantaggio ereditato.
+
+**Verificato su iOS il 3 ottobre 2026** (iPhone 18 Pro, iOS 27.0.1, prove in `ios/RunnerTests`): ogni documento prende esplicitamente la classe `complete`, più forte di quella predefinita, e resta nel backup; l'app rilegge entrambe le cose a ogni salvataggio e rifiuta il documento se non tornano. Android: da verificare, e con ogni probabilità il backup automatico (25 MB per app) **non** li porta.
 
 ---
 

@@ -72,8 +72,7 @@ void main() {
     },
   );
 
-  test('passare dalla versione 1 alla 2 rifà la copia e lascia la coda '
-      'com\'era', () async {
+  test('passare dalla versione 1 rifà la copia e lascia la coda com\'era', () async {
     final cartella = await Directory.systemTemp.createTemp('trolley');
     addTearDown(() => cartella.delete(recursive: true));
     final file = File('${cartella.path}/trolley.sqlite');
@@ -126,12 +125,106 @@ void main() {
       containsAll(['tipo', 'creato_da', 'creato_il']),
     );
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 2);
+    expect(versione.read<int>('user_version'), 3);
+  });
+
+  test('passare dalla versione 2 alla 3 aggiunge i documenti e non tocca né la '
+      'copia né la coda', () async {
+    final cartella = await Directory.systemTemp.createTemp('trolley');
+    addTearDown(() => cartella.delete(recursive: true));
+    final file = File('${cartella.path}/trolley.sqlite');
+
+    // Un telefono con la versione 2: un viaggio nella copia, un gesto offline.
+    final prima = DatabaseLocale(NativeDatabase(file));
+    final adesso = DateTime.utc(2026, 10, 2, 9);
+    await prima
+        .into(prima.viaggi)
+        .insert(
+          ViaggiCompanion.insert(
+            id: 'v1',
+            versione: 3,
+            scaricatoIl: adesso,
+            stato: 'definito',
+            creatoreId: 'u1',
+            importato: false,
+            verificato: false,
+            creatoIl: adesso.toIso8601String(),
+          ),
+        );
+    await prima
+        .into(prima.codaScrittura)
+        .insert(
+          CodaScritturaCompanion.insert(
+            id: 'op1',
+            viaggioId: 'v1',
+            gesto: GestoOffline.marcaTappa,
+            carico: '{"tappa_id":"t1","stato":"completata"}',
+            creataIl: adesso,
+          ),
+        );
+    await prima.close();
+
+    // Com'era la versione 2: senza la tabella dei documenti.
+    final dopo = DatabaseLocale(
+      NativeDatabase(
+        file,
+        setup: (grezzo) => grezzo
+          ..execute('DROP TABLE documento')
+          ..execute('PRAGMA user_version = 2'),
+      ),
+    );
+    addTearDown(dopo.close);
+
+    // Senza rete la copia deve restare: la versione 3 non la butta.
+    expect((await dopo.select(dopo.viaggi).get()).single.versione, 3);
+    final coda = await dopo.select(dopo.codaScrittura).get();
+    expect(coda.single.carico, '{"tappa_id":"t1","stato":"completata"}');
+    await dopo
+        .into(dopo.documenti)
+        .insert(
+          DocumentiCompanion.insert(
+            id: 'd1',
+            viaggioId: 'v1',
+            nome: 'Carta d\'imbarco',
+            percorsoLocale: 'documenti/v1/d1.pdf',
+            formato: 'pdf',
+            sorgente: 'file',
+            proprietarioId: 'u1',
+            creatoIl: adesso,
+          ),
+        );
+    expect(await dopo.select(dopo.documenti).get(), hasLength(1));
+    final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
+    expect(versione.read<int>('user_version'), 3);
+  });
+
+  test('ricreare la copia non tocca i documenti', () async {
+    await db
+        .into(db.documenti)
+        .insert(
+          DocumentiCompanion.insert(
+            id: 'd1',
+            viaggioId: 'v1',
+            nome: 'Passaporto',
+            percorsoLocale: 'documenti/v1/d1.jpg',
+            formato: 'immagine',
+            sorgente: 'scansione',
+            proprietarioId: 'u1',
+            creatoIl: DateTime.utc(2026, 10, 3),
+          ),
+        );
+    await db.ricreaCopia();
+    expect((await db.select(db.documenti).get()).single.nome, 'Passaporto');
   });
 
   test('le tabelle della copia sono tutte e sole quelle del server', () {
     final copia = db.tabelleCopia.map((t) => t.actualTableName).toSet();
-    final soloQui = {'coda_scrittura', 'evento_in_attesa', 'impostazione'};
+    final soloQui = {
+      'coda_scrittura',
+      'documento',
+      'evento_in_attesa',
+      'impostazione',
+    };
     final tutte = db.allTables.map((t) => t.actualTableName).toSet();
     expect(copia.union(soloQui), tutte);
     expect(copia.intersection(soloQui), isEmpty);

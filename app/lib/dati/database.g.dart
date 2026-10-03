@@ -6049,6 +6049,682 @@ class CodaScritturaCompanion extends UpdateCompanion<OperazioneInCoda> {
   }
 }
 
+class $DocumentiTable extends Documenti
+    with TableInfo<$DocumentiTable, Documento> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DocumentiTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _viaggioIdMeta = const VerificationMeta(
+    'viaggioId',
+  );
+  @override
+  late final GeneratedColumn<String> viaggioId = GeneratedColumn<String>(
+    'viaggio_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _giornoIdMeta = const VerificationMeta(
+    'giornoId',
+  );
+  @override
+  late final GeneratedColumn<String> giornoId = GeneratedColumn<String>(
+    'giorno_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _oraMeta = const VerificationMeta('ora');
+  @override
+  late final GeneratedColumn<String> ora = GeneratedColumn<String>(
+    'ora',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nomeMeta = const VerificationMeta('nome');
+  @override
+  late final GeneratedColumn<String> nome = GeneratedColumn<String>(
+    'nome',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _percorsoLocaleMeta = const VerificationMeta(
+    'percorsoLocale',
+  );
+  @override
+  late final GeneratedColumn<String> percorsoLocale = GeneratedColumn<String>(
+    'percorso_locale',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _formatoMeta = const VerificationMeta(
+    'formato',
+  );
+  @override
+  late final GeneratedColumn<String> formato = GeneratedColumn<String>(
+    'formato',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pagineMeta = const VerificationMeta('pagine');
+  @override
+  late final GeneratedColumn<int> pagine = GeneratedColumn<int>(
+    'pagine',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sorgenteMeta = const VerificationMeta(
+    'sorgente',
+  );
+  @override
+  late final GeneratedColumn<String> sorgente = GeneratedColumn<String>(
+    'sorgente',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _proprietarioIdMeta = const VerificationMeta(
+    'proprietarioId',
+  );
+  @override
+  late final GeneratedColumn<String> proprietarioId = GeneratedColumn<String>(
+    'proprietario_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _creatoIlMeta = const VerificationMeta(
+    'creatoIl',
+  );
+  @override
+  late final GeneratedColumn<DateTime> creatoIl = GeneratedColumn<DateTime>(
+    'creato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    viaggioId,
+    giornoId,
+    ora,
+    nome,
+    percorsoLocale,
+    formato,
+    pagine,
+    sorgente,
+    proprietarioId,
+    creatoIl,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'documento';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Documento> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('viaggio_id')) {
+      context.handle(
+        _viaggioIdMeta,
+        viaggioId.isAcceptableOrUnknown(data['viaggio_id']!, _viaggioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_viaggioIdMeta);
+    }
+    if (data.containsKey('giorno_id')) {
+      context.handle(
+        _giornoIdMeta,
+        giornoId.isAcceptableOrUnknown(data['giorno_id']!, _giornoIdMeta),
+      );
+    }
+    if (data.containsKey('ora')) {
+      context.handle(
+        _oraMeta,
+        ora.isAcceptableOrUnknown(data['ora']!, _oraMeta),
+      );
+    }
+    if (data.containsKey('nome')) {
+      context.handle(
+        _nomeMeta,
+        nome.isAcceptableOrUnknown(data['nome']!, _nomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nomeMeta);
+    }
+    if (data.containsKey('percorso_locale')) {
+      context.handle(
+        _percorsoLocaleMeta,
+        percorsoLocale.isAcceptableOrUnknown(
+          data['percorso_locale']!,
+          _percorsoLocaleMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_percorsoLocaleMeta);
+    }
+    if (data.containsKey('formato')) {
+      context.handle(
+        _formatoMeta,
+        formato.isAcceptableOrUnknown(data['formato']!, _formatoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_formatoMeta);
+    }
+    if (data.containsKey('pagine')) {
+      context.handle(
+        _pagineMeta,
+        pagine.isAcceptableOrUnknown(data['pagine']!, _pagineMeta),
+      );
+    }
+    if (data.containsKey('sorgente')) {
+      context.handle(
+        _sorgenteMeta,
+        sorgente.isAcceptableOrUnknown(data['sorgente']!, _sorgenteMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sorgenteMeta);
+    }
+    if (data.containsKey('proprietario_id')) {
+      context.handle(
+        _proprietarioIdMeta,
+        proprietarioId.isAcceptableOrUnknown(
+          data['proprietario_id']!,
+          _proprietarioIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_proprietarioIdMeta);
+    }
+    if (data.containsKey('creato_il')) {
+      context.handle(
+        _creatoIlMeta,
+        creatoIl.isAcceptableOrUnknown(data['creato_il']!, _creatoIlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoIlMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Documento map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Documento(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      viaggioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}viaggio_id'],
+      )!,
+      giornoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}giorno_id'],
+      ),
+      ora: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ora'],
+      ),
+      nome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nome'],
+      )!,
+      percorsoLocale: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}percorso_locale'],
+      )!,
+      formato: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}formato'],
+      )!,
+      pagine: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pagine'],
+      ),
+      sorgente: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sorgente'],
+      )!,
+      proprietarioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}proprietario_id'],
+      )!,
+      creatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}creato_il'],
+      )!,
+    );
+  }
+
+  @override
+  $DocumentiTable createAlias(String alias) {
+    return $DocumentiTable(attachedDatabase, alias);
+  }
+}
+
+class Documento extends DataClass implements Insertable<Documento> {
+  final String id;
+  final String viaggioId;
+
+  /// Il giorno in cui serve; nessuno se serve per tutto il viaggio.
+  final String? giornoId;
+
+  /// A che ora serve, `07:05:00`, se si è detto.
+  final String? ora;
+  final String nome;
+
+  /// Relativo alla cartella dell'app, mai assoluto: ripristinato da un backup
+  /// su un telefono nuovo, il contenitore dell'app ha un altro percorso (03).
+  final String percorsoLocale;
+
+  /// `pdf` o `immagine` (dominio/documenti.dart).
+  final String formato;
+
+  /// Quante pagine ha, se è un PDF.
+  final int? pagine;
+
+  /// Da dove è arrivato: `scansione`, `foto`, `file`.
+  final String sorgente;
+
+  /// Chi l'ha aggiunto: su un telefono dove entra un'altra persona, non si vede.
+  final String proprietarioId;
+  final DateTime creatoIl;
+  const Documento({
+    required this.id,
+    required this.viaggioId,
+    this.giornoId,
+    this.ora,
+    required this.nome,
+    required this.percorsoLocale,
+    required this.formato,
+    this.pagine,
+    required this.sorgente,
+    required this.proprietarioId,
+    required this.creatoIl,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['viaggio_id'] = Variable<String>(viaggioId);
+    if (!nullToAbsent || giornoId != null) {
+      map['giorno_id'] = Variable<String>(giornoId);
+    }
+    if (!nullToAbsent || ora != null) {
+      map['ora'] = Variable<String>(ora);
+    }
+    map['nome'] = Variable<String>(nome);
+    map['percorso_locale'] = Variable<String>(percorsoLocale);
+    map['formato'] = Variable<String>(formato);
+    if (!nullToAbsent || pagine != null) {
+      map['pagine'] = Variable<int>(pagine);
+    }
+    map['sorgente'] = Variable<String>(sorgente);
+    map['proprietario_id'] = Variable<String>(proprietarioId);
+    map['creato_il'] = Variable<DateTime>(creatoIl);
+    return map;
+  }
+
+  DocumentiCompanion toCompanion(bool nullToAbsent) {
+    return DocumentiCompanion(
+      id: Value(id),
+      viaggioId: Value(viaggioId),
+      giornoId: giornoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(giornoId),
+      ora: ora == null && nullToAbsent ? const Value.absent() : Value(ora),
+      nome: Value(nome),
+      percorsoLocale: Value(percorsoLocale),
+      formato: Value(formato),
+      pagine: pagine == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pagine),
+      sorgente: Value(sorgente),
+      proprietarioId: Value(proprietarioId),
+      creatoIl: Value(creatoIl),
+    );
+  }
+
+  factory Documento.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Documento(
+      id: serializer.fromJson<String>(json['id']),
+      viaggioId: serializer.fromJson<String>(json['viaggioId']),
+      giornoId: serializer.fromJson<String?>(json['giornoId']),
+      ora: serializer.fromJson<String?>(json['ora']),
+      nome: serializer.fromJson<String>(json['nome']),
+      percorsoLocale: serializer.fromJson<String>(json['percorsoLocale']),
+      formato: serializer.fromJson<String>(json['formato']),
+      pagine: serializer.fromJson<int?>(json['pagine']),
+      sorgente: serializer.fromJson<String>(json['sorgente']),
+      proprietarioId: serializer.fromJson<String>(json['proprietarioId']),
+      creatoIl: serializer.fromJson<DateTime>(json['creatoIl']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'viaggioId': serializer.toJson<String>(viaggioId),
+      'giornoId': serializer.toJson<String?>(giornoId),
+      'ora': serializer.toJson<String?>(ora),
+      'nome': serializer.toJson<String>(nome),
+      'percorsoLocale': serializer.toJson<String>(percorsoLocale),
+      'formato': serializer.toJson<String>(formato),
+      'pagine': serializer.toJson<int?>(pagine),
+      'sorgente': serializer.toJson<String>(sorgente),
+      'proprietarioId': serializer.toJson<String>(proprietarioId),
+      'creatoIl': serializer.toJson<DateTime>(creatoIl),
+    };
+  }
+
+  Documento copyWith({
+    String? id,
+    String? viaggioId,
+    Value<String?> giornoId = const Value.absent(),
+    Value<String?> ora = const Value.absent(),
+    String? nome,
+    String? percorsoLocale,
+    String? formato,
+    Value<int?> pagine = const Value.absent(),
+    String? sorgente,
+    String? proprietarioId,
+    DateTime? creatoIl,
+  }) => Documento(
+    id: id ?? this.id,
+    viaggioId: viaggioId ?? this.viaggioId,
+    giornoId: giornoId.present ? giornoId.value : this.giornoId,
+    ora: ora.present ? ora.value : this.ora,
+    nome: nome ?? this.nome,
+    percorsoLocale: percorsoLocale ?? this.percorsoLocale,
+    formato: formato ?? this.formato,
+    pagine: pagine.present ? pagine.value : this.pagine,
+    sorgente: sorgente ?? this.sorgente,
+    proprietarioId: proprietarioId ?? this.proprietarioId,
+    creatoIl: creatoIl ?? this.creatoIl,
+  );
+  Documento copyWithCompanion(DocumentiCompanion data) {
+    return Documento(
+      id: data.id.present ? data.id.value : this.id,
+      viaggioId: data.viaggioId.present ? data.viaggioId.value : this.viaggioId,
+      giornoId: data.giornoId.present ? data.giornoId.value : this.giornoId,
+      ora: data.ora.present ? data.ora.value : this.ora,
+      nome: data.nome.present ? data.nome.value : this.nome,
+      percorsoLocale: data.percorsoLocale.present
+          ? data.percorsoLocale.value
+          : this.percorsoLocale,
+      formato: data.formato.present ? data.formato.value : this.formato,
+      pagine: data.pagine.present ? data.pagine.value : this.pagine,
+      sorgente: data.sorgente.present ? data.sorgente.value : this.sorgente,
+      proprietarioId: data.proprietarioId.present
+          ? data.proprietarioId.value
+          : this.proprietarioId,
+      creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Documento(')
+          ..write('id: $id, ')
+          ..write('viaggioId: $viaggioId, ')
+          ..write('giornoId: $giornoId, ')
+          ..write('ora: $ora, ')
+          ..write('nome: $nome, ')
+          ..write('percorsoLocale: $percorsoLocale, ')
+          ..write('formato: $formato, ')
+          ..write('pagine: $pagine, ')
+          ..write('sorgente: $sorgente, ')
+          ..write('proprietarioId: $proprietarioId, ')
+          ..write('creatoIl: $creatoIl')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    viaggioId,
+    giornoId,
+    ora,
+    nome,
+    percorsoLocale,
+    formato,
+    pagine,
+    sorgente,
+    proprietarioId,
+    creatoIl,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Documento &&
+          other.id == this.id &&
+          other.viaggioId == this.viaggioId &&
+          other.giornoId == this.giornoId &&
+          other.ora == this.ora &&
+          other.nome == this.nome &&
+          other.percorsoLocale == this.percorsoLocale &&
+          other.formato == this.formato &&
+          other.pagine == this.pagine &&
+          other.sorgente == this.sorgente &&
+          other.proprietarioId == this.proprietarioId &&
+          other.creatoIl == this.creatoIl);
+}
+
+class DocumentiCompanion extends UpdateCompanion<Documento> {
+  final Value<String> id;
+  final Value<String> viaggioId;
+  final Value<String?> giornoId;
+  final Value<String?> ora;
+  final Value<String> nome;
+  final Value<String> percorsoLocale;
+  final Value<String> formato;
+  final Value<int?> pagine;
+  final Value<String> sorgente;
+  final Value<String> proprietarioId;
+  final Value<DateTime> creatoIl;
+  final Value<int> rowid;
+  const DocumentiCompanion({
+    this.id = const Value.absent(),
+    this.viaggioId = const Value.absent(),
+    this.giornoId = const Value.absent(),
+    this.ora = const Value.absent(),
+    this.nome = const Value.absent(),
+    this.percorsoLocale = const Value.absent(),
+    this.formato = const Value.absent(),
+    this.pagine = const Value.absent(),
+    this.sorgente = const Value.absent(),
+    this.proprietarioId = const Value.absent(),
+    this.creatoIl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DocumentiCompanion.insert({
+    required String id,
+    required String viaggioId,
+    this.giornoId = const Value.absent(),
+    this.ora = const Value.absent(),
+    required String nome,
+    required String percorsoLocale,
+    required String formato,
+    this.pagine = const Value.absent(),
+    required String sorgente,
+    required String proprietarioId,
+    required DateTime creatoIl,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       viaggioId = Value(viaggioId),
+       nome = Value(nome),
+       percorsoLocale = Value(percorsoLocale),
+       formato = Value(formato),
+       sorgente = Value(sorgente),
+       proprietarioId = Value(proprietarioId),
+       creatoIl = Value(creatoIl);
+  static Insertable<Documento> custom({
+    Expression<String>? id,
+    Expression<String>? viaggioId,
+    Expression<String>? giornoId,
+    Expression<String>? ora,
+    Expression<String>? nome,
+    Expression<String>? percorsoLocale,
+    Expression<String>? formato,
+    Expression<int>? pagine,
+    Expression<String>? sorgente,
+    Expression<String>? proprietarioId,
+    Expression<DateTime>? creatoIl,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (viaggioId != null) 'viaggio_id': viaggioId,
+      if (giornoId != null) 'giorno_id': giornoId,
+      if (ora != null) 'ora': ora,
+      if (nome != null) 'nome': nome,
+      if (percorsoLocale != null) 'percorso_locale': percorsoLocale,
+      if (formato != null) 'formato': formato,
+      if (pagine != null) 'pagine': pagine,
+      if (sorgente != null) 'sorgente': sorgente,
+      if (proprietarioId != null) 'proprietario_id': proprietarioId,
+      if (creatoIl != null) 'creato_il': creatoIl,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DocumentiCompanion copyWith({
+    Value<String>? id,
+    Value<String>? viaggioId,
+    Value<String?>? giornoId,
+    Value<String?>? ora,
+    Value<String>? nome,
+    Value<String>? percorsoLocale,
+    Value<String>? formato,
+    Value<int?>? pagine,
+    Value<String>? sorgente,
+    Value<String>? proprietarioId,
+    Value<DateTime>? creatoIl,
+    Value<int>? rowid,
+  }) {
+    return DocumentiCompanion(
+      id: id ?? this.id,
+      viaggioId: viaggioId ?? this.viaggioId,
+      giornoId: giornoId ?? this.giornoId,
+      ora: ora ?? this.ora,
+      nome: nome ?? this.nome,
+      percorsoLocale: percorsoLocale ?? this.percorsoLocale,
+      formato: formato ?? this.formato,
+      pagine: pagine ?? this.pagine,
+      sorgente: sorgente ?? this.sorgente,
+      proprietarioId: proprietarioId ?? this.proprietarioId,
+      creatoIl: creatoIl ?? this.creatoIl,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (viaggioId.present) {
+      map['viaggio_id'] = Variable<String>(viaggioId.value);
+    }
+    if (giornoId.present) {
+      map['giorno_id'] = Variable<String>(giornoId.value);
+    }
+    if (ora.present) {
+      map['ora'] = Variable<String>(ora.value);
+    }
+    if (nome.present) {
+      map['nome'] = Variable<String>(nome.value);
+    }
+    if (percorsoLocale.present) {
+      map['percorso_locale'] = Variable<String>(percorsoLocale.value);
+    }
+    if (formato.present) {
+      map['formato'] = Variable<String>(formato.value);
+    }
+    if (pagine.present) {
+      map['pagine'] = Variable<int>(pagine.value);
+    }
+    if (sorgente.present) {
+      map['sorgente'] = Variable<String>(sorgente.value);
+    }
+    if (proprietarioId.present) {
+      map['proprietario_id'] = Variable<String>(proprietarioId.value);
+    }
+    if (creatoIl.present) {
+      map['creato_il'] = Variable<DateTime>(creatoIl.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DocumentiCompanion(')
+          ..write('id: $id, ')
+          ..write('viaggioId: $viaggioId, ')
+          ..write('giornoId: $giornoId, ')
+          ..write('ora: $ora, ')
+          ..write('nome: $nome, ')
+          ..write('percorsoLocale: $percorsoLocale, ')
+          ..write('formato: $formato, ')
+          ..write('pagine: $pagine, ')
+          ..write('sorgente: $sorgente, ')
+          ..write('proprietarioId: $proprietarioId, ')
+          ..write('creatoIl: $creatoIl, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $EventiInAttesaTable extends EventiInAttesa
     with TableInfo<$EventiInAttesaTable, EventoInAttesa> {
   @override
@@ -6583,6 +7259,7 @@ abstract class _$DatabaseLocale extends GeneratedDatabase {
   late final $SpeseQuoteTable speseQuote = $SpeseQuoteTable(this);
   late final $VociListaTable vociLista = $VociListaTable(this);
   late final $CodaScritturaTable codaScrittura = $CodaScritturaTable(this);
+  late final $DocumentiTable documenti = $DocumentiTable(this);
   late final $EventiInAttesaTable eventiInAttesa = $EventiInAttesaTable(this);
   late final $ImpostazioniTable impostazioni = $ImpostazioniTable(this);
   @override
@@ -6599,6 +7276,7 @@ abstract class _$DatabaseLocale extends GeneratedDatabase {
     speseQuote,
     vociLista,
     codaScrittura,
+    documenti,
     eventiInAttesa,
     impostazioni,
   ];
@@ -9512,6 +10190,328 @@ typedef $$CodaScritturaTableProcessedTableManager =
       OperazioneInCoda,
       PrefetchHooks Function()
     >;
+typedef $$DocumentiTableCreateCompanionBuilder = DocumentiCompanion Function({
+  required String id,
+  required String viaggioId,
+  Value<String?> giornoId,
+  Value<String?> ora,
+  required String nome,
+  required String percorsoLocale,
+  required String formato,
+  Value<int?> pagine,
+  required String sorgente,
+  required String proprietarioId,
+  required DateTime creatoIl,
+  Value<int> rowid,
+});
+typedef $$DocumentiTableUpdateCompanionBuilder = DocumentiCompanion Function({
+  Value<String> id,
+  Value<String> viaggioId,
+  Value<String?> giornoId,
+  Value<String?> ora,
+  Value<String> nome,
+  Value<String> percorsoLocale,
+  Value<String> formato,
+  Value<int?> pagine,
+  Value<String> sorgente,
+  Value<String> proprietarioId,
+  Value<DateTime> creatoIl,
+  Value<int> rowid,
+});
+
+class $$DocumentiTableFilterComposer
+    extends Composer<_$DatabaseLocale, $DocumentiTable> {
+  $$DocumentiTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get viaggioId => $composableBuilder(
+    column: $table.viaggioId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get giornoId => $composableBuilder(
+    column: $table.giornoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ora => $composableBuilder(
+    column: $table.ora,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nome => $composableBuilder(
+    column: $table.nome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get percorsoLocale => $composableBuilder(
+    column: $table.percorsoLocale,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formato => $composableBuilder(
+    column: $table.formato,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pagine => $composableBuilder(
+    column: $table.pagine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sorgente => $composableBuilder(
+    column: $table.sorgente,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get proprietarioId => $composableBuilder(
+    column: $table.proprietarioId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DocumentiTableOrderingComposer
+    extends Composer<_$DatabaseLocale, $DocumentiTable> {
+  $$DocumentiTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get viaggioId => $composableBuilder(
+    column: $table.viaggioId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get giornoId => $composableBuilder(
+    column: $table.giornoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ora => $composableBuilder(
+    column: $table.ora,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nome => $composableBuilder(
+    column: $table.nome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get percorsoLocale => $composableBuilder(
+    column: $table.percorsoLocale,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formato => $composableBuilder(
+    column: $table.formato,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pagine => $composableBuilder(
+    column: $table.pagine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sorgente => $composableBuilder(
+    column: $table.sorgente,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get proprietarioId => $composableBuilder(
+    column: $table.proprietarioId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DocumentiTableAnnotationComposer
+    extends Composer<_$DatabaseLocale, $DocumentiTable> {
+  $$DocumentiTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get viaggioId =>
+      $composableBuilder(column: $table.viaggioId, builder: (column) => column);
+
+  GeneratedColumn<String> get giornoId =>
+      $composableBuilder(column: $table.giornoId, builder: (column) => column);
+
+  GeneratedColumn<String> get ora =>
+      $composableBuilder(column: $table.ora, builder: (column) => column);
+
+  GeneratedColumn<String> get nome =>
+      $composableBuilder(column: $table.nome, builder: (column) => column);
+
+  GeneratedColumn<String> get percorsoLocale => $composableBuilder(
+    column: $table.percorsoLocale,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get formato =>
+      $composableBuilder(column: $table.formato, builder: (column) => column);
+
+  GeneratedColumn<int> get pagine =>
+      $composableBuilder(column: $table.pagine, builder: (column) => column);
+
+  GeneratedColumn<String> get sorgente =>
+      $composableBuilder(column: $table.sorgente, builder: (column) => column);
+
+  GeneratedColumn<String> get proprietarioId => $composableBuilder(
+    column: $table.proprietarioId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get creatoIl =>
+      $composableBuilder(column: $table.creatoIl, builder: (column) => column);
+}
+
+class $$DocumentiTableTableManager
+    extends
+        RootTableManager<
+          _$DatabaseLocale,
+          $DocumentiTable,
+          Documento,
+          $$DocumentiTableFilterComposer,
+          $$DocumentiTableOrderingComposer,
+          $$DocumentiTableAnnotationComposer,
+          $$DocumentiTableCreateCompanionBuilder,
+          $$DocumentiTableUpdateCompanionBuilder,
+          (
+            Documento,
+            BaseReferences<_$DatabaseLocale, $DocumentiTable, Documento>,
+          ),
+          Documento,
+          PrefetchHooks Function()
+        > {
+  $$DocumentiTableTableManager(_$DatabaseLocale db, $DocumentiTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DocumentiTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DocumentiTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DocumentiTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> viaggioId = const Value.absent(),
+                Value<String?> giornoId = const Value.absent(),
+                Value<String?> ora = const Value.absent(),
+                Value<String> nome = const Value.absent(),
+                Value<String> percorsoLocale = const Value.absent(),
+                Value<String> formato = const Value.absent(),
+                Value<int?> pagine = const Value.absent(),
+                Value<String> sorgente = const Value.absent(),
+                Value<String> proprietarioId = const Value.absent(),
+                Value<DateTime> creatoIl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DocumentiCompanion(
+                id: id,
+                viaggioId: viaggioId,
+                giornoId: giornoId,
+                ora: ora,
+                nome: nome,
+                percorsoLocale: percorsoLocale,
+                formato: formato,
+                pagine: pagine,
+                sorgente: sorgente,
+                proprietarioId: proprietarioId,
+                creatoIl: creatoIl,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String viaggioId,
+                Value<String?> giornoId = const Value.absent(),
+                Value<String?> ora = const Value.absent(),
+                required String nome,
+                required String percorsoLocale,
+                required String formato,
+                Value<int?> pagine = const Value.absent(),
+                required String sorgente,
+                required String proprietarioId,
+                required DateTime creatoIl,
+                Value<int> rowid = const Value.absent(),
+              }) => DocumentiCompanion.insert(
+                id: id,
+                viaggioId: viaggioId,
+                giornoId: giornoId,
+                ora: ora,
+                nome: nome,
+                percorsoLocale: percorsoLocale,
+                formato: formato,
+                pagine: pagine,
+                sorgente: sorgente,
+                proprietarioId: proprietarioId,
+                creatoIl: creatoIl,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DocumentiTable, Documento>(table),
+                  BaseReferences<_$DatabaseLocale, $DocumentiTable, Documento>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DocumentiTableProcessedTableManager =
+    ProcessedTableManager<
+      _$DatabaseLocale,
+      $DocumentiTable,
+      Documento,
+      $$DocumentiTableFilterComposer,
+      $$DocumentiTableOrderingComposer,
+      $$DocumentiTableAnnotationComposer,
+      $$DocumentiTableCreateCompanionBuilder,
+      $$DocumentiTableUpdateCompanionBuilder,
+      (Documento, BaseReferences<_$DatabaseLocale, $DocumentiTable, Documento>),
+      Documento,
+      PrefetchHooks Function()
+    >;
 typedef $$EventiInAttesaTableCreateCompanionBuilder =
     EventiInAttesaCompanion Function({
       required String id,
@@ -9884,6 +10884,8 @@ class $DatabaseLocaleManager {
       $$VociListaTableTableManager(_db, _db.vociLista);
   $$CodaScritturaTableTableManager get codaScrittura =>
       $$CodaScritturaTableTableManager(_db, _db.codaScrittura);
+  $$DocumentiTableTableManager get documenti =>
+      $$DocumentiTableTableManager(_db, _db.documenti);
   $$EventiInAttesaTableTableManager get eventiInAttesa =>
       $$EventiInAttesaTableTableManager(_db, _db.eventiInAttesa);
   $$ImpostazioniTableTableManager get impostazioni =>

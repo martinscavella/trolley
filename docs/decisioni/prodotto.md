@@ -207,6 +207,15 @@ I documenti stanno in una cartella locale dell'app, non su un server.
 
 È una rinuncia accettata, non una svista. Trolley risolve il problema di **ritrovare** un documento nel momento peggiore — in aeroporto, senza rete, con l'imbarco fra dieci minuti — non quello di passarselo. Le alternative (un archivio nostro da proteggere, oppure un passaggio diretto fra telefoni) costavano entrambe più di quanto quel pezzo di problema valga, e la prima rimetteva in piedi proprio l'archivio di documenti d'identità che questa scelta serve a non avere.
 
+### Documenti: come funzionano (fase 1.3)
+
+- Si aggiungono da **scansione** (le pagine diventano un PDF), **foto** o **file**. Un'immagine si comprime e perde i metadati, compreso il luogo dello scatto.
+- Ognuno serve **un giorno** (con un'ora, se si vuole) oppure **tutto il viaggio**. L'elenco: oggi, domani, tutto il viaggio, gli altri giorni, i giorni passati in fondo; dentro un giorno prima quelli con l'ora.
+- Nella schermata del viaggio stanno **tutti quelli di oggi**, o se oggi non ne ha i primi tre dell'elenco: sono a un tocco.
+- In un'idea non si aggiungono e non si vedono; se un viaggio torna idea, si dice quanti ne restano sul telefono.
+- Tutto, anche cambiarli ed eliminarli, funziona senza rete: la rete non c'entra.
+- Se il telefono non ha un codice di sblocco, l'elenco lo dice: senza, la cifratura non protegge niente.
+
 ### Valuta e cambio: servizio esterno, ultimo valore noto offline
 
 Il tasso di cambio arriva da un servizio esterno. Senza rete si usa **l'ultimo tasso recuperato**, dicendo esplicitamente che il valore può essere cambiato perché non è in tempo reale.
