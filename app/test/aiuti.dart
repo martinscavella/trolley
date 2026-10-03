@@ -116,6 +116,41 @@ Map<String, Object?> rigaGiorno(
   'versione': 1,
 };
 
+/// Una riga di `tappa` come la restituisce il server.
+Map<String, Object?> rigaDiTappa(
+  String id, {
+  required String viaggio,
+  required String giorno,
+  int ordine = 1,
+  String titolo = 'Livraria Lello',
+  String? tipo = 'visita',
+  int durata = 90,
+  String stato = 'da_fare',
+  String creatoDa = idDiProva,
+  int versione = 1,
+}) => {
+  'id': id,
+  'viaggio_id': viaggio,
+  'giorno_id': giorno,
+  'ordine': ordine,
+  'titolo': titolo,
+  'luogo_nome': null,
+  'lat': null,
+  'lon': null,
+  'durata_stimata_min': durata,
+  'ora_inizio': null,
+  'stato': stato,
+  'marcata_il': null,
+  'marcata_durante_il_viaggio': false,
+  'eccedente': false,
+  'tipo': tipo,
+  'creato_da': creatoDa,
+  'creato_il': _istante,
+  'modificato_il': _istante,
+  'eliminato_il': null,
+  'versione': versione,
+};
+
 Map<String, Object?> rigaPartecipazione(String viaggio) => {
   'id': 'p-$viaggio',
   'viaggio_id': viaggio,
@@ -142,6 +177,7 @@ class ServerFinto {
   final viaggi = <Map<String, Object?>>[];
   final giorni = <Map<String, Object?>>[];
   final partecipazioni = <Map<String, Object?>>[];
+  final tappe = <Map<String, Object?>>[];
   final richieste = <http.Request>[];
 
   /// Percorsi con una risposta data dal test, che vince sulle altre.
@@ -183,10 +219,65 @@ class ServerFinto {
       case 'GET /rest/v1/partecipazione':
         return risposta(partecipazioni);
       case 'GET /rest/v1/giorno':
-        return risposta([
-          for (final g in giorni)
-            if (g['eliminato_il'] == null) g,
-        ]);
+        return risposta(_filtra(giorni, r.url.queryParameters));
+      case 'GET /rest/v1/tappa':
+        return risposta(_filtra(tappe, r.url.queryParameters));
+      case 'POST /rest/v1/tappa':
+        // Come `upsert(ignoreDuplicates: true)`: rimandata, non si duplica.
+        final ignora = (r.headers['prefer'] ?? r.headers['Prefer'] ?? '')
+            .contains('ignore-duplicates');
+        final corpo = jsonDecode(r.body);
+        final scritte = <Map<String, Object?>>[];
+        for (final c in (corpo is List ? corpo : [corpo]).cast<Map>()) {
+          if (tappe.any((t) => t['id'] == c['id'])) {
+            if (ignora) continue;
+            return _errore('23505', 'tappa già presente');
+          }
+          final riga = {
+            ...rigaDiTappa(
+              c['id'] as String,
+              viaggio: c['viaggio_id'] as String,
+              giorno: c['giorno_id'] as String,
+            ),
+            ...c.cast<String, Object?>(),
+          };
+          tappe.add(riga);
+          scritte.add(riga);
+        }
+        return risposta(scritte, 201);
+      case 'PATCH /rest/v1/tappa':
+        final trovate = _filtra(tappe, r.url.queryParameters);
+        if (trovate.isEmpty) return risposta(const []);
+        final tappa = trovate.single;
+        final valori = _corpo(r);
+        if (valori.containsKey('versione') &&
+            valori['versione'] != tappa['versione']) {
+          return _errore('TR409', 'versione superata');
+        }
+        tappa
+          ..addAll(valori)
+          ..['versione'] = (tappa['versione']! as int) + 1;
+        // Senza versione passa sempre, e il trigger la fa avanzare lo stesso.
+        return risposta([tappa]);
+      case 'POST /rest/v1/rpc/ordina_tappe':
+        final c = _corpo(r);
+        final ordinate = <Map<String, Object?>>[];
+        for (final (i, id) in (c['p_tappe'] as List).indexed) {
+          final tappa = tappe
+              .where(
+                (t) =>
+                    t['id'] == id &&
+                    t['giorno_id'] == c['p_giorno'] &&
+                    t['eliminato_il'] == null,
+              )
+              .firstOrNull;
+          if (tappa == null) continue;
+          tappa
+            ..['ordine'] = i + 1
+            ..['versione'] = (tappa['versione']! as int) + 1;
+          ordinate.add(tappa);
+        }
+        return risposta(ordinate);
       case 'POST /rest/v1/rpc/crea_viaggio':
         final c = _corpo(r);
         final id = c['p_id'] as String;
@@ -273,6 +364,31 @@ class ServerFinto {
         return http.Response('', 201);
     }
     return risposta(const []);
+  }
+
+  /// I filtri di PostgREST che l'app usa: `eq`, `neq`, `is.null`, `in`.
+  static List<Map<String, Object?>> _filtra(
+    List<Map<String, Object?>> righe,
+    Map<String, String> filtri,
+  ) => [
+    for (final riga in righe)
+      if (filtri.entries.every((f) => _passa(riga, f.key, f.value))) riga,
+  ];
+
+  static bool _passa(Map<String, Object?> riga, String colonna, String filtro) {
+    if (!riga.containsKey(colonna)) return true;
+    final valore = riga[colonna];
+    if (filtro == 'is.null') return valore == null;
+    if (filtro.startsWith('eq.')) return '$valore' == filtro.substring(3);
+    if (filtro.startsWith('neq.')) return '$valore' != filtro.substring(4);
+    if (filtro.startsWith('in.(')) {
+      return filtro
+          .substring(4, filtro.length - 1)
+          .split(',')
+          .map((v) => v.replaceAll('"', ''))
+          .contains('$valore');
+    }
+    return true;
   }
 
   Map<String, Object?>? _viaggio(String id) =>

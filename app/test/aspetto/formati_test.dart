@@ -57,9 +57,9 @@ void main() {
     expect(quanti(0, 'viaggio', 'viaggi'), '0 viaggi');
   });
 
-  test('la copertina dipende solo dal viaggio', () {
+  test('il colore delle iniziali dipende solo dalla chiave', () {
     const id = '5f0c1a2e-8a4b-4c1d-9e2f-0a1b2c3d4e5f';
-    expect(copertinaPer(id).inizio, copertinaPer(id).inizio);
+    expect(coloreAvatar(id), coloreAvatar(id));
     expect(indiceStabile(id, 10), indiceStabile(id, 10));
     expect(indiceStabile(id, 10), inInclusiveRange(0, 9));
   });
@@ -114,5 +114,24 @@ void main() {
     );
     expect(quantoFa(DateTime(2026, 10, 2, 8), adesso), 'ieri');
     expect(quantoFa(DateTime(2026, 9, 29, 8), adesso), '4 giorni fa');
+  });
+
+  test('il codice del biglietto: tre lettere dalla destinazione', () {
+    expect(codiceDestinazione('Lisbona'), 'LIS');
+    expect(codiceDestinazione('Città del Messico'), 'CIT');
+    expect(codiceDestinazione('Malmö'), 'MAL');
+    expect(codiceDestinazione('Ho Chi Minh'), 'HOC');
+    expect(codiceDestinazione('Bo'), 'BO');
+    expect(codiceDestinazione(null), '?');
+    expect(codiceDestinazione('  '), '?');
+  });
+
+  test('le durate corte e i giorni del viaggio', () {
+    expect(durataBreve(const Duration(hours: 2)), '2 h');
+    expect(durataBreve(const Duration(minutes: 90)), '1 h 30');
+    expect(durataBreve(const Duration(minutes: 65)), '1 h 05');
+    expect(durataBreve(const Duration(minutes: 45)), '45 min');
+    expect(nomeDelGiorno(DateTime.utc(2026, 10, 10)), 'Sabato 10 ottobre');
+    expect(giornoBreve(DateTime.utc(2026, 10, 11)), 'Domenica 11');
   });
 }

@@ -105,6 +105,16 @@ class Tappe extends Table with RigaCopiata {
   TextColumn get marcataIl => text().nullable()();
   BoolColumn get marcataDuranteIlViaggio => boolean()();
   BoolColumn get eccedente => boolean()();
+
+  /// Facoltativo: le tappe incollate da un itinerario (1.6) possono non averlo.
+  TextColumn get tipo => text().nullable()();
+
+  /// Chi l'ha aggiunta: il primo contributo di un invitato si riconosce così.
+  TextColumn get creatoDa => text()();
+
+  /// A pari ordine, due tappe aggiunte insieme da due telefoni si mettono in
+  /// fila per quando sono nate.
+  TextColumn get creatoIl => text()();
 }
 
 @DataClassName('Spesa')
@@ -230,8 +240,9 @@ class DatabaseLocale extends _$DatabaseLocale {
   DatabaseLocale([QueryExecutor? executor])
     : super(executor ?? driftDatabase(name: 'trolley'));
 
+  /// 2 (fase 1.2): la copia delle tappe prende tipo, creato_da e creato_il.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [

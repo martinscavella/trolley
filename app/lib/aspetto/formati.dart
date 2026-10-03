@@ -10,6 +10,8 @@ import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
 import '../dominio/periodo.dart';
 import '../dominio/stato_viaggio.dart';
+import '../dominio/tappe.dart';
+import '../dominio/testo.dart';
 
 /// `12 ottobre 2026`.
 String dataEstesa(DateTime d) =>
@@ -55,6 +57,23 @@ String titoloViaggio(Viaggio v) =>
     v.destinazioneCitta ??
     nomeDelPaese(v.destinazionePaese) ??
     'Viaggio senza meta';
+
+/// Il codice di tre lettere sul biglietto: le prime della destinazione, senza
+/// accenti né spazi. `Lisbona` → `LIS`, `Città del Messico` → `CIT`. Senza
+/// meta, `?`.
+String codiceDestinazione(String? nome) {
+  final lettere = normalizza(nome ?? '').replaceAll(' ', '').characters;
+  if (lettere.isEmpty) return '?';
+  return lettere.take(3).toString().toUpperCase();
+}
+
+/// Il codice del biglietto di un viaggio.
+String codiceViaggio(Viaggio v) => codiceDestinazione(
+  v.destinazioneCitta ?? nomeDelPaese(v.destinazionePaese),
+);
+
+/// `12 mag`.
+String dataBreve(DateTime d) => '${d.day} ${meseBreve(d)}';
 
 /// Il nome dello stato, come compare sull'etichetta del viaggio e sulle
 /// sezioni dell'elenco (02-il-viaggio.md, "Elenco viaggi").
@@ -124,6 +143,48 @@ String durata(Duration d) {
   if (minuti == 0) return '$ore h';
   return '$ore h $minuti min';
 }
+
+/// Corta, per la matrice di un biglietto o una riga stretta: `2 h`, `1 h 30`,
+/// `45 min`.
+String durataBreve(Duration d) {
+  final (ore, minuti) = (d.inHours, d.inMinutes % 60);
+  if (ore == 0) return '$minuti min';
+  if (minuti == 0) return '$ore h';
+  return '$ore h ${minuti.toString().padLeft(2, '0')}';
+}
+
+/// Il nome di un tipo di tappa: `Visita`, `Passeggiata`.
+String nomeTipo(TipoTappa tipo) => switch (tipo) {
+  TipoTappa.visita => 'Visita',
+  TipoTappa.museo => 'Museo',
+  TipoTappa.pasto => 'Pasto',
+  TipoTappa.passeggiata => 'Passeggiata',
+  TipoTappa.spettacolo => 'Spettacolo',
+  TipoTappa.escursione => 'Escursione',
+  TipoTappa.pausa => 'Pausa',
+  TipoTappa.altro => 'Altro',
+};
+
+/// Con l'articolo, per dire di chi è la proposta: `una visita`, `un'escursione`.
+String unTipo(TipoTappa tipo) => switch (tipo) {
+  TipoTappa.visita => 'una visita',
+  TipoTappa.museo => 'un museo',
+  TipoTappa.pasto => 'un pasto',
+  TipoTappa.passeggiata => 'una passeggiata',
+  TipoTappa.spettacolo => 'uno spettacolo',
+  TipoTappa.escursione => 'un\'escursione',
+  TipoTappa.pausa => 'una pausa',
+  TipoTappa.altro => 'una tappa',
+};
+
+/// Un giorno del viaggio per intero: `Sabato 11 ottobre`.
+String nomeDelGiorno(DateTime d) =>
+    '${conMaiuscola(giornoDellaSettimana(d))} ${d.day} '
+    '${nomiDeiMesi[d.month - 1]}';
+
+/// Un giorno del viaggio in breve, per una scelta: `Sabato 11`.
+String giornoBreve(DateTime d) =>
+    '${conMaiuscola(giornoDellaSettimana(d))} ${d.day}';
 
 /// Quanto dura una giornata del viaggio, a parole: `dalle 10:00`, `fino alle
 /// 18:00`, `dalle 10:00 alle 18:00`, `tutto il giorno`.

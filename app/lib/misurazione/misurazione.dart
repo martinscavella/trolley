@@ -25,6 +25,10 @@ abstract final class Eventi {
   static const viaggioCorrettoAperto = 'viaggio_corretto_aperto';
   static const viaggioCreato = 'viaggio_creato';
   static const ideaDefinita = 'idea_definita';
+  static const primoElementoAggiunto = 'primo_elemento_aggiunto';
+  static const funzioneUsataNelViaggio = 'funzione_usata_nel_viaggio';
+  static const primoContributoInvitato = 'primo_contributo_invitato';
+  static const tappaMarcata = 'tappa_marcata';
 }
 
 class Misurazione {
@@ -78,6 +82,30 @@ class Misurazione {
             avvenutoIl: DateTime.now().toUtc(),
           ),
         );
+  }
+
+  /// Registra [nome] una volta sola per [chiave] su questo telefono: gli
+  /// eventi "primo…" non devono contarsi due volte se la persona toglie e
+  /// rimette.
+  Future<void> registraUnaVolta(
+    String chiave,
+    String nome, [
+    Map<String, Object?> proprieta = const {},
+  ]) async {
+    final segno = 'evento:$chiave';
+    final gia = await (_db.select(
+      _db.impostazioni,
+    )..where((i) => i.chiave.equals(segno))).getSingleOrNull();
+    if (gia != null) return;
+    await _db
+        .into(_db.impostazioni)
+        .insert(
+          ImpostazioniCompanion.insert(
+            chiave: segno,
+            valore: DateTime.now().toUtc().toIso8601String(),
+          ),
+        );
+    await registra(nome, proprieta);
   }
 
   /// Manda quello che c'è in attesa. Senza rete o senza profilo non fa niente e

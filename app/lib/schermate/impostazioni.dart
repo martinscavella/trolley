@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/movimento.dart';
+import '../aspetto/pagina.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../configurazione.dart';
@@ -63,75 +64,86 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
     final servizi = Servizi.of(context);
     final t = Tavolozza.of(context);
     final email = servizi.supabase.auth.currentUser?.email;
-    return AdaptiveScaffold(
-      appBar: const AdaptiveAppBar(title: 'Impostazioni'),
-      body: ListView(
-        padding: EdgeInsets.only(
-          top: MediaQuery.paddingOf(context).top + 12,
-          bottom: MediaQuery.paddingOf(context).bottom + 24,
-        ),
-        children: [
-          StreamBuilder<Utente?>(
-            stream: servizi.archivio.osservaProfilo(),
-            builder: (context, snapshot) {
-              final nome = snapshot.data?.nome ?? '';
-              return Column(
-                children: [
-                  Avatar(nome: nome, dimensione: 76).sboccia(context),
-                  const SizedBox(height: 12),
-                  Text(
-                    nome,
-                    style: Testi.titoloSezione.copyWith(color: t.testo),
-                  ),
-                  if (email != null) ...[
-                    const SizedBox(height: 2),
+    return Pagina(
+      corpo: Builder(
+        builder: (context) => ListView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            MediaQuery.paddingOf(context).top + 4,
+            16,
+            MediaQuery.paddingOf(context).bottom + 24,
+          ),
+          children: [
+            StreamBuilder<Utente?>(
+              stream: servizi.archivio.osservaProfilo(),
+              builder: (context, snapshot) {
+                final nome = snapshot.data?.nome ?? '';
+                return Column(
+                  children: [
+                    Avatar(nome: nome, dimensione: 76).sboccia(context),
+                    const SizedBox(height: 14),
                     Text(
-                      email,
-                      style: Testi.secondario.copyWith(
-                        color: t.testoSecondario,
-                      ),
+                      nome,
+                      style: Testi.titoloSezione.copyWith(color: t.testo),
                     ),
-                  ],
-                ],
-              ).entra(context, da: 8);
-            },
-          ),
-          const SizedBox(height: 20),
-          AdaptiveFormSection.insetGrouped(
-            header: const Text('PRIVACY'),
-            footer: const Text(
-              'Trolley registra le azioni che fai, come "creato un viaggio" o '
-              '"aperto un invito", per capire quali funzioni servono davvero. '
-              'Mai i contenuti: né testi, né documenti, né dove ti trovi. Se la '
-              'spegni non perdi nessuna funzione.',
-            ),
-            children: [
-              AdaptiveListTile(
-                title: const Text('Misurazione'),
-                trailing: _misurazioneAttiva == null
-                    ? const SizedBox.shrink()
-                    : AdaptiveSwitch(
-                        value: _misurazioneAttiva!,
-                        onChanged: _cambiaMisurazione,
+                    if (email != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        email,
+                        style: Testi.secondario.copyWith(
+                          color: t.testoSecondario,
+                        ),
                       ),
+                    ],
+                  ],
+                ).entra(context, da: 8);
+              },
+            ),
+            const SizedBox(height: 28),
+            const TitoloSezione('Privacy').entra(context, ritardo: Ritmo.passo),
+            Pannello(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Misurazione',
+                      style: Testi.evidenza.copyWith(color: t.testo),
+                    ),
+                  ),
+                  if (_misurazioneAttiva != null)
+                    AdaptiveSwitch(
+                      value: _misurazioneAttiva!,
+                      onChanged: _cambiaMisurazione,
+                    ),
+                ],
               ),
-            ],
-          ).entra(context, ritardo: Ritmo.passo),
-          AdaptiveFormSection.insetGrouped(
-            children: [
-              AdaptiveListTile(
-                title: Text('Esci', style: TextStyle(color: t.pericolo)),
-                onTap: _esci,
+            ).entra(context, ritardo: Ritmo.passo),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
+              child: Text(
+                'Trolley registra le azioni che fai, come "creato un viaggio" o '
+                '"aperto un invito", per capire quali funzioni servono davvero. '
+                'Mai i contenuti: né testi, né documenti, né dove ti trovi. Se la '
+                'spegni non perdi nessuna funzione.',
+                style: Testi.didascalia.copyWith(color: t.testoSecondario),
               ),
-            ],
-          ).entra(context, ritardo: Ritmo.passo * 2),
-          const SizedBox(height: 16),
-          Text(
-            'Trolley $versioneApp · prova privata',
-            textAlign: TextAlign.center,
-            style: Testi.didascalia.copyWith(color: t.testoTerziario),
-          ),
-        ],
+            ).entra(context, ritardo: Ritmo.passo),
+            const SizedBox(height: 28),
+            PulsanteGrande(
+              etichetta: 'Esci',
+              secondario: true,
+              pericolo: true,
+              onPressed: _esci,
+            ).entra(context, ritardo: Ritmo.passo * 2),
+            const SizedBox(height: 20),
+            Text(
+              'Trolley $versioneApp · prova privata',
+              textAlign: TextAlign.center,
+              style: Testi.didascalia.copyWith(color: t.testoTerziario),
+            ),
+          ],
+        ),
       ),
     );
   }

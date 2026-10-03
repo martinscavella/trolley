@@ -7,6 +7,7 @@ import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
 import '../dominio/periodo.dart';
 import '../dominio/stato_viaggio.dart';
+import '../dominio/tappe.dart';
 import 'database.dart';
 import 'destinazioni.dart';
 
@@ -58,4 +59,13 @@ extension LetturaGiorno on Giorno {
     inizio: leggiOra(finestraInizio) ?? inizioGiornata,
     fine: leggiOra(finestraFine) ?? fineGiornata,
   );
+}
+
+extension LetturaTappa on Tappa {
+  TipoTappa? get tipoTappa => TipoTappa.leggi(tipo);
+  StatoTappa get statoTappa => StatoTappa.leggi(stato);
+  Duration get durata => Duration(minutes: durataStimataMin);
+
+  /// L'ora a cui comincia, se la si è detta.
+  Duration? get ora => leggiOra(oraInizio);
 }

@@ -174,7 +174,7 @@ class _TrolleyAppState extends State<TrolleyApp> {
     return AdaptiveApp(
       title: 'Trolley',
       navigatorKey: _navigatore,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       materialLightTheme: temaMaterialChiaro,
       materialDarkTheme: temaMaterialScuro,
       cupertinoLightTheme: temaCupertinoChiaro,

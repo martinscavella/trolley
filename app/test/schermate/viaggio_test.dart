@@ -51,15 +51,23 @@ void main() {
     );
     await ambiente.monta(tester, const SchermataViaggio(viaggioId: 'v'));
 
-    expect(find.text('In programma'), findsOneWidget);
+    expect(find.text('IN PROGRAMMA'), findsOneWidget);
     expect(find.text('Giorni'), findsOneWidget);
     expect(find.text('Dalle 10:00'), findsOneWidget);
     expect(find.text('Tutto il giorno'), findsOneWidget);
     expect(find.text('Fino alle 18:00'), findsOneWidget);
-    expect(find.text('14 h'), findsOneWidget);
-    expect(find.text('24 h'), findsOneWidget);
-    expect(find.text('18 h'), findsOneWidget);
-    expect(find.textContaining('arrivi alle 10:00'), findsOneWidget);
+    expect(find.text('Nessuna tappa · 14 h libere'), findsOneWidget);
+    expect(find.text('Nessuna tappa · 24 h libere'), findsOneWidget);
+    expect(find.text('Nessuna tappa · 18 h libere'), findsOneWidget);
+    // Sulla matrice del biglietto, quando si arriva e quando si riparte.
+    expect(
+      find.text('${dataBreve(oggi.add(const Duration(days: 30)))} · 10:00'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('${dataBreve(oggi.add(const Duration(days: 32)))} · 18:00'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('in corso, il giorno di oggi si riconosce', (tester) async {
@@ -74,7 +82,8 @@ void main() {
     );
     await ambiente.monta(tester, const SchermataViaggio(viaggioId: 'v'));
 
-    expect(find.text('In corso'), findsOneWidget);
+    expect(find.text('IN CORSO'), findsOneWidget);
+    expect(find.text('GIORNO 2 DI 3'), findsOneWidget);
     expect(find.text('Oggi, tutto il giorno'), findsOneWidget);
   });
 
@@ -150,7 +159,9 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(pulsante('Fissa le date'));
+    // Il foglio sale sopra il viaggio, che resta visibile sotto: il suo
+    // pulsante è l'ultimo.
+    await tester.tap(pulsante('Fissa le date').last);
     await tester.pumpAndSettle();
 
     final chiamata = ambiente.server
@@ -160,7 +171,7 @@ void main() {
     expect(corpoDi(chiamata)['p_giorni'], hasLength(3));
 
     // Di nuovo sul viaggio, che adesso ha i suoi giorni.
-    expect(find.text('In programma'), findsOneWidget);
+    expect(find.text('IN PROGRAMMA'), findsOneWidget);
     expect(find.text('Giorni'), findsOneWidget);
 
     final eventi = await ambiente.eventi(tester);

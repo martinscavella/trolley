@@ -1,114 +1,110 @@
-/// I colori dell'app.
+/// I colori dell'app, presi dalla tela di Claude Design "Trolley — design
+/// dell'app", stile «Biglietti» (CLAUDE.md, regola 9).
 ///
-/// Sono i colori di sistema di iOS, risolti per chiaro e scuro, usati anche su
-/// Android perché i contenuti restino gli stessi. L'unico colore nostro è
-/// l'accento, provvisorio come il nome (punti-aperti.md: nessun investimento
-/// sull'identità visiva prima del nome definitivo).
+/// Un fondo grigio freddo con schede bianche; l'inchiostro per il testo e i
+/// pulsanti principali; il cobalto per i viaggi definiti e quello che è
+/// attivo. Il giallo sta solo con le idee, il verde solo con le tappe fatte.
+/// La tela è solo chiara, e l'app pure finché la tela non disegna anche lo
+/// scuro (punti-aperti.md).
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 
+/// I colori della tela, per nome.
+abstract final class Colori {
+  /// Il testo e i pulsanti principali.
+  static const inchiostro = Color(0xFF15192B);
+
+  /// Il testo secondario.
+  static const grafite = Color(0xFF5A6072);
+
+  /// Le etichette sopra i campi.
+  static const ardesia = Color(0xFF4A5066);
+
+  /// Il fondo delle schermate.
+  static const nebbia = Color(0xFFEDEFF3);
+
+  /// Il fondo dei campi dentro le schede bianche.
+  static const foschia = Color(0xFFF2F4F8);
+
+  /// I bordi dei pulsanti secondari e delle scelte.
+  static const cenere = Color(0xFFDCE0E8);
+
+  /// Il tempo già occupato e il percorso ancora da fare.
+  static const piombo = Color(0xFF9AA1B5);
+
+  /// I viaggi definiti, le icone, quello che è attivo.
+  static const cobalto = Color(0xFF2B4ACB);
+
+  /// Il cobalto per il testo piccolo: collegamenti, il testo sul giallo.
+  static const cobaltoScuro = Color(0xFF1F3699);
+
+  /// Il fondo delle capsule cobalto.
+  static const cobaltoChiaro = Color(0xFFE4E9FB);
+
+  /// Solo le idee.
+  static const sole = Color(0xFFFFCF4A);
+
+  /// Il testo sul giallo dell'idea.
+  static const senape = Color(0xFF5C4A00);
+
+  /// Solo le tappe fatte: il timbro «fatta».
+  static const verde = Color(0xFF1F5F4A);
+
+  /// Un tipo di tappa: i pasti.
+  static const pomodoro = Color(0xFFE8573A);
+
+  /// Un tipo di tappa: le passeggiate.
+  static const ottanio = Color(0xFF138A84);
+
+  /// Gli errori, le azioni che tolgono qualcosa, quello che non entra.
+  static const pericolo = Color(0xFFB42318);
+
+  /// Il fondo di un avviso d'errore.
+  static const rosa = Color(0xFFFDEDEB);
+
+  static const bianco = Color(0xFFFFFFFF);
+}
+
+/// I colori come li usano le schermate.
 class Tavolozza {
-  const Tavolozza._({
-    required this.scuro,
-    required this.sfondo,
-    required this.superficie,
-    required this.riempimento,
-    required this.testo,
-    required this.testoSecondario,
-    required this.testoTerziario,
-    required this.separatore,
-    required this.accento,
-    required this.suAccento,
-    required this.pericolo,
-  });
+  const Tavolozza._();
 
-  static const accentoDinamico = CupertinoDynamicColor.withBrightness(
-    color: Color(0xFF0E9A6F),
-    darkColor: Color(0xFF4CD9A6),
-  );
+  static const _unica = Tavolozza._();
 
-  final bool scuro;
+  /// La tela è chiara: il contesto non cambia niente, ma resta il punto da
+  /// cui passare il giorno in cui avrà anche lo scuro.
+  static Tavolozza of(BuildContext context) => _unica;
 
-  /// Lo sfondo delle pagine.
-  final Color sfondo;
+  Color get sfondo => Colori.nebbia;
 
-  /// Schede e pannelli, un gradino sopra lo sfondo.
-  final Color superficie;
+  /// Schede e pannelli.
+  Color get superficie => Colori.bianco;
 
   /// Il fondo dei campi di testo.
-  final Color riempimento;
+  Color get riempimento => Colori.foschia;
 
-  final Color testo;
-  final Color testoSecondario;
-  final Color testoTerziario;
-  final Color separatore;
-  final Color accento;
+  Color get testo => Colori.inchiostro;
+  Color get testoSecondario => Colori.grafite;
+  Color get testoTerziario => Colori.grafite.withValues(alpha: 0.7);
+  Color get etichetta => Colori.ardesia;
+  Color get separatore => Colori.cenere;
+  Color get accento => Colori.cobalto;
 
   /// Testo e icone sopra l'accento.
-  final Color suAccento;
-  final Color pericolo;
-
-  static Tavolozza of(BuildContext context) {
-    Color r(Color c) => CupertinoDynamicColor.resolve(c, context);
-    final scuro = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
-    return Tavolozza._(
-      scuro: scuro,
-      sfondo: r(CupertinoColors.systemGroupedBackground),
-      superficie: r(CupertinoColors.secondarySystemGroupedBackground),
-      riempimento: r(CupertinoColors.tertiarySystemFill),
-      testo: r(CupertinoColors.label),
-      testoSecondario: r(CupertinoColors.secondaryLabel),
-      testoTerziario: r(CupertinoColors.tertiaryLabel),
-      separatore: r(CupertinoColors.separator),
-      accento: r(accentoDinamico),
-      suAccento: scuro ? const Color(0xFF03261B) : const Color(0xFFFFFFFF),
-      pericolo: r(CupertinoColors.systemRed),
-    );
-  }
+  Color get suAccento => Colori.bianco;
+  Color get pericolo => Colori.pericolo;
 }
 
-/// Una sfumatura a due colori, per le copertine dei viaggi.
-class Sfumatura {
-  const Sfumatura(this.inizio, this.fine);
-
-  final Color inizio;
-  final Color fine;
-
-  LinearGradient get gradiente => LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [inizio, fine],
-  );
-}
-
-const _copertine = [
-  Sfumatura(Color(0xFFFF7E5F), Color(0xFFFEB47B)), // tramonto
-  Sfumatura(Color(0xFF2193B0), Color(0xFF6DD5ED)), // oceano
-  Sfumatura(Color(0xFF7F7FD5), Color(0xFF91EAE4)), // lavanda
-  Sfumatura(Color(0xFF11998E), Color(0xFF38EF7D)), // foresta
-  Sfumatura(Color(0xFFEC6F66), Color(0xFFF3A183)), // corallo
-  Sfumatura(Color(0xFF4568DC), Color(0xFFB06AB3)), // crepuscolo
-  Sfumatura(Color(0xFFF7971E), Color(0xFFFFD200)), // agrumi
-  Sfumatura(Color(0xFF43CEA2), Color(0xFF185A9D)), // laguna
-  Sfumatura(Color(0xFF8E2DE2), Color(0xFF4A00E0)), // notte
-  Sfumatura(Color(0xFFFF5F6D), Color(0xFFFFC371)), // pesca
-];
-
+/// I colori delle iniziali delle persone: scuri, perché il bianco si legga.
+/// La stessa persona ha sempre lo stesso.
 const _coloriAvatar = [
-  Color(0xFFFF6B6B),
-  Color(0xFFFFA94D),
-  Color(0xFF40C057),
-  Color(0xFF339AF0),
-  Color(0xFF845EF7),
-  Color(0xFFF06595),
-  Color(0xFF12B886),
-  Color(0xFF5C7CFA),
+  Colori.cobalto,
+  Colori.verde,
+  Color(0xFF0F7570),
+  Colori.inchiostro,
+  Color(0xFFA63A22),
 ];
-
-/// La copertina di un viaggio: sempre la stessa per lo stesso viaggio.
-Sfumatura copertinaPer(String chiave) =>
-    _copertine[indiceStabile(chiave, _copertine.length)];
 
 Color coloreAvatar(String chiave) =>
     _coloriAvatar[indiceStabile(chiave, _coloriAvatar.length)];

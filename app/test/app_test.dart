@@ -68,7 +68,7 @@ void main() {
   ) async {
     await avvia(tester);
     expect(find.text('Accedi'), findsOneWidget);
-    expect(find.textContaining('Hai un invito'), findsNothing);
+    expect(find.textContaining('Hai un invito.'), findsNothing);
   });
 
   testWidgets('senza rete l\'accesso lo dice prima di provare', (tester) async {
@@ -86,7 +86,7 @@ void main() {
       await tester.runAsync(() => Future<void>.delayed(Duration.zero));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Hai un invito'), findsOneWidget);
+      expect(find.textContaining('Hai un invito.'), findsOneWidget);
       final eventi = await tester.runAsync(
         () => db.select(db.eventiInAttesa).get(),
       );

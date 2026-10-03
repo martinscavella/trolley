@@ -61,6 +61,16 @@ E il tetto non è un generico "24 ore": è **la finestra reale del giorno**, che
 
 *Da risolvere in fase di design*: se il tempo stimato è obbligatorio diventa un campo in più sul gesto più frequente dell'app — esattamente quello che H2 misura. Va precompilato con una durata sensata da correggere, non chiesto a vuoto.
 
+**Risolto nella fase 1.2: la durata la propone il tipo.** Ogni tappa ha un tipo, e il tipo porta la sua durata: visita 1 h 30, museo 2 h, pasto 1 h 30, passeggiata 1 h, spettacolo 2 h, escursione 4 h, pausa 30 min, altro 1 h. Una tappa nuova nasce visita, quindi con 1 h 30 già scritta; si corregge di un quarto d'ora alla volta. Cambiare tipo cambia la durata finché la persona non l'ha toccata a mano. Il tipo serve anche a riconoscere la tappa a colpo d'occhio, con un colore e un'icona. Le tappe che arriveranno da un itinerario incollato (1.6) possono non averlo.
+
+**Quando una tappa non entra** si dice quanto manca e si propone, nell'ordine: accorciarla al tempo che resta (se resta almeno un quarto d'ora), metterla nel giorno più vicino in cui entra così com'è (a pari distanza, quello dopo), o togliere qualcosa dalla giornata. Una tappa che resta nel suo giorno e non si allunga non si rifiuta mai, anche se la giornata è già troppo piena: quella si sistema togliendo, non bloccando chi corregge un titolo.
+
+### Le tappe si segnano dal primo giorno, con un tocco
+
+Il gesto da cui dipende la verifica deve costare un tocco ([09](../prodotto/09-durante-il-viaggio.md), regola 10). Nella giornata le tappe sono **punti numerati collegati, come un percorso su una carta**: toccare un punto lo segna fatto, tenerlo premuto lo salta, ritoccarlo lo riporta da fare. Il tratto già percorso diventa verde. È uno schema dell'ordine della giornata, non una mappa: la mappa vera arriva con la 3.2, e gli stessi punti ci andranno sopra. Per riordinare c'è la vista a elenco, dove le tappe si trascinano.
+
+I punti si segnano **dal primo giorno del viaggio**: prima non c'è niente da segnare, e toccare un punto apre la tappa. Dopo l'ultimo giorno si segna ancora, ma non conta per la verifica (04, regola 17). Durante il viaggio la prima tappa da fare della giornata di oggi è evidenziata come **prossima**.
+
 ### Modello paritario tra i partecipanti
 
 Chiunque partecipi al viaggio può aggiungere e modificare — spese, cose da portare, tappe, documenti — e matura gli stessi traguardi di chi il viaggio l'ha creato.

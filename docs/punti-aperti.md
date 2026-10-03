@@ -38,7 +38,18 @@ La fase 1.1 (stati idea e definito, giorni, capienza) è costruita. Restano, cia
 | **Notifica "è ancora un'idea?"** | Oggi il sollecito sta dentro l'app, sulla scheda e nell'idea. La notifica ha bisogno del permesso, che si chiede quando serve davvero ([14](prodotto/14-notifiche.md)) | Con le notifiche |
 | **Schermata dei conflitti** | Una modifica su versione superata oggi si rifiuta, la copia si riscarica e la persona riprova. Mostrare le due versioni affiancate è la 2.2 | Fase 2.2 |
 | **Chiusura del viaggio** | "In corso" e "concluso" si ricavano dalle date; scriverli sul server, con verifica e traguardi, è la 4.1 | Fase 4.1 |
-| **Tappe da ricollocare** | Spostando le date, i giorni che escono si marcano senza perdere niente; mostrare le tappe da ricollocare arriva con le tappe | Fase 1.2 |
+
+### Rimasto fuori dalla 1.2
+
+La fase 1.2 (tappe: durata, ordine, stato, la coda per aggiungerle e segnarle senza rete) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Promemoria di fine giornata** sulle tappe non segnate (04, regola 18) | È una notifica, e il permesso si chiede quando serve davvero ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **Copia delle tappe solo di oggi e domani** (01, "Dove vive ogni entità") | Oggi la copia prende tutte le tappe dei viaggi: pesano pochi byte. La copia selettiva e la preparazione prima della partenza sono la 3.3 | Fase 3.3 |
+| **Togliere il segno di eccedente** da una tappa | Il segno resta sulla riga; la giornata lo mostra solo finché sfora davvero, quindi sistemata la giornata sparisce dalla vista | Se servirà a qualcosa |
+| **Spostare una tappa trascinandola in un altro giorno** | Oggi si sposta dal foglio della tappa, scegliendo il giorno; trascinare vale dentro la giornata | Se la beta lo chiede |
+| **La capienza di una giornata intera è di 24 ore** | È la regola scritta (01): in mezzo, giornata intera. Ma con 24 ore il "non entra" capita quasi solo il primo e l'ultimo giorno. Se si vuole che il tetto morda, serve una finestra di veglia (per esempio 8–22) | Da decidere |
 
 ### Impianto di sicurezza del matching — stima
 
@@ -100,3 +111,13 @@ L'obiettivo dichiarato è **sei mesi alla beta**, su uno scope che la visione st
 | Se il bundle di gruppo serve, e a che prezzo | Un segnale da **H6**. Il numero che reggerebbe è €19,99 per l'intero viaggio | Dopo la beta |
 | Quali modelli suggerire, nome per nome | Vive in una configurazione remota, non nel codice: si aggiorna quando cambiano i modelli | Continuo |
 | Il nome definitivo del prodotto | "Trolley" è un nome in codice. Nessun investimento sull'identità visiva prima | Prima del lancio pubblico |
+
+### Dalla tela di Claude Design
+
+La grafica viene dalla tela "Trolley — design dell'app", stile «Biglietti» ([ADR-007](tecnico/adr/007-interfaccia-e-liquid-glass.md), revisione del 2026-10-02). Quello che l'app non fa ancora come la tela, e perché:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Foto della destinazione sul biglietto** | La tela attacca una piccola foto, storta, sulla carta d'imbarco del viaggio in corso. Serve un fornitore di immagini (licenza, attribuzione, costo), dietro un'interfaccia come gli altri servizi esterni ([04](tecnico/04-integrazioni.md)). Intanto il biglietto vive senza: il codice di tre lettere basta a riconoscerlo | Da scegliere il fornitore |
+| **Tema scuro** | La tela è solo chiara, e l'app pure: col telefono in scuro resta chiara | Quando la tela disegna lo scuro |
+| **Mappa e Community nella barra in basso** | La tela le ha; nell'app la barra mostra solo le sezioni che esistono (Viaggi, +, Profilo) | Con le fasi 3.2 e 5 |

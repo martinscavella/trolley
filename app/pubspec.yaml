@@ -36,3 +36,22 @@ flutter:
     # Paesi e città per scegliere la destinazione, anche senza rete (ADR-005).
     # Si rigenera con tool/genera_destinazioni.dart.
     - assets/destinazioni.tsv
+
+  # I caratteri della tela di Claude Design (CLAUDE.md, regola 9), dentro l'app
+  # perché valgano anche senza rete. Licenza SIL OFL 1.1, accanto ai file.
+  # Unbounded è variabile: il peso si dà con fontVariations (aspetto/testi.dart),
+  # come fa il browser della tela.
+  fonts:
+    - family: Unbounded
+      fonts:
+        - asset: assets/fonts/Unbounded.ttf
+    - family: DM Sans
+      fonts:
+        - asset: assets/fonts/DMSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/DMSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/DMSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/DMSans-Bold.ttf
+          weight: 700

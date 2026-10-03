@@ -16,6 +16,8 @@ import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
 import '../dominio/periodo.dart';
 import '../dominio/stato_viaggio.dart';
+import '../dominio/tappe.dart';
+import 'coda.dart';
 import 'database.dart';
 import 'destinazioni.dart';
 import 'errori.dart';
@@ -38,6 +40,9 @@ class Archivio {
 
   /// A cui dire com'è andata ogni chiamata (rete.dart).
   final Rete? rete;
+
+  /// I gesti che si fanno anche senza rete (coda.dart).
+  late final coda = Coda(_db, _supabase, rete: rete);
 
   String? get _io => _supabase.auth.currentUser?.id;
 
@@ -106,42 +111,55 @@ class Archivio {
 
   // ─── Copia di lettura ───────────────────────────────────────────────────
 
-  /// Riscarica la copia dei viaggi, con i loro giorni e chi partecipa. Le idee
-  /// archiviate ci sono anche loro: pesano pochi byte, e così l'archivio si
-  /// legge anche senza rete. Se qualcosa va storto la copia resta quella di
-  /// prima: meglio vecchia e dichiarata tale che vuota.
+  /// Riscarica la copia dei viaggi, con i loro giorni, le tappe e chi
+  /// partecipa. Prima manda quello che è in coda, così la copia lo comprende;
+  /// quello che non è partito ci si rimette sopra. Le idee archiviate ci sono
+  /// anche loro: pesano pochi byte, e così l'archivio si legge anche senza
+  /// rete. Se qualcosa va storto la copia resta quella di prima: meglio vecchia
+  /// e dichiarata tale che vuota.
   Future<void> aggiornaCopia() async {
-    final (viaggi, partecipazioni, utenti, giorni) = await _alServer(() async {
-      final viaggi = await _server
-          .from('viaggio')
-          .select()
-          .isFilter('eliminato_il', null);
-      final ids = [for (final v in viaggi) v['id'] as String];
-      if (ids.isEmpty) {
-        return (
-          viaggi,
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-        );
-      }
-      final (partecipazioni, giorni) = await (
-        _server.from('partecipazione').select().inFilter('viaggio_id', ids),
-        _server
-            .from('giorno')
+    await coda.svuota();
+    final (viaggi, partecipazioni, utenti, giorni, tappe) = await _alServer(
+      () async {
+        final viaggi = await _server
+            .from('viaggio')
             .select()
-            .inFilter('viaggio_id', ids)
-            .isFilter('eliminato_il', null),
-      ).wait;
-      final utenti = await _server
-          .from('utente')
-          .select('id, nome, versione, eliminato_il')
-          .inFilter(
-            'id',
-            {for (final p in partecipazioni) p['utente_id'] as String}.toList(),
+            .isFilter('eliminato_il', null);
+        final ids = [for (final v in viaggi) v['id'] as String];
+        if (ids.isEmpty) {
+          return (
+            viaggi,
+            <Map<String, dynamic>>[],
+            <Map<String, dynamic>>[],
+            <Map<String, dynamic>>[],
+            <Map<String, dynamic>>[],
           );
-      return (viaggi, partecipazioni, utenti, giorni);
-    });
+        }
+        // Anche le tappe dei giorni usciti dalle date: sono da ricollocare.
+        final (partecipazioni, giorni, tappe) = await (
+          _server.from('partecipazione').select().inFilter('viaggio_id', ids),
+          _server
+              .from('giorno')
+              .select()
+              .inFilter('viaggio_id', ids)
+              .isFilter('eliminato_il', null),
+          _server
+              .from('tappa')
+              .select()
+              .inFilter('viaggio_id', ids)
+              .isFilter('eliminato_il', null),
+        ).wait;
+        final utenti = await _server
+            .from('utente')
+            .select('id, nome, versione, eliminato_il')
+            .inFilter(
+              'id',
+              {for (final p in partecipazioni) p['utente_id'] as String}
+                  .toList(),
+            );
+        return (viaggi, partecipazioni, utenti, giorni, tappe);
+      },
+    );
 
     final adesso = DateTime.now().toUtc();
     final io = _io;
@@ -149,6 +167,7 @@ class Archivio {
       await _db.delete(_db.viaggi).go();
       await _db.delete(_db.partecipazioni).go();
       await _db.delete(_db.giorni).go();
+      await _db.delete(_db.tappe).go();
       // Il proprio profilo completo non si butta: dagli altri arriva solo il nome.
       await (_db.delete(
         _db.utenti,
@@ -160,11 +179,13 @@ class Archivio {
           for (final r in partecipazioni) _partecipazione(r, adesso),
         ]);
         b.insertAll(_db.giorni, [for (final r in giorni) _giorno(r, adesso)]);
+        b.insertAll(_db.tappe, [for (final r in tappe) rigaTappa(r, adesso)]);
         b.insertAllOnConflictUpdate(_db.utenti, [
           for (final r in utenti)
             if (r['id'] != io) _utente(r, adesso),
         ]);
       });
+      await coda.riapplica();
     });
   }
 
@@ -255,6 +276,35 @@ class Archivio {
             )
             ..orderBy([(g) => OrderingTerm.asc(g.data)]))
           .watch();
+
+  /// Le tappe del viaggio, di tutti i giorni, ciascuna nel suo ordine. A pari
+  /// ordine — due telefoni che ne aggiungono una insieme — viene prima quella
+  /// nata prima.
+  Stream<List<Tappa>> osservaTappe(String viaggioId) =>
+      (_db.select(_db.tappe)
+            ..where(
+              (t) => t.viaggioId.equals(viaggioId) & t.eliminatoIl.isNull(),
+            )
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.ordine),
+              (t) => OrderingTerm.asc(t.creatoIl),
+            ]))
+          .watch();
+
+  /// Il mio ruolo nel viaggio: `creatore` o `partecipante`.
+  Future<String?> mioRuolo(String viaggioId) async {
+    final io = _io;
+    if (io == null) return null;
+    final p =
+        await (_db.select(_db.partecipazioni)..where(
+              (p) => p.viaggioId.equals(viaggioId) & p.utenteId.equals(io),
+            ))
+            .getSingleOrNull();
+    return p?.ruolo;
+  }
+
+  /// Chi sono, per riconoscere le proprie tappe.
+  String? get io => _io;
 
   /// Chi partecipa, con il nome. Chi è uscito o è stato rimosso non compare qui,
   /// ma i suoi contributi restano nel viaggio.
@@ -410,6 +460,72 @@ class Archivio {
     );
     await aggiornaCopia();
     return viaggioId;
+  }
+
+  // ─── Tappe: le scritture che richiedono la rete ──────────────────────────
+
+  /// Cambia una tappa: titolo, tipo, durata, ora, luogo, giorno. Con la
+  /// versione su cui la persona ha deciso: se qualcuno l'ha cambiata nel
+  /// frattempo si rifiuta, e la copia si riscarica (02 §3). Prima parte quello
+  /// che è in coda, così la tappa ha la sua versione del server.
+  Future<void> modificaTappa(Tappa tappa, Map<String, Object?> valori) async {
+    await coda.svuota();
+    final attuale =
+        await (_db.select(
+          _db.tappe,
+        )..where((t) => t.id.equals(tappa.id))).getSingleOrNull() ??
+        tappa;
+    final righe = await _alServer(
+      () => _server
+          .from('tappa')
+          .update({...valori, 'versione': attuale.versione})
+          .eq('id', tappa.id)
+          .select(),
+    );
+    if (righe.isEmpty) {
+      await aggiornaCopia().catchError((_) {});
+      throw const ErroreTrolley(
+        'Questa tappa non è ancora arrivata sul server, o non c\'è più. Ora '
+        'vedi la giornata com\'è adesso.',
+      );
+    }
+    await coda.nellaCopia(righe.single);
+  }
+
+  /// Toglie una tappa: si marca, non si cancella (01-modello-dati.md).
+  Future<void> togliTappa(Tappa tappa) => modificaTappa(tappa, {
+    'eliminato_il': DateTime.now().toUtc().toIso8601String(),
+  });
+
+  /// Sposta una tappa in fondo a un altro giorno del viaggio.
+  Future<void> spostaTappa(Tappa tappa, {required String giornoId}) async {
+    final ordini =
+        await (_db.select(_db.tappe)..where(
+              (t) => t.giornoId.equals(giornoId) & t.eliminatoIl.isNull(),
+            ))
+            .get();
+    await modificaTappa(tappa, {
+      'giorno_id': giornoId,
+      'ordine': ordineInFondo(ordini.map((t) => t.ordine)),
+    });
+  }
+
+  /// Riordina le tappe di un giorno: [ids] nell'ordine voluto. Non porta la
+  /// versione: due persone che riordinano la stessa giornata non sono un
+  /// conflitto da mostrare, vince l'ultima.
+  Future<void> ordinaTappe(String giornoId, List<String> ids) async {
+    await coda.svuota();
+    final righe = await _alServer(
+      () => _server.rpc<List<dynamic>>(
+        'ordina_tappe',
+        params: {'p_giorno': giornoId, 'p_tappe': ids},
+      ),
+    );
+    await _db.transaction(() async {
+      for (final r in righe) {
+        await coda.nellaCopia(r as Map<String, dynamic>);
+      }
+    });
   }
 
   // ─── Idee e archivio ────────────────────────────────────────────────────

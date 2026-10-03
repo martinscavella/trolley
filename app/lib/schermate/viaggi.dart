@@ -5,10 +5,12 @@ import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../aspetto/copertina.dart';
+import '../aspetto/barra.dart';
+import '../aspetto/biglietto.dart';
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/movimento.dart';
+import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
@@ -16,6 +18,7 @@ import '../dati/archivio.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
+import '../dominio/calendario.dart';
 import '../dominio/codice_invito.dart';
 import '../dominio/stato_viaggio.dart';
 import '../servizi.dart';
@@ -166,29 +169,65 @@ class _SchermataViaggiState extends State<SchermataViaggi>
     }
   }
 
+  /// "Altro": l'archivio delle idee e le impostazioni.
+  Future<void> _altro() async {
+    final archivio = Servizi.of(context).archivio;
+    final archiviate =
+        (await archivio.osservaViaggiInElenco(archiviati: true).first).length;
+    if (!mounted) return;
+    await scegliAzione(context, [
+      AzioneMenu(
+        archiviate == 0
+            ? 'Archivio delle idee'
+            : 'Archivio delle idee ($archiviate)',
+        () => apri<void>(context, const SchermataArchivio()),
+      ),
+      AzioneMenu(
+        'Impostazioni',
+        () => apri<void>(context, const SchermataImpostazioni()),
+      ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final servizi = Servizi.of(context);
     final oggi = DateTime.now();
-    return AdaptiveScaffold(
-      appBar: AdaptiveAppBar(
-        title: _titoloInBarra ? 'Viaggi' : null,
-        actions: [
-          AdaptiveAppBarAction(
-            iosSymbol: 'envelope.open',
-            icon: Icons.drafts_outlined,
-            label: 'Ho un codice d\'invito',
-            onPressed: _inserisciCodice,
-          ),
-          AdaptiveAppBarAction(
-            iosSymbol: 'gearshape',
-            icon: Icons.settings_outlined,
-            label: 'Impostazioni',
-            onPressed: () => apri<void>(context, const SchermataImpostazioni()),
+    return Pagina(
+      inBasso: BarraPrincipale(
+        prima: [
+          VoceBarra(
+            icona: icona(
+              ios: CupertinoIcons.briefcase,
+              android: Icons.luggage_outlined,
+            ),
+            etichetta: 'Viaggi',
+            attiva: true,
+            onTap: () => _scorrimento.hasClients
+                ? _scorrimento.animateTo(
+                    0,
+                    duration: movimentoRidotto(context)
+                        ? Duration.zero
+                        : Ritmo.medio,
+                    curve: Ritmo.curva,
+                  )
+                : null,
           ),
         ],
-      ),
-      body: StreamBuilder<List<ViaggioInElenco>>(
+        dopo: [
+          VoceBarra(
+            icona: icona(
+              ios: CupertinoIcons.person,
+              android: Icons.person_outline,
+            ),
+            etichetta: 'Profilo',
+            onTap: () => apri<void>(context, const SchermataImpostazioni()),
+          ),
+        ],
+        etichettaAggiungi: 'Nuovo viaggio',
+        onAggiungi: _nuovoViaggio,
+      ).entra(context, ritardo: Ritmo.lungo, da: 40),
+      corpo: StreamBuilder<List<ViaggioInElenco>>(
         stream: servizi.archivio.osservaViaggiInElenco(),
         builder: (context, snapshot) {
           final viaggi = snapshot.data;
@@ -213,12 +252,17 @@ class _SchermataViaggiState extends State<SchermataViaggi>
             ),
             slivers: [
               if (suIOS) CupertinoSliverRefreshControl(onRefresh: _aggiorna),
-              SliverSafeArea(
-                bottom: false,
-                sliver: SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                  sliver: SliverToBoxAdapter(
-                    child: _Intestazione(numero: viaggi?.length ?? 0),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  MediaQuery.paddingOf(context).top + 16,
+                  20,
+                  8,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: _Intestazione(
+                    onCodice: _inserisciCodice,
+                    onAltro: _altro,
                   ),
                 ),
               ),
@@ -237,21 +281,27 @@ class _SchermataViaggiState extends State<SchermataViaggi>
                   ),
                 )
               else ...[
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
                 for (final MapEntry(key: stato, value: dellaSezione)
                     in sezioni.entries) ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: TitoloSezione(
-                        titoloSezione(stato),
-                      ).entra(context, ritardo: Ritmo.passo * min(indice, 6)),
+                  // Il biglietto di un viaggio in corso lo dice da sé.
+                  if (stato != StatoViaggio.inCorso)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: TitoloSezione(
+                          titoloSezione(stato),
+                          sotto: stato == StatoViaggio.idea
+                              ? 'Ancora senza date'
+                              : null,
+                        ).entra(context, ritardo: Ritmo.passo * min(indice, 6)),
+                      ),
                     ),
-                  ),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                     sliver: SliverList.separated(
                       itemCount: dellaSezione.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 16),
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, i) {
                         final v = dellaSezione[i];
                         return TieniVivo(
@@ -260,6 +310,7 @@ class _SchermataViaggiState extends State<SchermataViaggi>
                               SchedaViaggio(
                                 dati: v,
                                 stato: stato,
+                                oggi: oggi,
                                 sollecito: daSollecitare.contains(v.viaggio),
                                 onTap: () => apri<void>(
                                   context,
@@ -276,34 +327,21 @@ class _SchermataViaggiState extends State<SchermataViaggi>
                 ],
               ],
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  0,
+                  20,
+                  BarraPrincipale.ingombro +
+                      MediaQuery.paddingOf(context).bottom,
+                ),
                 sliver: SliverToBoxAdapter(child: _VoceArchivio()),
               ),
             ],
           );
 
-          return Stack(
-            children: [
-              if (suIOS)
-                elenco
-              else
-                RefreshIndicator(onRefresh: _aggiorna, child: elenco),
-              if (viaggi != null && viaggi.isNotEmpty)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: SafeArea(
-                    top: false,
-                    minimum: const EdgeInsets.only(bottom: 16),
-                    child: Center(
-                      child: _PulsanteNuovoViaggio(onPressed: _nuovoViaggio)
-                          .entra(context, ritardo: Ritmo.lungo, da: 40),
-                    ),
-                  ),
-                ),
-            ],
-          );
+          return suIOS
+              ? elenco
+              : RefreshIndicator(onRefresh: _aggiorna, child: elenco);
         },
       ),
     );
@@ -338,39 +376,43 @@ class _SchermataViaggiState extends State<SchermataViaggi>
 }
 
 class _Intestazione extends StatelessWidget {
-  const _Intestazione({required this.numero});
+  const _Intestazione({required this.onCodice, required this.onAltro});
 
-  final int numero;
+  final VoidCallback onCodice;
+  final VoidCallback onAltro;
 
   @override
-  Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    return StreamBuilder<Utente?>(
-      stream: Servizi.of(context).archivio.osservaProfilo(),
-      builder: (context, snapshot) {
-        final nome = snapshot.data?.nome;
-        final saluto = [
-          if (nome != null) 'Ciao $nome',
-          if (numero > 0) quanti(numero, 'viaggio', 'viaggi'),
-        ].join(' · ');
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Viaggi', style: Testi.titoloGrande.copyWith(color: t.testo)),
-            const SizedBox(height: 4),
-            AnimatedSwitcher(
-              duration: Ritmo.medio,
-              child: Text(
-                saluto,
-                key: ValueKey(saluto),
-                style: Testi.secondario.copyWith(color: t.testoSecondario),
-              ),
-            ),
-          ],
-        ).entra(context, da: 8);
-      },
-    );
-  }
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Semantics(
+          header: true,
+          child: Text(
+            'I tuoi viaggi',
+            style: Testi.titolo.copyWith(color: Colori.inchiostro),
+          ),
+        ),
+      ),
+      PulsanteTondo(
+        icona: icona(
+          ios: CupertinoIcons.tickets,
+          android: Icons.vpn_key_outlined,
+        ),
+        etichetta: 'Ho un codice d\'invito',
+        scuro: true,
+        onPressed: onCodice,
+      ),
+      const SizedBox(width: 8),
+      PulsanteTondo(
+        icona: icona(
+          ios: CupertinoIcons.ellipsis_vertical,
+          android: Icons.more_vert,
+        ),
+        etichetta: 'Altro',
+        onPressed: onAltro,
+      ),
+    ],
+  ).entra(context, da: 8);
 }
 
 /// Senza rete si legge la copia, e si dice quanto è vecchia (02 §1: non si
@@ -394,17 +436,17 @@ class _SenzaRete extends StatelessWidget {
         child: rete
             ? const SizedBox(width: double.infinity)
             : Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Avviso(
                   icona: icona(
                     ios: CupertinoIcons.wifi_slash,
                     android: Icons.wifi_off,
                   ),
+                  inizio: 'Sei offline.',
                   testo: scaricata == null
-                      ? 'Sei offline.'
-                      : 'Sei offline: stai vedendo la copia sul telefono, '
-                            'aggiornata ${quantoFa(scaricata, DateTime.now())}.',
-                  colore: Tavolozza.of(context).testoSecondario,
+                      ? 'Quello che fai adesso parte appena torna la rete.'
+                      : 'Stai vedendo la copia sul telefono, aggiornata '
+                            '${quantoFa(scaricata, DateTime.now())}.',
                 ),
               ),
       ),
@@ -412,18 +454,22 @@ class _SenzaRete extends StatelessWidget {
   }
 }
 
-/// Un viaggio nell'elenco: la copertina, dove, quando, chi.
+/// Un viaggio nell'elenco, come i biglietti della tela: una carta d'imbarco
+/// con il codice di tre lettere, le date e quanti siete; un biglietto giallo
+/// basso se è ancora un'idea.
 class SchedaViaggio extends StatelessWidget {
   const SchedaViaggio({
     super.key,
     required this.dati,
     required this.stato,
+    required this.oggi,
     required this.onTap,
     this.sollecito = false,
   });
 
   final ViaggioInElenco dati;
   final StatoViaggio stato;
+  final DateTime oggi;
   final VoidCallback onTap;
 
   /// Un'idea vicina alla fine del suo periodo, o oltre: "è ancora un'idea?".
@@ -431,121 +477,56 @@ class SchedaViaggio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
     final v = dati.viaggio;
-    final sfumatura = copertinaPer(v.id);
-    final segno = bandiera(v.destinazionePaese);
-    const bianco = Colors.white;
-    return Premibile(
+    if (stato == StatoViaggio.idea || stato == StatoViaggio.archiviato) {
+      final periodo = v.periodo == null
+          ? 'senza date'
+          : etichettaPeriodo(v.periodo!, oggi).toLowerCase();
+      return BigliettoIdea(
+        codice: codiceViaggio(v),
+        titolo: titoloViaggio(v),
+        sottotitolo: sollecito
+            ? 'Ancora un\'idea? · $periodo'
+            : 'Idea · $periodo',
+        onTap: onTap,
+      );
+    }
+    final (inizio, fine) = (v.inizio, v.fine);
+    final persone = dati.persone.length;
+    final destra = switch (stato) {
+      StatoViaggio.inCorso when inizio != null && fine != null =>
+        'GIORNO ${giorniDiCalendario(inizio, oggi)} '
+            'DI ${giorniDiCalendario(inizio, fine)}',
+      StatoViaggio.definito when inizio != null => _traQuanto(inizio),
+      StatoViaggio.chiuso when inizio != null => '${inizio.year}',
+      _ => null,
+    };
+    return Biglietto(
+      codice: codiceViaggio(v),
+      nome: titoloViaggio(v),
+      sinistra: descrizioneStato(stato).toUpperCase(),
+      destra: destra,
+      colore: stato == StatoViaggio.chiuso ? Colori.inchiostro : Colori.cobalto,
+      campi: [
+        if (inizio != null) CampoMatrice('Dal', dataBreve(inizio)),
+        if (fine != null) CampoMatrice('Al', dataBreve(fine)),
+        CampoMatrice('Persone', '$persone'),
+      ],
       onTap: onTap,
       etichetta: [
         titoloViaggio(v),
         descrizioneStato(stato),
-        if (sollecito) 'è ancora un\'idea?',
+        quandoViaggio(v),
+        ?destra?.toLowerCase(),
+        quanti(persone, 'persona', 'persone'),
       ].join(', '),
-      child: DecoratedBox(
-        decoration: ShapeDecoration(
-          shape: RoundedSuperellipseBorder(
-            borderRadius: BorderRadius.circular(CopertinaEroe.raggioScheda),
-          ),
-          shadows: t.scuro
-              ? null
-              : [
-                  BoxShadow(
-                    color: sfumatura.inizio.withValues(alpha: 0.35),
-                    blurRadius: 26,
-                    spreadRadius: -8,
-                    offset: const Offset(0, 14),
-                  ),
-                ],
-        ),
-        child: SizedBox(
-          height: 184,
-          child: ClipRSuperellipse(
-            borderRadius: BorderRadius.circular(CopertinaEroe.raggioScheda),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CopertinaEroe(chiave: v.id, raggio: CopertinaEroe.raggioScheda),
-                // Un velo in basso, perché il testo si legga su ogni colore.
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.center,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x00000000), Color(0x59000000)],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Pillola(
-                            descrizioneStato(stato),
-                            suCopertina: true,
-                            icona: stato == StatoViaggio.idea
-                                ? icona(
-                                    ios: CupertinoIcons.lightbulb,
-                                    android: Icons.lightbulb_outline,
-                                  )
-                                : null,
-                          ),
-                          if (sollecito) ...[
-                            const SizedBox(width: 6),
-                            Pillola(
-                              'Ancora un\'idea?',
-                              suCopertina: true,
-                              icona: icona(
-                                ios: CupertinoIcons.hourglass,
-                                android: Icons.hourglass_bottom,
-                              ),
-                            ),
-                          ],
-                          const Spacer(),
-                          if (segno != null)
-                            Text(segno, style: const TextStyle(fontSize: 26)),
-                        ],
-                      ),
-                      const Spacer(),
-                      Text(
-                        titoloViaggio(v),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Testi.titolo.copyWith(color: bianco),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              quandoViaggio(v),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Testi.secondario.copyWith(
-                                color: bianco.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ),
-                          if (dati.persone.isNotEmpty)
-                            PilaAvatar(
-                              nomi: dati.persone,
-                              bordo: bianco.withValues(alpha: 0.9),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
+  }
+
+  /// «TRA 8 GIORNI», «DOMANI».
+  String _traQuanto(DateTime inizio) {
+    final giorni = soloData(inizio).difference(soloData(oggi)).inDays;
+    return giorni <= 1 ? 'DOMANI' : 'TRA $giorni GIORNI';
   }
 }
 
@@ -573,8 +554,6 @@ class _VoceArchivio extends StatelessWidget {
                     ios: CupertinoIcons.archivebox,
                     android: Icons.archive_outlined,
                   ),
-                  colore: t.testoSecondario,
-                  dimensione: 36,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -605,7 +584,7 @@ class _VoceArchivio extends StatelessWidget {
   }
 }
 
-/// Nessun viaggio ancora: un'illustrazione che respira e le due strade.
+/// Nessun viaggio ancora: una scheda bianca con le due strade.
 class _Vuoto extends StatelessWidget {
   const _Vuoto({required this.onNuovoViaggio, required this.onCodice});
 
@@ -613,160 +592,47 @@ class _Vuoto extends StatelessWidget {
   final VoidCallback onCodice;
 
   @override
-  Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 0, 32, 48),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const _Illustrazione(),
-          const SizedBox(height: 32),
-          Text(
-            'Ogni viaggio comincia da un\'idea',
-            textAlign: TextAlign.center,
-            style: Testi.titoloSezione.copyWith(color: t.testo),
-          ).entra(context, ritardo: Ritmo.passo * 2),
-          const SizedBox(height: 8),
-          Text(
-            'Basta un posto e un periodo, anche vago. Le date, le tappe e chi '
-            'viene con te si aggiungono dopo.',
-            textAlign: TextAlign.center,
-            style: Testi.corpo.copyWith(color: t.testoSecondario),
-          ).entra(context, ritardo: Ritmo.passo * 3),
-          const SizedBox(height: 28),
-          PulsanteGrande(
-            etichetta: 'Nuovo viaggio',
-            onPressed: onNuovoViaggio,
-          ).entra(context, ritardo: Ritmo.passo * 4),
-          const SizedBox(height: 4),
-          PulsanteGrande(
-            etichetta: 'Ho un codice d\'invito',
-            secondario: true,
-            onPressed: onCodice,
-          ).entra(context, ritardo: Ritmo.passo * 5),
-        ],
-      ),
-    );
-  }
-}
-
-class _Illustrazione extends StatelessWidget {
-  const _Illustrazione();
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    Widget satellite(IconData simbolo, Color colore) => Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: t.superficie,
-        shape: BoxShape.circle,
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F000000),
-            blurRadius: 16,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Icon(simbolo, color: colore, size: 22),
-    );
-
-    return SizedBox(
-      width: 220,
-      height: 190,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 148,
-            height: 148,
-            decoration: ShapeDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [t.accento, const Color(0xFF1D5FAE)],
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      20,
+      24,
+      20,
+      BarraPrincipale.ingombro + MediaQuery.paddingOf(context).bottom,
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Pannello(
+          raggio: 24,
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Ogni viaggio comincia da un\'idea',
+                style: Testi.titoloSezione.copyWith(color: Colori.inchiostro),
               ),
-              shape: RoundedSuperellipseBorder(
-                borderRadius: BorderRadius.circular(48),
+              const SizedBox(height: 8),
+              Text(
+                'Basta un posto e un periodo, anche vago. Le date, le tappe e '
+                'chi viene con te si aggiungono dopo.',
+                style: Testi.corpo.copyWith(color: Colori.grafite),
               ),
-            ),
-            child: const Icon(
-              Icons.luggage_rounded,
-              color: Colors.white,
-              size: 72,
-            ),
-          ).sboccia(context).galleggia(context),
-          Positioned(
-            left: 8,
-            top: 16,
-            child:
-                satellite(
-                      icona(
-                        ios: CupertinoIcons.airplane,
-                        android: Icons.flight_rounded,
-                      ),
-                      const Color(0xFF339AF0),
-                    )
-                    .sboccia(context, ritardo: Ritmo.passo * 2)
-                    .galleggia(context, ampiezza: 4),
+              const SizedBox(height: 20),
+              PulsanteGrande(
+                etichetta: 'Nuovo viaggio',
+                onPressed: onNuovoViaggio,
+              ),
+              const SizedBox(height: 10),
+              PulsanteGrande(
+                etichetta: 'Ho un codice d\'invito',
+                secondario: true,
+                onPressed: onCodice,
+              ),
+            ],
           ),
-          Positioned(
-            right: 6,
-            bottom: 20,
-            child:
-                satellite(
-                      icona(
-                        ios: CupertinoIcons.location_solid,
-                        android: Icons.place_rounded,
-                      ),
-                      const Color(0xFFFF6B6B),
-                    )
-                    .sboccia(context, ritardo: Ritmo.passo * 3)
-                    .galleggia(context, ampiezza: 5),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Il pulsante che galleggia in fondo all'elenco: vetro vero su iOS 26.
-class _PulsanteNuovoViaggio extends StatelessWidget {
-  const _PulsanteNuovoViaggio({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    // Largo quanto il suo contenuto: con il testo ingrandito
-    // dall'accessibilità cresce, e l'etichetta si accorcia solo se non ci sta.
-    return AdaptiveButton.child(
-      onPressed: onPressed,
-      style: AdaptiveButtonStyle.prominentGlass,
-      size: AdaptiveButtonSize.large,
-      color: t.accento,
-      useSmoothRectangleBorder: false,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Sul vetro tinto dall'accento si scrive col colore pensato per
-          // stare sopra l'accento: bianco in chiaro, scuro in scuro.
-          Icon(Icons.add_rounded, color: t.suAccento, size: 22),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              'Nuovo viaggio',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Testi.evidenza.copyWith(color: t.suAccento),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ).entra(context, ritardo: Ritmo.passo * 2, da: 30),
+      ],
+    ),
+  );
 }

@@ -14,7 +14,7 @@ La documentazione in `docs/` è la fonte di verità: si parte da [docs/README.md
 
 | Cartella | Cosa | Comandi |
 |---|---|---|
-| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale, server, rete e destinazioni, `lib/aspetto/` colori, testi, movimento e componenti, `lib/schermate/`. `tool/genera_destinazioni.dart` rigenera l'elenco incorporato delle destinazioni (ADR-005) | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart`. Sul telefono: `flutter build ios --release` e `xcrun devicectl device install app` |
+| `app/` | L'app Flutter. `lib/dominio/` regole pure, `lib/dati/` database locale, coda dei gesti senza rete (`coda.dart`), server, rete e destinazioni, `lib/aspetto/` colori, testi, movimento e componenti, `lib/schermate/`. `tool/genera_destinazioni.dart` rigenera l'elenco incorporato delle destinazioni (ADR-005) | `flutter test`, `flutter analyze`, `dart run build_runner build` dopo aver toccato `database.dart`. Sul telefono: `flutter build ios --release` e `xcrun devicectl device install app` |
 | `supabase/migrations/` | Lo schema del server, una migrazione per file | Applicate a `trolley-db` (ref `nhdgxlynnudwkmxrrokp`). Il nome del file porta la versione registrata sul server |
 | `supabase/tests/` | Le prove delle regole di accesso | Girano dentro un blocco che si annulla da solo: si possono lanciare anche sul progetto remoto |
 | `sito/` | La pagina dei link d'invito, su `trolleyapp.vercel.app` | `vercel deploy --prod` dalla cartella |
@@ -31,7 +31,7 @@ Nomi di tabelle, colonne ed eventi sono in italiano, uguali a quelli di `docs/te
 6. **Le regole di accesso per riga si scrivono con i loro test.** Sono la vera superficie di sicurezza.
 7. **La coda di scrittura è preziosa**: ogni migrazione del database locale deve preservarla, e va provato.
 8. **Mai fondere due testi** in un conflitto: si mostrano le due versioni e sceglie la persona.
-9. **Il vetro è per la navigazione, non per i contenuti** ([ADR-007](docs/tecnico/adr/007-interfaccia-e-liquid-glass.md)): barre, pulsanti flottanti e dialoghi sono componenti di sistema; schede e pannelli si fanno con `lib/aspetto/`. Ogni animazione passa da `aspetto/movimento.dart`, che rispetta "Riduci movimento".
+9. **La grafica viene dalla tela di Claude Design**, "Trolley — design dell'app" (https://claude.ai/artifact/7bMn83Z9KWisT6VC6xxLZz): prima di costruire o cambiare una schermata o un componente la si rilegge e la si segue — colori, font, forme. Lo stile è «Biglietti» (le file con quel nome sulla tela): il biglietto solo per viaggi e idee, il resto schede bianche. Una schermata che la tela non ha ancora si disegna prima lì, nello stesso linguaggio, e poi si costruisce. Nell'app la tela diventa `lib/aspetto/` ([ADR-007](docs/tecnico/adr/007-interfaccia-e-liquid-glass.md)); dialoghi, selettori e interruttori restano componenti di sistema. Ogni animazione passa da `aspetto/movimento.dart`, che rispetta "Riduci movimento".
 
 ## Dove si scrive cosa
 

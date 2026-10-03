@@ -2704,6 +2704,37 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
       'CHECK ("eccedente" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _creatoDaMeta = const VerificationMeta(
+    'creatoDa',
+  );
+  @override
+  late final GeneratedColumn<String> creatoDa = GeneratedColumn<String>(
+    'creato_da',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _creatoIlMeta = const VerificationMeta(
+    'creatoIl',
+  );
+  @override
+  late final GeneratedColumn<String> creatoIl = GeneratedColumn<String>(
+    'creato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2723,6 +2754,9 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
     marcataIl,
     marcataDuranteIlViaggio,
     eccedente,
+    tipo,
+    creatoDa,
+    creatoIl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2869,6 +2903,28 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
     } else if (isInserting) {
       context.missing(_eccedenteMeta);
     }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    }
+    if (data.containsKey('creato_da')) {
+      context.handle(
+        _creatoDaMeta,
+        creatoDa.isAcceptableOrUnknown(data['creato_da']!, _creatoDaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoDaMeta);
+    }
+    if (data.containsKey('creato_il')) {
+      context.handle(
+        _creatoIlMeta,
+        creatoIl.isAcceptableOrUnknown(data['creato_il']!, _creatoIlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoIlMeta);
+    }
     return context;
   }
 
@@ -2946,6 +3002,18 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
         DriftSqlType.bool,
         data['${effectivePrefix}eccedente'],
       )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      ),
+      creatoDa: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_da'],
+      )!,
+      creatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_il'],
+      )!,
     );
   }
 
@@ -2976,6 +3044,16 @@ class Tappa extends DataClass implements Insertable<Tappa> {
   final String? marcataIl;
   final bool marcataDuranteIlViaggio;
   final bool eccedente;
+
+  /// Facoltativo: le tappe incollate da un itinerario (1.6) possono non averlo.
+  final String? tipo;
+
+  /// Chi l'ha aggiunta: il primo contributo di un invitato si riconosce così.
+  final String creatoDa;
+
+  /// A pari ordine, due tappe aggiunte insieme da due telefoni si mettono in
+  /// fila per quando sono nate.
+  final String creatoIl;
   const Tappa({
     required this.id,
     required this.versione,
@@ -2994,6 +3072,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     this.marcataIl,
     required this.marcataDuranteIlViaggio,
     required this.eccedente,
+    this.tipo,
+    required this.creatoDa,
+    required this.creatoIl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3027,6 +3108,11 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     }
     map['marcata_durante_il_viaggio'] = Variable<bool>(marcataDuranteIlViaggio);
     map['eccedente'] = Variable<bool>(eccedente);
+    if (!nullToAbsent || tipo != null) {
+      map['tipo'] = Variable<String>(tipo);
+    }
+    map['creato_da'] = Variable<String>(creatoDa);
+    map['creato_il'] = Variable<String>(creatoIl);
     return map;
   }
 
@@ -3057,6 +3143,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           : Value(marcataIl),
       marcataDuranteIlViaggio: Value(marcataDuranteIlViaggio),
       eccedente: Value(eccedente),
+      tipo: tipo == null && nullToAbsent ? const Value.absent() : Value(tipo),
+      creatoDa: Value(creatoDa),
+      creatoIl: Value(creatoIl),
     );
   }
 
@@ -3085,6 +3174,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
         json['marcataDuranteIlViaggio'],
       ),
       eccedente: serializer.fromJson<bool>(json['eccedente']),
+      tipo: serializer.fromJson<String?>(json['tipo']),
+      creatoDa: serializer.fromJson<String>(json['creatoDa']),
+      creatoIl: serializer.fromJson<String>(json['creatoIl']),
     );
   }
   @override
@@ -3110,6 +3202,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
         marcataDuranteIlViaggio,
       ),
       'eccedente': serializer.toJson<bool>(eccedente),
+      'tipo': serializer.toJson<String?>(tipo),
+      'creatoDa': serializer.toJson<String>(creatoDa),
+      'creatoIl': serializer.toJson<String>(creatoIl),
     };
   }
 
@@ -3131,6 +3226,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     Value<String?> marcataIl = const Value.absent(),
     bool? marcataDuranteIlViaggio,
     bool? eccedente,
+    Value<String?> tipo = const Value.absent(),
+    String? creatoDa,
+    String? creatoIl,
   }) => Tappa(
     id: id ?? this.id,
     versione: versione ?? this.versione,
@@ -3150,6 +3248,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     marcataDuranteIlViaggio:
         marcataDuranteIlViaggio ?? this.marcataDuranteIlViaggio,
     eccedente: eccedente ?? this.eccedente,
+    tipo: tipo.present ? tipo.value : this.tipo,
+    creatoDa: creatoDa ?? this.creatoDa,
+    creatoIl: creatoIl ?? this.creatoIl,
   );
   Tappa copyWithCompanion(TappeCompanion data) {
     return Tappa(
@@ -3178,6 +3279,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           ? data.marcataDuranteIlViaggio.value
           : this.marcataDuranteIlViaggio,
       eccedente: data.eccedente.present ? data.eccedente.value : this.eccedente,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      creatoDa: data.creatoDa.present ? data.creatoDa.value : this.creatoDa,
+      creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
     );
   }
 
@@ -3200,7 +3304,10 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           ..write('stato: $stato, ')
           ..write('marcataIl: $marcataIl, ')
           ..write('marcataDuranteIlViaggio: $marcataDuranteIlViaggio, ')
-          ..write('eccedente: $eccedente')
+          ..write('eccedente: $eccedente, ')
+          ..write('tipo: $tipo, ')
+          ..write('creatoDa: $creatoDa, ')
+          ..write('creatoIl: $creatoIl')
           ..write(')'))
         .toString();
   }
@@ -3224,6 +3331,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     marcataIl,
     marcataDuranteIlViaggio,
     eccedente,
+    tipo,
+    creatoDa,
+    creatoIl,
   );
   @override
   bool operator ==(Object other) =>
@@ -3245,7 +3355,10 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           other.stato == this.stato &&
           other.marcataIl == this.marcataIl &&
           other.marcataDuranteIlViaggio == this.marcataDuranteIlViaggio &&
-          other.eccedente == this.eccedente);
+          other.eccedente == this.eccedente &&
+          other.tipo == this.tipo &&
+          other.creatoDa == this.creatoDa &&
+          other.creatoIl == this.creatoIl);
 }
 
 class TappeCompanion extends UpdateCompanion<Tappa> {
@@ -3266,6 +3379,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
   final Value<String?> marcataIl;
   final Value<bool> marcataDuranteIlViaggio;
   final Value<bool> eccedente;
+  final Value<String?> tipo;
+  final Value<String> creatoDa;
+  final Value<String> creatoIl;
   final Value<int> rowid;
   const TappeCompanion({
     this.id = const Value.absent(),
@@ -3285,6 +3401,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     this.marcataIl = const Value.absent(),
     this.marcataDuranteIlViaggio = const Value.absent(),
     this.eccedente = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.creatoDa = const Value.absent(),
+    this.creatoIl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TappeCompanion.insert({
@@ -3305,6 +3424,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     this.marcataIl = const Value.absent(),
     required bool marcataDuranteIlViaggio,
     required bool eccedente,
+    this.tipo = const Value.absent(),
+    required String creatoDa,
+    required String creatoIl,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        versione = Value(versione),
@@ -3316,7 +3438,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
        durataStimataMin = Value(durataStimataMin),
        stato = Value(stato),
        marcataDuranteIlViaggio = Value(marcataDuranteIlViaggio),
-       eccedente = Value(eccedente);
+       eccedente = Value(eccedente),
+       creatoDa = Value(creatoDa),
+       creatoIl = Value(creatoIl);
   static Insertable<Tappa> custom({
     Expression<String>? id,
     Expression<int>? versione,
@@ -3335,6 +3459,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     Expression<String>? marcataIl,
     Expression<bool>? marcataDuranteIlViaggio,
     Expression<bool>? eccedente,
+    Expression<String>? tipo,
+    Expression<String>? creatoDa,
+    Expression<String>? creatoIl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3356,6 +3483,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
       if (marcataDuranteIlViaggio != null)
         'marcata_durante_il_viaggio': marcataDuranteIlViaggio,
       if (eccedente != null) 'eccedente': eccedente,
+      if (tipo != null) 'tipo': tipo,
+      if (creatoDa != null) 'creato_da': creatoDa,
+      if (creatoIl != null) 'creato_il': creatoIl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3378,6 +3508,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     Value<String?>? marcataIl,
     Value<bool>? marcataDuranteIlViaggio,
     Value<bool>? eccedente,
+    Value<String?>? tipo,
+    Value<String>? creatoDa,
+    Value<String>? creatoIl,
     Value<int>? rowid,
   }) {
     return TappeCompanion(
@@ -3399,6 +3532,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
       marcataDuranteIlViaggio:
           marcataDuranteIlViaggio ?? this.marcataDuranteIlViaggio,
       eccedente: eccedente ?? this.eccedente,
+      tipo: tipo ?? this.tipo,
+      creatoDa: creatoDa ?? this.creatoDa,
+      creatoIl: creatoIl ?? this.creatoIl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3459,6 +3595,15 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     if (eccedente.present) {
       map['eccedente'] = Variable<bool>(eccedente.value);
     }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (creatoDa.present) {
+      map['creato_da'] = Variable<String>(creatoDa.value);
+    }
+    if (creatoIl.present) {
+      map['creato_il'] = Variable<String>(creatoIl.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3485,6 +3630,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
           ..write('marcataIl: $marcataIl, ')
           ..write('marcataDuranteIlViaggio: $marcataDuranteIlViaggio, ')
           ..write('eccedente: $eccedente, ')
+          ..write('tipo: $tipo, ')
+          ..write('creatoDa: $creatoDa, ')
+          ..write('creatoIl: $creatoIl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7694,6 +7842,9 @@ typedef $$TappeTableCreateCompanionBuilder = TappeCompanion Function({
   Value<String?> marcataIl,
   required bool marcataDuranteIlViaggio,
   required bool eccedente,
+  Value<String?> tipo,
+  required String creatoDa,
+  required String creatoIl,
   Value<int> rowid,
 });
 typedef $$TappeTableUpdateCompanionBuilder = TappeCompanion Function({
@@ -7714,6 +7865,9 @@ typedef $$TappeTableUpdateCompanionBuilder = TappeCompanion Function({
   Value<String?> marcataIl,
   Value<bool> marcataDuranteIlViaggio,
   Value<bool> eccedente,
+  Value<String?> tipo,
+  Value<String> creatoDa,
+  Value<String> creatoIl,
   Value<int> rowid,
 });
 
@@ -7808,6 +7962,21 @@ class $$TappeTableFilterComposer
 
   ColumnFilters<bool> get eccedente => $composableBuilder(
     column: $table.eccedente,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoDa => $composableBuilder(
+    column: $table.creatoDa,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7905,6 +8074,21 @@ class $$TappeTableOrderingComposer
     column: $table.eccedente,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatoDa => $composableBuilder(
+    column: $table.creatoDa,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TappeTableAnnotationComposer
@@ -7974,6 +8158,15 @@ class $$TappeTableAnnotationComposer
 
   GeneratedColumn<bool> get eccedente =>
       $composableBuilder(column: $table.eccedente, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get creatoDa =>
+      $composableBuilder(column: $table.creatoDa, builder: (column) => column);
+
+  GeneratedColumn<String> get creatoIl =>
+      $composableBuilder(column: $table.creatoIl, builder: (column) => column);
 }
 
 class $$TappeTableTableManager
@@ -8021,6 +8214,9 @@ class $$TappeTableTableManager
                 Value<String?> marcataIl = const Value.absent(),
                 Value<bool> marcataDuranteIlViaggio = const Value.absent(),
                 Value<bool> eccedente = const Value.absent(),
+                Value<String?> tipo = const Value.absent(),
+                Value<String> creatoDa = const Value.absent(),
+                Value<String> creatoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TappeCompanion(
                 id: id,
@@ -8040,6 +8236,9 @@ class $$TappeTableTableManager
                 marcataIl: marcataIl,
                 marcataDuranteIlViaggio: marcataDuranteIlViaggio,
                 eccedente: eccedente,
+                tipo: tipo,
+                creatoDa: creatoDa,
+                creatoIl: creatoIl,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8061,6 +8260,9 @@ class $$TappeTableTableManager
                 Value<String?> marcataIl = const Value.absent(),
                 required bool marcataDuranteIlViaggio,
                 required bool eccedente,
+                Value<String?> tipo = const Value.absent(),
+                required String creatoDa,
+                required String creatoIl,
                 Value<int> rowid = const Value.absent(),
               }) => TappeCompanion.insert(
                 id: id,
@@ -8080,6 +8282,9 @@ class $$TappeTableTableManager
                 marcataIl: marcataIl,
                 marcataDuranteIlViaggio: marcataDuranteIlViaggio,
                 eccedente: eccedente,
+                tipo: tipo,
+                creatoDa: creatoDa,
+                creatoIl: creatoIl,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

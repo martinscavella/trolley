@@ -45,15 +45,20 @@ void main() {
     // L'elenco si aggiorna da sé appena compare.
     await ambiente.monta(tester, SchermataViaggi(onCodice: (_) {}));
 
-    expect(find.text('In corso'), findsNWidgets(2)); // sezione ed etichetta
-    expect(find.text('In programma'), findsNWidgets(2));
+    // I viaggi sono biglietti, come nella tela: quello in corso dice a che
+    // giorno si è, quello in programma quanto manca; le idee hanno la loro
+    // sezione.
+    expect(find.text('IN CORSO'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^GIORNO 2 DI \d+$')), findsOneWidget);
+    expect(find.text('IN PROGRAMMA'), findsOneWidget);
+    expect(find.text('In programma'), findsOneWidget);
     expect(find.text('Idee'), findsOneWidget);
     expect(find.text('Lisbona'), findsOneWidget);
     expect(find.text('Oslo'), findsNothing);
     await tester.scrollUntilVisible(find.text('Archivio'), 300);
     expect(find.text('Archivio'), findsOneWidget);
     expect(find.text('1 idea'), findsOneWidget);
-    expect(find.text('Nuovo viaggio'), findsOneWidget);
+    expect(find.bySemanticsLabel('Nuovo viaggio'), findsOneWidget);
   });
 
   testWidgets('senza rete l\'elenco dice che è la copia, e quanto è vecchia', (
@@ -67,7 +72,7 @@ void main() {
 
     expect(
       find.text(
-        'Sei offline: stai vedendo la copia sul telefono, aggiornata poco fa.',
+        'Sei offline. Stai vedendo la copia sul telefono, aggiornata poco fa.',
       ),
       findsOneWidget,
     );
@@ -115,7 +120,7 @@ void main() {
 
       final attesa = mancano <= 14;
       expect(
-        find.text('Ancora un\'idea?'),
+        find.textContaining('Ancora un\'idea?'),
         attesa ? findsOneWidget : findsNothing,
       );
       final sollecito = await tester.runAsync(

@@ -1,10 +1,9 @@
-import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/movimento.dart';
-import '../aspetto/piattaforma.dart';
+import '../aspetto/pagina.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../dati/errori.dart';
@@ -142,45 +141,38 @@ class _SchermataPeriodoState extends State<SchermataPeriodo> {
   Widget build(BuildContext context) {
     final t = Tavolozza.of(context);
     final manca = !widget.ammettiNessuno && _periodo == null;
-    return AdaptiveScaffold(
-      appBar: AdaptiveAppBar(
-        title: widget.titolo,
-        leading: const PulsanteChiudi(),
-      ),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          MediaQuery.paddingOf(context).top + 16,
-          16,
-          MediaQuery.paddingOf(context).bottom + 24,
-        ),
-        children: [
-          Text(
-            widget.spiegazione,
-            style: Testi.corpo.copyWith(color: t.testoSecondario),
-          ).entra(context),
-          const SizedBox(height: 24),
-          ScegliPeriodo(
-            periodo: _periodo,
-            ammettiNessuno: widget.ammettiNessuno,
-            onScelta: (p) => setState(() => _periodo = p),
-          ).entra(context, ritardo: Ritmo.passo),
-          const SizedBox(height: 32),
-          ConLaRete(
-            builder: (context, rete) => PulsanteGrande(
+    return Foglio(
+      titolo: widget.titolo,
+      inBasso: ConLaRete(
+        builder: (context, rete) {
+          final motivo = !rete
+              ? motivoSenzaRete
+              : manca
+              ? 'Scegli un periodo'
+              : null;
+          return AzioniFoglio(
+            motivo: motivo,
+            azione: PulsanteGrande(
               etichetta: widget.conferma,
               inCorso: _inCorso,
               pericolo: widget.pericolo,
-              motivo: !rete
-                  ? motivoSenzaRete
-                  : manca
-                  ? 'Scegli un periodo'
-                  : null,
-              onPressed: _conferma,
+              onPressed: motivo == null ? _conferma : null,
             ),
-          ).entra(context, ritardo: Ritmo.passo * 2),
-        ],
+          );
+        },
       ),
+      children: [
+        Text(
+          widget.spiegazione,
+          style: Testi.corpo.copyWith(color: t.testoSecondario),
+        ).entra(context),
+        const SizedBox(height: 20),
+        ScegliPeriodo(
+          periodo: _periodo,
+          ammettiNessuno: widget.ammettiNessuno,
+          onScelta: (p) => setState(() => _periodo = p),
+        ).entra(context, ritardo: Ritmo.passo),
+      ],
     );
   }
 }

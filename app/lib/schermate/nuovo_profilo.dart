@@ -12,7 +12,6 @@ import '../dati/errori.dart';
 import '../dominio/eta.dart';
 import '../servizi.dart';
 import 'avviso_invito.dart';
-import 'benvenuto.dart';
 import 'con_la_rete.dart';
 
 /// Nome e data di nascita, la prima volta (01-account-e-profilo.md).
@@ -86,83 +85,198 @@ class _SchermataNuovoProfiloState extends State<SchermataNuovoProfilo> {
 
   @override
   Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
     final nascita = _nascita;
-    return LayoutBenvenuto(
-      titolo: 'Come ti chiami?',
-      sottotitolo: 'Il nome lo vedono i compagni dei tuoi viaggi.',
-      inAlto: CupertinoButton(
-        onPressed: () => Servizi.of(context).supabase.auth.signOut(),
-        child: Text(
-          'Esci',
-          style: Testi.evidenza.copyWith(color: Colors.white),
+    final mq = MediaQuery.of(context);
+    // Come "5 · Come ti chiami?" della tela: il percorso a puntini in alto,
+    // il titolo grande, una scheda bianca con il nome e la data, in fondo
+    // "Continua" ed "Esci".
+    return Stack(
+      children: [
+        const Positioned.fill(child: ColoredBox(color: Colori.nebbia)),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: mq.padding.top + 110,
+          child: const ExcludeSemantics(
+            child: CustomPaint(painter: _PercorsoInAlto()),
+          ),
         ),
-      ),
-      pannello: Pannello(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (widget.invitoInAttesa) ...[
-              const AvvisoInvito(
-                testo:
-                    'Ancora un passo e il viaggio a cui ti hanno invitato '
-                    'si apre.',
+        Scaffold(
+          backgroundColor: const Color(0x00000000),
+          body: LayoutBuilder(
+            builder: (context, vincoli) => SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                mq.padding.top + 96,
+                20,
+                mq.padding.bottom + 16,
               ),
-              const SizedBox(height: 16),
-            ],
-            Campo(
-              controller: _nome,
-              segnaposto: 'Nome',
-              icona: icona(
-                ios: CupertinoIcons.person,
-                android: Icons.person_outline,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      vincoli.maxHeight -
+                      mq.padding.top -
+                      mq.padding.bottom -
+                      64,
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Semantics(
+                          header: true,
+                          child: Text(
+                            'Come ti chiami?',
+                            style: Testi.titoli(32)
+                                .copyWith(color: Colori.inchiostro),
+                          ),
+                        ),
+                      ).entra(context),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 12, 4, 28),
+                        child: Text(
+                          'Il nome lo vedono i compagni dei tuoi viaggi.',
+                          style: Testi.corpo.copyWith(color: Colori.grafite),
+                        ),
+                      ).entra(context, ritardo: Ritmo.passo),
+                      if (widget.invitoInAttesa) ...[
+                        const AvvisoInvito(
+                          testo:
+                              'Ancora un passo e il viaggio a cui ti hanno '
+                              'invitato si apre.',
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      Pannello(
+                        raggio: 24,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Campo(
+                              controller: _nome,
+                              etichetta: 'Nome',
+                              segnaposto: 'Il tuo nome',
+                              maiuscole: TextCapitalization.words,
+                              suggerimenti: const [AutofillHints.givenName],
+                            ),
+                            const SizedBox(height: 18),
+                            CampoScelta(
+                              etichetta: 'Data di nascita',
+                              simbolo: icona(
+                                ios: CupertinoIcons.gift,
+                                android: Icons.cake_outlined,
+                              ),
+                              segnaposto: 'Scegli la data',
+                              valore: nascita == null
+                                  ? null
+                                  : dataEstesa(nascita),
+                              onTap: _scegliData,
+                            ),
+                          ],
+                        ),
+                      ).entra(context, ritardo: Ritmo.passo * 2, da: 30),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
+                        child: Text(
+                          'Servono $etaMinimaAccount anni compiuti. Dopo averla '
+                          'salvata, la data di nascita si può cambiare solo '
+                          'tramite l\'assistenza.',
+                          style: Testi.didascalia.copyWith(
+                            color: Colori.grafite,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      const SizedBox(height: 24),
+                      ConLaRete(
+                        builder: (context, rete) => PulsanteGrande(
+                          etichetta: 'Continua',
+                          inCorso: _inCorso,
+                          motivo: rete ? null : motivoSenzaRete,
+                          onPressed: _salva,
+                        ),
+                      ),
+                      AnimatedSize(
+                        duration: Ritmo.medio,
+                        curve: Ritmo.curva,
+                        child: _messaggio == null
+                            ? const SizedBox(width: double.infinity)
+                            : Padding(
+                                padding: const EdgeInsets.only(top: 14),
+                                child: Text(
+                                  _messaggio!,
+                                  textAlign: TextAlign.center,
+                                  style: Testi.secondario.copyWith(
+                                    color: Colori.pericolo,
+                                  ),
+                                ).entra(context, da: 6),
+                              ),
+                      ),
+                      const SizedBox(height: 6),
+                      Premibile(
+                        onTap: () =>
+                            Servizi.of(context).supabase.auth.signOut(),
+                        etichetta: 'Esci',
+                        child: SizedBox(
+                          height: 48,
+                          child: Center(
+                            child: Text(
+                              'Esci',
+                              style: Testi.corpo.copyWith(
+                                color: Colori.ardesia,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              maiuscole: TextCapitalization.words,
-              suggerimenti: const [AutofillHints.givenName],
             ),
-            const SizedBox(height: 10),
-            CampoScelta(
-              simbolo: icona(
-                ios: CupertinoIcons.gift,
-                android: Icons.cake_outlined,
-              ),
-              segnaposto: 'Data di nascita',
-              valore: nascita == null ? null : dataEstesa(nascita),
-              onTap: _scegliData,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Servono $etaMinimaAccount anni compiuti. Dopo averla salvata, la '
-              'data di nascita si può cambiare solo tramite l\'assistenza.',
-              style: Testi.didascalia.copyWith(color: t.testoSecondario),
-            ),
-            const SizedBox(height: 20),
-            ConLaRete(
-              builder: (context, rete) => PulsanteGrande(
-                etichetta: 'Continua',
-                inCorso: _inCorso,
-                motivo: rete ? null : motivoSenzaRete,
-                onPressed: _salva,
-              ),
-            ),
-            AnimatedSize(
-              duration: Ritmo.medio,
-              curve: Ritmo.curva,
-              child: _messaggio == null
-                  ? const SizedBox(width: double.infinity)
-                  : Padding(
-                      padding: const EdgeInsets.only(top: 14),
-                      child: Text(
-                        _messaggio!,
-                        textAlign: TextAlign.center,
-                        style: Testi.secondario.copyWith(color: t.pericolo),
-                      ).entra(context, da: 6),
-                    ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
+}
+
+/// Il percorso a puntini della tela, in alto a destra: un punto giallo e uno
+/// cobalto.
+class _PercorsoInAlto extends CustomPainter {
+  const _PercorsoInAlto();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final sx = size.width / 390;
+    final y0 = size.height - 150;
+    Offset p(double x, double y) => Offset(x * sx, y0 + y);
+    final percorso = Path()
+      ..moveTo(p(190, 128).dx, p(190, 128).dy)
+      ..cubicTo(240 * sx, y0 + 80, 290 * sx, y0 + 130, 330 * sx, y0 + 70)
+      ..cubicTo(370 * sx, y0 + 10, 380 * sx, y0 + 30, 410 * sx, y0 + 40);
+    final tratto = Paint()
+      ..color = Colori.cobalto.withValues(alpha: 0.45)
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
+    for (final metrica in percorso.computeMetrics()) {
+      for (var d = 0.0; d < metrica.length; d += 12) {
+        final punto = metrica.getTangentForOffset(d)?.position;
+        if (punto != null) {
+          canvas.drawLine(punto, punto.translate(0.01, 0), tratto);
+        }
+      }
+    }
+    canvas
+      ..drawCircle(p(252, 100), 7, Paint()..color = Colori.sole)
+      ..drawCircle(p(336, 62), 6, Paint()..color = Colori.cobalto);
+  }
+
+  @override
+  bool shouldRepaint(_PercorsoInAlto vecchio) => false;
 }

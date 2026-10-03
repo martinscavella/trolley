@@ -46,15 +46,14 @@ void main() {
     final oggi = DateTime.now();
     final prossimo = Periodo.mesiDa(oggi)[1];
     final gettone = find.text(etichettaPeriodo(prossimo, oggi));
-    await tester.scrollUntilVisible(gettone, 200);
+    await tester.ensureVisible(gettone);
     await tester.tap(gettone);
     await tester.pumpAndSettle();
 
     final crea = find.descendant(
       of: find.byType(PulsanteGrande),
-      matching: find.text('Crea l\'idea'),
+      matching: find.text('Crea'),
     );
-    await tester.scrollUntilVisible(crea, 200);
     await tester.tap(crea);
     await tester.pumpAndSettle();
 

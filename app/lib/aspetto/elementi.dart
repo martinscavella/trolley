@@ -1,4 +1,5 @@
-/// I pezzi con cui sono fatte le schermate.
+/// I pezzi con cui sono fatte le schermate, come li disegna la tela di
+/// Claude Design, stile «Biglietti» (CLAUDE.md, regola 9).
 library;
 
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
@@ -11,66 +12,103 @@ import 'piattaforma.dart';
 import 'tavolozza.dart';
 import 'testi.dart';
 
-/// Un pannello: il contenitore dei contenuti, pieno e con gli angoli continui
-/// di iOS. Il vetro no: quello è per la navigazione, non per i contenuti.
+/// Una scheda bianca sul fondo grigio: il contenitore dei contenuti.
 class Pannello extends StatelessWidget {
   const Pannello({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(18),
     this.colore,
+    this.raggio = 20,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+
+  /// Un colore al posto del bianco.
   final Color? colore;
+  final double raggio;
 
   @override
-  Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: colore ?? t.superficie,
-        shape: RoundedSuperellipseBorder(
-          borderRadius: BorderRadius.circular(22),
-        ),
-        shadows: t.scuro
-            ? null
-            : const [
-                BoxShadow(
-                  color: Color(0x12000000),
-                  blurRadius: 24,
-                  offset: Offset(0, 8),
-                ),
-              ],
-      ),
-      child: Padding(padding: padding, child: child),
-    );
-  }
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: colore ?? Colori.bianco,
+      borderRadius: BorderRadius.circular(raggio),
+    ),
+    child: Padding(padding: padding, child: child),
+  );
 }
 
+/// Il titolo di una sezione: «Giorni», «Partecipanti».
 class TitoloSezione extends StatelessWidget {
-  const TitoloSezione(this.testo, {super.key});
+  const TitoloSezione(this.testo, {super.key, this.sotto});
 
   final String testo;
 
+  /// Una riga piccola sotto: «Ancora senza date».
+  final String? sotto;
+
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
-    child: Text(
-      testo,
-      style: Testi.titoloSezione.copyWith(color: Tavolozza.of(context).testo),
+    padding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            testo,
+            style: Testi.titoloSezione.copyWith(color: Colori.inchiostro),
+          ),
+        ),
+        if (sotto != null) ...[
+          const SizedBox(height: 4),
+          Text(sotto!, style: Testi.secondario.copyWith(color: Colori.grafite)),
+        ],
+      ],
     ),
   );
 }
 
-/// Le iniziali in un cerchio colorato. Il colore dipende dal nome: la stessa
+/// Il titolo grande di una schermata, in cima ai contenuti.
+class TitoloPagina extends StatelessWidget {
+  const TitoloPagina(this.testo, {super.key, this.sottotitolo});
+
+  final String testo;
+  final String? sottotitolo;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 4, 4, 24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            testo,
+            style: Testi.titoloGrande.copyWith(color: Colori.inchiostro),
+          ),
+        ),
+        if (sottotitolo != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            sottotitolo!,
+            style: Testi.corpo.copyWith(color: Colori.grafite),
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+/// Le iniziali in un cerchio pieno. Il colore dipende dal nome: la stessa
 /// persona ha lo stesso colore in tutti i viaggi.
 class Avatar extends StatelessWidget {
   const Avatar({
     super.key,
     required this.nome,
-    this.dimensione = 36,
+    this.dimensione = 44,
     this.bordo,
   });
 
@@ -79,35 +117,25 @@ class Avatar extends StatelessWidget {
   final Color? bordo;
 
   @override
-  Widget build(BuildContext context) {
-    final colore = coloreAvatar(nome);
-    return Container(
-      width: dimensione,
-      height: dimensione,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.lerp(colore, Colors.white, 0.18)!,
-            Color.lerp(colore, Colors.black, 0.12)!,
-          ],
-        ),
-        border: bordo == null ? null : Border.all(color: bordo!, width: 2),
-      ),
-      child: Text(
-        iniziali(nome),
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-          fontSize: dimensione * 0.38,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    width: dimensione,
+    height: dimensione,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: coloreAvatar(nome),
+      border: bordo == null ? null : Border.all(color: bordo!, width: 2),
+    ),
+    child: Text(
+      iniziali(nome),
+      style: Testi.titoli(
+        dimensione * 0.36,
+        spaziatura: 0,
+        altezza: 1,
+        peso: 600,
+      ).copyWith(color: Colori.bianco),
+    ),
+  );
 }
 
 /// Fino a tre avatar sovrapposti, poi `+N`.
@@ -116,7 +144,7 @@ class PilaAvatar extends StatelessWidget {
     super.key,
     required this.nomi,
     this.dimensione = 30,
-    this.bordo = Colors.white,
+    this.bordo = Colori.bianco,
   });
 
   final List<String> nomi;
@@ -149,13 +177,14 @@ class PilaAvatar extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0x55000000),
+                  color: Colori.grafite,
                   border: Border.all(color: bordo, width: 2),
                 ),
                 child: Text(
                   '+$altri',
                   style: TextStyle(
-                    color: Colors.white,
+                    fontFamily: Testi.dmSans,
+                    color: Colori.bianco,
                     fontSize: dimensione * 0.36,
                     fontWeight: FontWeight.w600,
                   ),
@@ -168,73 +197,150 @@ class PilaAvatar extends StatelessWidget {
   }
 }
 
-/// Un'etichetta a capsula. Sulle copertine è bianca e traslucida.
+/// Un'etichetta a capsula. Sulle schede bianche è cobalto chiaro; sopra un
+/// biglietto colorato è bianca e trasparente. Con un pallino di colore se
+/// serve.
 class Pillola extends StatelessWidget {
-  const Pillola(this.testo, {super.key, this.icona, this.suCopertina = false});
+  const Pillola(
+    this.testo, {
+    super.key,
+    this.icona,
+    this.suCopertina = false,
+    this.colore,
+    this.fondo,
+    this.pallino,
+  });
 
   final String testo;
   final IconData? icona;
+
+  /// Sopra un biglietto colorato.
   final bool suCopertina;
+
+  /// Il colore del testo: cobalto scuro se non si dice altro.
+  final Color? colore;
+  final Color? fondo;
+  final Color? pallino;
 
   @override
   Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    final colore = suCopertina ? Colors.white : t.accento;
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: suCopertina
-            ? const Color(0x33FFFFFF)
-            : t.accento.withValues(alpha: 0.14),
-        shape: const StadiumBorder(),
+    final c = suCopertina ? Colori.bianco : (colore ?? Colori.cobaltoScuro);
+    return Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color:
+            fondo ??
+            (suCopertina
+                ? Colori.bianco.withValues(alpha: 0.18)
+                : Colori.cobaltoChiaro),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icona != null) ...[
-              Icon(icona, size: 13, color: colore),
-              const SizedBox(width: 4),
-            ],
-            Text(testo, style: Testi.etichetta.copyWith(color: colore)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (pallino != null) ...[
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: pallino, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
           ],
-        ),
+          if (icona != null) ...[
+            Icon(icona, size: 14, color: c),
+            const SizedBox(width: 5),
+          ],
+          Text(testo, style: Testi.pillola.copyWith(color: c)),
+        ],
       ),
     );
   }
 }
 
-/// Un'icona in un tondo tinto: apre le righe dei pannelli.
+/// L'icona che apre una riga: cobalto, a tratto, senza fondo.
 class IconaTonda extends StatelessWidget {
-  const IconaTonda(this.icona, {super.key, this.colore, this.dimensione = 40});
+  const IconaTonda(this.icona, {super.key, this.colore, this.dimensione = 24});
 
   final IconData icona;
   final Color? colore;
   final double dimensione;
 
   @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: dimensione,
+    child: Icon(icona, color: colore ?? Colori.cobalto, size: 22),
+  );
+}
+
+/// Il pulsante quadrato in alto: indietro, codice d'invito, altro. Scuro per
+/// tornare indietro e per l'azione che conta, bianco per il resto.
+class PulsanteTondo extends StatelessWidget {
+  const PulsanteTondo({
+    super.key,
+    required this.icona,
+    required this.etichetta,
+    required this.onPressed,
+    this.scuro = false,
+  });
+
+  final IconData icona;
+
+  /// Cosa legge VoiceOver: il pulsante non ha testo.
+  final String etichetta;
+  final VoidCallback? onPressed;
+  final bool scuro;
+
+  @override
   Widget build(BuildContext context) {
-    final c = colore ?? Tavolozza.of(context).accento;
-    return Container(
-      width: dimensione,
-      height: dimensione,
-      decoration: ShapeDecoration(
-        color: c.withValues(alpha: 0.14),
-        shape: RoundedSuperellipseBorder(
-          borderRadius: BorderRadius.circular(dimensione * 0.32),
+    final tinta = scuro ? Colori.bianco : Colori.inchiostro;
+    return Tooltip(
+      message: etichetta,
+      excludeFromSemantics: true,
+      child: Premibile(
+        onTap: onPressed,
+        scala: 0.92,
+        etichetta: etichetta,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: scuro ? Colori.inchiostro : Colori.bianco,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            icona,
+            size: 22,
+            color: onPressed == null ? tinta.withValues(alpha: 0.35) : tinta,
+          ),
         ),
       ),
-      child: Icon(icona, color: c, size: dimensione * 0.52),
     );
   }
 }
 
-/// Un campo di testo: Cupertino su iOS, Material su Android, stesso aspetto.
-class Campo extends StatelessWidget {
+/// L'etichetta sopra un campo: «Email», «Nome».
+class _EtichettaCampo extends StatelessWidget {
+  const _EtichettaCampo(this.testo);
+
+  final String testo;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: 2, bottom: 6),
+    child: Text(testo, style: Testi.etichetta.copyWith(color: Colori.ardesia)),
+  );
+}
+
+/// Un campo di testo della tela: grigio chiaro, che diventa bianco con il
+/// bordo cobalto mentre si scrive. Cupertino su iOS, Material su Android,
+/// stesso aspetto.
+class Campo extends StatefulWidget {
   const Campo({
     super.key,
     required this.controller,
     required this.segnaposto,
+    this.etichetta,
     this.icona,
     this.tastiera,
     this.oscura = false,
@@ -249,6 +355,9 @@ class Campo extends StatelessWidget {
 
   final TextEditingController controller;
   final String segnaposto;
+
+  /// Sopra il campo, come nella tela. Se manca, conta il segnaposto.
+  final String? etichetta;
   final IconData? icona;
   final TextInputType? tastiera;
   final bool oscura;
@@ -263,67 +372,110 @@ class Campo extends StatelessWidget {
   final bool fuoco;
 
   @override
+  State<Campo> createState() => _CampoState();
+}
+
+class _CampoState extends State<Campo> {
+  final _fuoco = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _fuoco.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _fuoco.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    final stile = Testi.corpo.copyWith(color: t.testo);
-    if (suIOS) {
-      return CupertinoTextField(
-        controller: controller,
-        placeholder: segnaposto,
-        placeholderStyle: stile.copyWith(color: t.testoTerziario),
-        style: stile,
-        prefix: icona == null
-            ? null
-            : Padding(
-                padding: const EdgeInsets.only(left: 14),
-                child: Icon(icona, size: 20, color: t.testoSecondario),
-              ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-        decoration: BoxDecoration(
-          color: t.riempimento,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        keyboardType: tastiera,
-        obscureText: oscura,
-        autofillHints: suggerimenti,
-        textCapitalization: maiuscole,
-        autocorrect: correzione,
-        textInputAction: azione,
-        onSubmitted: onInvio,
-        onChanged: onCambia,
-        autofocus: fuoco,
-        clearButtonMode: onCambia == null
-            ? OverlayVisibilityMode.never
-            : OverlayVisibilityMode.editing,
-      );
-    }
-    return TextField(
-      controller: controller,
-      style: stile,
-      decoration: InputDecoration(
-        hintText: segnaposto,
-        prefixIcon: icona == null ? null : Icon(icona),
-        filled: true,
-        fillColor: t.riempimento,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
+    final stile = Testi.campo.copyWith(color: Colori.inchiostro);
+    final attivo = _fuoco.hasFocus;
+    final forma = BoxDecoration(
+      color: attivo ? Colori.bianco : Colori.foschia,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: attivo ? Colori.cobalto : Colori.foschia,
+        width: 2,
       ),
-      keyboardType: tastiera,
-      obscureText: oscura,
-      autofillHints: suggerimenti,
-      textCapitalization: maiuscole,
-      autocorrect: correzione,
-      textInputAction: azione,
-      onSubmitted: onInvio,
-      onChanged: onCambia,
-      autofocus: fuoco,
+    );
+    final w = widget;
+    final icona = w.icona == null
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: Icon(w.icona, size: 20, color: Colori.cobalto),
+          );
+    final campo = suIOS
+        ? CupertinoTextField(
+            controller: w.controller,
+            focusNode: _fuoco,
+            placeholder: w.segnaposto,
+            placeholderStyle: stile.copyWith(
+              color: Colori.grafite.withValues(alpha: 0.6),
+            ),
+            style: stile,
+            cursorColor: Colori.cobalto,
+            prefix: icona,
+            padding: EdgeInsets.fromLTRB(icona == null ? 16 : 10, 15, 16, 15),
+            decoration: forma,
+            keyboardType: w.tastiera,
+            obscureText: w.oscura,
+            autofillHints: w.suggerimenti,
+            textCapitalization: w.maiuscole,
+            autocorrect: w.correzione,
+            textInputAction: w.azione,
+            onSubmitted: w.onInvio,
+            onChanged: w.onCambia,
+            autofocus: w.fuoco,
+            clearButtonMode: w.onCambia == null
+                ? OverlayVisibilityMode.never
+                : OverlayVisibilityMode.editing,
+          )
+        : DecoratedBox(
+            decoration: forma,
+            child: TextField(
+              controller: w.controller,
+              focusNode: _fuoco,
+              style: stile,
+              cursorColor: Colori.cobalto,
+              decoration: InputDecoration(
+                hintText: w.segnaposto,
+                hintStyle: stile.copyWith(
+                  color: Colori.grafite.withValues(alpha: 0.6),
+                ),
+                prefixIcon: icona,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+              ),
+              keyboardType: w.tastiera,
+              obscureText: w.oscura,
+              autofillHints: w.suggerimenti,
+              textCapitalization: w.maiuscole,
+              autocorrect: w.correzione,
+              textInputAction: w.azione,
+              onSubmitted: w.onInvio,
+              onChanged: w.onCambia,
+              autofocus: w.fuoco,
+            ),
+          );
+    if (w.etichetta == null) return campo;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [_EtichettaCampo(w.etichetta!), campo],
     );
   }
 }
 
-/// Una riga che sembra un campo ma si tocca per scegliere (per esempio una data).
+/// Un riquadro che sembra un campo ma si tocca per scegliere: una data, una
+/// destinazione. Come "Scegli la data" della tela.
 class CampoScelta extends StatelessWidget {
   const CampoScelta({
     super.key,
@@ -331,59 +483,82 @@ class CampoScelta extends StatelessWidget {
     required this.segnaposto,
     required this.valore,
     required this.onTap,
+    this.etichetta,
+    this.onCancella,
   });
 
   final IconData simbolo;
   final String segnaposto;
   final String? valore;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final String? etichetta;
+
+  /// Toglie il valore, quando è facoltativo: un orario che si era messo.
+  final VoidCallback? onCancella;
 
   @override
   Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    return Premibile(
+    final riquadro = Premibile(
       onTap: onTap,
       scala: 0.985,
-      etichetta: valore ?? segnaposto,
+      etichetta: [?etichetta, valore ?? segnaposto].join(': '),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+        constraints: const BoxConstraints(minHeight: 56),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: t.riempimento,
-          borderRadius: BorderRadius.circular(14),
+          color: Colori.foschia,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
-            Icon(simbolo, size: 20, color: t.testoSecondario),
-            const SizedBox(width: 10),
+            Icon(simbolo, size: 22, color: Colori.cobalto),
+            const SizedBox(width: 12),
             Expanded(
               child: AnimatedSwitcher(
                 duration: Ritmo.breve,
                 child: Text(
                   valore ?? segnaposto,
                   key: ValueKey(valore),
-                  style: Testi.corpo.copyWith(
-                    color: valore == null ? t.testoTerziario : t.testo,
+                  style: Testi.campo.copyWith(
+                    color: valore == null ? Colori.grafite : Colori.inchiostro,
                   ),
                 ),
               ),
             ),
-            Icon(
-              icona(
-                ios: CupertinoIcons.chevron_down,
-                android: Icons.expand_more,
+            if (onCancella != null && valore != null)
+              Semantics(
+                button: true,
+                label: 'Togli ${etichetta ?? segnaposto}',
+                excludeSemantics: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onCancella,
+                  child: const SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Colori.grafite,
+                    ),
+                  ),
+                ),
               ),
-              size: 16,
-              color: t.testoTerziario,
-            ),
           ],
         ),
       ),
     );
+    if (etichetta == null) return riquadro;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [_EtichettaCampo(etichetta!), riquadro],
+    );
   }
 }
 
-/// Il pulsante principale di una schermata, largo quanto lo spazio. Su iOS 26
-/// è un pulsante di sistema.
+/// Il pulsante della tela, alto 56. Il principale è d'inchiostro; il
+/// secondario è bianco con il bordo grigio.
 class PulsanteGrande extends StatelessWidget {
   const PulsanteGrande({
     super.key,
@@ -393,6 +568,7 @@ class PulsanteGrande extends StatelessWidget {
     this.inCorso = false,
     this.motivo,
     this.pericolo = false,
+    this.icona,
   });
 
   final String etichetta;
@@ -408,25 +584,53 @@ class PulsanteGrande extends StatelessWidget {
 
   /// Un'azione che toglie qualcosa: in rosso.
   final bool pericolo;
+  final IconData? icona;
 
   @override
   Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
     final attivo = !inCorso && motivo == null && onPressed != null;
-    final colore = pericolo ? t.pericolo : t.accento;
-    final pulsante = SizedBox(
-      width: double.infinity,
-      child: AdaptiveButton(
-        label: inCorso ? 'Un attimo…' : etichetta,
-        onPressed: attivo ? onPressed : null,
-        enabled: attivo,
-        style: secondario
-            ? AdaptiveButtonStyle.plain
-            : AdaptiveButtonStyle.filled,
-        size: AdaptiveButtonSize.large,
-        color: colore,
-        textColor: secondario ? colore : t.suAccento,
-        useSmoothRectangleBorder: false,
+    final tinta = pericolo ? Colori.pericolo : Colori.inchiostro;
+    final testo = secondario ? tinta : Colori.bianco;
+    final pulsante = Semantics(
+      enabled: attivo,
+      child: Premibile(
+        onTap: attivo ? onPressed : null,
+        etichetta: inCorso ? 'Un attimo…' : etichetta,
+        child: AnimatedOpacity(
+          duration: Ritmo.breve,
+          opacity: attivo || inCorso ? 1 : 0.35,
+          child: Container(
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              color: secondario ? Colori.bianco : tinta,
+              border: secondario
+                  ? Border.all(color: Colori.cenere, width: 2)
+                  : null,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (inCorso) ...[
+                  IndicatoreAttivita(colore: testo, piccolo: true),
+                  const SizedBox(width: 10),
+                ] else if (icona != null) ...[
+                  Icon(icona, size: 22, color: testo),
+                  const SizedBox(width: 10),
+                ],
+                Flexible(
+                  child: Text(
+                    inCorso ? 'Un attimo…' : etichetta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Testi.pulsante.copyWith(color: testo),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
     return AnimatedSize(
@@ -443,7 +647,7 @@ class PulsanteGrande extends StatelessWidget {
             Text(
               motivo!,
               textAlign: TextAlign.center,
-              style: Testi.didascalia.copyWith(color: t.testoSecondario),
+              style: Testi.didascalia.copyWith(color: Colori.grafite),
             ),
           ],
         ],
@@ -452,8 +656,8 @@ class PulsanteGrande extends StatelessWidget {
   }
 }
 
-/// Una scelta fra poche: una capsula che si accende quando è scelta. Per i
-/// periodi di un'idea, per esempio.
+/// Una scelta fra poche: una capsula bianca che diventa d'inchiostro quando
+/// è scelta. Per i periodi di un'idea, per i tipi di tappa.
 class Gettone extends StatelessWidget {
   const Gettone({
     super.key,
@@ -467,132 +671,208 @@ class Gettone extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    return Semantics(
-      selected: scelto,
-      child: Premibile(
-        onTap: onTap,
-        scala: 0.94,
-        etichetta: etichetta,
-        child: AnimatedContainer(
-          duration: Ritmo.breve,
-          curve: Ritmo.curva,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          decoration: ShapeDecoration(
-            color: scelto ? t.accento : t.riempimento,
-            shape: const StadiumBorder(),
+  Widget build(BuildContext context) => Semantics(
+    selected: scelto,
+    child: Premibile(
+      onTap: onTap,
+      scala: 0.94,
+      etichetta: etichetta,
+      child: AnimatedContainer(
+        duration: Ritmo.breve,
+        curve: Ritmo.curva,
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: scelto ? Colori.inchiostro : Colori.bianco,
+          border: Border.all(
+            color: scelto ? Colori.inchiostro : Colori.cenere,
+            width: 2,
           ),
+        ),
+        // Stretta sul testo: una capsula fra le altre, non una riga intera.
+        child: Center(
+          widthFactor: 1,
           child: Text(
             etichetta,
             style: Testi.secondario.copyWith(
-              color: scelto ? t.suAccento : t.testo,
-              fontWeight: scelto ? FontWeight.w600 : FontWeight.w400,
+              color: scelto ? Colori.bianco : Colori.inchiostro,
+              fontWeight: scelto ? FontWeight.w700 : FontWeight.w600,
+              height: 1,
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
-/// Una riga d'avviso dentro un pannello: offline, invito in attesa, errori.
+/// Una riga d'avviso, come "Sei offline" della tela: bianca, o rosa quando
+/// dice che qualcosa non va.
 class Avviso extends StatelessWidget {
   const Avviso({
     super.key,
     required this.icona,
     required this.testo,
     this.colore,
+    this.inizio,
+    this.azioni = const [],
+    this.errore = false,
   });
 
   final IconData icona;
   final String testo;
+
+  /// Il colore dell'icona: grafite se non si dice altro.
   final Color? colore;
 
+  /// Le prime parole, in neretto: «Sei offline.»
+  final String? inizio;
+
+  /// Pulsanti piccoli sotto il testo: «Riprova», «Scarta».
+  final List<Widget> azioni;
+
+  /// Qualcosa non va: fondo rosa, icona rossa.
+  final bool errore;
+
   @override
-  Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
-    final c = colore ?? t.accento;
-    return DecoratedBox(
-      decoration: ShapeDecoration(
-        color: c.withValues(alpha: 0.12),
-        shape: RoundedSuperellipseBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    decoration: BoxDecoration(
+      color: errore ? Colori.rosa : Colori.bianco,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icona, color: c, size: 22),
-            const SizedBox(width: 12),
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                icona,
+                color: colore ?? (errore ? Colori.pericolo : Colori.grafite),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                testo,
-                style: Testi.secondario.copyWith(color: t.testo),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    if (inizio != null)
+                      TextSpan(
+                        text: '$inizio ',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Colori.inchiostro,
+                        ),
+                      ),
+                    TextSpan(text: testo),
+                  ],
+                ),
+                style: Testi.secondario.copyWith(
+                  color: errore ? Colori.inchiostro : Colori.ardesia,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (azioni.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 30, top: 10),
+            child: Wrap(spacing: 8, runSpacing: 8, children: azioni),
+          ),
+      ],
+    ),
+  );
+}
+
+/// Un pulsante piccolo, dentro un avviso o una riga.
+class PulsantePiccolo extends StatelessWidget {
+  const PulsantePiccolo({
+    super.key,
+    required this.etichetta,
+    required this.onPressed,
+    this.pericolo = false,
+  });
+
+  final String etichetta;
+  final VoidCallback? onPressed;
+  final bool pericolo;
+
+  @override
+  Widget build(BuildContext context) => Premibile(
+    onTap: onPressed,
+    scala: 0.94,
+    etichetta: etichetta,
+    child: Opacity(
+      opacity: onPressed == null ? 0.4 : 1,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: Colori.foschia,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Una proposta lunga va a capo invece di uscire dal bordo.
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Text(
+                  etichetta,
+                  style: Testi.secondario.copyWith(
+                    color: pericolo ? Colori.pericolo : Colori.cobaltoScuro,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
-/// Il marchio provvisorio: un'icona e il nome in codice.
+/// Il nome, come nell'accesso della tela: "Trolley" in Unbounded, bianco.
 class Marchio extends StatelessWidget {
   const Marchio({super.key, this.grande = true});
 
   final bool grande;
 
   @override
-  Widget build(BuildContext context) {
-    final lato = grande ? 64.0 : 48.0;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: lato,
-          height: lato,
-          decoration: ShapeDecoration(
-            color: const Color(0x2EFFFFFF),
-            shape: RoundedSuperellipseBorder(
-              borderRadius: BorderRadius.circular(lato * 0.3),
-              side: const BorderSide(color: Color(0x4DFFFFFF)),
-            ),
-          ),
-          child: Icon(
-            Icons.luggage_rounded,
-            color: Colors.white,
-            size: lato * 0.52,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Text(
-          'Trolley',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: grande ? 40 : 30,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.6,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Text(
+    'Trolley',
+    style: (grande ? Testi.marchio : Testi.titoli(34, peso: 800)).copyWith(
+      color: Colori.bianco,
+    ),
+  );
 }
 
 class IndicatoreAttivita extends StatelessWidget {
-  const IndicatoreAttivita({super.key, this.colore});
+  const IndicatoreAttivita({super.key, this.colore, this.piccolo = false});
 
   final Color? colore;
+  final bool piccolo;
 
   @override
   Widget build(BuildContext context) => suIOS
-      ? CupertinoActivityIndicator(color: colore, radius: 12)
+      ? CupertinoActivityIndicator(
+          color: colore ?? Colori.cobalto,
+          radius: piccolo ? 9 : 12,
+        )
       : SizedBox.square(
-          dimension: 26,
-          child: CircularProgressIndicator(strokeWidth: 3, color: colore),
+          dimension: piccolo ? 18 : 26,
+          child: CircularProgressIndicator(
+            strokeWidth: piccolo ? 2.4 : 3,
+            color: colore ?? Colori.cobalto,
+          ),
         );
 }
 

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/movimento.dart';
+import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
@@ -31,7 +32,9 @@ class SchermataNuovoViaggio extends StatefulWidget {
 
 class _SchermataNuovoViaggioState extends State<SchermataNuovoViaggio> {
   Destinazione? _destinazione;
-  bool _conDate = true;
+
+  /// Come «Nuova idea» della tela: si parte da un'intenzione, le date dopo.
+  bool _conDate = false;
   var _bozza = const BozzaProgramma();
   Periodo? _periodo;
   bool _inCorso = false;
@@ -89,95 +92,93 @@ class _SchermataNuovoViaggioState extends State<SchermataNuovoViaggio> {
   Widget build(BuildContext context) {
     final t = Tavolozza.of(context);
     final destinazione = _destinazione;
-    return AdaptiveScaffold(
-      appBar: const AdaptiveAppBar(
-        title: 'Nuovo viaggio',
-        leading: PulsanteChiudi(),
+    return Foglio(
+      titolo: _conDate ? 'Nuovo viaggio' : 'Nuova idea',
+      inBasso: ConLaRete(
+        builder: (context, rete) {
+          final motivo = rete ? _cosaManca : motivoSenzaRete;
+          return AzioniFoglio(
+            motivo: motivo,
+            azione: PulsanteGrande(
+              etichetta: 'Crea',
+              inCorso: _inCorso,
+              onPressed: motivo == null ? _crea : null,
+            ),
+          );
+        },
       ),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          MediaQuery.paddingOf(context).top + 12,
-          16,
-          MediaQuery.paddingOf(context).bottom + 32,
+      children: [
+        CampoScelta(
+          etichetta: 'Dove? (anche vago)',
+          simbolo: icona(
+            ios: CupertinoIcons.location,
+            android: Icons.place_outlined,
+          ),
+          segnaposto: 'Una città o un paese',
+          valore: destinazione == null
+              ? null
+              : [
+                  destinazione.nome,
+                  if (destinazione.tipo != TipoDestinazione.paese)
+                    ?destinazione.nomePaese,
+                ].join(', '),
+          onTap: _scegliDestinazione,
+        ).entra(context),
+        if (destinazione != null &&
+            destinazione.tipo == TipoDestinazione.aMano &&
+            destinazione.paese == null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            child: Text(
+              'Senza paese, questo viaggio non comparirà sul mappamondo.',
+              style: Testi.didascalia.copyWith(color: t.testoSecondario),
+            ),
+          ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'Quando?',
+            style: Testi.etichetta.copyWith(color: t.etichetta),
+          ),
         ),
-        children: [
-          const TitoloSezione('Dove').entra(context),
-          CampoScelta(
-            simbolo: icona(
-              ios: CupertinoIcons.location,
-              android: Icons.place_outlined,
-            ),
-            segnaposto: 'Una città o un paese',
-            valore: destinazione == null
-                ? null
-                : [
-                    destinazione.nome,
-                    if (destinazione.tipo != TipoDestinazione.paese)
-                      ?destinazione.nomePaese,
-                  ].join(', '),
-            onTap: _scegliDestinazione,
-          ).entra(context, ritardo: Ritmo.passo),
-          if (destinazione != null &&
-              destinazione.tipo == TipoDestinazione.aMano &&
-              destinazione.paese == null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
-              child: Text(
-                'Senza paese, questo viaggio non comparirà sul mappamondo.',
-                style: Testi.didascalia.copyWith(color: t.testoSecondario),
-              ),
-            ),
-          const SizedBox(height: 28),
-          const TitoloSezione('Quando')
-              .entra(context, ritardo: Ritmo.passo * 2),
-          AdaptiveSegmentedControl(
-            labels: const ['Ho le date', 'Non ancora'],
-            selectedIndex: _conDate ? 0 : 1,
-            onValueChanged: (i) => setState(() => _conDate = i == 0),
-          ).entra(context, ritardo: Ritmo.passo * 2),
-          const SizedBox(height: 16),
-          AnimatedSwitcher(
-            duration: Ritmo.medio,
-            switchInCurve: Ritmo.curva,
-            child: _conDate
-                ? CampiDate(
-                    key: const ValueKey('date'),
-                    bozza: _bozza,
-                    onCambio: (b) => setState(() => _bozza = b),
-                  )
-                : Column(
-                    key: const ValueKey('periodo'),
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
-                        child: Text(
-                          'Nasce come idea: basta un periodo, anche vago. Quando '
-                          'fissate le date diventa un viaggio in programma.',
-                          style: Testi.secondario.copyWith(
-                            color: t.testoSecondario,
-                          ),
+        AdaptiveSegmentedControl(
+          labels: const ['Non ancora', 'Ho le date'],
+          selectedIndex: _conDate ? 1 : 0,
+          onValueChanged: (i) => setState(() => _conDate = i == 1),
+        ).entra(context, ritardo: Ritmo.passo),
+        const SizedBox(height: 16),
+        AnimatedSwitcher(
+          duration: Ritmo.medio,
+          switchInCurve: Ritmo.curva,
+          child: _conDate
+              ? CampiDate(
+                  key: const ValueKey('date'),
+                  bozza: _bozza,
+                  onCambio: (b) => setState(() => _bozza = b),
+                )
+              : Column(
+                  key: const ValueKey('periodo'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
+                      child: Text(
+                        'Basta un\'intenzione: un periodo, anche vago. Le '
+                        'date e i compagni si aggiungono dopo.',
+                        style: Testi.secondario.copyWith(
+                          color: t.testoSecondario,
                         ),
                       ),
-                      ScegliPeriodo(
-                        periodo: _periodo,
-                        onScelta: (p) => setState(() => _periodo = p),
-                      ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 32),
-          ConLaRete(
-            builder: (context, rete) => PulsanteGrande(
-              etichetta: _conDate ? 'Crea il viaggio' : 'Crea l\'idea',
-              inCorso: _inCorso,
-              motivo: rete ? _cosaManca : motivoSenzaRete,
-              onPressed: _crea,
-            ),
-          ),
-        ],
-      ),
+                    ),
+                    ScegliPeriodo(
+                      periodo: _periodo,
+                      onScelta: (p) => setState(() => _periodo = p),
+                    ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 }

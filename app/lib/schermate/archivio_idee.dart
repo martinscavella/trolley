@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/movimento.dart';
+import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
@@ -26,9 +27,8 @@ class SchermataArchivio extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Tavolozza.of(context);
-    return AdaptiveScaffold(
-      appBar: const AdaptiveAppBar(title: 'Archivio'),
-      body: StreamBuilder<List<ViaggioInElenco>>(
+    return Pagina(
+      corpo: StreamBuilder<List<ViaggioInElenco>>(
         stream: Servizi.of(context).archivio
             .osservaViaggiInElenco(archiviati: true),
         builder: (context, snapshot) {
@@ -36,19 +36,17 @@ class SchermataArchivio extends StatelessWidget {
           return ListView(
             padding: EdgeInsets.fromLTRB(
               16,
-              MediaQuery.paddingOf(context).top + 12,
+              MediaQuery.paddingOf(context).top + 4,
               16,
               MediaQuery.paddingOf(context).bottom + 24,
             ),
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 16),
-                child: Text(
-                  'Le idee il cui periodo è passato senza che diventassero '
-                  'viaggi. Non si cancellano: si riprendono quando torna la '
-                  'voglia.',
-                  style: Testi.secondario.copyWith(color: t.testoSecondario),
-                ),
+              const TitoloPagina(
+                'Archivio delle idee',
+                sottotitolo:
+                    'Le idee il cui periodo è passato senza che diventassero '
+                    'viaggi. Non si cancellano: si riprendono quando torna la '
+                    'voglia.',
               ).entra(context),
               if (snapshot.hasData && idee.isEmpty)
                 Padding(

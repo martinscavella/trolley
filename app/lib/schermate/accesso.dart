@@ -1,9 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/movimento.dart';
-import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../configurazione.dart';
@@ -84,93 +82,82 @@ class _SchermataAccessoState extends State<SchermataAccesso> {
 
   @override
   Widget build(BuildContext context) {
-    final t = Tavolozza.of(context);
     return LayoutBenvenuto(
-      titolo: 'Il viaggio, in un posto solo',
-      sottotitolo:
-          'Dall\'idea al ritorno: tappe, spese, cose da portare e chi viene '
-          'con te.',
-      pannello: Pannello(
-        padding: const EdgeInsets.all(20),
-        child: AutofillGroup(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (widget.invitoInAttesa) ...[
-                const AvvisoInvito(
-                  testo:
-                      'Hai un invito. Entra o crea un account e il viaggio '
-                      'si aprirà da solo.',
-                ),
-                const SizedBox(height: 16),
-              ],
-              Campo(
-                controller: _email,
-                segnaposto: 'Email',
-                icona: icona(
-                  ios: CupertinoIcons.mail,
-                  android: Icons.mail_outline,
-                ),
-                tastiera: TextInputType.emailAddress,
-                correzione: false,
-                suggerimenti: const [AutofillHints.email],
-                azione: TextInputAction.next,
-              ),
-              const SizedBox(height: 10),
-              Campo(
-                controller: _password,
-                segnaposto: 'Password',
-                icona: icona(
-                  ios: CupertinoIcons.lock,
-                  android: Icons.lock_outline,
-                ),
-                oscura: true,
-                suggerimenti: const [AutofillHints.password],
-                azione: TextInputAction.done,
-                onInvio: (_) => _esegui(nuovoAccount: false),
+      // Con un invito già in attesa la nota non serve: lo dice la scheda.
+      nota: widget.invitoInAttesa
+          ? null
+          : 'Hai un invito? Aprilo dal link che ti hanno mandato, oppure '
+                'inserisci il codice dopo l\'accesso.',
+      scheda: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.invitoInAttesa) ...[
+              const AvvisoInvito(
+                testo:
+                    'Hai un invito. Entra o crea un account e il viaggio '
+                    'si aprirà da solo.',
               ),
               const SizedBox(height: 20),
-              // Entrare richiede la rete: senza, i pulsanti si spengono e
-              // lo dicono, invece di provare e fallire.
-              ConLaRete(
-                builder: (context, rete) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    PulsanteGrande(
-                      etichetta: 'Accedi',
-                      inCorso: _inCorso,
-                      motivo: rete ? null : motivoSenzaRete,
-                      onPressed: () => _esegui(nuovoAccount: false),
-                    ),
-                    const SizedBox(height: 6),
-                    PulsanteGrande(
-                      etichetta: 'Crea un account',
-                      secondario: true,
-                      onPressed: _inCorso || !rete
-                          ? null
-                          : () => _esegui(nuovoAccount: true),
-                    ),
-                  ],
-                ),
-              ),
-              AnimatedSize(
-                duration: Ritmo.medio,
-                curve: Ritmo.curva,
-                child: _messaggio == null
-                    ? const SizedBox(width: double.infinity)
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 14),
-                        child: Text(
-                          _messaggio!,
-                          textAlign: TextAlign.center,
-                          style: Testi.secondario.copyWith(
-                            color: t.testoSecondario,
-                          ),
-                        ).entra(context, da: 6),
-                      ),
-              ),
             ],
-          ),
+            Campo(
+              controller: _email,
+              etichetta: 'Email',
+              segnaposto: 'nome@esempio.it',
+              tastiera: TextInputType.emailAddress,
+              correzione: false,
+              suggerimenti: const [AutofillHints.email],
+              azione: TextInputAction.next,
+            ),
+            const SizedBox(height: 14),
+            Campo(
+              controller: _password,
+              etichetta: 'Password',
+              segnaposto: '••••••••',
+              oscura: true,
+              suggerimenti: const [AutofillHints.password],
+              azione: TextInputAction.done,
+              onInvio: (_) => _esegui(nuovoAccount: false),
+            ),
+            const SizedBox(height: 20),
+            // Entrare richiede la rete: senza, i pulsanti si spengono e
+            // lo dicono, invece di provare e fallire.
+            ConLaRete(
+              builder: (context, rete) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  PulsanteGrande(
+                    etichetta: 'Accedi',
+                    inCorso: _inCorso,
+                    motivo: rete ? null : motivoSenzaRete,
+                    onPressed: () => _esegui(nuovoAccount: false),
+                  ),
+                  const SizedBox(height: 10),
+                  PulsanteGrande(
+                    etichetta: 'Crea un account',
+                    secondario: true,
+                    onPressed: _inCorso || !rete
+                        ? null
+                        : () => _esegui(nuovoAccount: true),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedSize(
+              duration: Ritmo.medio,
+              curve: Ritmo.curva,
+              child: _messaggio == null
+                  ? const SizedBox(width: double.infinity)
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Text(
+                        _messaggio!,
+                        textAlign: TextAlign.center,
+                        style: Testi.secondario.copyWith(color: Colori.ardesia),
+                      ).entra(context, da: 6),
+                    ),
+            ),
+          ],
         ),
       ),
     );

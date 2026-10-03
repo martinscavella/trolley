@@ -1,9 +1,9 @@
-import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/movimento.dart';
+import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
@@ -84,6 +84,7 @@ class _SchermataDateState extends State<SchermataDate> {
         onConferma: (periodo) =>
             archivio.tornaIdea(widget.viaggio, periodo: periodo),
       ),
+      dalBasso: true,
     );
     if (tornata == true) navigatore.pop(true);
   }
@@ -92,58 +93,48 @@ class _SchermataDateState extends State<SchermataDate> {
   Widget build(BuildContext context) {
     final t = Tavolozza.of(context);
     final eUnIdea = _eUnIdea;
-    return AdaptiveScaffold(
-      appBar: AdaptiveAppBar(
-        title: eUnIdea ? 'Fissa le date' : 'Cambia le date',
-        leading: const PulsanteChiudi(),
+    return Foglio(
+      titolo: eUnIdea ? 'Fissa le date' : 'Cambia le date',
+      inBasso: ConLaRete(
+        builder: (context, rete) {
+          final motivo = rete ? _bozza.problema : motivoSenzaRete;
+          return AzioniFoglio(
+            motivo: motivo,
+            azione: PulsanteGrande(
+              etichetta: eUnIdea ? 'Fissa le date' : 'Salva',
+              inCorso: _inCorso,
+              onPressed: motivo == null ? _salva : null,
+            ),
+          );
+        },
       ),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          MediaQuery.paddingOf(context).top + 16,
-          16,
-          MediaQuery.paddingOf(context).bottom + 32,
-        ),
-        children: [
-          Text(
-            eUnIdea
-                ? 'Con le date l\'idea diventa un viaggio in programma: arrivano '
-                      'i giorni, e con loro le tappe, le spese e i documenti.'
-                : 'I giorni che escono dalle date non si perdono: tornano se '
-                      'le date tornano a comprenderli.',
-            style: Testi.corpo.copyWith(color: t.testoSecondario),
-          ).entra(context),
+      children: [
+        Text(
+          eUnIdea
+              ? 'Con le date l\'idea diventa un viaggio in programma: arrivano '
+                    'i giorni, e con loro le tappe, le spese e i documenti.'
+              : 'I giorni che escono dalle date non si perdono: tornano se '
+                    'le date tornano a comprenderli.',
+          style: Testi.corpo.copyWith(color: t.testoSecondario),
+        ).entra(context),
+        const SizedBox(height: 20),
+        CampiDate(
+          bozza: _bozza,
+          onCambio: (b) => setState(() => _bozza = b),
+        ).entra(context, ritardo: Ritmo.passo),
+        if (_stato.puoTornareIdea) ...[
           const SizedBox(height: 20),
-          CampiDate(
-            bozza: _bozza,
-            onCambio: (b) => setState(() => _bozza = b),
-          ).entra(context, ritardo: Ritmo.passo),
-          const SizedBox(height: 32),
           ConLaRete(
-            builder: (context, rete) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                PulsanteGrande(
-                  etichetta: eUnIdea ? 'Fissa le date' : 'Salva le date',
-                  inCorso: _inCorso,
-                  motivo: rete ? _bozza.problema : motivoSenzaRete,
-                  onPressed: _salva,
-                ),
-                if (_stato.puoTornareIdea) ...[
-                  const SizedBox(height: 8),
-                  PulsanteGrande(
-                    etichetta: 'Torna a idea',
-                    secondario: true,
-                    pericolo: true,
-                    motivo: rete ? null : motivoSenzaRete,
-                    onPressed: _inCorso ? null : _tornaIdea,
-                  ),
-                ],
-              ],
+            builder: (context, rete) => PulsanteGrande(
+              etichetta: 'Torna a idea',
+              secondario: true,
+              pericolo: true,
+              motivo: rete ? null : motivoSenzaRete,
+              onPressed: _inCorso ? null : _tornaIdea,
             ),
           ).entra(context, ritardo: Ritmo.passo * 2),
         ],
-      ),
+      ],
     );
   }
 }

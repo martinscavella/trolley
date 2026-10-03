@@ -1,10 +1,10 @@
-import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/movimento.dart';
+import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
@@ -94,83 +94,101 @@ class _SchermataDestinazioneState extends State<SchermataDestinazione> {
         ),
     ];
 
-    return AdaptiveScaffold(
-      appBar: AdaptiveAppBar(title: aMano == null ? 'Dove?' : 'In che paese?'),
-      body: Padding(
-        padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top + 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: Campo(
-                controller: _testo,
-                fuoco: true,
-                segnaposto: aMano == null
-                    ? 'Una città o un paese'
-                    : 'Il paese di «$aMano»',
-                icona: icona(ios: CupertinoIcons.search, android: Icons.search),
-                correzione: false,
-                maiuscole: TextCapitalization.words,
-                azione: TextInputAction.search,
-                onCambia: (_) => setState(() {}),
-                onInvio: (_) {
-                  if (risultati.isNotEmpty) {
-                    final primo = risultati.first;
-                    _scegli(
-                      aMano == null
-                          ? primo
-                          : Destinazione.aMano(aMano, paese: primo.paese),
-                    );
-                  }
-                },
-              ),
-            ),
-            Expanded(
-              child: _elenco == null
-                  ? const Center(child: IndicatoreAttivita())
-                  : ListView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        0,
-                        16,
-                        MediaQuery.paddingOf(context).bottom + 24,
-                      ),
-                      children: [
-                        if (cercato.isEmpty && aMano == null)
-                          _Suggerimento(
-                            'Città e paesi, anche senza rete. Se il posto non '
-                            'c\'è — una valle, un\'isola — lo scrivi com\'è.',
-                          ),
-                        if (cercato.isEmpty && aMano != null)
-                          _Suggerimento(
-                            '«$aMano» non è nell\'elenco. Col paese, sul '
-                            'mappamondo conterà almeno quello.',
-                          ),
-                        if (righe.isNotEmpty)
-                          Pannello(
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            child: Column(
-                              children: [
-                                for (final (i, riga) in righe.indexed) ...[
-                                  if (i > 0)
-                                    Divider(
-                                      height: 1,
-                                      thickness: 0.5,
-                                      indent: 50,
-                                      color: Tavolozza.of(context).separatore,
-                                    ),
-                                  riga,
-                                ],
-                              ],
-                            ),
-                          ).entra(context, da: 6),
-                      ],
+    return Pagina(
+      corpo: Builder(
+        builder: (context) => Padding(
+          padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    aMano == null ? 'Dove?' : 'In che paese?',
+                    style: Testi.titoloGrande.copyWith(
+                      color: Colori.inchiostro,
                     ),
-            ),
-          ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                child: Campo(
+                  controller: _testo,
+                  fuoco: true,
+                  segnaposto: aMano == null
+                      ? 'Una città o un paese'
+                      : 'Il paese di «$aMano»',
+                  icona: icona(
+                    ios: CupertinoIcons.search,
+                    android: Icons.search,
+                  ),
+                  correzione: false,
+                  maiuscole: TextCapitalization.words,
+                  azione: TextInputAction.search,
+                  onCambia: (_) => setState(() {}),
+                  onInvio: (_) {
+                    if (risultati.isNotEmpty) {
+                      final primo = risultati.first;
+                      _scegli(
+                        aMano == null
+                            ? primo
+                            : Destinazione.aMano(aMano, paese: primo.paese),
+                      );
+                    }
+                  },
+                ),
+              ),
+              Expanded(
+                child: _elenco == null
+                    ? const Center(child: IndicatoreAttivita())
+                    : ListView(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          0,
+                          16,
+                          MediaQuery.paddingOf(context).bottom + 24,
+                        ),
+                        children: [
+                          if (cercato.isEmpty && aMano == null)
+                            _Suggerimento(
+                              'Città e paesi, anche senza rete. Se il posto non '
+                              'c\'è — una valle, un\'isola — lo scrivi com\'è.',
+                            ),
+                          if (cercato.isEmpty && aMano != null)
+                            _Suggerimento(
+                              '«$aMano» non è nell\'elenco. Col paese, sul '
+                              'mappamondo conterà almeno quello.',
+                            ),
+                          if (righe.isNotEmpty)
+                            Pannello(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
+                              child: Column(
+                                children: [
+                                  for (final (i, riga) in righe.indexed) ...[
+                                    if (i > 0)
+                                      Divider(
+                                        height: 1,
+                                        thickness: 0.5,
+                                        indent: 50,
+                                        color: Tavolozza.of(context).separatore,
+                                      ),
+                                    riga,
+                                  ],
+                                ],
+                              ),
+                            ).entra(context, da: 6),
+                        ],
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
