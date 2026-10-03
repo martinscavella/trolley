@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../aspetto/elementi.dart';
@@ -22,7 +21,6 @@ import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
 import '../dominio/tappe.dart';
-import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'gesti_tappa.dart';
@@ -226,59 +224,25 @@ class _SchermataTappaState extends State<SchermataTappa> {
   /// i suoi eventi (07): il primo elemento del viaggio (H2), la funzione usata
   /// (H1), il primo contributo di chi è stato invitato (H3).
   Future<void> _aggiungi() async {
-    final servizi = Servizi.of(context);
-    final archivio = servizi.archivio;
-    final misurazione = servizi.misurazione;
     final viaggio = widget.viaggio;
     final giornoId = _giornoId!;
-    final io = archivio.io;
-    final primaDelViaggio = widget.tappe.isEmpty;
-    final miaGia = widget.tappe.any((t) => t.creatoDa == io);
-    final ruolo = await archivio.mioRuolo(viaggio.id);
-
-    await archivio.coda.aggiungiTappa(
-      NuovaTappa(
-        id: const Uuid().v4(),
-        viaggioId: viaggio.id,
-        giornoId: giornoId,
-        ordine: ordineInFondo(_altreNel(giornoId).map((t) => t.ordine)),
-        titolo: _titolo.text,
-        tipo: _tipo,
-        durata: _durata,
-        ora: _ora,
-        luogo: _luogo.text,
-      ),
+    await aggiungiLeTappe(
+      context,
+      viaggio: viaggio,
+      tappe: [
+        NuovaTappa(
+          id: const Uuid().v4(),
+          viaggioId: viaggio.id,
+          giornoId: giornoId,
+          ordine: ordineInFondo(_altreNel(giornoId).map((t) => t.ordine)),
+          titolo: _titolo.text,
+          tipo: _tipo,
+          durata: _durata,
+          ora: _ora,
+          luogo: _luogo.text,
+        ),
+      ],
     );
-    HapticFeedback.lightImpact();
-
-    final v = viaggio.id;
-    if (primaDelViaggio) {
-      await misurazione.registraUnaVolta(
-        'primo_elemento:$v',
-        Eventi.primoElementoAggiunto,
-        {
-          'viaggio_id': v,
-          'tipo': 'tappa',
-          'ore_dalla_creazione': DateTime.now()
-              .toUtc()
-              .difference(viaggio.creato.toUtc())
-              .inHours,
-        },
-      );
-    }
-    await misurazione.registraUnaVolta(
-      'funzione:itinerario:$v',
-      Eventi.funzioneUsataNelViaggio,
-      {'viaggio_id': v, 'funzione': 'itinerario'},
-    );
-    if (ruolo == 'partecipante' && !miaGia) {
-      await misurazione.registraUnaVolta(
-        'primo_contributo:$v',
-        Eventi.primoContributoInvitato,
-        {'viaggio_id': v, 'tipo': 'tappa'},
-      );
-    }
-    unawaited(misurazione.invia());
     if (mounted) Navigator.of(context).pop();
   }
 

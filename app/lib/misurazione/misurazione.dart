@@ -30,6 +30,9 @@ abstract final class Eventi {
   static const primoContributoInvitato = 'primo_contributo_invitato';
   static const tappaMarcata = 'tappa_marcata';
   static const aperturaSenzaRete = 'apertura_senza_rete';
+  static const promptEsportato = 'prompt_esportato';
+  static const incollatoRiuscito = 'incollato_riuscito';
+  static const incollatoNonInterpretato = 'incollato_non_interpretato';
 }
 
 class Misurazione {

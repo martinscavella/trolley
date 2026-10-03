@@ -133,6 +133,12 @@ class Spese extends Table with RigaCopiata {
   TextColumn get paganteId => text()();
   TextColumn get data => text()();
   TextColumn get descrizione => text().nullable()();
+
+  /// Chi l'ha registrata: il primo contributo di un invitato si riconosce così.
+  TextColumn get creatoDa => text()();
+
+  /// A pari data, l'ultima registrata va in cima.
+  TextColumn get creatoIl => text()();
 }
 
 @DataClassName('SpesaQuota')
@@ -153,10 +159,74 @@ class VociLista extends Table with RigaCopiata {
 
   TextColumn get viaggioId => text()();
   TextColumn get testo => text()();
+
+  /// Quanti pezzi: cinque magliette sono una voce sola (05, schermate).
+  IntColumn get quantita => integer()();
   TextColumn get tipo => text()();
   TextColumn get proprietarioId => text()();
   TextColumn get assegnatoA => text().nullable()();
   BoolColumn get spuntata => boolean()();
+
+  /// Chi l'ha aggiunta: il primo contributo di un invitato si riconosce così.
+  TextColumn get creatoDa => text()();
+
+  /// La lista va nell'ordine in cui le voci sono nate.
+  TextColumn get creatoIl => text()();
+}
+
+/// Una nota del viaggio: per ora la risposta di un assistente, incollata e
+/// salvata sempre, anche quando non si capisce (04, regola 11).
+@DataClassName('Nota')
+class Note extends Table with RigaCopiata {
+  @override
+  String get tableName => 'nota';
+
+  TextColumn get viaggioId => text()();
+  TextColumn get testo => text()();
+
+  /// `incollata` o `scritta`.
+  TextColumn get origine => text()();
+  TextColumn get creatoDa => text()();
+  TextColumn get creatoIl => text()();
+}
+
+/// Quello che si cambia dal server senza un rilascio: i modelli da consigliare
+/// (decisioni/prodotto.md, "Quali modelli suggerire"). Il valore è il JSON
+/// del server, com'è.
+@DataClassName('Configurazione')
+class Configurazioni extends Table {
+  @override
+  String get tableName => 'configurazione';
+
+  TextColumn get chiave => text()();
+  TextColumn get valore => text()();
+  DateTimeColumn get scaricatoIl => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {chiave};
+}
+
+/// L'ultimo tasso noto per ogni valuta, rispetto all'euro (ADR-009). Una
+/// copia come le altre: senza rete si usa questa, e si dice di quando è
+/// (06, regola 6).
+@DataClassName('TassoCambio')
+class TassiCambio extends Table {
+  @override
+  String get tableName => 'tasso_cambio';
+
+  TextColumn get valuta => text()();
+
+  /// Quanto vale un euro in questa valuta. Testo, come gli importi.
+  TextColumn get perEuro => text()();
+
+  /// Il giorno del tasso secondo il fornitore: `2026-10-03`.
+  TextColumn get del => text()();
+
+  /// Quando questo telefono l'ha scaricato.
+  DateTimeColumn get scaricatoIl => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {valuta};
 }
 
 // ─── Solo qui ─────────────────────────────────────────────────────────────
@@ -274,6 +344,9 @@ class Impostazioni extends Table {
     Spese,
     SpeseQuote,
     VociLista,
+    Note,
+    TassiCambio,
+    Configurazioni,
     CodaScrittura,
     Documenti,
     EventiInAttesa,
@@ -286,8 +359,12 @@ class DatabaseLocale extends _$DatabaseLocale {
 
   /// 2 (fase 1.2): la copia delle tappe prende tipo, creato_da e creato_il.
   /// 3 (fase 1.3): l'indice dei documenti.
+  /// 4 (fase 1.4): la copia delle spese prende creato_da e creato_il; i tassi
+  /// di cambio.
+  /// 5 (fase 1.5): la copia delle voci prende quantita, creato_da e creato_il.
+  /// 6 (fase 1.6): le note del viaggio e la configurazione.
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 6;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [
@@ -299,6 +376,9 @@ class DatabaseLocale extends _$DatabaseLocale {
     spese,
     speseQuote,
     vociLista,
+    note,
+    tassiCambio,
+    configurazioni,
   ];
 
   @override
@@ -311,6 +391,26 @@ class DatabaseLocale extends _$DatabaseLocale {
     onUpgrade: (m, da, a) async {
       if (da < 2) await ricreaCopia(m);
       if (da < 3) await m.createTable(documenti);
+      // Le spese non si scaricavano ancora: la loro copia era vuota, e si
+      // rifà senza toccare il resto, che resta leggibile senza rete. Da prima
+      // della 2 ci ha già pensato ricreaCopia.
+      if (da >= 2 && da < 4) {
+        for (final TableInfo tabella in [spese, tassiCambio]) {
+          await m.deleteTable(tabella.actualTableName);
+          await m.createTable(tabella);
+        }
+      }
+      // Le voci non si scaricavano ancora: come per le spese nella 4.
+      if (da >= 2 && da < 5) {
+        await m.deleteTable(vociLista.actualTableName);
+        await m.createTable(vociLista);
+      }
+      // Tabelle nuove: non c'era niente da rifare. Da prima della 2 ci ha
+      // già pensato ricreaCopia.
+      if (da >= 2 && da < 6) {
+        await m.createTable(note);
+        await m.createTable(configurazioni);
+      }
     },
   );
 

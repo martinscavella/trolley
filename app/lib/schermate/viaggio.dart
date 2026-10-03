@@ -28,13 +28,17 @@ import '../dominio/tappe.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'cose.dart';
 import 'date_viaggio.dart';
 import 'documenti.dart';
 import 'giornata.dart';
 import 'impostazioni.dart';
+import 'itinerario.dart';
+import 'note.dart';
 import 'nuovo_viaggio.dart';
 import 'problemi_coda.dart';
 import 'scelta_periodo.dart';
+import 'spese.dart';
 import 'tappa.dart';
 
 /// Un viaggio. La schermata cambia forma con lo stato (02-il-viaggio.md): da
@@ -171,10 +175,18 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                 if (!stato.haGiorni) _DocumentiInAttesa(viaggioId: viaggio.id),
                 if (stato.haGiorni) ...[
                   const SizedBox(height: 28),
-                  SezioneDocumenti(
-                    viaggio: viaggio,
-                  ).entra(context, ritardo: Ritmo.passo),
+                  SezioneDocumenti(viaggio: viaggio)
+                      .entra(context, ritardo: Ritmo.passo),
                 ],
+                if (stato.haGiorni) ...[
+                  const SizedBox(height: 28),
+                  SezioneSpese(viaggio: viaggio)
+                      .entra(context, ritardo: Ritmo.passo),
+                ],
+                // Anche nelle idee: la lista non aspetta le date (05, regola 4).
+                const SizedBox(height: 28),
+                SezioneCose(viaggio: viaggio)
+                    .entra(context, ritardo: Ritmo.passo),
                 if (stato.haGiorni) ...[
                   const SizedBox(height: 28),
                   const TitoloSezione('Giorni')
@@ -182,6 +194,16 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                   _Giorni(viaggio: viaggio)
                       .entra(context, ritardo: Ritmo.passo * 2),
                 ],
+                // L'itinerario con un assistente ha bisogno dei giorni e di
+                // un posto da chiedere (04, regola 1).
+                if (stato.haGiorni &&
+                    stato != StatoViaggio.chiuso &&
+                    viaggio.destinazione != null) ...[
+                  const SizedBox(height: 12),
+                  IngressoItinerario(viaggio: viaggio)
+                      .entra(context, ritardo: Ritmo.passo * 2),
+                ],
+                SezioneNote(viaggio: viaggio),
                 const SizedBox(height: 28),
                 const TitoloSezione('Partecipanti')
                     .entra(context, ritardo: Ritmo.passo * 2),

@@ -1,6 +1,7 @@
 /// La coda di scrittura (02-sincronizzazione-e-offline.md §2): i gesti che si
-/// fanno anche senza rete. Dalla fase 1.2 sono due, quelli delle tappe:
-/// aggiungerne una e segnarla. Spese e liste arriveranno con le loro fasi.
+/// fanno anche senza rete. Dalla fase 1.2 aggiungere una tappa e segnarla,
+/// dalla 1.4 registrare una spesa, dalla 1.5 spuntare una voce: sono tutti e
+/// quattro, e non ce ne saranno altri senza una decisione (02 §2).
 ///
 /// Il gesto riesce subito: si scrive nella copia, si mette in coda, e
 /// l'interfaccia si comporta come se fosse fatto — perché è fatto. Poi la coda
@@ -18,6 +19,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
 import '../dominio/tappe.dart';
+import '../dominio/valute.dart';
 import 'database.dart';
 import 'errori.dart';
 import 'rete.dart';
@@ -63,6 +65,94 @@ class NuovaTappa {
     };
   }
 }
+
+/// Una spesa nuova, come la registra chi l'ha fatta (06-spese.md).
+class NuovaSpesa {
+  const NuovaSpesa({
+    required this.id,
+    required this.viaggioId,
+    required this.centesimi,
+    required this.valuta,
+    required this.paganteId,
+    required this.data,
+    this.descrizione,
+    this.tassoUsato,
+    this.tassoAl,
+  });
+
+  /// Generato sul telefono: rimandarla non la registra due volte.
+  final String id;
+  final String viaggioId;
+  final int centesimi;
+  final String valuta;
+  final String paganteId;
+
+  /// Il giorno in cui è stata fatta: arrivi quando arrivi, entra con questa
+  /// data (06, casi limite).
+  final DateTime data;
+  final String? descrizione;
+
+  /// Quanto valeva un euro in [valuta] quando è stata registrata, e quando
+  /// quel tasso è arrivato: una conversione senza la sua data è una bugia
+  /// (01-modello-dati.md). Nessuno dei due se il tasso non c'era.
+  final String? tassoUsato;
+  final DateTime? tassoAl;
+
+  /// La riga come la scrive il server.
+  Map<String, Object?> get riga {
+    final cosa = descrizione?.trim();
+    return {
+      'id': id,
+      'viaggio_id': viaggioId,
+      'importo': importoPerIlServer(centesimi),
+      'valuta': valuta,
+      'pagante_id': paganteId,
+      'data': scriviData(data),
+      'descrizione': cosa == null || cosa.isEmpty ? null : cosa,
+      'tasso_usato': tassoAl == null ? null : tassoUsato,
+      'tasso_al': tassoUsato == null
+          ? null
+          : tassoAl?.toUtc().toIso8601String(),
+    };
+  }
+}
+
+/// Una riga di `spesa` del server, come va nella copia.
+SpeseCompanion rigaSpesa(Map<String, dynamic> r, DateTime adesso) =>
+    SpeseCompanion.insert(
+      id: r['id'] as String,
+      versione: r['versione'] as int,
+      eliminatoIl: Value(r['eliminato_il'] as String?),
+      scaricatoIl: adesso,
+      viaggioId: r['viaggio_id'] as String,
+      importo: '${r['importo']}',
+      valuta: r['valuta'] as String,
+      tassoUsato: Value(r['tasso_usato']?.toString()),
+      tassoAl: Value(r['tasso_al'] as String?),
+      paganteId: r['pagante_id'] as String,
+      data: r['data'] as String,
+      descrizione: Value(r['descrizione'] as String?),
+      creatoDa: r['creato_da'] as String,
+      creatoIl: r['creato_il'] as String,
+    );
+
+/// Una riga di `voce_lista` del server, come va nella copia.
+VociListaCompanion rigaVoce(Map<String, dynamic> r, DateTime adesso) =>
+    VociListaCompanion.insert(
+      id: r['id'] as String,
+      versione: r['versione'] as int,
+      eliminatoIl: Value(r['eliminato_il'] as String?),
+      scaricatoIl: adesso,
+      viaggioId: r['viaggio_id'] as String,
+      testo: r['testo'] as String,
+      quantita: (r['quantita'] as int?) ?? 1,
+      tipo: r['tipo'] as String,
+      proprietarioId: r['proprietario_id'] as String,
+      assegnatoA: Value(r['assegnato_a'] as String?),
+      spuntata: r['spuntata'] as bool,
+      creatoDa: r['creato_da'] as String,
+      creatoIl: r['creato_il'] as String,
+    );
 
 /// Una riga di `tappa` del server, come va nella copia.
 TappeCompanion rigaTappa(Map<String, dynamic> r, DateTime adesso) =>
@@ -147,6 +237,32 @@ class Coda {
           : null,
       'marcata_durante_il_viaggio': stato.segnata && duranteIlViaggio,
     },
+  );
+
+  /// Registra una spesa: nella copia subito, al server appena si può. È il
+  /// gesto del mercato, e non conosce conflitti: due spese sono due spese
+  /// (02 §2).
+  Future<void> registraSpesa(NuovaSpesa spesa) => _metti(
+    id: spesa.id,
+    viaggioId: spesa.viaggioId,
+    gesto: GestoOffline.registraSpesa,
+    carico: {...spesa.riga, 'creato_da': ?_supabase.auth.currentUser?.id},
+  );
+
+  /// Spunta una voce, o le toglie la spunta. Spuntato è spuntato, chiunque
+  /// l'abbia fatto, e vince l'ultima che arriva: non porta la versione, e non
+  /// conosce conflitti (02 §2). Il testo resta qui, solo per dire quale voce
+  /// non è arrivata.
+  Future<void> spuntaVoce({
+    required String voceId,
+    required String viaggioId,
+    required bool spuntata,
+    required String testo,
+  }) => _metti(
+    id: _nuovoId(),
+    viaggioId: viaggioId,
+    gesto: GestoOffline.spuntaVoce,
+    carico: {'voce_id': voceId, 'spuntata': spuntata, 'testo': testo},
   );
 
   Future<void> _metti({
@@ -250,10 +366,8 @@ class Coda {
     return switch (op.gesto) {
       GestoOffline.aggiungiTappa => _inviaTappa(carico),
       GestoOffline.marcaTappa => _inviaSegno(carico),
-      GestoOffline.registraSpesa ||
-      GestoOffline.spuntaVoce => throw const ErroreTrolley(
-        'Questo gesto arriverà con una prossima versione dell\'app.',
-      ),
+      GestoOffline.registraSpesa => _inviaSpesa(carico),
+      GestoOffline.spuntaVoce => _inviaSpunta(carico),
     };
   }
 
@@ -338,6 +452,39 @@ class Coda {
     await nellaCopia(scritte.single);
   }
 
+  Future<void> _inviaSpunta(Map<String, dynamic> carico) async {
+    final scritte = await _alServer(
+      () => _server
+          .from('voce_lista')
+          .update({'spuntata': carico['spuntata']})
+          .eq('id', carico['voce_id'] as String)
+          .select(),
+    );
+    if (scritte.isEmpty) {
+      throw const ErroreTrolley(
+        'Questa voce non c\'è sul server: forse è stata tolta da un altro '
+        'telefono.',
+      );
+    }
+    await nellaCopiaVoce(scritte.single);
+  }
+
+  /// Rimandata, non si duplica: se c'è già, vale la riga del server.
+  Future<void> _inviaSpesa(Map<String, dynamic> carico) async {
+    final id = carico['id'] as String;
+    final scritte = await _alServer(
+      () => _server
+          .from('spesa')
+          .upsert(carico, onConflict: 'id', ignoreDuplicates: true)
+          .select(),
+    );
+    final riga =
+        scritte.firstOrNull ??
+        (await _alServer(() => _server.from('spesa').select().eq('id', id)))
+            .firstOrNull;
+    if (riga != null) await nellaCopiaSpesa(riga);
+  }
+
   static const _nonCapita =
       'Il server ha risposto in un modo che l\'app non capisce.';
 
@@ -354,6 +501,32 @@ class Coda {
     await _db
         .into(_db.tappe)
         .insertOnConflictUpdate(rigaTappa(riga, DateTime.now().toUtc()));
+  }
+
+  /// Mette nella copia una spesa come l'ha scritta il server. Tolta, esce.
+  Future<void> nellaCopiaSpesa(Map<String, dynamic> riga) async {
+    if (riga['eliminato_il'] != null) {
+      await (_db.delete(
+        _db.spese,
+      )..where((s) => s.id.equals(riga['id'] as String))).go();
+      return;
+    }
+    await _db
+        .into(_db.spese)
+        .insertOnConflictUpdate(rigaSpesa(riga, DateTime.now().toUtc()));
+  }
+
+  /// Mette nella copia una voce come l'ha scritta il server. Tolta, esce.
+  Future<void> nellaCopiaVoce(Map<String, dynamic> riga) async {
+    if (riga['eliminato_il'] != null) {
+      await (_db.delete(
+        _db.vociLista,
+      )..where((v) => v.id.equals(riga['id'] as String))).go();
+      return;
+    }
+    await _db
+        .into(_db.vociLista)
+        .insertOnConflictUpdate(rigaVoce(riga, DateTime.now().toUtc()));
   }
 
   /// Rimette nella copia quello che è ancora in coda, sopra le righe arrivate
@@ -415,8 +588,31 @@ class Coda {
             ),
           ),
         );
-      case GestoOffline.registraSpesa || GestoOffline.spuntaVoce:
-        break;
+      case GestoOffline.registraSpesa:
+        await _db
+            .into(_db.spese)
+            .insert(
+              SpeseCompanion.insert(
+                id: c['id']! as String,
+                versione: 0,
+                scaricatoIl: DateTime.now().toUtc(),
+                viaggioId: c['viaggio_id']! as String,
+                importo: c['importo']! as String,
+                valuta: c['valuta']! as String,
+                tassoUsato: Value(c['tasso_usato'] as String?),
+                tassoAl: Value(c['tasso_al'] as String?),
+                paganteId: c['pagante_id']! as String,
+                data: c['data']! as String,
+                descrizione: Value(c['descrizione'] as String?),
+                creatoDa: (c['creato_da'] as String?) ?? '',
+                creatoIl: creataIl.toUtc().toIso8601String(),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+      case GestoOffline.spuntaVoce:
+        await (_db.update(_db.vociLista)
+              ..where((v) => v.id.equals(c['voce_id']! as String)))
+            .write(VociListaCompanion(spuntata: Value(c['spuntata']! as bool)));
     }
   }
 
@@ -446,6 +642,40 @@ class Coda {
       ? (jsonDecode(op.carico) as Map<String, dynamic>)['titolo'] as String?
       : null;
 
+  /// La voce a cui si riferisce un'operazione.
+  static String? voceDi(OperazioneInCoda op) =>
+      op.gesto == GestoOffline.spuntaVoce
+      ? (jsonDecode(op.carico) as Map<String, dynamic>)['voce_id'] as String?
+      : null;
+
+  /// La spesa a cui si riferisce un'operazione: ancora in coda vuol dire che
+  /// non è arrivata, e l'elenco lo dice.
+  static String? spesaDi(OperazioneInCoda op) =>
+      op.gesto == GestoOffline.registraSpesa
+      ? (jsonDecode(op.carico) as Map<String, dynamic>)['id'] as String?
+      : null;
+
+  /// Che cosa non è arrivato, in una frase: «Taxi» non è arrivata.
+  static String cosaNonEArrivato(OperazioneInCoda op) {
+    final carico = jsonDecode(op.carico) as Map<String, dynamic>;
+    return switch (op.gesto) {
+      GestoOffline.aggiungiTappa => '«${carico['titolo']}» non è arrivata.',
+      GestoOffline.marcaTappa => 'Un segno su una tappa non è arrivato.',
+      GestoOffline.registraSpesa => switch (carico['descrizione']) {
+        final String cosa => 'La spesa «$cosa» non è arrivata.',
+        _ =>
+          'Una spesa di ${scriviImporto(centesimiDa(carico['importo'] as String), carico['valuta'] as String)} '
+              'non è arrivata.',
+      },
+      GestoOffline.spuntaVoce => switch (carico['testo']) {
+        final String testo when carico['spuntata'] == true =>
+          'La spunta di «$testo» non è arrivata.',
+        final String testo => 'La spunta tolta a «$testo» non è arrivata.',
+        _ => 'Una spunta non è arrivata.',
+      },
+    };
+  }
+
   /// Rimette in fila un'operazione messa da parte.
   Future<void> riprova(String id) async {
     await (_db.update(_db.codaScrittura)..where((o) => o.id.equals(id))).write(
@@ -457,9 +687,9 @@ class Coda {
     await svuota();
   }
 
-  /// Rinuncia a un'operazione messa da parte. Una tappa che non è mai arrivata
-  /// esce anche dalla copia; un segno torna com'è sul server alla prossima
-  /// copia.
+  /// Rinuncia a un'operazione messa da parte. Una tappa o una spesa che non è
+  /// mai arrivata esce anche dalla copia; un segno o una spunta torna com'è sul
+  /// server alla prossima copia.
   Future<void> scarta(String id) async {
     final op = await (_db.select(
       _db.codaScrittura,
@@ -472,6 +702,12 @@ class Coda {
         await (_db.delete(
           _db.tappe,
         )..where((t) => t.id.equals(tappa ?? '') & t.versione.equals(0))).go();
+      }
+      if (op.gesto == GestoOffline.registraSpesa) {
+        await (_db.delete(_db.spese)..where(
+              (s) => s.id.equals(spesaDi(op) ?? '') & s.versione.equals(0),
+            ))
+            .go();
       }
     });
   }

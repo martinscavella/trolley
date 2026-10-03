@@ -113,9 +113,19 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 
 ### `voce_lista`
 
-`viaggio_id`, `testo`, `tipo` (`viaggio` · `personale`), `proprietario_id`, `assegnato_a`, `spuntata`.
+`viaggio_id`, `testo` (al massimo 200 caratteri), `quantita` (da 1 a 99: cinque magliette sono una voce), `tipo` (`viaggio` · `personale`), `proprietario_id`, `assegnato_a`, `spuntata`.
 
-**Invariante**: una voce `personale` è visibile **solo** al suo proprietario. Non sincronizza verso gli altri partecipanti, nemmeno verso il creatore.
+**Invarianti**
+- Una voce `personale` è visibile **solo** al suo proprietario. Non sincronizza verso gli altri partecipanti, nemmeno verso il creatore.
+- Una voce `personale` non si assegna a nessuno; una del viaggio si assegna solo a chi ne fa parte.
+- Di una voce si cambiano testo, quante, assegnatario e spunta, e la si toglie. Non cambiano mai proprietario, lista né viaggio: una voce del viaggio diventata personale sparirebbe agli altri.
+- Nella fase 1.5 le voci nascono tutte `personale`; la lista del viaggio arriva con la 2.4 (decisioni/prodotto.md).
+
+### `nota`
+
+`viaggio_id`, `testo` (fino a ventimila caratteri), `origine` (`incollata` · `scritta`), `creato_da`.
+
+La risposta di un assistente incollata nell'app si salva qui **prima** di provare a leggerla, così resta anche quando non si capisce ([04](../prodotto/04-itinerario.md), regola 11). La vedono e la cambiano i partecipanti, come le tappe che ne nascono; non cambia mai viaggio né origine. Le note scritte a mano ([02](../prodotto/02-il-viaggio.md), regola 2) useranno la stessa tabella ([ADR-010](adr/010-itinerario-incollato.md)).
 
 ### `documento` — locale, mai sincronizzato
 
@@ -136,6 +146,14 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 
 `traguardo`: `utente_id`, `tipo`, `viaggio_id`. Assegnato solo da viaggi verificati.
 `luogo_visitato`: `utente_id`, `paese`, `citta`, `prima_volta_il`. Alimentato da **qualunque** viaggio chiuso, importati compresi — è il ricordo, non il merito.
+
+---
+
+## Configurazione
+
+### `configurazione`
+
+`chiave`, `valore` (JSON), `aggiornata_il`. Quello che deve cambiare senza un rilascio: per ora `modelli_suggeriti`, l'elenco dei modelli da consigliare per l'itinerario. La legge chi ha un accesso, la scrive solo chi gestisce il progetto ([ADR-010](adr/010-itinerario-incollato.md)).
 
 ---
 
@@ -169,8 +187,10 @@ Il server è l'autorità. In locale c'è una **copia di lettura**, una **coda** 
 | `spesa_quota` | ✅ | ❌ |
 | `voce_lista` tipo `viaggio` | ✅ | ✅ **spuntare**. Modificare il testo no |
 | `voce_lista` tipo `personale` | ✅ | ✅ **spuntare** |
+| `nota` | ✅ | ❌ |
 | `documento` | **non è una copia: esiste solo qui** | ✅ sempre, per definizione |
 | `tasso_cambio` (ultimo noto) | ✅ | — sola lettura |
+| `configurazione` | ✅ | — sola lettura |
 | `traguardo`, `luogo_visitato` | ✅ | ❌ |
 | parte pubblica | ❌ richiede rete | ❌ |
 | `evento` di misurazione | coda locale | ✅ accodato |

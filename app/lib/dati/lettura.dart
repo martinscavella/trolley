@@ -6,9 +6,12 @@ library;
 import '../dominio/calendario.dart';
 import '../dominio/documenti.dart';
 import '../dominio/giornate.dart';
+import '../dominio/liste.dart';
 import '../dominio/periodo.dart';
+import '../dominio/spese.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
+import '../dominio/valute.dart';
 import 'database.dart';
 import 'destinazioni.dart';
 
@@ -77,4 +80,49 @@ extension LetturaDocumento on Documento {
 
   /// A che ora serve, se si è detto.
   Duration? get momento => leggiOra(ora);
+}
+
+extension LetturaSpesa on Spesa {
+  int get centesimi => centesimiDa(importo);
+
+  /// Il giorno in cui è stata fatta.
+  DateTime get giorno => leggiData(data) ?? soloData(DateTime.now());
+
+  /// Quando è stata registrata.
+  DateTime get registrata => DateTime.tryParse(creatoIl) ?? DateTime.now();
+
+  /// Non ancora sul server: è in coda, e parte con la rete.
+  bool get inCoda => versione == 0;
+
+  VoceSpesa<Spesa> get voce => VoceSpesa(
+    spesa: this,
+    centesimi: centesimi,
+    valuta: valuta,
+    data: giorno,
+    creataIl: registrata,
+  );
+}
+
+extension LetturaVoce on VoceLista {
+  /// Quando è nata sul server.
+  DateTime get creata => DateTime.tryParse(creatoIl) ?? DateTime.now();
+
+  VoceDaPortare<VoceLista> get daPortare =>
+      VoceDaPortare(voce: this, id: id, spuntata: spuntata, creataIl: creata);
+}
+
+/// I tassi come li vuole il dominio: per valuta, quanto vale un euro.
+Map<String, double> tassiPerEuro(Iterable<TassoCambio> tassi) => {
+  for (final t in tassi)
+    if (double.tryParse(t.perEuro) case final v? when v > 0) t.valuta: v,
+};
+
+/// Il giorno dei tassi: il più recente fra quelli sul telefono.
+DateTime? giornoDeiTassi(Iterable<TassoCambio> tassi) {
+  DateTime? ultimo;
+  for (final t in tassi) {
+    final d = leggiData(t.del);
+    if (d != null && (ultimo == null || d.isAfter(ultimo))) ultimo = d;
+  }
+  return ultimo;
 }

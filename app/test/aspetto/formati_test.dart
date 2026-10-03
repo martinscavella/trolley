@@ -3,6 +3,7 @@ import 'package:trolley/aspetto/formati.dart';
 import 'package:trolley/aspetto/tavolozza.dart';
 import 'package:trolley/dominio/giornate.dart';
 import 'package:trolley/dominio/periodo.dart';
+import 'package:trolley/dominio/spese.dart';
 
 void main() {
   group('intervalloDate', () {
@@ -133,5 +134,61 @@ void main() {
     expect(durataBreve(const Duration(minutes: 45)), '45 min');
     expect(nomeDelGiorno(DateTime.utc(2026, 10, 10)), 'Sabato 10 ottobre');
     expect(giornoBreve(DateTime.utc(2026, 10, 11)), 'Domenica 11');
+  });
+
+  group('spese', () {
+    final oggi = DateTime.utc(2026, 10, 10);
+
+    test('di quando sono i tassi', () {
+      expect(quandoITassi(oggi, oggi), 'tassi di oggi');
+      expect(
+        quandoITassi(DateTime.utc(2026, 10, 9), oggi),
+        'tassi di ieri, 9 ottobre',
+      );
+      expect(
+        quandoITassi(DateTime.utc(2026, 9, 28), oggi),
+        'tassi del 28 settembre',
+      );
+      expect(
+        quandoITassi(DateTime.utc(2026, 10, 8), oggi),
+        'tassi dell\'8 ottobre',
+      );
+      expect(quandoITassi(null, oggi), 'nessun tasso ancora');
+    });
+
+    test('i titoli dei gruppi', () {
+      expect(
+        titoloGruppoSpese(TipoGruppoSpese.giorno, oggi, oggi),
+        'OGGI · SABATO 10',
+      );
+      expect(
+        titoloGruppoSpese(
+          TipoGruppoSpese.giorno,
+          DateTime.utc(2026, 10, 9),
+          oggi,
+        ),
+        'IERI · VENERDÌ 9',
+      );
+      expect(
+        titoloGruppoSpese(
+          TipoGruppoSpese.giorno,
+          DateTime.utc(2026, 10, 12),
+          oggi,
+        ),
+        'LUNEDÌ 12',
+      );
+      expect(
+        titoloGruppoSpese(TipoGruppoSpese.prima, null, oggi),
+        'PRIMA DEL VIAGGIO',
+      );
+    });
+
+    test('il nome corto di una valuta', () {
+      expect(nomeCortoValuta('MAD'), 'Dirham');
+      expect(nomeCortoValuta('EUR'), 'Euro');
+      expect(nomeCortoValuta('XOF'), 'Franco CFA');
+      expect(simboloValuta('EUR'), '€');
+      expect(simboloValuta('MAD'), 'MAD');
+    });
   });
 }

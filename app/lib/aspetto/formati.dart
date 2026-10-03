@@ -10,9 +10,11 @@ import '../dominio/calendario.dart';
 import '../dominio/documenti.dart';
 import '../dominio/giornate.dart';
 import '../dominio/periodo.dart';
+import '../dominio/spese.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
 import '../dominio/testo.dart';
+import '../dominio/valute.dart';
 
 /// `12 ottobre 2026`.
 String dataEstesa(DateTime d) =>
@@ -115,18 +117,8 @@ String etichettaPeriodo(Periodo periodo, DateTime oggi) {
   };
 }
 
-const _giorniDellaSettimana = [
-  'lunedì',
-  'martedì',
-  'mercoledì',
-  'giovedì',
-  'venerdì',
-  'sabato',
-  'domenica',
-];
-
 /// `sabato`.
-String giornoDellaSettimana(DateTime d) => _giorniDellaSettimana[d.weekday - 1];
+String giornoDellaSettimana(DateTime d) => nomiDeiGiorni[d.weekday - 1];
 
 /// `ott`.
 String meseBreve(DateTime d) => nomiDeiMesi[d.month - 1].substring(0, 3);
@@ -265,3 +257,52 @@ String quandoServe({DateTime? data, Duration? alle, required DateTime oggi}) {
   };
   return alle == null ? giorno : '$giorno alle ${ora(alle)}';
 }
+
+// ─── Spese ──────────────────────────────────────────────────────────────────
+
+/// `del 2 ottobre`, `dell'8 ottobre`: con l'articolo giusto davanti al numero.
+String delGiorno(DateTime d) {
+  final apostrofo = d.day == 1 || d.day == 8 || d.day == 11;
+  return '${apostrofo ? 'dell\'' : 'del '}${d.day} ${nomiDeiMesi[d.month - 1]}';
+}
+
+/// Di quando sono i tassi, per chi legge una conversione: `tassi di oggi`,
+/// `tassi di ieri, 2 ottobre`, `tassi del 28 settembre`. Una conversione senza
+/// la sua data è una bugia (01-modello-dati.md).
+String quandoITassi(DateTime? del, DateTime oggi) {
+  if (del == null) return 'nessun tasso ancora';
+  final giorni = soloData(oggi).difference(soloData(del)).inDays;
+  if (giorni <= 0) return 'tassi di oggi';
+  if (giorni == 1) {
+    return 'tassi di ieri, ${del.day} ${nomiDeiMesi[del.month - 1]}';
+  }
+  return 'tassi ${delGiorno(del)}';
+}
+
+/// Il titolo di un gruppo dell'elenco delle spese: `OGGI · VENERDÌ 10`,
+/// `IERI · GIOVEDÌ 9`, `SABATO 11`, `PRIMA DEL VIAGGIO`.
+String titoloGruppoSpese(TipoGruppoSpese tipo, DateTime? data, DateTime oggi) {
+  final testo = switch (tipo) {
+    TipoGruppoSpese.prima => 'Prima del viaggio',
+    TipoGruppoSpese.dopo => 'Dopo il viaggio',
+    TipoGruppoSpese.giorno => switch (soloData(oggi)
+        .difference(soloData(data!))
+        .inDays) {
+      0 => 'Oggi · ${giornoBreve(data)}',
+      1 => 'Ieri · ${giornoBreve(data)}',
+      _ => giornoBreve(data),
+    },
+  };
+  return testo.toUpperCase();
+}
+
+/// Il nome corto di una valuta, per una capsula o una frase: `Dirham`,
+/// `Euro`, `Franco CFA`.
+String nomeCortoValuta(String codice) {
+  final nome = valutaDi(codice).nome;
+  if (nome.startsWith('Franco CFA')) return 'Franco CFA';
+  return nome.split(' ').first;
+}
+
+/// Il simbolo con cui una valuta compare accanto a un importo: `€`, `MAD`.
+String simboloValuta(String codice) => codice == 'EUR' ? '€' : codice;

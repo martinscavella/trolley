@@ -21,6 +21,17 @@ const nomiDeiMesi = [
   'dicembre',
 ];
 
+/// Da lunedì, come `DateTime.weekday`.
+const nomiDeiGiorni = [
+  'lunedì',
+  'martedì',
+  'mercoledì',
+  'giovedì',
+  'venerdì',
+  'sabato',
+  'domenica',
+];
+
 /// Solo la data, a mezzanotte UTC.
 DateTime soloData(DateTime d) => DateTime.utc(d.year, d.month, d.day);
 

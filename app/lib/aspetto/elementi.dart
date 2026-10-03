@@ -793,6 +793,42 @@ class Avviso extends StatelessWidget {
   );
 }
 
+/// «Sei offline», in alto a destra dove di solito c'è il più (tela, 16 e 22).
+class SeiOffline extends StatelessWidget {
+  const SeiOffline({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 36,
+    padding: const EdgeInsets.symmetric(horizontal: 14),
+    decoration: BoxDecoration(
+      color: Colori.bianco,
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icona(
+            ios: CupertinoIcons.wifi_slash,
+            android: Icons.wifi_off_rounded,
+          ),
+          size: 16,
+          color: Colori.ardesia,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Sei offline',
+          style: Testi.didascalia.copyWith(
+            color: Colori.ardesia,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 /// Un pulsante piccolo, dentro un avviso o una riga.
 class PulsantePiccolo extends StatelessWidget {
   const PulsantePiccolo({

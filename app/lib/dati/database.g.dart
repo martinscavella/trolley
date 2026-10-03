@@ -3770,6 +3770,28 @@ class $SpeseTable extends Spese with TableInfo<$SpeseTable, Spesa> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _creatoDaMeta = const VerificationMeta(
+    'creatoDa',
+  );
+  @override
+  late final GeneratedColumn<String> creatoDa = GeneratedColumn<String>(
+    'creato_da',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _creatoIlMeta = const VerificationMeta(
+    'creatoIl',
+  );
+  @override
+  late final GeneratedColumn<String> creatoIl = GeneratedColumn<String>(
+    'creato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3784,6 +3806,8 @@ class $SpeseTable extends Spese with TableInfo<$SpeseTable, Spesa> {
     paganteId,
     data,
     descrizione,
+    creatoDa,
+    creatoIl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3891,6 +3915,22 @@ class $SpeseTable extends Spese with TableInfo<$SpeseTable, Spesa> {
         ),
       );
     }
+    if (data.containsKey('creato_da')) {
+      context.handle(
+        _creatoDaMeta,
+        creatoDa.isAcceptableOrUnknown(data['creato_da']!, _creatoDaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoDaMeta);
+    }
+    if (data.containsKey('creato_il')) {
+      context.handle(
+        _creatoIlMeta,
+        creatoIl.isAcceptableOrUnknown(data['creato_il']!, _creatoIlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoIlMeta);
+    }
     return context;
   }
 
@@ -3948,6 +3988,14 @@ class $SpeseTable extends Spese with TableInfo<$SpeseTable, Spesa> {
         DriftSqlType.string,
         data['${effectivePrefix}descrizione'],
       ),
+      creatoDa: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_da'],
+      )!,
+      creatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_il'],
+      )!,
     );
   }
 
@@ -3976,6 +4024,12 @@ class Spesa extends DataClass implements Insertable<Spesa> {
   final String paganteId;
   final String data;
   final String? descrizione;
+
+  /// Chi l'ha registrata: il primo contributo di un invitato si riconosce così.
+  final String creatoDa;
+
+  /// A pari data, l'ultima registrata va in cima.
+  final String creatoIl;
   const Spesa({
     required this.id,
     required this.versione,
@@ -3989,6 +4043,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     required this.paganteId,
     required this.data,
     this.descrizione,
+    required this.creatoDa,
+    required this.creatoIl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4013,6 +4069,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     if (!nullToAbsent || descrizione != null) {
       map['descrizione'] = Variable<String>(descrizione);
     }
+    map['creato_da'] = Variable<String>(creatoDa);
+    map['creato_il'] = Variable<String>(creatoIl);
     return map;
   }
 
@@ -4038,6 +4096,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
       descrizione: descrizione == null && nullToAbsent
           ? const Value.absent()
           : Value(descrizione),
+      creatoDa: Value(creatoDa),
+      creatoIl: Value(creatoIl),
     );
   }
 
@@ -4059,6 +4119,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
       paganteId: serializer.fromJson<String>(json['paganteId']),
       data: serializer.fromJson<String>(json['data']),
       descrizione: serializer.fromJson<String?>(json['descrizione']),
+      creatoDa: serializer.fromJson<String>(json['creatoDa']),
+      creatoIl: serializer.fromJson<String>(json['creatoIl']),
     );
   }
   @override
@@ -4077,6 +4139,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
       'paganteId': serializer.toJson<String>(paganteId),
       'data': serializer.toJson<String>(data),
       'descrizione': serializer.toJson<String?>(descrizione),
+      'creatoDa': serializer.toJson<String>(creatoDa),
+      'creatoIl': serializer.toJson<String>(creatoIl),
     };
   }
 
@@ -4093,6 +4157,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     String? paganteId,
     String? data,
     Value<String?> descrizione = const Value.absent(),
+    String? creatoDa,
+    String? creatoIl,
   }) => Spesa(
     id: id ?? this.id,
     versione: versione ?? this.versione,
@@ -4106,6 +4172,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     paganteId: paganteId ?? this.paganteId,
     data: data ?? this.data,
     descrizione: descrizione.present ? descrizione.value : this.descrizione,
+    creatoDa: creatoDa ?? this.creatoDa,
+    creatoIl: creatoIl ?? this.creatoIl,
   );
   Spesa copyWithCompanion(SpeseCompanion data) {
     return Spesa(
@@ -4129,6 +4197,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
       descrizione: data.descrizione.present
           ? data.descrizione.value
           : this.descrizione,
+      creatoDa: data.creatoDa.present ? data.creatoDa.value : this.creatoDa,
+      creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
     );
   }
 
@@ -4146,7 +4216,9 @@ class Spesa extends DataClass implements Insertable<Spesa> {
           ..write('tassoAl: $tassoAl, ')
           ..write('paganteId: $paganteId, ')
           ..write('data: $data, ')
-          ..write('descrizione: $descrizione')
+          ..write('descrizione: $descrizione, ')
+          ..write('creatoDa: $creatoDa, ')
+          ..write('creatoIl: $creatoIl')
           ..write(')'))
         .toString();
   }
@@ -4165,6 +4237,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     paganteId,
     data,
     descrizione,
+    creatoDa,
+    creatoIl,
   );
   @override
   bool operator ==(Object other) =>
@@ -4181,7 +4255,9 @@ class Spesa extends DataClass implements Insertable<Spesa> {
           other.tassoAl == this.tassoAl &&
           other.paganteId == this.paganteId &&
           other.data == this.data &&
-          other.descrizione == this.descrizione);
+          other.descrizione == this.descrizione &&
+          other.creatoDa == this.creatoDa &&
+          other.creatoIl == this.creatoIl);
 }
 
 class SpeseCompanion extends UpdateCompanion<Spesa> {
@@ -4197,6 +4273,8 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
   final Value<String> paganteId;
   final Value<String> data;
   final Value<String?> descrizione;
+  final Value<String> creatoDa;
+  final Value<String> creatoIl;
   final Value<int> rowid;
   const SpeseCompanion({
     this.id = const Value.absent(),
@@ -4211,6 +4289,8 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     this.paganteId = const Value.absent(),
     this.data = const Value.absent(),
     this.descrizione = const Value.absent(),
+    this.creatoDa = const Value.absent(),
+    this.creatoIl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SpeseCompanion.insert({
@@ -4226,6 +4306,8 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     required String paganteId,
     required String data,
     this.descrizione = const Value.absent(),
+    required String creatoDa,
+    required String creatoIl,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        versione = Value(versione),
@@ -4234,7 +4316,9 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
        importo = Value(importo),
        valuta = Value(valuta),
        paganteId = Value(paganteId),
-       data = Value(data);
+       data = Value(data),
+       creatoDa = Value(creatoDa),
+       creatoIl = Value(creatoIl);
   static Insertable<Spesa> custom({
     Expression<String>? id,
     Expression<int>? versione,
@@ -4248,6 +4332,8 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     Expression<String>? paganteId,
     Expression<String>? data,
     Expression<String>? descrizione,
+    Expression<String>? creatoDa,
+    Expression<String>? creatoIl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4263,6 +4349,8 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
       if (paganteId != null) 'pagante_id': paganteId,
       if (data != null) 'data': data,
       if (descrizione != null) 'descrizione': descrizione,
+      if (creatoDa != null) 'creato_da': creatoDa,
+      if (creatoIl != null) 'creato_il': creatoIl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4280,6 +4368,8 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     Value<String>? paganteId,
     Value<String>? data,
     Value<String?>? descrizione,
+    Value<String>? creatoDa,
+    Value<String>? creatoIl,
     Value<int>? rowid,
   }) {
     return SpeseCompanion(
@@ -4295,6 +4385,8 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
       paganteId: paganteId ?? this.paganteId,
       data: data ?? this.data,
       descrizione: descrizione ?? this.descrizione,
+      creatoDa: creatoDa ?? this.creatoDa,
+      creatoIl: creatoIl ?? this.creatoIl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4338,6 +4430,12 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     if (descrizione.present) {
       map['descrizione'] = Variable<String>(descrizione.value);
     }
+    if (creatoDa.present) {
+      map['creato_da'] = Variable<String>(creatoDa.value);
+    }
+    if (creatoIl.present) {
+      map['creato_il'] = Variable<String>(creatoIl.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4359,6 +4457,8 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
           ..write('paganteId: $paganteId, ')
           ..write('data: $data, ')
           ..write('descrizione: $descrizione, ')
+          ..write('creatoDa: $creatoDa, ')
+          ..write('creatoIl: $creatoIl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4957,6 +5057,17 @@ class $VociListaTable extends VociLista
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _quantitaMeta = const VerificationMeta(
+    'quantita',
+  );
+  @override
+  late final GeneratedColumn<int> quantita = GeneratedColumn<int>(
+    'quantita',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
   @override
   late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
@@ -5002,6 +5113,28 @@ class $VociListaTable extends VociLista
       'CHECK ("spuntata" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _creatoDaMeta = const VerificationMeta(
+    'creatoDa',
+  );
+  @override
+  late final GeneratedColumn<String> creatoDa = GeneratedColumn<String>(
+    'creato_da',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _creatoIlMeta = const VerificationMeta(
+    'creatoIl',
+  );
+  @override
+  late final GeneratedColumn<String> creatoIl = GeneratedColumn<String>(
+    'creato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5010,10 +5143,13 @@ class $VociListaTable extends VociLista
     scaricatoIl,
     viaggioId,
     testo,
+    quantita,
     tipo,
     proprietarioId,
     assegnatoA,
     spuntata,
+    creatoDa,
+    creatoIl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5076,6 +5212,14 @@ class $VociListaTable extends VociLista
     } else if (isInserting) {
       context.missing(_testoMeta);
     }
+    if (data.containsKey('quantita')) {
+      context.handle(
+        _quantitaMeta,
+        quantita.isAcceptableOrUnknown(data['quantita']!, _quantitaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_quantitaMeta);
+    }
     if (data.containsKey('tipo')) {
       context.handle(
         _tipoMeta,
@@ -5108,6 +5252,22 @@ class $VociListaTable extends VociLista
       );
     } else if (isInserting) {
       context.missing(_spuntataMeta);
+    }
+    if (data.containsKey('creato_da')) {
+      context.handle(
+        _creatoDaMeta,
+        creatoDa.isAcceptableOrUnknown(data['creato_da']!, _creatoDaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoDaMeta);
+    }
+    if (data.containsKey('creato_il')) {
+      context.handle(
+        _creatoIlMeta,
+        creatoIl.isAcceptableOrUnknown(data['creato_il']!, _creatoIlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoIlMeta);
     }
     return context;
   }
@@ -5142,6 +5302,10 @@ class $VociListaTable extends VociLista
         DriftSqlType.string,
         data['${effectivePrefix}testo'],
       )!,
+      quantita: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}quantita'],
+      )!,
       tipo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}tipo'],
@@ -5157,6 +5321,14 @@ class $VociListaTable extends VociLista
       spuntata: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}spuntata'],
+      )!,
+      creatoDa: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_da'],
+      )!,
+      creatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_il'],
       )!,
     );
   }
@@ -5177,10 +5349,19 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
   final DateTime scaricatoIl;
   final String viaggioId;
   final String testo;
+
+  /// Quanti pezzi: cinque magliette sono una voce sola (05, schermate).
+  final int quantita;
   final String tipo;
   final String proprietarioId;
   final String? assegnatoA;
   final bool spuntata;
+
+  /// Chi l'ha aggiunta: il primo contributo di un invitato si riconosce così.
+  final String creatoDa;
+
+  /// La lista va nell'ordine in cui le voci sono nate.
+  final String creatoIl;
   const VoceLista({
     required this.id,
     required this.versione,
@@ -5188,10 +5369,13 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     required this.scaricatoIl,
     required this.viaggioId,
     required this.testo,
+    required this.quantita,
     required this.tipo,
     required this.proprietarioId,
     this.assegnatoA,
     required this.spuntata,
+    required this.creatoDa,
+    required this.creatoIl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5204,12 +5388,15 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     map['scaricato_il'] = Variable<DateTime>(scaricatoIl);
     map['viaggio_id'] = Variable<String>(viaggioId);
     map['testo'] = Variable<String>(testo);
+    map['quantita'] = Variable<int>(quantita);
     map['tipo'] = Variable<String>(tipo);
     map['proprietario_id'] = Variable<String>(proprietarioId);
     if (!nullToAbsent || assegnatoA != null) {
       map['assegnato_a'] = Variable<String>(assegnatoA);
     }
     map['spuntata'] = Variable<bool>(spuntata);
+    map['creato_da'] = Variable<String>(creatoDa);
+    map['creato_il'] = Variable<String>(creatoIl);
     return map;
   }
 
@@ -5223,12 +5410,15 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
       scaricatoIl: Value(scaricatoIl),
       viaggioId: Value(viaggioId),
       testo: Value(testo),
+      quantita: Value(quantita),
       tipo: Value(tipo),
       proprietarioId: Value(proprietarioId),
       assegnatoA: assegnatoA == null && nullToAbsent
           ? const Value.absent()
           : Value(assegnatoA),
       spuntata: Value(spuntata),
+      creatoDa: Value(creatoDa),
+      creatoIl: Value(creatoIl),
     );
   }
 
@@ -5244,10 +5434,13 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
       scaricatoIl: serializer.fromJson<DateTime>(json['scaricatoIl']),
       viaggioId: serializer.fromJson<String>(json['viaggioId']),
       testo: serializer.fromJson<String>(json['testo']),
+      quantita: serializer.fromJson<int>(json['quantita']),
       tipo: serializer.fromJson<String>(json['tipo']),
       proprietarioId: serializer.fromJson<String>(json['proprietarioId']),
       assegnatoA: serializer.fromJson<String?>(json['assegnatoA']),
       spuntata: serializer.fromJson<bool>(json['spuntata']),
+      creatoDa: serializer.fromJson<String>(json['creatoDa']),
+      creatoIl: serializer.fromJson<String>(json['creatoIl']),
     );
   }
   @override
@@ -5260,10 +5453,13 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
       'scaricatoIl': serializer.toJson<DateTime>(scaricatoIl),
       'viaggioId': serializer.toJson<String>(viaggioId),
       'testo': serializer.toJson<String>(testo),
+      'quantita': serializer.toJson<int>(quantita),
       'tipo': serializer.toJson<String>(tipo),
       'proprietarioId': serializer.toJson<String>(proprietarioId),
       'assegnatoA': serializer.toJson<String?>(assegnatoA),
       'spuntata': serializer.toJson<bool>(spuntata),
+      'creatoDa': serializer.toJson<String>(creatoDa),
+      'creatoIl': serializer.toJson<String>(creatoIl),
     };
   }
 
@@ -5274,10 +5470,13 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     DateTime? scaricatoIl,
     String? viaggioId,
     String? testo,
+    int? quantita,
     String? tipo,
     String? proprietarioId,
     Value<String?> assegnatoA = const Value.absent(),
     bool? spuntata,
+    String? creatoDa,
+    String? creatoIl,
   }) => VoceLista(
     id: id ?? this.id,
     versione: versione ?? this.versione,
@@ -5285,10 +5484,13 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     scaricatoIl: scaricatoIl ?? this.scaricatoIl,
     viaggioId: viaggioId ?? this.viaggioId,
     testo: testo ?? this.testo,
+    quantita: quantita ?? this.quantita,
     tipo: tipo ?? this.tipo,
     proprietarioId: proprietarioId ?? this.proprietarioId,
     assegnatoA: assegnatoA.present ? assegnatoA.value : this.assegnatoA,
     spuntata: spuntata ?? this.spuntata,
+    creatoDa: creatoDa ?? this.creatoDa,
+    creatoIl: creatoIl ?? this.creatoIl,
   );
   VoceLista copyWithCompanion(VociListaCompanion data) {
     return VoceLista(
@@ -5302,6 +5504,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
           : this.scaricatoIl,
       viaggioId: data.viaggioId.present ? data.viaggioId.value : this.viaggioId,
       testo: data.testo.present ? data.testo.value : this.testo,
+      quantita: data.quantita.present ? data.quantita.value : this.quantita,
       tipo: data.tipo.present ? data.tipo.value : this.tipo,
       proprietarioId: data.proprietarioId.present
           ? data.proprietarioId.value
@@ -5310,6 +5513,8 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
           ? data.assegnatoA.value
           : this.assegnatoA,
       spuntata: data.spuntata.present ? data.spuntata.value : this.spuntata,
+      creatoDa: data.creatoDa.present ? data.creatoDa.value : this.creatoDa,
+      creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
     );
   }
 
@@ -5322,10 +5527,13 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
           ..write('scaricatoIl: $scaricatoIl, ')
           ..write('viaggioId: $viaggioId, ')
           ..write('testo: $testo, ')
+          ..write('quantita: $quantita, ')
           ..write('tipo: $tipo, ')
           ..write('proprietarioId: $proprietarioId, ')
           ..write('assegnatoA: $assegnatoA, ')
-          ..write('spuntata: $spuntata')
+          ..write('spuntata: $spuntata, ')
+          ..write('creatoDa: $creatoDa, ')
+          ..write('creatoIl: $creatoIl')
           ..write(')'))
         .toString();
   }
@@ -5338,10 +5546,13 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     scaricatoIl,
     viaggioId,
     testo,
+    quantita,
     tipo,
     proprietarioId,
     assegnatoA,
     spuntata,
+    creatoDa,
+    creatoIl,
   );
   @override
   bool operator ==(Object other) =>
@@ -5353,10 +5564,13 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
           other.scaricatoIl == this.scaricatoIl &&
           other.viaggioId == this.viaggioId &&
           other.testo == this.testo &&
+          other.quantita == this.quantita &&
           other.tipo == this.tipo &&
           other.proprietarioId == this.proprietarioId &&
           other.assegnatoA == this.assegnatoA &&
-          other.spuntata == this.spuntata);
+          other.spuntata == this.spuntata &&
+          other.creatoDa == this.creatoDa &&
+          other.creatoIl == this.creatoIl);
 }
 
 class VociListaCompanion extends UpdateCompanion<VoceLista> {
@@ -5366,10 +5580,13 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
   final Value<DateTime> scaricatoIl;
   final Value<String> viaggioId;
   final Value<String> testo;
+  final Value<int> quantita;
   final Value<String> tipo;
   final Value<String> proprietarioId;
   final Value<String?> assegnatoA;
   final Value<bool> spuntata;
+  final Value<String> creatoDa;
+  final Value<String> creatoIl;
   final Value<int> rowid;
   const VociListaCompanion({
     this.id = const Value.absent(),
@@ -5378,10 +5595,13 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     this.scaricatoIl = const Value.absent(),
     this.viaggioId = const Value.absent(),
     this.testo = const Value.absent(),
+    this.quantita = const Value.absent(),
     this.tipo = const Value.absent(),
     this.proprietarioId = const Value.absent(),
     this.assegnatoA = const Value.absent(),
     this.spuntata = const Value.absent(),
+    this.creatoDa = const Value.absent(),
+    this.creatoIl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   VociListaCompanion.insert({
@@ -5391,19 +5611,25 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     required DateTime scaricatoIl,
     required String viaggioId,
     required String testo,
+    required int quantita,
     required String tipo,
     required String proprietarioId,
     this.assegnatoA = const Value.absent(),
     required bool spuntata,
+    required String creatoDa,
+    required String creatoIl,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        versione = Value(versione),
        scaricatoIl = Value(scaricatoIl),
        viaggioId = Value(viaggioId),
        testo = Value(testo),
+       quantita = Value(quantita),
        tipo = Value(tipo),
        proprietarioId = Value(proprietarioId),
-       spuntata = Value(spuntata);
+       spuntata = Value(spuntata),
+       creatoDa = Value(creatoDa),
+       creatoIl = Value(creatoIl);
   static Insertable<VoceLista> custom({
     Expression<String>? id,
     Expression<int>? versione,
@@ -5411,10 +5637,13 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     Expression<DateTime>? scaricatoIl,
     Expression<String>? viaggioId,
     Expression<String>? testo,
+    Expression<int>? quantita,
     Expression<String>? tipo,
     Expression<String>? proprietarioId,
     Expression<String>? assegnatoA,
     Expression<bool>? spuntata,
+    Expression<String>? creatoDa,
+    Expression<String>? creatoIl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5424,10 +5653,13 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
       if (scaricatoIl != null) 'scaricato_il': scaricatoIl,
       if (viaggioId != null) 'viaggio_id': viaggioId,
       if (testo != null) 'testo': testo,
+      if (quantita != null) 'quantita': quantita,
       if (tipo != null) 'tipo': tipo,
       if (proprietarioId != null) 'proprietario_id': proprietarioId,
       if (assegnatoA != null) 'assegnato_a': assegnatoA,
       if (spuntata != null) 'spuntata': spuntata,
+      if (creatoDa != null) 'creato_da': creatoDa,
+      if (creatoIl != null) 'creato_il': creatoIl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5439,10 +5671,13 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     Value<DateTime>? scaricatoIl,
     Value<String>? viaggioId,
     Value<String>? testo,
+    Value<int>? quantita,
     Value<String>? tipo,
     Value<String>? proprietarioId,
     Value<String?>? assegnatoA,
     Value<bool>? spuntata,
+    Value<String>? creatoDa,
+    Value<String>? creatoIl,
     Value<int>? rowid,
   }) {
     return VociListaCompanion(
@@ -5452,10 +5687,13 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
       scaricatoIl: scaricatoIl ?? this.scaricatoIl,
       viaggioId: viaggioId ?? this.viaggioId,
       testo: testo ?? this.testo,
+      quantita: quantita ?? this.quantita,
       tipo: tipo ?? this.tipo,
       proprietarioId: proprietarioId ?? this.proprietarioId,
       assegnatoA: assegnatoA ?? this.assegnatoA,
       spuntata: spuntata ?? this.spuntata,
+      creatoDa: creatoDa ?? this.creatoDa,
+      creatoIl: creatoIl ?? this.creatoIl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5481,6 +5719,9 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     if (testo.present) {
       map['testo'] = Variable<String>(testo.value);
     }
+    if (quantita.present) {
+      map['quantita'] = Variable<int>(quantita.value);
+    }
     if (tipo.present) {
       map['tipo'] = Variable<String>(tipo.value);
     }
@@ -5492,6 +5733,12 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     }
     if (spuntata.present) {
       map['spuntata'] = Variable<bool>(spuntata.value);
+    }
+    if (creatoDa.present) {
+      map['creato_da'] = Variable<String>(creatoDa.value);
+    }
+    if (creatoIl.present) {
+      map['creato_il'] = Variable<String>(creatoIl.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -5508,10 +5755,1178 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
           ..write('scaricatoIl: $scaricatoIl, ')
           ..write('viaggioId: $viaggioId, ')
           ..write('testo: $testo, ')
+          ..write('quantita: $quantita, ')
           ..write('tipo: $tipo, ')
           ..write('proprietarioId: $proprietarioId, ')
           ..write('assegnatoA: $assegnatoA, ')
           ..write('spuntata: $spuntata, ')
+          ..write('creatoDa: $creatoDa, ')
+          ..write('creatoIl: $creatoIl, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NoteTable extends Note with TableInfo<$NoteTable, Nota> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NoteTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versioneMeta = const VerificationMeta(
+    'versione',
+  );
+  @override
+  late final GeneratedColumn<int> versione = GeneratedColumn<int>(
+    'versione',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _eliminatoIlMeta = const VerificationMeta(
+    'eliminatoIl',
+  );
+  @override
+  late final GeneratedColumn<String> eliminatoIl = GeneratedColumn<String>(
+    'eliminato_il',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _scaricatoIlMeta = const VerificationMeta(
+    'scaricatoIl',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scaricatoIl = GeneratedColumn<DateTime>(
+    'scaricato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _viaggioIdMeta = const VerificationMeta(
+    'viaggioId',
+  );
+  @override
+  late final GeneratedColumn<String> viaggioId = GeneratedColumn<String>(
+    'viaggio_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _testoMeta = const VerificationMeta('testo');
+  @override
+  late final GeneratedColumn<String> testo = GeneratedColumn<String>(
+    'testo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _origineMeta = const VerificationMeta(
+    'origine',
+  );
+  @override
+  late final GeneratedColumn<String> origine = GeneratedColumn<String>(
+    'origine',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _creatoDaMeta = const VerificationMeta(
+    'creatoDa',
+  );
+  @override
+  late final GeneratedColumn<String> creatoDa = GeneratedColumn<String>(
+    'creato_da',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _creatoIlMeta = const VerificationMeta(
+    'creatoIl',
+  );
+  @override
+  late final GeneratedColumn<String> creatoIl = GeneratedColumn<String>(
+    'creato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    versione,
+    eliminatoIl,
+    scaricatoIl,
+    viaggioId,
+    testo,
+    origine,
+    creatoDa,
+    creatoIl,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nota';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Nota> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('versione')) {
+      context.handle(
+        _versioneMeta,
+        versione.isAcceptableOrUnknown(data['versione']!, _versioneMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_versioneMeta);
+    }
+    if (data.containsKey('eliminato_il')) {
+      context.handle(
+        _eliminatoIlMeta,
+        eliminatoIl.isAcceptableOrUnknown(
+          data['eliminato_il']!,
+          _eliminatoIlMeta,
+        ),
+      );
+    }
+    if (data.containsKey('scaricato_il')) {
+      context.handle(
+        _scaricatoIlMeta,
+        scaricatoIl.isAcceptableOrUnknown(
+          data['scaricato_il']!,
+          _scaricatoIlMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scaricatoIlMeta);
+    }
+    if (data.containsKey('viaggio_id')) {
+      context.handle(
+        _viaggioIdMeta,
+        viaggioId.isAcceptableOrUnknown(data['viaggio_id']!, _viaggioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_viaggioIdMeta);
+    }
+    if (data.containsKey('testo')) {
+      context.handle(
+        _testoMeta,
+        testo.isAcceptableOrUnknown(data['testo']!, _testoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_testoMeta);
+    }
+    if (data.containsKey('origine')) {
+      context.handle(
+        _origineMeta,
+        origine.isAcceptableOrUnknown(data['origine']!, _origineMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_origineMeta);
+    }
+    if (data.containsKey('creato_da')) {
+      context.handle(
+        _creatoDaMeta,
+        creatoDa.isAcceptableOrUnknown(data['creato_da']!, _creatoDaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoDaMeta);
+    }
+    if (data.containsKey('creato_il')) {
+      context.handle(
+        _creatoIlMeta,
+        creatoIl.isAcceptableOrUnknown(data['creato_il']!, _creatoIlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_creatoIlMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Nota map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Nota(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      versione: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}versione'],
+      )!,
+      eliminatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}eliminato_il'],
+      ),
+      scaricatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scaricato_il'],
+      )!,
+      viaggioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}viaggio_id'],
+      )!,
+      testo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}testo'],
+      )!,
+      origine: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origine'],
+      )!,
+      creatoDa: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_da'],
+      )!,
+      creatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_il'],
+      )!,
+    );
+  }
+
+  @override
+  $NoteTable createAlias(String alias) {
+    return $NoteTable(attachedDatabase, alias);
+  }
+}
+
+class Nota extends DataClass implements Insertable<Nota> {
+  final String id;
+  final int versione;
+  final String? eliminatoIl;
+
+  /// Quando è stata scaricata: serve a dire "aggiornato due giorni fa"
+  /// invece di far credere che sia fresca.
+  final DateTime scaricatoIl;
+  final String viaggioId;
+  final String testo;
+
+  /// `incollata` o `scritta`.
+  final String origine;
+  final String creatoDa;
+  final String creatoIl;
+  const Nota({
+    required this.id,
+    required this.versione,
+    this.eliminatoIl,
+    required this.scaricatoIl,
+    required this.viaggioId,
+    required this.testo,
+    required this.origine,
+    required this.creatoDa,
+    required this.creatoIl,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['versione'] = Variable<int>(versione);
+    if (!nullToAbsent || eliminatoIl != null) {
+      map['eliminato_il'] = Variable<String>(eliminatoIl);
+    }
+    map['scaricato_il'] = Variable<DateTime>(scaricatoIl);
+    map['viaggio_id'] = Variable<String>(viaggioId);
+    map['testo'] = Variable<String>(testo);
+    map['origine'] = Variable<String>(origine);
+    map['creato_da'] = Variable<String>(creatoDa);
+    map['creato_il'] = Variable<String>(creatoIl);
+    return map;
+  }
+
+  NoteCompanion toCompanion(bool nullToAbsent) {
+    return NoteCompanion(
+      id: Value(id),
+      versione: Value(versione),
+      eliminatoIl: eliminatoIl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(eliminatoIl),
+      scaricatoIl: Value(scaricatoIl),
+      viaggioId: Value(viaggioId),
+      testo: Value(testo),
+      origine: Value(origine),
+      creatoDa: Value(creatoDa),
+      creatoIl: Value(creatoIl),
+    );
+  }
+
+  factory Nota.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Nota(
+      id: serializer.fromJson<String>(json['id']),
+      versione: serializer.fromJson<int>(json['versione']),
+      eliminatoIl: serializer.fromJson<String?>(json['eliminatoIl']),
+      scaricatoIl: serializer.fromJson<DateTime>(json['scaricatoIl']),
+      viaggioId: serializer.fromJson<String>(json['viaggioId']),
+      testo: serializer.fromJson<String>(json['testo']),
+      origine: serializer.fromJson<String>(json['origine']),
+      creatoDa: serializer.fromJson<String>(json['creatoDa']),
+      creatoIl: serializer.fromJson<String>(json['creatoIl']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'versione': serializer.toJson<int>(versione),
+      'eliminatoIl': serializer.toJson<String?>(eliminatoIl),
+      'scaricatoIl': serializer.toJson<DateTime>(scaricatoIl),
+      'viaggioId': serializer.toJson<String>(viaggioId),
+      'testo': serializer.toJson<String>(testo),
+      'origine': serializer.toJson<String>(origine),
+      'creatoDa': serializer.toJson<String>(creatoDa),
+      'creatoIl': serializer.toJson<String>(creatoIl),
+    };
+  }
+
+  Nota copyWith({
+    String? id,
+    int? versione,
+    Value<String?> eliminatoIl = const Value.absent(),
+    DateTime? scaricatoIl,
+    String? viaggioId,
+    String? testo,
+    String? origine,
+    String? creatoDa,
+    String? creatoIl,
+  }) => Nota(
+    id: id ?? this.id,
+    versione: versione ?? this.versione,
+    eliminatoIl: eliminatoIl.present ? eliminatoIl.value : this.eliminatoIl,
+    scaricatoIl: scaricatoIl ?? this.scaricatoIl,
+    viaggioId: viaggioId ?? this.viaggioId,
+    testo: testo ?? this.testo,
+    origine: origine ?? this.origine,
+    creatoDa: creatoDa ?? this.creatoDa,
+    creatoIl: creatoIl ?? this.creatoIl,
+  );
+  Nota copyWithCompanion(NoteCompanion data) {
+    return Nota(
+      id: data.id.present ? data.id.value : this.id,
+      versione: data.versione.present ? data.versione.value : this.versione,
+      eliminatoIl: data.eliminatoIl.present
+          ? data.eliminatoIl.value
+          : this.eliminatoIl,
+      scaricatoIl: data.scaricatoIl.present
+          ? data.scaricatoIl.value
+          : this.scaricatoIl,
+      viaggioId: data.viaggioId.present ? data.viaggioId.value : this.viaggioId,
+      testo: data.testo.present ? data.testo.value : this.testo,
+      origine: data.origine.present ? data.origine.value : this.origine,
+      creatoDa: data.creatoDa.present ? data.creatoDa.value : this.creatoDa,
+      creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Nota(')
+          ..write('id: $id, ')
+          ..write('versione: $versione, ')
+          ..write('eliminatoIl: $eliminatoIl, ')
+          ..write('scaricatoIl: $scaricatoIl, ')
+          ..write('viaggioId: $viaggioId, ')
+          ..write('testo: $testo, ')
+          ..write('origine: $origine, ')
+          ..write('creatoDa: $creatoDa, ')
+          ..write('creatoIl: $creatoIl')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    versione,
+    eliminatoIl,
+    scaricatoIl,
+    viaggioId,
+    testo,
+    origine,
+    creatoDa,
+    creatoIl,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Nota &&
+          other.id == this.id &&
+          other.versione == this.versione &&
+          other.eliminatoIl == this.eliminatoIl &&
+          other.scaricatoIl == this.scaricatoIl &&
+          other.viaggioId == this.viaggioId &&
+          other.testo == this.testo &&
+          other.origine == this.origine &&
+          other.creatoDa == this.creatoDa &&
+          other.creatoIl == this.creatoIl);
+}
+
+class NoteCompanion extends UpdateCompanion<Nota> {
+  final Value<String> id;
+  final Value<int> versione;
+  final Value<String?> eliminatoIl;
+  final Value<DateTime> scaricatoIl;
+  final Value<String> viaggioId;
+  final Value<String> testo;
+  final Value<String> origine;
+  final Value<String> creatoDa;
+  final Value<String> creatoIl;
+  final Value<int> rowid;
+  const NoteCompanion({
+    this.id = const Value.absent(),
+    this.versione = const Value.absent(),
+    this.eliminatoIl = const Value.absent(),
+    this.scaricatoIl = const Value.absent(),
+    this.viaggioId = const Value.absent(),
+    this.testo = const Value.absent(),
+    this.origine = const Value.absent(),
+    this.creatoDa = const Value.absent(),
+    this.creatoIl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NoteCompanion.insert({
+    required String id,
+    required int versione,
+    this.eliminatoIl = const Value.absent(),
+    required DateTime scaricatoIl,
+    required String viaggioId,
+    required String testo,
+    required String origine,
+    required String creatoDa,
+    required String creatoIl,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       versione = Value(versione),
+       scaricatoIl = Value(scaricatoIl),
+       viaggioId = Value(viaggioId),
+       testo = Value(testo),
+       origine = Value(origine),
+       creatoDa = Value(creatoDa),
+       creatoIl = Value(creatoIl);
+  static Insertable<Nota> custom({
+    Expression<String>? id,
+    Expression<int>? versione,
+    Expression<String>? eliminatoIl,
+    Expression<DateTime>? scaricatoIl,
+    Expression<String>? viaggioId,
+    Expression<String>? testo,
+    Expression<String>? origine,
+    Expression<String>? creatoDa,
+    Expression<String>? creatoIl,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (versione != null) 'versione': versione,
+      if (eliminatoIl != null) 'eliminato_il': eliminatoIl,
+      if (scaricatoIl != null) 'scaricato_il': scaricatoIl,
+      if (viaggioId != null) 'viaggio_id': viaggioId,
+      if (testo != null) 'testo': testo,
+      if (origine != null) 'origine': origine,
+      if (creatoDa != null) 'creato_da': creatoDa,
+      if (creatoIl != null) 'creato_il': creatoIl,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NoteCompanion copyWith({
+    Value<String>? id,
+    Value<int>? versione,
+    Value<String?>? eliminatoIl,
+    Value<DateTime>? scaricatoIl,
+    Value<String>? viaggioId,
+    Value<String>? testo,
+    Value<String>? origine,
+    Value<String>? creatoDa,
+    Value<String>? creatoIl,
+    Value<int>? rowid,
+  }) {
+    return NoteCompanion(
+      id: id ?? this.id,
+      versione: versione ?? this.versione,
+      eliminatoIl: eliminatoIl ?? this.eliminatoIl,
+      scaricatoIl: scaricatoIl ?? this.scaricatoIl,
+      viaggioId: viaggioId ?? this.viaggioId,
+      testo: testo ?? this.testo,
+      origine: origine ?? this.origine,
+      creatoDa: creatoDa ?? this.creatoDa,
+      creatoIl: creatoIl ?? this.creatoIl,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (versione.present) {
+      map['versione'] = Variable<int>(versione.value);
+    }
+    if (eliminatoIl.present) {
+      map['eliminato_il'] = Variable<String>(eliminatoIl.value);
+    }
+    if (scaricatoIl.present) {
+      map['scaricato_il'] = Variable<DateTime>(scaricatoIl.value);
+    }
+    if (viaggioId.present) {
+      map['viaggio_id'] = Variable<String>(viaggioId.value);
+    }
+    if (testo.present) {
+      map['testo'] = Variable<String>(testo.value);
+    }
+    if (origine.present) {
+      map['origine'] = Variable<String>(origine.value);
+    }
+    if (creatoDa.present) {
+      map['creato_da'] = Variable<String>(creatoDa.value);
+    }
+    if (creatoIl.present) {
+      map['creato_il'] = Variable<String>(creatoIl.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteCompanion(')
+          ..write('id: $id, ')
+          ..write('versione: $versione, ')
+          ..write('eliminatoIl: $eliminatoIl, ')
+          ..write('scaricatoIl: $scaricatoIl, ')
+          ..write('viaggioId: $viaggioId, ')
+          ..write('testo: $testo, ')
+          ..write('origine: $origine, ')
+          ..write('creatoDa: $creatoDa, ')
+          ..write('creatoIl: $creatoIl, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TassiCambioTable extends TassiCambio
+    with TableInfo<$TassiCambioTable, TassoCambio> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TassiCambioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _valutaMeta = const VerificationMeta('valuta');
+  @override
+  late final GeneratedColumn<String> valuta = GeneratedColumn<String>(
+    'valuta',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _perEuroMeta = const VerificationMeta(
+    'perEuro',
+  );
+  @override
+  late final GeneratedColumn<String> perEuro = GeneratedColumn<String>(
+    'per_euro',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _delMeta = const VerificationMeta('del');
+  @override
+  late final GeneratedColumn<String> del = GeneratedColumn<String>(
+    'del',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scaricatoIlMeta = const VerificationMeta(
+    'scaricatoIl',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scaricatoIl = GeneratedColumn<DateTime>(
+    'scaricato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [valuta, perEuro, del, scaricatoIl];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tasso_cambio';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TassoCambio> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('valuta')) {
+      context.handle(
+        _valutaMeta,
+        valuta.isAcceptableOrUnknown(data['valuta']!, _valutaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valutaMeta);
+    }
+    if (data.containsKey('per_euro')) {
+      context.handle(
+        _perEuroMeta,
+        perEuro.isAcceptableOrUnknown(data['per_euro']!, _perEuroMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_perEuroMeta);
+    }
+    if (data.containsKey('del')) {
+      context.handle(
+        _delMeta,
+        del.isAcceptableOrUnknown(data['del']!, _delMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_delMeta);
+    }
+    if (data.containsKey('scaricato_il')) {
+      context.handle(
+        _scaricatoIlMeta,
+        scaricatoIl.isAcceptableOrUnknown(
+          data['scaricato_il']!,
+          _scaricatoIlMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scaricatoIlMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {valuta};
+  @override
+  TassoCambio map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TassoCambio(
+      valuta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}valuta'],
+      )!,
+      perEuro: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}per_euro'],
+      )!,
+      del: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}del'],
+      )!,
+      scaricatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scaricato_il'],
+      )!,
+    );
+  }
+
+  @override
+  $TassiCambioTable createAlias(String alias) {
+    return $TassiCambioTable(attachedDatabase, alias);
+  }
+}
+
+class TassoCambio extends DataClass implements Insertable<TassoCambio> {
+  final String valuta;
+
+  /// Quanto vale un euro in questa valuta. Testo, come gli importi.
+  final String perEuro;
+
+  /// Il giorno del tasso secondo il fornitore: `2026-10-03`.
+  final String del;
+
+  /// Quando questo telefono l'ha scaricato.
+  final DateTime scaricatoIl;
+  const TassoCambio({
+    required this.valuta,
+    required this.perEuro,
+    required this.del,
+    required this.scaricatoIl,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['valuta'] = Variable<String>(valuta);
+    map['per_euro'] = Variable<String>(perEuro);
+    map['del'] = Variable<String>(del);
+    map['scaricato_il'] = Variable<DateTime>(scaricatoIl);
+    return map;
+  }
+
+  TassiCambioCompanion toCompanion(bool nullToAbsent) {
+    return TassiCambioCompanion(
+      valuta: Value(valuta),
+      perEuro: Value(perEuro),
+      del: Value(del),
+      scaricatoIl: Value(scaricatoIl),
+    );
+  }
+
+  factory TassoCambio.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TassoCambio(
+      valuta: serializer.fromJson<String>(json['valuta']),
+      perEuro: serializer.fromJson<String>(json['perEuro']),
+      del: serializer.fromJson<String>(json['del']),
+      scaricatoIl: serializer.fromJson<DateTime>(json['scaricatoIl']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'valuta': serializer.toJson<String>(valuta),
+      'perEuro': serializer.toJson<String>(perEuro),
+      'del': serializer.toJson<String>(del),
+      'scaricatoIl': serializer.toJson<DateTime>(scaricatoIl),
+    };
+  }
+
+  TassoCambio copyWith({
+    String? valuta,
+    String? perEuro,
+    String? del,
+    DateTime? scaricatoIl,
+  }) => TassoCambio(
+    valuta: valuta ?? this.valuta,
+    perEuro: perEuro ?? this.perEuro,
+    del: del ?? this.del,
+    scaricatoIl: scaricatoIl ?? this.scaricatoIl,
+  );
+  TassoCambio copyWithCompanion(TassiCambioCompanion data) {
+    return TassoCambio(
+      valuta: data.valuta.present ? data.valuta.value : this.valuta,
+      perEuro: data.perEuro.present ? data.perEuro.value : this.perEuro,
+      del: data.del.present ? data.del.value : this.del,
+      scaricatoIl: data.scaricatoIl.present
+          ? data.scaricatoIl.value
+          : this.scaricatoIl,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TassoCambio(')
+          ..write('valuta: $valuta, ')
+          ..write('perEuro: $perEuro, ')
+          ..write('del: $del, ')
+          ..write('scaricatoIl: $scaricatoIl')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(valuta, perEuro, del, scaricatoIl);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TassoCambio &&
+          other.valuta == this.valuta &&
+          other.perEuro == this.perEuro &&
+          other.del == this.del &&
+          other.scaricatoIl == this.scaricatoIl);
+}
+
+class TassiCambioCompanion extends UpdateCompanion<TassoCambio> {
+  final Value<String> valuta;
+  final Value<String> perEuro;
+  final Value<String> del;
+  final Value<DateTime> scaricatoIl;
+  final Value<int> rowid;
+  const TassiCambioCompanion({
+    this.valuta = const Value.absent(),
+    this.perEuro = const Value.absent(),
+    this.del = const Value.absent(),
+    this.scaricatoIl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TassiCambioCompanion.insert({
+    required String valuta,
+    required String perEuro,
+    required String del,
+    required DateTime scaricatoIl,
+    this.rowid = const Value.absent(),
+  }) : valuta = Value(valuta),
+       perEuro = Value(perEuro),
+       del = Value(del),
+       scaricatoIl = Value(scaricatoIl);
+  static Insertable<TassoCambio> custom({
+    Expression<String>? valuta,
+    Expression<String>? perEuro,
+    Expression<String>? del,
+    Expression<DateTime>? scaricatoIl,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (valuta != null) 'valuta': valuta,
+      if (perEuro != null) 'per_euro': perEuro,
+      if (del != null) 'del': del,
+      if (scaricatoIl != null) 'scaricato_il': scaricatoIl,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TassiCambioCompanion copyWith({
+    Value<String>? valuta,
+    Value<String>? perEuro,
+    Value<String>? del,
+    Value<DateTime>? scaricatoIl,
+    Value<int>? rowid,
+  }) {
+    return TassiCambioCompanion(
+      valuta: valuta ?? this.valuta,
+      perEuro: perEuro ?? this.perEuro,
+      del: del ?? this.del,
+      scaricatoIl: scaricatoIl ?? this.scaricatoIl,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (valuta.present) {
+      map['valuta'] = Variable<String>(valuta.value);
+    }
+    if (perEuro.present) {
+      map['per_euro'] = Variable<String>(perEuro.value);
+    }
+    if (del.present) {
+      map['del'] = Variable<String>(del.value);
+    }
+    if (scaricatoIl.present) {
+      map['scaricato_il'] = Variable<DateTime>(scaricatoIl.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TassiCambioCompanion(')
+          ..write('valuta: $valuta, ')
+          ..write('perEuro: $perEuro, ')
+          ..write('del: $del, ')
+          ..write('scaricatoIl: $scaricatoIl, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ConfigurazioniTable extends Configurazioni
+    with TableInfo<$ConfigurazioniTable, Configurazione> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConfigurazioniTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _chiaveMeta = const VerificationMeta('chiave');
+  @override
+  late final GeneratedColumn<String> chiave = GeneratedColumn<String>(
+    'chiave',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valoreMeta = const VerificationMeta('valore');
+  @override
+  late final GeneratedColumn<String> valore = GeneratedColumn<String>(
+    'valore',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scaricatoIlMeta = const VerificationMeta(
+    'scaricatoIl',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scaricatoIl = GeneratedColumn<DateTime>(
+    'scaricato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [chiave, valore, scaricatoIl];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'configurazione';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Configurazione> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('chiave')) {
+      context.handle(
+        _chiaveMeta,
+        chiave.isAcceptableOrUnknown(data['chiave']!, _chiaveMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_chiaveMeta);
+    }
+    if (data.containsKey('valore')) {
+      context.handle(
+        _valoreMeta,
+        valore.isAcceptableOrUnknown(data['valore']!, _valoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valoreMeta);
+    }
+    if (data.containsKey('scaricato_il')) {
+      context.handle(
+        _scaricatoIlMeta,
+        scaricatoIl.isAcceptableOrUnknown(
+          data['scaricato_il']!,
+          _scaricatoIlMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scaricatoIlMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {chiave};
+  @override
+  Configurazione map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Configurazione(
+      chiave: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}chiave'],
+      )!,
+      valore: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}valore'],
+      )!,
+      scaricatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scaricato_il'],
+      )!,
+    );
+  }
+
+  @override
+  $ConfigurazioniTable createAlias(String alias) {
+    return $ConfigurazioniTable(attachedDatabase, alias);
+  }
+}
+
+class Configurazione extends DataClass implements Insertable<Configurazione> {
+  final String chiave;
+  final String valore;
+  final DateTime scaricatoIl;
+  const Configurazione({
+    required this.chiave,
+    required this.valore,
+    required this.scaricatoIl,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['chiave'] = Variable<String>(chiave);
+    map['valore'] = Variable<String>(valore);
+    map['scaricato_il'] = Variable<DateTime>(scaricatoIl);
+    return map;
+  }
+
+  ConfigurazioniCompanion toCompanion(bool nullToAbsent) {
+    return ConfigurazioniCompanion(
+      chiave: Value(chiave),
+      valore: Value(valore),
+      scaricatoIl: Value(scaricatoIl),
+    );
+  }
+
+  factory Configurazione.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Configurazione(
+      chiave: serializer.fromJson<String>(json['chiave']),
+      valore: serializer.fromJson<String>(json['valore']),
+      scaricatoIl: serializer.fromJson<DateTime>(json['scaricatoIl']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'chiave': serializer.toJson<String>(chiave),
+      'valore': serializer.toJson<String>(valore),
+      'scaricatoIl': serializer.toJson<DateTime>(scaricatoIl),
+    };
+  }
+
+  Configurazione copyWith({
+    String? chiave,
+    String? valore,
+    DateTime? scaricatoIl,
+  }) => Configurazione(
+    chiave: chiave ?? this.chiave,
+    valore: valore ?? this.valore,
+    scaricatoIl: scaricatoIl ?? this.scaricatoIl,
+  );
+  Configurazione copyWithCompanion(ConfigurazioniCompanion data) {
+    return Configurazione(
+      chiave: data.chiave.present ? data.chiave.value : this.chiave,
+      valore: data.valore.present ? data.valore.value : this.valore,
+      scaricatoIl: data.scaricatoIl.present
+          ? data.scaricatoIl.value
+          : this.scaricatoIl,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Configurazione(')
+          ..write('chiave: $chiave, ')
+          ..write('valore: $valore, ')
+          ..write('scaricatoIl: $scaricatoIl')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(chiave, valore, scaricatoIl);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Configurazione &&
+          other.chiave == this.chiave &&
+          other.valore == this.valore &&
+          other.scaricatoIl == this.scaricatoIl);
+}
+
+class ConfigurazioniCompanion extends UpdateCompanion<Configurazione> {
+  final Value<String> chiave;
+  final Value<String> valore;
+  final Value<DateTime> scaricatoIl;
+  final Value<int> rowid;
+  const ConfigurazioniCompanion({
+    this.chiave = const Value.absent(),
+    this.valore = const Value.absent(),
+    this.scaricatoIl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConfigurazioniCompanion.insert({
+    required String chiave,
+    required String valore,
+    required DateTime scaricatoIl,
+    this.rowid = const Value.absent(),
+  }) : chiave = Value(chiave),
+       valore = Value(valore),
+       scaricatoIl = Value(scaricatoIl);
+  static Insertable<Configurazione> custom({
+    Expression<String>? chiave,
+    Expression<String>? valore,
+    Expression<DateTime>? scaricatoIl,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (chiave != null) 'chiave': chiave,
+      if (valore != null) 'valore': valore,
+      if (scaricatoIl != null) 'scaricato_il': scaricatoIl,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConfigurazioniCompanion copyWith({
+    Value<String>? chiave,
+    Value<String>? valore,
+    Value<DateTime>? scaricatoIl,
+    Value<int>? rowid,
+  }) {
+    return ConfigurazioniCompanion(
+      chiave: chiave ?? this.chiave,
+      valore: valore ?? this.valore,
+      scaricatoIl: scaricatoIl ?? this.scaricatoIl,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (chiave.present) {
+      map['chiave'] = Variable<String>(chiave.value);
+    }
+    if (valore.present) {
+      map['valore'] = Variable<String>(valore.value);
+    }
+    if (scaricatoIl.present) {
+      map['scaricato_il'] = Variable<DateTime>(scaricatoIl.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConfigurazioniCompanion(')
+          ..write('chiave: $chiave, ')
+          ..write('valore: $valore, ')
+          ..write('scaricatoIl: $scaricatoIl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7258,6 +8673,9 @@ abstract class _$DatabaseLocale extends GeneratedDatabase {
   late final $SpeseTable spese = $SpeseTable(this);
   late final $SpeseQuoteTable speseQuote = $SpeseQuoteTable(this);
   late final $VociListaTable vociLista = $VociListaTable(this);
+  late final $NoteTable note = $NoteTable(this);
+  late final $TassiCambioTable tassiCambio = $TassiCambioTable(this);
+  late final $ConfigurazioniTable configurazioni = $ConfigurazioniTable(this);
   late final $CodaScritturaTable codaScrittura = $CodaScritturaTable(this);
   late final $DocumentiTable documenti = $DocumentiTable(this);
   late final $EventiInAttesaTable eventiInAttesa = $EventiInAttesaTable(this);
@@ -7275,6 +8693,9 @@ abstract class _$DatabaseLocale extends GeneratedDatabase {
     spese,
     speseQuote,
     vociLista,
+    note,
+    tassiCambio,
+    configurazioni,
     codaScrittura,
     documenti,
     eventiInAttesa,
@@ -9009,6 +10430,8 @@ typedef $$SpeseTableCreateCompanionBuilder = SpeseCompanion Function({
   required String paganteId,
   required String data,
   Value<String?> descrizione,
+  required String creatoDa,
+  required String creatoIl,
   Value<int> rowid,
 });
 typedef $$SpeseTableUpdateCompanionBuilder = SpeseCompanion Function({
@@ -9024,6 +10447,8 @@ typedef $$SpeseTableUpdateCompanionBuilder = SpeseCompanion Function({
   Value<String> paganteId,
   Value<String> data,
   Value<String?> descrizione,
+  Value<String> creatoDa,
+  Value<String> creatoIl,
   Value<int> rowid,
 });
 
@@ -9093,6 +10518,16 @@ class $$SpeseTableFilterComposer
 
   ColumnFilters<String> get descrizione => $composableBuilder(
     column: $table.descrizione,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoDa => $composableBuilder(
+    column: $table.creatoDa,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9165,6 +10600,16 @@ class $$SpeseTableOrderingComposer
     column: $table.descrizione,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get creatoDa => $composableBuilder(
+    column: $table.creatoDa,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SpeseTableAnnotationComposer
@@ -9219,6 +10664,12 @@ class $$SpeseTableAnnotationComposer
     column: $table.descrizione,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get creatoDa =>
+      $composableBuilder(column: $table.creatoDa, builder: (column) => column);
+
+  GeneratedColumn<String> get creatoIl =>
+      $composableBuilder(column: $table.creatoIl, builder: (column) => column);
 }
 
 class $$SpeseTableTableManager
@@ -9261,6 +10712,8 @@ class $$SpeseTableTableManager
                 Value<String> paganteId = const Value.absent(),
                 Value<String> data = const Value.absent(),
                 Value<String?> descrizione = const Value.absent(),
+                Value<String> creatoDa = const Value.absent(),
+                Value<String> creatoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SpeseCompanion(
                 id: id,
@@ -9275,6 +10728,8 @@ class $$SpeseTableTableManager
                 paganteId: paganteId,
                 data: data,
                 descrizione: descrizione,
+                creatoDa: creatoDa,
+                creatoIl: creatoIl,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9291,6 +10746,8 @@ class $$SpeseTableTableManager
                 required String paganteId,
                 required String data,
                 Value<String?> descrizione = const Value.absent(),
+                required String creatoDa,
+                required String creatoIl,
                 Value<int> rowid = const Value.absent(),
               }) => SpeseCompanion.insert(
                 id: id,
@@ -9305,6 +10762,8 @@ class $$SpeseTableTableManager
                 paganteId: paganteId,
                 data: data,
                 descrizione: descrizione,
+                creatoDa: creatoDa,
+                creatoIl: creatoIl,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9613,10 +11072,13 @@ typedef $$VociListaTableCreateCompanionBuilder = VociListaCompanion Function({
   required DateTime scaricatoIl,
   required String viaggioId,
   required String testo,
+  required int quantita,
   required String tipo,
   required String proprietarioId,
   Value<String?> assegnatoA,
   required bool spuntata,
+  required String creatoDa,
+  required String creatoIl,
   Value<int> rowid,
 });
 typedef $$VociListaTableUpdateCompanionBuilder = VociListaCompanion Function({
@@ -9626,10 +11088,13 @@ typedef $$VociListaTableUpdateCompanionBuilder = VociListaCompanion Function({
   Value<DateTime> scaricatoIl,
   Value<String> viaggioId,
   Value<String> testo,
+  Value<int> quantita,
   Value<String> tipo,
   Value<String> proprietarioId,
   Value<String?> assegnatoA,
   Value<bool> spuntata,
+  Value<String> creatoDa,
+  Value<String> creatoIl,
   Value<int> rowid,
 });
 
@@ -9672,6 +11137,11 @@ class $$VociListaTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get quantita => $composableBuilder(
+    column: $table.quantita,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get tipo => $composableBuilder(
     column: $table.tipo,
     builder: (column) => ColumnFilters(column),
@@ -9689,6 +11159,16 @@ class $$VociListaTableFilterComposer
 
   ColumnFilters<bool> get spuntata => $composableBuilder(
     column: $table.spuntata,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoDa => $composableBuilder(
+    column: $table.creatoDa,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9732,6 +11212,11 @@ class $$VociListaTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get quantita => $composableBuilder(
+    column: $table.quantita,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get tipo => $composableBuilder(
     column: $table.tipo,
     builder: (column) => ColumnOrderings(column),
@@ -9749,6 +11234,16 @@ class $$VociListaTableOrderingComposer
 
   ColumnOrderings<bool> get spuntata => $composableBuilder(
     column: $table.spuntata,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatoDa => $composableBuilder(
+    column: $table.creatoDa,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -9784,6 +11279,9 @@ class $$VociListaTableAnnotationComposer
   GeneratedColumn<String> get testo =>
       $composableBuilder(column: $table.testo, builder: (column) => column);
 
+  GeneratedColumn<int> get quantita =>
+      $composableBuilder(column: $table.quantita, builder: (column) => column);
+
   GeneratedColumn<String> get tipo =>
       $composableBuilder(column: $table.tipo, builder: (column) => column);
 
@@ -9799,6 +11297,12 @@ class $$VociListaTableAnnotationComposer
 
   GeneratedColumn<bool> get spuntata =>
       $composableBuilder(column: $table.spuntata, builder: (column) => column);
+
+  GeneratedColumn<String> get creatoDa =>
+      $composableBuilder(column: $table.creatoDa, builder: (column) => column);
+
+  GeneratedColumn<String> get creatoIl =>
+      $composableBuilder(column: $table.creatoIl, builder: (column) => column);
 }
 
 class $$VociListaTableTableManager
@@ -9838,10 +11342,13 @@ class $$VociListaTableTableManager
                 Value<DateTime> scaricatoIl = const Value.absent(),
                 Value<String> viaggioId = const Value.absent(),
                 Value<String> testo = const Value.absent(),
+                Value<int> quantita = const Value.absent(),
                 Value<String> tipo = const Value.absent(),
                 Value<String> proprietarioId = const Value.absent(),
                 Value<String?> assegnatoA = const Value.absent(),
                 Value<bool> spuntata = const Value.absent(),
+                Value<String> creatoDa = const Value.absent(),
+                Value<String> creatoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => VociListaCompanion(
                 id: id,
@@ -9850,10 +11357,13 @@ class $$VociListaTableTableManager
                 scaricatoIl: scaricatoIl,
                 viaggioId: viaggioId,
                 testo: testo,
+                quantita: quantita,
                 tipo: tipo,
                 proprietarioId: proprietarioId,
                 assegnatoA: assegnatoA,
                 spuntata: spuntata,
+                creatoDa: creatoDa,
+                creatoIl: creatoIl,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9864,10 +11374,13 @@ class $$VociListaTableTableManager
                 required DateTime scaricatoIl,
                 required String viaggioId,
                 required String testo,
+                required int quantita,
                 required String tipo,
                 required String proprietarioId,
                 Value<String?> assegnatoA = const Value.absent(),
                 required bool spuntata,
+                required String creatoDa,
+                required String creatoIl,
                 Value<int> rowid = const Value.absent(),
               }) => VociListaCompanion.insert(
                 id: id,
@@ -9876,10 +11389,13 @@ class $$VociListaTableTableManager
                 scaricatoIl: scaricatoIl,
                 viaggioId: viaggioId,
                 testo: testo,
+                quantita: quantita,
                 tipo: tipo,
                 proprietarioId: proprietarioId,
                 assegnatoA: assegnatoA,
                 spuntata: spuntata,
+                creatoDa: creatoDa,
+                creatoIl: creatoIl,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9911,6 +11427,657 @@ typedef $$VociListaTableProcessedTableManager =
       $$VociListaTableUpdateCompanionBuilder,
       (VoceLista, BaseReferences<_$DatabaseLocale, $VociListaTable, VoceLista>),
       VoceLista,
+      PrefetchHooks Function()
+    >;
+typedef $$NoteTableCreateCompanionBuilder = NoteCompanion Function({
+  required String id,
+  required int versione,
+  Value<String?> eliminatoIl,
+  required DateTime scaricatoIl,
+  required String viaggioId,
+  required String testo,
+  required String origine,
+  required String creatoDa,
+  required String creatoIl,
+  Value<int> rowid,
+});
+typedef $$NoteTableUpdateCompanionBuilder = NoteCompanion Function({
+  Value<String> id,
+  Value<int> versione,
+  Value<String?> eliminatoIl,
+  Value<DateTime> scaricatoIl,
+  Value<String> viaggioId,
+  Value<String> testo,
+  Value<String> origine,
+  Value<String> creatoDa,
+  Value<String> creatoIl,
+  Value<int> rowid,
+});
+
+class $$NoteTableFilterComposer extends Composer<_$DatabaseLocale, $NoteTable> {
+  $$NoteTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get versione => $composableBuilder(
+    column: $table.versione,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eliminatoIl => $composableBuilder(
+    column: $table.eliminatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get viaggioId => $composableBuilder(
+    column: $table.viaggioId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get testo => $composableBuilder(
+    column: $table.testo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoDa => $composableBuilder(
+    column: $table.creatoDa,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NoteTableOrderingComposer
+    extends Composer<_$DatabaseLocale, $NoteTable> {
+  $$NoteTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get versione => $composableBuilder(
+    column: $table.versione,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eliminatoIl => $composableBuilder(
+    column: $table.eliminatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get viaggioId => $composableBuilder(
+    column: $table.viaggioId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get testo => $composableBuilder(
+    column: $table.testo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origine => $composableBuilder(
+    column: $table.origine,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatoDa => $composableBuilder(
+    column: $table.creatoDa,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NoteTableAnnotationComposer
+    extends Composer<_$DatabaseLocale, $NoteTable> {
+  $$NoteTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get versione =>
+      $composableBuilder(column: $table.versione, builder: (column) => column);
+
+  GeneratedColumn<String> get eliminatoIl => $composableBuilder(
+    column: $table.eliminatoIl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get viaggioId =>
+      $composableBuilder(column: $table.viaggioId, builder: (column) => column);
+
+  GeneratedColumn<String> get testo =>
+      $composableBuilder(column: $table.testo, builder: (column) => column);
+
+  GeneratedColumn<String> get origine =>
+      $composableBuilder(column: $table.origine, builder: (column) => column);
+
+  GeneratedColumn<String> get creatoDa =>
+      $composableBuilder(column: $table.creatoDa, builder: (column) => column);
+
+  GeneratedColumn<String> get creatoIl =>
+      $composableBuilder(column: $table.creatoIl, builder: (column) => column);
+}
+
+class $$NoteTableTableManager
+    extends
+        RootTableManager<
+          _$DatabaseLocale,
+          $NoteTable,
+          Nota,
+          $$NoteTableFilterComposer,
+          $$NoteTableOrderingComposer,
+          $$NoteTableAnnotationComposer,
+          $$NoteTableCreateCompanionBuilder,
+          $$NoteTableUpdateCompanionBuilder,
+          (Nota, BaseReferences<_$DatabaseLocale, $NoteTable, Nota>),
+          Nota,
+          PrefetchHooks Function()
+        > {
+  $$NoteTableTableManager(_$DatabaseLocale db, $NoteTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NoteTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NoteTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NoteTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> versione = const Value.absent(),
+                Value<String?> eliminatoIl = const Value.absent(),
+                Value<DateTime> scaricatoIl = const Value.absent(),
+                Value<String> viaggioId = const Value.absent(),
+                Value<String> testo = const Value.absent(),
+                Value<String> origine = const Value.absent(),
+                Value<String> creatoDa = const Value.absent(),
+                Value<String> creatoIl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NoteCompanion(
+                id: id,
+                versione: versione,
+                eliminatoIl: eliminatoIl,
+                scaricatoIl: scaricatoIl,
+                viaggioId: viaggioId,
+                testo: testo,
+                origine: origine,
+                creatoDa: creatoDa,
+                creatoIl: creatoIl,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required int versione,
+                Value<String?> eliminatoIl = const Value.absent(),
+                required DateTime scaricatoIl,
+                required String viaggioId,
+                required String testo,
+                required String origine,
+                required String creatoDa,
+                required String creatoIl,
+                Value<int> rowid = const Value.absent(),
+              }) => NoteCompanion.insert(
+                id: id,
+                versione: versione,
+                eliminatoIl: eliminatoIl,
+                scaricatoIl: scaricatoIl,
+                viaggioId: viaggioId,
+                testo: testo,
+                origine: origine,
+                creatoDa: creatoDa,
+                creatoIl: creatoIl,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$NoteTable, Nota>(table),
+                  BaseReferences<_$DatabaseLocale, $NoteTable, Nota>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NoteTableProcessedTableManager =
+    ProcessedTableManager<
+      _$DatabaseLocale,
+      $NoteTable,
+      Nota,
+      $$NoteTableFilterComposer,
+      $$NoteTableOrderingComposer,
+      $$NoteTableAnnotationComposer,
+      $$NoteTableCreateCompanionBuilder,
+      $$NoteTableUpdateCompanionBuilder,
+      (Nota, BaseReferences<_$DatabaseLocale, $NoteTable, Nota>),
+      Nota,
+      PrefetchHooks Function()
+    >;
+typedef $$TassiCambioTableCreateCompanionBuilder =
+    TassiCambioCompanion Function({
+      required String valuta,
+      required String perEuro,
+      required String del,
+      required DateTime scaricatoIl,
+      Value<int> rowid,
+    });
+typedef $$TassiCambioTableUpdateCompanionBuilder =
+    TassiCambioCompanion Function({
+      Value<String> valuta,
+      Value<String> perEuro,
+      Value<String> del,
+      Value<DateTime> scaricatoIl,
+      Value<int> rowid,
+    });
+
+class $$TassiCambioTableFilterComposer
+    extends Composer<_$DatabaseLocale, $TassiCambioTable> {
+  $$TassiCambioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get valuta => $composableBuilder(
+    column: $table.valuta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get perEuro => $composableBuilder(
+    column: $table.perEuro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get del => $composableBuilder(
+    column: $table.del,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TassiCambioTableOrderingComposer
+    extends Composer<_$DatabaseLocale, $TassiCambioTable> {
+  $$TassiCambioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get valuta => $composableBuilder(
+    column: $table.valuta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get perEuro => $composableBuilder(
+    column: $table.perEuro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get del => $composableBuilder(
+    column: $table.del,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TassiCambioTableAnnotationComposer
+    extends Composer<_$DatabaseLocale, $TassiCambioTable> {
+  $$TassiCambioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get valuta =>
+      $composableBuilder(column: $table.valuta, builder: (column) => column);
+
+  GeneratedColumn<String> get perEuro =>
+      $composableBuilder(column: $table.perEuro, builder: (column) => column);
+
+  GeneratedColumn<String> get del =>
+      $composableBuilder(column: $table.del, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => column,
+  );
+}
+
+class $$TassiCambioTableTableManager
+    extends
+        RootTableManager<
+          _$DatabaseLocale,
+          $TassiCambioTable,
+          TassoCambio,
+          $$TassiCambioTableFilterComposer,
+          $$TassiCambioTableOrderingComposer,
+          $$TassiCambioTableAnnotationComposer,
+          $$TassiCambioTableCreateCompanionBuilder,
+          $$TassiCambioTableUpdateCompanionBuilder,
+          (
+            TassoCambio,
+            BaseReferences<_$DatabaseLocale, $TassiCambioTable, TassoCambio>,
+          ),
+          TassoCambio,
+          PrefetchHooks Function()
+        > {
+  $$TassiCambioTableTableManager(_$DatabaseLocale db, $TassiCambioTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TassiCambioTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TassiCambioTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TassiCambioTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> valuta = const Value.absent(),
+                Value<String> perEuro = const Value.absent(),
+                Value<String> del = const Value.absent(),
+                Value<DateTime> scaricatoIl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TassiCambioCompanion(
+                valuta: valuta,
+                perEuro: perEuro,
+                del: del,
+                scaricatoIl: scaricatoIl,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String valuta,
+                required String perEuro,
+                required String del,
+                required DateTime scaricatoIl,
+                Value<int> rowid = const Value.absent(),
+              }) => TassiCambioCompanion.insert(
+                valuta: valuta,
+                perEuro: perEuro,
+                del: del,
+                scaricatoIl: scaricatoIl,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TassiCambioTable, TassoCambio>(table),
+                  BaseReferences<
+                    _$DatabaseLocale,
+                    $TassiCambioTable,
+                    TassoCambio
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TassiCambioTableProcessedTableManager =
+    ProcessedTableManager<
+      _$DatabaseLocale,
+      $TassiCambioTable,
+      TassoCambio,
+      $$TassiCambioTableFilterComposer,
+      $$TassiCambioTableOrderingComposer,
+      $$TassiCambioTableAnnotationComposer,
+      $$TassiCambioTableCreateCompanionBuilder,
+      $$TassiCambioTableUpdateCompanionBuilder,
+      (
+        TassoCambio,
+        BaseReferences<_$DatabaseLocale, $TassiCambioTable, TassoCambio>,
+      ),
+      TassoCambio,
+      PrefetchHooks Function()
+    >;
+typedef $$ConfigurazioniTableCreateCompanionBuilder =
+    ConfigurazioniCompanion Function({
+      required String chiave,
+      required String valore,
+      required DateTime scaricatoIl,
+      Value<int> rowid,
+    });
+typedef $$ConfigurazioniTableUpdateCompanionBuilder =
+    ConfigurazioniCompanion Function({
+      Value<String> chiave,
+      Value<String> valore,
+      Value<DateTime> scaricatoIl,
+      Value<int> rowid,
+    });
+
+class $$ConfigurazioniTableFilterComposer
+    extends Composer<_$DatabaseLocale, $ConfigurazioniTable> {
+  $$ConfigurazioniTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get chiave => $composableBuilder(
+    column: $table.chiave,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get valore => $composableBuilder(
+    column: $table.valore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConfigurazioniTableOrderingComposer
+    extends Composer<_$DatabaseLocale, $ConfigurazioniTable> {
+  $$ConfigurazioniTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get chiave => $composableBuilder(
+    column: $table.chiave,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get valore => $composableBuilder(
+    column: $table.valore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ConfigurazioniTableAnnotationComposer
+    extends Composer<_$DatabaseLocale, $ConfigurazioniTable> {
+  $$ConfigurazioniTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get chiave =>
+      $composableBuilder(column: $table.chiave, builder: (column) => column);
+
+  GeneratedColumn<String> get valore =>
+      $composableBuilder(column: $table.valore, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => column,
+  );
+}
+
+class $$ConfigurazioniTableTableManager
+    extends
+        RootTableManager<
+          _$DatabaseLocale,
+          $ConfigurazioniTable,
+          Configurazione,
+          $$ConfigurazioniTableFilterComposer,
+          $$ConfigurazioniTableOrderingComposer,
+          $$ConfigurazioniTableAnnotationComposer,
+          $$ConfigurazioniTableCreateCompanionBuilder,
+          $$ConfigurazioniTableUpdateCompanionBuilder,
+          (
+            Configurazione,
+            BaseReferences<
+              _$DatabaseLocale,
+              $ConfigurazioniTable,
+              Configurazione
+            >,
+          ),
+          Configurazione,
+          PrefetchHooks Function()
+        > {
+  $$ConfigurazioniTableTableManager(
+    _$DatabaseLocale db,
+    $ConfigurazioniTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ConfigurazioniTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ConfigurazioniTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ConfigurazioniTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> chiave = const Value.absent(),
+                Value<String> valore = const Value.absent(),
+                Value<DateTime> scaricatoIl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConfigurazioniCompanion(
+                chiave: chiave,
+                valore: valore,
+                scaricatoIl: scaricatoIl,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String chiave,
+                required String valore,
+                required DateTime scaricatoIl,
+                Value<int> rowid = const Value.absent(),
+              }) => ConfigurazioniCompanion.insert(
+                chiave: chiave,
+                valore: valore,
+                scaricatoIl: scaricatoIl,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ConfigurazioniTable, Configurazione>(table),
+                  BaseReferences<
+                    _$DatabaseLocale,
+                    $ConfigurazioniTable,
+                    Configurazione
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConfigurazioniTableProcessedTableManager =
+    ProcessedTableManager<
+      _$DatabaseLocale,
+      $ConfigurazioniTable,
+      Configurazione,
+      $$ConfigurazioniTableFilterComposer,
+      $$ConfigurazioniTableOrderingComposer,
+      $$ConfigurazioniTableAnnotationComposer,
+      $$ConfigurazioniTableCreateCompanionBuilder,
+      $$ConfigurazioniTableUpdateCompanionBuilder,
+      (
+        Configurazione,
+        BaseReferences<_$DatabaseLocale, $ConfigurazioniTable, Configurazione>,
+      ),
+      Configurazione,
       PrefetchHooks Function()
     >;
 typedef $$CodaScritturaTableCreateCompanionBuilder =
@@ -10882,6 +13049,11 @@ class $DatabaseLocaleManager {
       $$SpeseQuoteTableTableManager(_db, _db.speseQuote);
   $$VociListaTableTableManager get vociLista =>
       $$VociListaTableTableManager(_db, _db.vociLista);
+  $$NoteTableTableManager get note => $$NoteTableTableManager(_db, _db.note);
+  $$TassiCambioTableTableManager get tassiCambio =>
+      $$TassiCambioTableTableManager(_db, _db.tassiCambio);
+  $$ConfigurazioniTableTableManager get configurazioni =>
+      $$ConfigurazioniTableTableManager(_db, _db.configurazioni);
   $$CodaScritturaTableTableManager get codaScrittura =>
       $$CodaScritturaTableTableManager(_db, _db.codaScrittura);
   $$DocumentiTableTableManager get documenti =>

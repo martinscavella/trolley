@@ -32,9 +32,13 @@ Future<Documento> aggiungiIlDocumento(
   final misurazione = servizi.misurazione;
   final v = viaggio.id;
   final io = servizi.documenti.io;
-  final tappe = await servizi.archivio.osservaTappe(v).first;
-  final giaQui = await servizi.documenti.osserva(v).first;
-  final ruolo = await servizi.archivio.mioRuolo(v);
+  final (tappe, spese, voci, giaQui, ruolo) = await (
+    servizi.archivio.osservaTappe(v).first,
+    servizi.archivio.osservaSpese(v).first,
+    servizi.archivio.osservaVoci(v).first,
+    servizi.documenti.osserva(v).first,
+    servizi.archivio.mioRuolo(v),
+  ).wait;
 
   final documento = await servizi.documenti.aggiungi(
     viaggioId: v,
@@ -46,7 +50,7 @@ Future<Documento> aggiungiIlDocumento(
   await servizi.documenti.segnaAvvisoDato();
   HapticFeedback.lightImpact();
 
-  if (tappe.isEmpty && giaQui.isEmpty) {
+  if (tappe.isEmpty && spese.isEmpty && voci.isEmpty && giaQui.isEmpty) {
     await misurazione.registraUnaVolta(
       'primo_elemento:$v',
       Eventi.primoElementoAggiunto,
@@ -67,7 +71,9 @@ Future<Documento> aggiungiIlDocumento(
   );
   if (ruolo == 'partecipante' &&
       giaQui.isEmpty &&
-      !tappe.any((t) => t.creatoDa == io)) {
+      !tappe.any((t) => t.creatoDa == io) &&
+      !spese.any((s) => s.creatoDa == io) &&
+      !voci.any((x) => x.creatoDa == io)) {
     await misurazione.registraUnaVolta(
       'primo_contributo:$v',
       Eventi.primoContributoInvitato,

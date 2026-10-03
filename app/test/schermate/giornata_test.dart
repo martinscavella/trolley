@@ -58,6 +58,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Lascia arrivare le scritture: il database vero non avanza nel tempo
+  /// finto dei test.
+  Future<void> aspetta(WidgetTester tester) async {
+    for (var i = 0; i < 20; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 5)),
+      );
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+  }
+
   Future<List<OperazioneInCoda>> inCoda(WidgetTester tester) async =>
       (await tester.runAsync(
         () => ambiente.db.select(ambiente.db.codaScrittura).get(),
@@ -122,7 +134,7 @@ void main() {
     await tester.pump();
     expect(find.text('2 h'), findsOneWidget);
     await tester.tap(pulsante('Aggiungi'));
-    await tester.pumpAndSettle();
+    await aspetta(tester);
 
     expect(find.text('Nuova tappa'), findsNothing);
     expect(find.text('Torre dei Clérigos'), findsOneWidget);
@@ -190,7 +202,7 @@ void main() {
     await tester.pump();
     expect(find.text('Non entra nella giornata'), findsNothing);
     await tester.tap(pulsante('Aggiungi'));
-    await tester.pumpAndSettle();
+    await aspetta(tester);
 
     expect(find.text('Cena a Ribeira'), findsOneWidget);
     expect(find.text('La giornata è piena.'), findsOneWidget);

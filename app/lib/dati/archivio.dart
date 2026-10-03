@@ -8,12 +8,15 @@
 /// istante dopo.
 library;
 
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
+import '../dominio/liste.dart';
 import '../dominio/periodo.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
@@ -25,6 +28,10 @@ import 'lettura.dart';
 import 'rete.dart';
 
 /// Un viaggio come compare nell'elenco: con i nomi di chi c'è.
+/// Quanto può essere lunga una nota: come sul server. Una risposta lunga di
+/// un assistente ci sta comoda.
+const lunghezzaMassimaNota = 20000;
+
 class ViaggioInElenco {
   const ViaggioInElenco(this.viaggio, this.persone);
 
@@ -111,55 +118,81 @@ class Archivio {
 
   // ─── Copia di lettura ───────────────────────────────────────────────────
 
-  /// Riscarica la copia dei viaggi, con i loro giorni, le tappe e chi
-  /// partecipa. Prima manda quello che è in coda, così la copia lo comprende;
+  /// Riscarica la copia dei viaggi, con i loro giorni, le tappe, le spese, le
+  /// cose da portare, le note e chi partecipa. Prima manda quello che è in coda, così la copia lo comprende;
   /// quello che non è partito ci si rimette sopra. Le idee archiviate ci sono
   /// anche loro: pesano pochi byte, e così l'archivio si legge anche senza
   /// rete. Se qualcosa va storto la copia resta quella di prima: meglio vecchia
   /// e dichiarata tale che vuota.
   Future<void> aggiornaCopia() async {
     await coda.svuota();
-    final (viaggi, partecipazioni, utenti, giorni, tappe) = await _alServer(
-      () async {
-        final viaggi = await _server
-            .from('viaggio')
+    final (
+      viaggi,
+      partecipazioni,
+      utenti,
+      giorni,
+      tappe,
+      spese,
+      voci,
+      note,
+    ) = await _alServer(() async {
+      final viaggi = await _server
+          .from('viaggio')
+          .select()
+          .isFilter('eliminato_il', null);
+      final ids = [for (final v in viaggi) v['id'] as String];
+      if (ids.isEmpty) {
+        return (
+          viaggi,
+          <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
+        );
+      }
+      // Anche le tappe dei giorni usciti dalle date: sono da ricollocare.
+      // Delle liste arrivano quelle del viaggio e le proprie personali: le
+      // personali degli altri il server non le manda (05, regola 3).
+      final (partecipazioni, giorni, tappe, spese, voci, note) = await (
+        _server.from('partecipazione').select().inFilter('viaggio_id', ids),
+        _server
+            .from('giorno')
             .select()
-            .isFilter('eliminato_il', null);
-        final ids = [for (final v in viaggi) v['id'] as String];
-        if (ids.isEmpty) {
-          return (
-            viaggi,
-            <Map<String, dynamic>>[],
-            <Map<String, dynamic>>[],
-            <Map<String, dynamic>>[],
-            <Map<String, dynamic>>[],
+            .inFilter('viaggio_id', ids)
+            .isFilter('eliminato_il', null),
+        _server
+            .from('tappa')
+            .select()
+            .inFilter('viaggio_id', ids)
+            .isFilter('eliminato_il', null),
+        _server
+            .from('spesa')
+            .select()
+            .inFilter('viaggio_id', ids)
+            .isFilter('eliminato_il', null),
+        _server
+            .from('voce_lista')
+            .select()
+            .inFilter('viaggio_id', ids)
+            .isFilter('eliminato_il', null),
+        _server
+            .from('nota')
+            .select()
+            .inFilter('viaggio_id', ids)
+            .isFilter('eliminato_il', null),
+      ).wait;
+      final utenti = await _server
+          .from('utente')
+          .select('id, nome, versione, eliminato_il')
+          .inFilter(
+            'id',
+            {for (final p in partecipazioni) p['utente_id'] as String}.toList(),
           );
-        }
-        // Anche le tappe dei giorni usciti dalle date: sono da ricollocare.
-        final (partecipazioni, giorni, tappe) = await (
-          _server.from('partecipazione').select().inFilter('viaggio_id', ids),
-          _server
-              .from('giorno')
-              .select()
-              .inFilter('viaggio_id', ids)
-              .isFilter('eliminato_il', null),
-          _server
-              .from('tappa')
-              .select()
-              .inFilter('viaggio_id', ids)
-              .isFilter('eliminato_il', null),
-        ).wait;
-        final utenti = await _server
-            .from('utente')
-            .select('id, nome, versione, eliminato_il')
-            .inFilter(
-              'id',
-              {for (final p in partecipazioni) p['utente_id'] as String}
-                  .toList(),
-            );
-        return (viaggi, partecipazioni, utenti, giorni, tappe);
-      },
-    );
+      return (viaggi, partecipazioni, utenti, giorni, tappe, spese, voci, note);
+    });
 
     final adesso = DateTime.now().toUtc();
     final io = _io;
@@ -168,6 +201,9 @@ class Archivio {
       await _db.delete(_db.partecipazioni).go();
       await _db.delete(_db.giorni).go();
       await _db.delete(_db.tappe).go();
+      await _db.delete(_db.spese).go();
+      await _db.delete(_db.vociLista).go();
+      await _db.delete(_db.note).go();
       // Il proprio profilo completo non si butta: dagli altri arriva solo il nome.
       await (_db.delete(
         _db.utenti,
@@ -180,12 +216,73 @@ class Archivio {
         ]);
         b.insertAll(_db.giorni, [for (final r in giorni) _giorno(r, adesso)]);
         b.insertAll(_db.tappe, [for (final r in tappe) rigaTappa(r, adesso)]);
+        b.insertAll(_db.spese, [for (final r in spese) rigaSpesa(r, adesso)]);
+        b.insertAll(_db.vociLista, [for (final r in voci) rigaVoce(r, adesso)]);
+        b.insertAll(_db.note, [for (final r in note) _nota(r, adesso)]);
         b.insertAllOnConflictUpdate(_db.utenti, [
           for (final r in utenti)
             if (r['id'] != io) _utente(r, adesso),
         ]);
       });
       await coda.riapplica();
+    });
+    await aggiornaTassi().catchError((_) {});
+    await aggiornaConfigurazione().catchError((_) {});
+  }
+
+  /// Riscarica la configurazione: poche righe, e cambiano senza un rilascio.
+  /// Senza rete resta l'ultima.
+  Future<void> aggiornaConfigurazione() async {
+    final righe = await _alServer(
+      () => _server.from('configurazione').select('chiave, valore'),
+    );
+    final adesso = DateTime.now().toUtc();
+    await _db.transaction(() async {
+      await _db.delete(_db.configurazioni).go();
+      await _db.batch(
+        (b) => b.insertAll(_db.configurazioni, [
+          for (final r in righe)
+            ConfigurazioniCompanion.insert(
+              chiave: r['chiave'] as String,
+              valore: jsonEncode(r['valore']),
+              scaricatoIl: adesso,
+            ),
+        ]),
+      );
+    });
+  }
+
+  /// Da quanto tempo i tassi sul telefono bastano: il server li scarica due
+  /// volte al giorno, e chiederli più spesso non porta niente di nuovo.
+  static const durataTassi = Duration(hours: 6);
+
+  /// Riscarica i tassi di cambio, se quelli sul telefono hanno più di
+  /// [durataTassi]. Senza rete restano gli ultimi: si usano dicendo di quando
+  /// sono (06, regola 6).
+  Future<void> aggiornaTassi({DateTime? adesso}) async {
+    final ora = (adesso ?? DateTime.now()).toUtc();
+    final ultimo = await (_db.selectOnly(
+      _db.tassiCambio,
+    )..addColumns([_db.tassiCambio.scaricatoIl.max()])).getSingle();
+    final il = ultimo.read(_db.tassiCambio.scaricatoIl.max());
+    if (il != null && ora.difference(il.toUtc()) < durataTassi) return;
+    final righe = await _alServer(
+      () => _server.from('tasso_cambio').select('valuta, per_euro, del'),
+    );
+    if (righe.isEmpty) return;
+    await _db.transaction(() async {
+      await _db.delete(_db.tassiCambio).go();
+      await _db.batch(
+        (b) => b.insertAll(_db.tassiCambio, [
+          for (final r in righe)
+            TassiCambioCompanion.insert(
+              valuta: (r['valuta'] as String).trim(),
+              perEuro: '${r['per_euro']}',
+              del: r['del'] as String,
+              scaricatoIl: ora,
+            ),
+        ]),
+      );
     });
   }
 
@@ -290,6 +387,84 @@ class Archivio {
               (t) => OrderingTerm.asc(t.creatoIl),
             ]))
           .watch();
+
+  /// Le spese del viaggio, nell'ordine in cui sono state registrate.
+  Stream<List<Spesa>> osservaSpese(String viaggioId) =>
+      (_db.select(_db.spese)
+            ..where(
+              (s) => s.viaggioId.equals(viaggioId) & s.eliminatoIl.isNull(),
+            )
+            ..orderBy([(s) => OrderingTerm.asc(s.creatoIl)]))
+          .watch();
+
+  /// Le proprie cose da portare per il viaggio: la lista personale, che vede
+  /// solo chi la scrive (05, regole 1 e 3). Nell'ordine in cui sono nate;
+  /// quale prima e quale dopo lo decide il dominio (dominio/liste.dart).
+  Stream<List<VoceLista>> osservaVoci(String viaggioId) {
+    final io = _io;
+    if (io == null) return Stream.value(const []);
+    return (_db.select(_db.vociLista)
+          ..where(
+            (v) =>
+                v.viaggioId.equals(viaggioId) &
+                v.tipo.equals(TipoLista.personale.codice) &
+                v.proprietarioId.equals(io) &
+                v.eliminatoIl.isNull(),
+          )
+          ..orderBy([(v) => OrderingTerm.asc(v.creatoIl)]))
+        .watch();
+  }
+
+  /// Le note del viaggio, dalla più recente.
+  Stream<List<Nota>> osservaNote(String viaggioId) =>
+      (_db.select(_db.note)
+            ..where(
+              (n) => n.viaggioId.equals(viaggioId) & n.eliminatoIl.isNull(),
+            )
+            ..orderBy([(n) => OrderingTerm.desc(n.creatoIl)]))
+          .watch();
+
+  Stream<Nota?> osservaNota(String id) =>
+      (_db.select(_db.note)
+            ..where((n) => n.id.equals(id) & n.eliminatoIl.isNull()))
+          .watchSingleOrNull();
+
+  /// I modelli da consigliare, come li dice la configurazione del server:
+  /// una frase per riga. Vuoto finché non è mai arrivata (decisioni/prodotto.md,
+  /// "Quali modelli suggerire": l'elenco non sta nel codice).
+  Stream<List<String>> osservaModelliSuggeriti() =>
+      (_db.select(_db.configurazioni)
+            ..where((c) => c.chiave.equals('modelli_suggeriti')))
+          .watchSingleOrNull()
+          .map((riga) {
+            final valore = riga == null ? null : jsonDecode(riga.valore);
+            return [
+              if (valore is List)
+                for (final v in valore)
+                  if (v is String && v.trim().isNotEmpty) v.trim(),
+            ];
+          });
+
+  /// I nomi di tutti quelli che sono passati dal viaggio, anche chi è uscito:
+  /// le sue spese restano, e restano sue (06, regola 10).
+  Stream<Map<String, String>> osservaNomi(String viaggioId) {
+    final query = _db.select(_db.partecipazioni).join([
+      innerJoin(
+        _db.utenti,
+        _db.utenti.id.equalsExp(_db.partecipazioni.utenteId),
+      ),
+    ])..where(_db.partecipazioni.viaggioId.equals(viaggioId));
+    return query.watch().map(
+      (righe) => {
+        for (final r in righe)
+          r.readTable(_db.utenti).id: r.readTable(_db.utenti).nome,
+      },
+    );
+  }
+
+  /// Gli ultimi tassi noti, per valuta.
+  Stream<List<TassoCambio>> osservaTassi() =>
+      _db.select(_db.tassiCambio).watch();
 
   /// Il mio ruolo nel viaggio: `creatore` o `partecipante`.
   Future<String?> mioRuolo(String viaggioId) async {
@@ -528,6 +703,238 @@ class Archivio {
     });
   }
 
+  // ─── Spese: le scritture che richiedono la rete ──────────────────────────
+
+  /// Cambia una spesa: importo, valuta, descrizione, data. Con la versione su
+  /// cui la persona ha deciso: sui soldi non si indovina, e se qualcuno l'ha
+  /// cambiata nel frattempo si rifiuta e la copia si riscarica (06, casi
+  /// limite). Prima parte quello che è in coda, così la spesa ha la sua
+  /// versione del server.
+  Future<void> modificaSpesa(Spesa spesa, Map<String, Object?> valori) async {
+    await coda.svuota();
+    final attuale =
+        await (_db.select(
+          _db.spese,
+        )..where((s) => s.id.equals(spesa.id))).getSingleOrNull() ??
+        spesa;
+    if (attuale.versione == 0) {
+      throw const ErroreTrolley(
+        'Questa spesa non è ancora arrivata sul server: si potrà cambiare '
+        'quando parte.',
+      );
+    }
+    final righe = await _alServer(
+      () => _server
+          .from('spesa')
+          .update({...valori, 'versione': attuale.versione})
+          .eq('id', spesa.id)
+          .select(),
+    );
+    if (righe.isEmpty) {
+      await aggiornaCopia().catchError((_) {});
+      throw const ErroreTrolley(
+        'Questa spesa non c\'è più sul server. Ora vedi le spese come sono '
+        'adesso.',
+      );
+    }
+    await coda.nellaCopiaSpesa(righe.single);
+  }
+
+  /// Toglie una spesa: si marca, non si cancella (01-modello-dati.md).
+  Future<void> togliSpesa(Spesa spesa) => modificaSpesa(spesa, {
+    'eliminato_il': DateTime.now().toUtc().toIso8601String(),
+  });
+
+  /// Cambia la valuta in cui la persona vede le spese (06, regola 4). È del
+  /// profilo, quindi vale su ogni telefono, e richiede la rete.
+  Future<void> cambiaValuta(String codice) async {
+    final io = _io;
+    final profilo = await profiloLocale();
+    if (io == null || profilo == null) return;
+    // Il profilo intero si rilegge da mio_profilo: degli utenti si possono
+    // leggere solo nome e versione (profilo_altrui_solo_nome.sql).
+    await _alServer(
+      () => _server
+          .from('utente')
+          .update({'valuta_predefinita': codice, 'versione': profilo.versione})
+          .eq('id', io)
+          .select('id'),
+    );
+    await scaricaProfilo();
+  }
+
+  // ─── Cose da portare: le scritture che richiedono la rete ─────────────────
+
+  /// Aggiunge una voce alla propria lista. Richiede la rete: senza, le liste
+  /// si leggono e si spuntano e basta (05, regola 5). L'id nasce qui, così
+  /// una risposta persa per strada non la aggiunge due volte.
+  Future<VoceLista> aggiungiVoce({
+    required String viaggioId,
+    required String testo,
+    int quantita = 1,
+  }) async {
+    final io = _io;
+    final pulito = testoVoce(testo);
+    if (io == null || pulito == null) {
+      throw const ErroreTrolley('Scrivi che cosa portare.');
+    }
+    final id = const Uuid().v4();
+    final righe = await _alServer(
+      () => _server
+          .from('voce_lista')
+          .upsert(
+            {
+              'id': id,
+              'viaggio_id': viaggioId,
+              'testo': pulito,
+              'quantita': quantitaValida(quantita),
+              'tipo': listaDellaFase.codice,
+              'proprietario_id': io,
+              'creato_da': io,
+            },
+            onConflict: 'id',
+            ignoreDuplicates: true,
+          )
+          .select(),
+      messaggi: const {
+        '42501':
+            'Il server non l\'ha accettata: forse non fai più parte di questo '
+            'viaggio.',
+      },
+    );
+    final riga =
+        righe.firstOrNull ??
+        (await _alServer(
+          () => _server.from('voce_lista').select().eq('id', id),
+        )).firstOrNull;
+    if (riga == null) {
+      throw const ErroreTrolley('La voce non è arrivata sul server. Riprova.');
+    }
+    await coda.nellaCopiaVoce(riga);
+    return (await (_db.select(
+      _db.vociLista,
+    )..where((v) => v.id.equals(id))).getSingle());
+  }
+
+  /// Cambia una voce: il testo, quante. Con la versione su cui la persona ha
+  /// deciso: due testi non si fondono mai, e se qualcuno l'ha cambiata nel
+  /// frattempo si rifiuta e la copia si riscarica (02 §3). Prima parte quello
+  /// che è in coda, così la voce ha la sua versione del server.
+  Future<void> modificaVoce(VoceLista voce, Map<String, Object?> valori) async {
+    await coda.svuota();
+    final attuale =
+        await (_db.select(
+          _db.vociLista,
+        )..where((v) => v.id.equals(voce.id))).getSingleOrNull() ??
+        voce;
+    final righe = await _alServer(
+      () => _server
+          .from('voce_lista')
+          .update({...valori, 'versione': attuale.versione})
+          .eq('id', voce.id)
+          .select(),
+      messaggi: const {
+        CodiciServer.versioneSuperata:
+            'Questa voce è appena cambiata su un altro telefono. Ora vedi '
+            'com\'è adesso: controlla e riprova.',
+      },
+    );
+    if (righe.isEmpty) {
+      await aggiornaCopia().catchError((_) {});
+      throw const ErroreTrolley(
+        'Questa voce non c\'è più sul server. Ora vedi la lista com\'è adesso.',
+      );
+    }
+    await coda.nellaCopiaVoce(righe.single);
+  }
+
+  /// Toglie una voce: si marca, non si cancella (01-modello-dati.md).
+  Future<void> togliVoce(VoceLista voce) => modificaVoce(voce, {
+    'eliminato_il': DateTime.now().toUtc().toIso8601String(),
+  });
+
+  // ─── Note: le scritture che richiedono la rete ───────────────────────────
+
+  /// Salva una nota del viaggio. La risposta di un assistente si salva sempre,
+  /// prima di provare a leggerla (04, regola 11). L'id nasce qui: una risposta
+  /// persa per strada non la salva due volte.
+  Future<Nota> salvaNota({
+    required String viaggioId,
+    required String testo,
+    String origine = 'scritta',
+  }) async {
+    final io = _io;
+    final pulito = testo.trim();
+    if (io == null || pulito.isEmpty) {
+      throw const ErroreTrolley('Non c\'è niente da salvare.');
+    }
+    if (pulito.length > lunghezzaMassimaNota) {
+      throw const ErroreTrolley(
+        'Questo testo è troppo lungo per una nota: incolla solo l\'itinerario.',
+      );
+    }
+    final id = const Uuid().v4();
+    final righe = await _alServer(
+      () => _server
+          .from('nota')
+          .upsert(
+            {
+              'id': id,
+              'viaggio_id': viaggioId,
+              'testo': pulito,
+              'origine': origine,
+              'creato_da': io,
+            },
+            onConflict: 'id',
+            ignoreDuplicates: true,
+          )
+          .select(),
+    );
+    final riga =
+        righe.firstOrNull ??
+        (await _alServer(() => _server.from('nota').select().eq('id', id)))
+            .firstOrNull;
+    if (riga == null) {
+      throw const ErroreTrolley('La nota non è arrivata sul server. Riprova.');
+    }
+    await _nellaCopiaNota(riga);
+    return (await (_db.select(
+      _db.note,
+    )..where((n) => n.id.equals(id))).getSingle());
+  }
+
+  /// Toglie una nota: si marca, non si cancella. Con la versione su cui la
+  /// persona ha deciso.
+  Future<void> togliNota(Nota nota) async {
+    final righe = await _alServer(
+      () => _server
+          .from('nota')
+          .update({
+            'eliminato_il': DateTime.now().toUtc().toIso8601String(),
+            'versione': nota.versione,
+          })
+          .eq('id', nota.id)
+          .select(),
+    );
+    if (righe.isEmpty) {
+      await aggiornaCopia().catchError((_) {});
+      return;
+    }
+    await _nellaCopiaNota(righe.single);
+  }
+
+  Future<void> _nellaCopiaNota(Map<String, dynamic> riga) async {
+    if (riga['eliminato_il'] != null) {
+      await (_db.delete(
+        _db.note,
+      )..where((n) => n.id.equals(riga['id'] as String))).go();
+      return;
+    }
+    await _db
+        .into(_db.note)
+        .insertOnConflictUpdate(_nota(riga, DateTime.now().toUtc()));
+  }
+
   // ─── Idee e archivio ────────────────────────────────────────────────────
 
   /// Il giorno in cui questo telefono ha mostrato il sollecito "è ancora
@@ -654,6 +1061,19 @@ class Archivio {
     ruolo: r['ruolo'] as String,
     stato: r['stato'] as String,
   );
+
+  NoteCompanion _nota(Map<String, dynamic> r, DateTime adesso) =>
+      NoteCompanion.insert(
+        id: r['id'] as String,
+        versione: r['versione'] as int,
+        eliminatoIl: Value(r['eliminato_il'] as String?),
+        scaricatoIl: adesso,
+        viaggioId: r['viaggio_id'] as String,
+        testo: r['testo'] as String,
+        origine: r['origine'] as String,
+        creatoDa: r['creato_da'] as String,
+        creatoIl: r['creato_il'] as String,
+      );
 
   GiorniCompanion _giorno(Map<String, dynamic> r, DateTime adesso) =>
       GiorniCompanion.insert(

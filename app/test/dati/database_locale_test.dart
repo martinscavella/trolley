@@ -72,61 +72,66 @@ void main() {
     },
   );
 
-  test('passare dalla versione 1 rifà la copia e lascia la coda com\'era', () async {
-    final cartella = await Directory.systemTemp.createTemp('trolley');
-    addTearDown(() => cartella.delete(recursive: true));
-    final file = File('${cartella.path}/trolley.sqlite');
+  test(
+    'passare dalla versione 1 rifà la copia e lascia la coda com\'era',
+    () async {
+      final cartella = await Directory.systemTemp.createTemp('trolley');
+      addTearDown(() => cartella.delete(recursive: true));
+      final file = File('${cartella.path}/trolley.sqlite');
 
-    // Un telefono che ha ancora la versione 1, con un gesto fatto offline.
-    final prima = DatabaseLocale(NativeDatabase(file));
-    await prima
-        .into(prima.codaScrittura)
-        .insert(
-          CodaScritturaCompanion.insert(
-            id: 'op1',
-            viaggioId: 'v1',
-            gesto: GestoOffline.aggiungiTappa,
-            carico: '{"id":"t1","titolo":"Livraria Lello"}',
-            creataIl: DateTime.utc(2026, 10, 1, 9),
-          ),
-        );
-    await prima.close();
+      // Un telefono che ha ancora la versione 1, con un gesto fatto offline.
+      final prima = DatabaseLocale(NativeDatabase(file));
+      await prima
+          .into(prima.codaScrittura)
+          .insert(
+            CodaScritturaCompanion.insert(
+              id: 'op1',
+              viaggioId: 'v1',
+              gesto: GestoOffline.aggiungiTappa,
+              carico: '{"id":"t1","titolo":"Livraria Lello"}',
+              creataIl: DateTime.utc(2026, 10, 1, 9),
+            ),
+          );
+      await prima.close();
 
-    // La tabella delle tappe com'era nella versione 1, e la versione 1.
-    final dopo = DatabaseLocale(
-      NativeDatabase(
-        file,
-        setup: (grezzo) => grezzo
-          ..execute('DROP TABLE tappa')
-          ..execute(
-            'CREATE TABLE tappa (id TEXT NOT NULL PRIMARY KEY, '
-            'versione INTEGER NOT NULL, eliminato_il TEXT, '
-            'scaricato_il INTEGER NOT NULL, viaggio_id TEXT NOT NULL, '
-            'giorno_id TEXT NOT NULL, ordine INTEGER NOT NULL, '
-            'titolo TEXT NOT NULL, luogo_nome TEXT, lat REAL, lon REAL, '
-            'durata_stimata_min INTEGER NOT NULL, ora_inizio TEXT, '
-            'stato TEXT NOT NULL, marcata_il TEXT, '
-            'marcata_durante_il_viaggio INTEGER NOT NULL, '
-            'eccedente INTEGER NOT NULL)',
-          )
-          ..execute('PRAGMA user_version = 1'),
-      ),
-    );
-    addTearDown(dopo.close);
+      // La tabella delle tappe com'era nella versione 1, e la versione 1.
+      final dopo = DatabaseLocale(
+        NativeDatabase(
+          file,
+          setup: (grezzo) => grezzo
+            ..execute('DROP TABLE tappa')
+            ..execute(
+              'CREATE TABLE tappa (id TEXT NOT NULL PRIMARY KEY, '
+              'versione INTEGER NOT NULL, eliminato_il TEXT, '
+              'scaricato_il INTEGER NOT NULL, viaggio_id TEXT NOT NULL, '
+              'giorno_id TEXT NOT NULL, ordine INTEGER NOT NULL, '
+              'titolo TEXT NOT NULL, luogo_nome TEXT, lat REAL, lon REAL, '
+              'durata_stimata_min INTEGER NOT NULL, ora_inizio TEXT, '
+              'stato TEXT NOT NULL, marcata_il TEXT, '
+              'marcata_durante_il_viaggio INTEGER NOT NULL, '
+              'eccedente INTEGER NOT NULL)',
+            )
+            ..execute('PRAGMA user_version = 1'),
+        ),
+      );
+      addTearDown(dopo.close);
 
-    final coda = await dopo.select(dopo.codaScrittura).get();
-    expect(coda.single.id, 'op1');
-    expect(coda.single.gesto, GestoOffline.aggiungiTappa);
-    expect(coda.single.carico, '{"id":"t1","titolo":"Livraria Lello"}');
-    expect(coda.single.creataIl, DateTime.utc(2026, 10, 1, 9));
-    final colonne = await dopo.customSelect('PRAGMA table_info(tappa)').get();
-    expect(
-      colonne.map((c) => c.read<String>('name')),
-      containsAll(['tipo', 'creato_da', 'creato_il']),
-    );
-    final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 3);
-  });
+      final coda = await dopo.select(dopo.codaScrittura).get();
+      expect(coda.single.id, 'op1');
+      expect(coda.single.gesto, GestoOffline.aggiungiTappa);
+      expect(coda.single.carico, '{"id":"t1","titolo":"Livraria Lello"}');
+      expect(coda.single.creataIl, DateTime.utc(2026, 10, 1, 9));
+      final colonne = await dopo.customSelect('PRAGMA table_info(tappa)').get();
+      expect(
+        colonne.map((c) => c.read<String>('name')),
+        containsAll(['tipo', 'creato_da', 'creato_il']),
+      );
+      final versione = await dopo
+          .customSelect('PRAGMA user_version')
+          .getSingle();
+      expect(versione.read<int>('user_version'), 6);
+    },
+  );
 
   test('passare dalla versione 2 alla 3 aggiunge i documenti e non tocca né la '
       'copia né la coda', () async {
@@ -170,6 +175,7 @@ void main() {
         file,
         setup: (grezzo) => grezzo
           ..execute('DROP TABLE documento')
+          ..execute('DROP TABLE tasso_cambio')
           ..execute('PRAGMA user_version = 2'),
       ),
     );
@@ -195,7 +201,255 @@ void main() {
         );
     expect(await dopo.select(dopo.documenti).get(), hasLength(1));
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 3);
+    expect(versione.read<int>('user_version'), 6);
+  });
+
+  test('passare dalla versione 3 alla 4 rifà solo la copia delle spese, e '
+      'lascia copia, coda e documenti com\'erano', () async {
+    final cartella = await Directory.systemTemp.createTemp('trolley');
+    addTearDown(() => cartella.delete(recursive: true));
+    final file = File('${cartella.path}/trolley.sqlite');
+
+    // Un telefono con la versione 3: un viaggio, una spesa registrata
+    // offline, un documento.
+    final prima = DatabaseLocale(NativeDatabase(file));
+    final adesso = DateTime.utc(2026, 10, 3, 9);
+    await prima
+        .into(prima.viaggi)
+        .insert(
+          ViaggiCompanion.insert(
+            id: 'v1',
+            versione: 2,
+            scaricatoIl: adesso,
+            stato: 'definito',
+            creatoreId: 'u1',
+            importato: false,
+            verificato: false,
+            creatoIl: adesso.toIso8601String(),
+          ),
+        );
+    await prima
+        .into(prima.codaScrittura)
+        .insert(
+          CodaScritturaCompanion.insert(
+            id: 's1',
+            viaggioId: 'v1',
+            gesto: GestoOffline.registraSpesa,
+            carico: '{"id":"s1","importo":"12.40","valuta":"EUR"}',
+            creataIl: adesso,
+          ),
+        );
+    await prima
+        .into(prima.documenti)
+        .insert(
+          DocumentiCompanion.insert(
+            id: 'd1',
+            viaggioId: 'v1',
+            nome: 'Passaporto',
+            percorsoLocale: 'documenti/v1/d1.jpg',
+            formato: 'immagine',
+            sorgente: 'scansione',
+            proprietarioId: 'u1',
+            creatoIl: adesso,
+          ),
+        );
+    await prima.close();
+
+    // Com'era la versione 3: la spesa senza chi e quando, e niente tassi.
+    final dopo = DatabaseLocale(
+      NativeDatabase(
+        file,
+        setup: (grezzo) => grezzo
+          ..execute('DROP TABLE spesa')
+          ..execute(
+            'CREATE TABLE spesa (id TEXT NOT NULL PRIMARY KEY, '
+            'versione INTEGER NOT NULL, eliminato_il TEXT, '
+            'scaricato_il INTEGER NOT NULL, viaggio_id TEXT NOT NULL, '
+            'importo TEXT NOT NULL, valuta TEXT NOT NULL, tasso_usato TEXT, '
+            'tasso_al TEXT, pagante_id TEXT NOT NULL, data TEXT NOT NULL, '
+            'descrizione TEXT)',
+          )
+          ..execute('DROP TABLE tasso_cambio')
+          ..execute('PRAGMA user_version = 3'),
+      ),
+    );
+    addTearDown(dopo.close);
+
+    expect((await dopo.select(dopo.viaggi).get()).single.versione, 2);
+    final coda = await dopo.select(dopo.codaScrittura).get();
+    expect(coda.single.gesto, GestoOffline.registraSpesa);
+    expect(coda.single.carico, '{"id":"s1","importo":"12.40","valuta":"EUR"}');
+    expect((await dopo.select(dopo.documenti).get()).single.nome, 'Passaporto');
+    final colonne = await dopo.customSelect('PRAGMA table_info(spesa)').get();
+    expect(
+      colonne.map((c) => c.read<String>('name')),
+      containsAll(['creato_da', 'creato_il']),
+    );
+    expect(await dopo.select(dopo.tassiCambio).get(), isEmpty);
+    final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
+    expect(versione.read<int>('user_version'), 6);
+  });
+
+  test('passare dalla versione 4 alla 5 rifà solo la copia delle voci, e '
+      'lascia copia, coda e documenti com\'erano', () async {
+    final cartella = await Directory.systemTemp.createTemp('trolley');
+    addTearDown(() => cartella.delete(recursive: true));
+    final file = File('${cartella.path}/trolley.sqlite');
+
+    // Un telefono con la versione 4: un viaggio, una spesa nella coda, un
+    // documento.
+    final prima = DatabaseLocale(NativeDatabase(file));
+    final adesso = DateTime.utc(2026, 10, 3, 18);
+    await prima
+        .into(prima.viaggi)
+        .insert(
+          ViaggiCompanion.insert(
+            id: 'v1',
+            versione: 2,
+            scaricatoIl: adesso,
+            stato: 'idea',
+            creatoreId: 'u1',
+            importato: false,
+            verificato: false,
+            creatoIl: adesso.toIso8601String(),
+          ),
+        );
+    await prima
+        .into(prima.codaScrittura)
+        .insert(
+          CodaScritturaCompanion.insert(
+            id: 's1',
+            viaggioId: 'v1',
+            gesto: GestoOffline.registraSpesa,
+            carico: '{"id":"s1","importo":"8.00","valuta":"EUR"}',
+            creataIl: adesso,
+          ),
+        );
+    await prima
+        .into(prima.documenti)
+        .insert(
+          DocumentiCompanion.insert(
+            id: 'd1',
+            viaggioId: 'v1',
+            nome: 'Passaporto',
+            percorsoLocale: 'documenti/v1/d1.jpg',
+            formato: 'immagine',
+            sorgente: 'scansione',
+            proprietarioId: 'u1',
+            creatoIl: adesso,
+          ),
+        );
+    await prima.close();
+
+    // Com'era la versione 4: la voce senza quante, chi e quando.
+    final dopo = DatabaseLocale(
+      NativeDatabase(
+        file,
+        setup: (grezzo) => grezzo
+          ..execute('DROP TABLE voce_lista')
+          ..execute(
+            'CREATE TABLE voce_lista (id TEXT NOT NULL PRIMARY KEY, '
+            'versione INTEGER NOT NULL, eliminato_il TEXT, '
+            'scaricato_il INTEGER NOT NULL, viaggio_id TEXT NOT NULL, '
+            'testo TEXT NOT NULL, tipo TEXT NOT NULL, '
+            'proprietario_id TEXT NOT NULL, assegnato_a TEXT, '
+            'spuntata INTEGER NOT NULL)',
+          )
+          ..execute('PRAGMA user_version = 4'),
+      ),
+    );
+    addTearDown(dopo.close);
+
+    expect((await dopo.select(dopo.viaggi).get()).single.versione, 2);
+    final coda = await dopo.select(dopo.codaScrittura).get();
+    expect(coda.single.gesto, GestoOffline.registraSpesa);
+    expect(coda.single.carico, '{"id":"s1","importo":"8.00","valuta":"EUR"}');
+    expect((await dopo.select(dopo.documenti).get()).single.nome, 'Passaporto');
+    final colonne = await dopo
+        .customSelect('PRAGMA table_info(voce_lista)')
+        .get();
+    expect(
+      colonne.map((c) => c.read<String>('name')),
+      containsAll(['quantita', 'creato_da', 'creato_il']),
+    );
+    final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
+    expect(versione.read<int>('user_version'), 6);
+  });
+
+  test('passare dalla versione 5 alla 6 aggiunge note e configurazione, e '
+      'lascia copia e coda com\'erano', () async {
+    final cartella = await Directory.systemTemp.createTemp('trolley');
+    addTearDown(() => cartella.delete(recursive: true));
+    final file = File('${cartella.path}/trolley.sqlite');
+
+    final prima = DatabaseLocale(NativeDatabase(file));
+    final adesso = DateTime.utc(2026, 10, 3, 20);
+    await prima
+        .into(prima.viaggi)
+        .insert(
+          ViaggiCompanion.insert(
+            id: 'v1',
+            versione: 4,
+            scaricatoIl: adesso,
+            stato: 'definito',
+            creatoreId: 'u1',
+            importato: false,
+            verificato: false,
+            creatoIl: adesso.toIso8601String(),
+          ),
+        );
+    await prima
+        .into(prima.codaScrittura)
+        .insert(
+          CodaScritturaCompanion.insert(
+            id: 'op1',
+            viaggioId: 'v1',
+            gesto: GestoOffline.spuntaVoce,
+            carico: '{"voce_id":"x","spuntata":true}',
+            creataIl: adesso,
+          ),
+        );
+    await prima.close();
+
+    // Com'era la versione 5: senza note né configurazione.
+    final dopo = DatabaseLocale(
+      NativeDatabase(
+        file,
+        setup: (grezzo) => grezzo
+          ..execute('DROP TABLE nota')
+          ..execute('DROP TABLE configurazione')
+          ..execute('PRAGMA user_version = 5'),
+      ),
+    );
+    addTearDown(dopo.close);
+
+    expect((await dopo.select(dopo.viaggi).get()).single.versione, 4);
+    expect(
+      (await dopo.select(dopo.codaScrittura).get()).single.gesto,
+      GestoOffline.spuntaVoce,
+    );
+    expect(await dopo.select(dopo.note).get(), isEmpty);
+    expect(await dopo.select(dopo.configurazioni).get(), isEmpty);
+    final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
+    expect(versione.read<int>('user_version'), 6);
+  });
+
+  test('una spunta in coda sopravvive alla copia ricreata', () async {
+    await db
+        .into(db.codaScrittura)
+        .insert(
+          CodaScritturaCompanion.insert(
+            id: 'op1',
+            viaggioId: 'v1',
+            gesto: GestoOffline.spuntaVoce,
+            carico: '{"voce_id":"x","spuntata":true,"testo":"Passaporto"}',
+            creataIl: DateTime.utc(2026, 10, 3),
+          ),
+        );
+    await db.ricreaCopia();
+    final coda = (await db.select(db.codaScrittura).get()).single;
+    expect(coda.gesto, GestoOffline.spuntaVoce);
+    expect(coda.carico, contains('"voce_id":"x"'));
   });
 
   test('ricreare la copia non tocca i documenti', () async {

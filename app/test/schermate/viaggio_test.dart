@@ -52,13 +52,6 @@ void main() {
     await ambiente.monta(tester, const SchermataViaggio(viaggioId: 'v'));
 
     expect(find.text('IN PROGRAMMA'), findsOneWidget);
-    expect(find.text('Giorni'), findsOneWidget);
-    expect(find.text('Dalle 10:00'), findsOneWidget);
-    expect(find.text('Tutto il giorno'), findsOneWidget);
-    expect(find.text('Fino alle 18:00'), findsOneWidget);
-    expect(find.text('Nessuna tappa · 14 h libere'), findsOneWidget);
-    expect(find.text('Nessuna tappa · 24 h libere'), findsOneWidget);
-    expect(find.text('Nessuna tappa · 18 h libere'), findsOneWidget);
     // Sulla matrice del biglietto, quando si arriva e quando si riparte.
     expect(
       find.text('${dataBreve(oggi.add(const Duration(days: 30)))} · 10:00'),
@@ -68,6 +61,17 @@ void main() {
       find.text('${dataBreve(oggi.add(const Duration(days: 32)))} · 18:00'),
       findsOneWidget,
     );
+    // I giorni vengono dopo documenti e spese.
+    await tester.scrollUntilVisible(
+      find.text('Nessuna tappa · 18 h libere'),
+      300,
+    );
+    expect(find.text('Giorni'), findsOneWidget);
+    expect(find.text('Dalle 10:00'), findsOneWidget);
+    expect(find.text('Tutto il giorno'), findsOneWidget);
+    expect(find.text('Fino alle 18:00'), findsOneWidget);
+    expect(find.text('Nessuna tappa · 14 h libere'), findsOneWidget);
+    expect(find.text('Nessuna tappa · 24 h libere'), findsOneWidget);
   });
 
   testWidgets('in corso, il giorno di oggi si riconosce', (tester) async {
@@ -84,6 +88,7 @@ void main() {
 
     expect(find.text('IN CORSO'), findsOneWidget);
     expect(find.text('GIORNO 2 DI 3'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Oggi, tutto il giorno'), 300);
     expect(find.text('Oggi, tutto il giorno'), findsOneWidget);
   });
 
@@ -172,6 +177,7 @@ void main() {
 
     // Di nuovo sul viaggio, che adesso ha i suoi giorni.
     expect(find.text('IN PROGRAMMA'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Giorni'), 300);
     expect(find.text('Giorni'), findsOneWidget);
 
     final eventi = await ambiente.eventi(tester);

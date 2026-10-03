@@ -32,6 +32,8 @@ Nella fase interna i piani gratuiti bastano. Il **tetto per utente e per viaggio
 
 Il tasso usato e la sua data si conservano **dentro la spesa**: una conversione senza la sua data è una bugia raccontata bene.
 
+Li scarica il **server**, due volte al giorno per tutte le valute, da `fawazahmed0/currency-api` (CC0, circa duecento valute, senza chiave); i telefoni leggono la tabella `tasso_cambio`. Il fornitore non vede nemmeno l'indirizzo di un telefono. Perché così, e le alternative: [ADR-009](adr/009-tassi-di-cambio.md).
+
 ---
 
 ## Verifica del numero di telefono

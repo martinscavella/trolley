@@ -39,10 +39,7 @@ class ProblemiDellaCoda extends StatelessWidget {
                   ios: CupertinoIcons.exclamationmark_circle,
                   android: Icons.error_outline_rounded,
                 ),
-                inizio: switch (Coda.titoloDi(op)) {
-                  final titolo? => '«$titolo» non è arrivata.',
-                  null => 'Un segno su una tappa non è arrivato.',
-                },
+                inizio: Coda.cosaNonEArrivato(op),
                 testo: op.ultimoErrore ?? '',
                 azioni: [
                   PulsantePiccolo(

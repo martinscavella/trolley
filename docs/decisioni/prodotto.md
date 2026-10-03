@@ -101,6 +101,18 @@ Tre ragioni, in ordine di peso:
 
 Il prezzo è un cambio di app in mezzo al percorso. **Ciò che lo rende accettabile è il ritorno**: se il risultato non rientrasse in Trolley, la persona resterebbe a scorrere un muro di testo dentro l'LLM, che è esattamente l'esperienza da battere. Il parsing dell'incollato non è idraulica, è la funzione.
 
+### Come funziona il giro (fase 1.6)
+
+- Dalla schermata del viaggio, sotto i giorni: **«Un itinerario con il tuo assistente»**. Ci sono solo se il viaggio ha date e una meta.
+- Si sceglie il **ritmo** (tranquillo, equilibrato, intenso), facoltativamente **cosa piace** (arte e musei, cibo, storia, natura, panorami, shopping, vita notturna) e una riga libera. La richiesta porta anche le tappe già in programma, perché l'assistente non le ripeta.
+- «Copia la richiesta» la mette negli appunti; l'icona di condivisione la manda direttamente all'app dell'assistente. Funziona senza rete.
+- «Ho la risposta» apre il foglio dove la si incolla, col pulsante «Incolla» o tenendo premuto. **Leggere richiede la rete**, perché prima si salva la nota.
+- L'**anteprima** mostra le tappe giorno per giorno, già scelte nell'ordine finché entrano; le altre restano fuori e dicono quanto manca. Una giornata che sfora non si aggiunge. Se la risposta parla di un altro posto, lo dice.
+- Una risposta senza tappe leggibili porta a una schermata che dice che il testo è salvo, cosa si cercava, e propone di incollarne un'altra o di copiare di nuovo la richiesta.
+- Le **note** stanno nella schermata del viaggio; da una nota si rilegge l'itinerario quando si vuole.
+
+Il formato e le ragioni tecniche sono in [ADR-010](../tecnico/adr/010-itinerario-incollato.md).
+
 ### Regola di decisione asimmetrica, scritta prima di guardare i numeri
 
 Il giro manuale misura la domanda di itinerario generato, ma la misura bene **in una sola direzione**. Chi accetta di cambiare app, incollare e tornare indietro dimostra di volere quella funzione molto più di chi premerebbe un pulsante.
@@ -187,7 +199,7 @@ Chi manda molte richieste senza risposta non fa scattare niente: è lo stesso co
 
 ---
 
-## Inviti, documenti, valute
+## Inviti, documenti, valute, liste
 
 ### Invito: un link, e il viaggio si apre dopo l'installazione
 
@@ -221,6 +233,19 @@ I documenti stanno in una cartella locale dell'app, non su un server.
 Il tasso di cambio arriva da un servizio esterno. Senza rete si usa **l'ultimo tasso recuperato**, dicendo esplicitamente che il valore può essere cambiato perché non è in tempo reale.
 
 Due conseguenze: il tasso più recente entra nell'insieme dei dati essenziali offline di H4, e il servizio diventa la terza dipendenza esterna del prodotto dopo l'invio degli SMS e lo store — con un costo che, se il piano gratuito del fornitore non basta, torna a essere variabile.
+
+### Cose da portare: una lista sola, personale, fino alla 2.4 (fase 1.5)
+
+Nella fase 1.5 ogni persona ha **una lista per viaggio, ed è personale**: la vede solo lei, anche quando nel viaggio arriva qualcun altro. La lista del viaggio da dividere con i compagni, e chi porta cosa, arrivano con la 2.4.
+
+**Perché personale e non del viaggio**: chi viaggia da solo scrive la lista per sé — lo spazzolino, le medicine. Se la lista nascesse del viaggio, il primo invitato si troverebbe davanti le cose di un altro senza che nessuno l'abbia scelto (05, regola 3). Il contrario non fa danni: quando arriva la 2.4, una voce si potrà spostare nella lista comune.
+
+Come funziona:
+- C'è anche nelle **idee**: non ha bisogno di date (05, regola 4).
+- Si aggiunge dal **campo in fondo**: scrivi, invio, e il campo è pronto per la prossima. Ogni voce ha **quante** (da 1 a 99): cinque magliette sono una voce, non cinque.
+- Spuntata, una voce **resta un attimo al suo posto e poi scende in «In valigia»**; non sparisce mai (regola 6). Quando è tutto dentro, il timbro **FATTA**.
+- **«Rimetti tutto da mettere»** toglie tutte le spunte, per rifare la valigia al ritorno. Sono spunte: funziona anche senza rete.
+- Senza rete si legge e si spunta; **aggiungere, cambiare ed eliminare richiedono la rete** (regola 5). Aggiungere una voce non è uno dei quattro gesti offline: la colonna si allarga solo se H4 lo chiede.
 
 ---
 

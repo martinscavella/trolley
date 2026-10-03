@@ -1,14 +1,20 @@
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/movimento.dart';
 import '../aspetto/pagina.dart';
+import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../configurazione.dart';
 import '../dati/database.dart';
+import '../dati/errori.dart';
+import '../dominio/valute.dart';
 import '../servizi.dart';
+import 'con_la_rete.dart';
+import 'scelta_valuta.dart';
 
 /// Il profilo, la misurazione, l'uscita.
 class SchermataImpostazioni extends StatefulWidget {
@@ -34,6 +40,30 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
   Future<void> _cambiaMisurazione(bool attiva) async {
     setState(() => _misurazioneAttiva = attiva);
     await Servizi.of(context).misurazione.imposta(attiva: attiva);
+  }
+
+  /// La valuta in cui si vedono le spese (06, regola 4). È del profilo: vale
+  /// su ogni telefono, e cambiarla richiede la rete.
+  Future<void> _cambiaValuta(String attuale) async {
+    final archivio = Servizi.of(context).archivio;
+    final scelta = await apri<String>(
+      context,
+      SchermataValuta(
+        titolo: 'La tua valuta',
+        spiegazione:
+            'Le spese si mostrano convertite in questa. Di solito è quella '
+            'del tuo conto: il cambio lo fa la banca, e la spesa arriva già '
+            'convertita.',
+        scelta: attuale,
+      ),
+      dalBasso: true,
+    );
+    if (scelta == null || scelta == attuale || !mounted) return;
+    try {
+      await archivio.cambiaValuta(scelta);
+    } on ErroreTrolley catch (e) {
+      if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
+    }
   }
 
   Future<void> _esci() async {
@@ -106,6 +136,39 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
                   ],
                 ).entra(context, da: 8);
               },
+            ),
+            const SizedBox(height: 28),
+            const TitoloSezione('Spese').entra(context, ritardo: Ritmo.passo),
+            StreamBuilder<Utente?>(
+              stream: servizi.archivio.osservaProfilo(),
+              builder: (context, profilo) {
+                final codice =
+                    profilo.data?.valutaPredefinita ?? valutaIniziale;
+                return ConLaRete(
+                  builder: (context, rete) => CampoScelta(
+                    etichetta: 'La tua valuta',
+                    simbolo: icona(
+                      ios: CupertinoIcons.money_euro_circle,
+                      android: Icons.payments_outlined,
+                    ),
+                    segnaposto: 'Scegli la valuta',
+                    valore: '${valutaDi(codice).nome} · $codice',
+                    onTap: rete ? () => _cambiaValuta(codice) : null,
+                  ),
+                );
+              },
+            ).entra(context, ritardo: Ritmo.passo),
+            ConLaRete(
+              builder: (context, rete) => Padding(
+                padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
+                child: Text(
+                  rete
+                      ? 'Le spese restano nella valuta in cui le hai pagate: '
+                            'questa serve a sommarle.'
+                      : 'Per cambiare la valuta serve la connessione.',
+                  style: Testi.didascalia.copyWith(color: t.testoSecondario),
+                ),
+              ),
             ),
             const SizedBox(height: 28),
             const TitoloSezione('Privacy').entra(context, ritardo: Ritmo.passo),

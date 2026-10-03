@@ -156,6 +156,91 @@ Map<String, Object?> rigaDiTappa(
   'versione': versione,
 };
 
+/// Una riga di `spesa` come la restituisce il server.
+Map<String, Object?> rigaDiSpesa(
+  String id, {
+  required String viaggio,
+  String importo = '12.40',
+  String valuta = 'EUR',
+  required String data,
+  String? descrizione = 'Pranzo',
+  String pagante = idDiProva,
+  String creatoDa = idDiProva,
+  String creatoIl = _istante,
+  int versione = 1,
+}) => {
+  'id': id,
+  'viaggio_id': viaggio,
+  'importo': num.parse(importo),
+  'valuta': valuta,
+  'tasso_usato': null,
+  'tasso_al': null,
+  'pagante_id': pagante,
+  'data': data,
+  'descrizione': descrizione,
+  'creato_da': creatoDa,
+  'creato_il': creatoIl,
+  'modificato_il': creatoIl,
+  'eliminato_il': null,
+  'versione': versione,
+};
+
+/// Una riga di `voce_lista` come la restituisce il server.
+Map<String, Object?> rigaDiVoce(
+  String id, {
+  required String viaggio,
+  String testo = 'Passaporto',
+  int quantita = 1,
+  String tipo = 'personale',
+  String proprietario = idDiProva,
+  bool spuntata = false,
+  String creatoDa = idDiProva,
+  String creatoIl = _istante,
+  int versione = 1,
+}) => {
+  'id': id,
+  'viaggio_id': viaggio,
+  'testo': testo,
+  'quantita': quantita,
+  'tipo': tipo,
+  'proprietario_id': proprietario,
+  'assegnato_a': null,
+  'spuntata': spuntata,
+  'creato_da': creatoDa,
+  'creato_il': creatoIl,
+  'modificato_il': creatoIl,
+  'eliminato_il': null,
+  'versione': versione,
+};
+
+/// Una riga di `nota` come la restituisce il server.
+Map<String, Object?> rigaDiNota(
+  String id, {
+  required String viaggio,
+  String testo = 'GIORNO 1\n10:30 | Livraria Lello | visita | 60',
+  String origine = 'incollata',
+  String creatoDa = idDiProva,
+  String creatoIl = _istante,
+  int versione = 1,
+}) => {
+  'id': id,
+  'viaggio_id': viaggio,
+  'testo': testo,
+  'origine': origine,
+  'creato_da': creatoDa,
+  'creato_il': creatoIl,
+  'modificato_il': creatoIl,
+  'eliminato_il': null,
+  'versione': versione,
+};
+
+/// Una riga di `tasso_cambio`: quanto vale un euro in [valuta].
+Map<String, Object?> rigaTasso(String valuta, num perEuro, String del) => {
+  'valuta': valuta,
+  'per_euro': perEuro,
+  'del': del,
+};
+
 Map<String, Object?> rigaPartecipazione(String viaggio) => {
   'id': 'p-$viaggio',
   'viaggio_id': viaggio,
@@ -183,6 +268,24 @@ class ServerFinto {
   final giorni = <Map<String, Object?>>[];
   final partecipazioni = <Map<String, Object?>>[];
   final tappe = <Map<String, Object?>>[];
+  final spese = <Map<String, Object?>>[];
+  final voci = <Map<String, Object?>>[];
+  final note = <Map<String, Object?>>[];
+  final tassi = <Map<String, Object?>>[];
+
+  /// La configurazione, come la scrive chi gestisce il progetto.
+  final configurazione = <Map<String, Object?>>[
+    {
+      'chiave': 'modelli_suggeriti',
+      'valore': [
+        'Claude Sonnet 5 o superiore',
+        'il modello di punta di ChatGPT',
+      ],
+    },
+  ];
+
+  /// Il proprio profilo intero, come lo dà mio_profilo; `null` se non c'è.
+  Map<String, Object?>? profilo;
 
   /// Gli altri: degli altri il server manda solo il nome.
   final utenti = <Map<String, Object?>>[];
@@ -269,6 +372,120 @@ class ServerFinto {
           ..['versione'] = (tappa['versione']! as int) + 1;
         // Senza versione passa sempre, e il trigger la fa avanzare lo stesso.
         return risposta([tappa]);
+      case 'GET /rest/v1/spesa':
+        return risposta(_filtra(spese, r.url.queryParameters));
+      case 'POST /rest/v1/spesa':
+        final ignora = (r.headers['prefer'] ?? r.headers['Prefer'] ?? '')
+            .contains('ignore-duplicates');
+        final c = _corpo(r);
+        if (spese.any((x) => x['id'] == c['id'])) {
+          if (ignora) return risposta(const [], 201);
+          return _errore('23505', 'spesa già presente');
+        }
+        final riga = {
+          ...rigaDiSpesa(
+            c['id'] as String,
+            viaggio: c['viaggio_id'] as String,
+            data: c['data'] as String,
+          ),
+          ...c,
+          'importo': num.parse(c['importo'] as String),
+          'creato_il': DateTime.now().toUtc().toIso8601String(),
+        };
+        spese.add(riga);
+        return risposta([riga], 201);
+      case 'PATCH /rest/v1/spesa':
+        final trovate = _filtra(spese, r.url.queryParameters);
+        if (trovate.isEmpty) return risposta(const []);
+        final spesa = trovate.single;
+        final valori = _corpo(r);
+        if (valori.containsKey('versione') &&
+            valori['versione'] != spesa['versione']) {
+          return _errore('TR409', 'versione superata');
+        }
+        spesa
+          ..addAll(valori)
+          ..['versione'] = (spesa['versione']! as int) + 1;
+        return risposta([spesa]);
+      case 'GET /rest/v1/voce_lista':
+        return risposta(_filtra(voci, r.url.queryParameters));
+      case 'POST /rest/v1/voce_lista':
+        final ignora = (r.headers['prefer'] ?? r.headers['Prefer'] ?? '')
+            .contains('ignore-duplicates');
+        final c = _corpo(r);
+        if (voci.any((x) => x['id'] == c['id'])) {
+          if (ignora) return risposta(const [], 201);
+          return _errore('23505', 'voce già presente');
+        }
+        final riga = {
+          ...rigaDiVoce(c['id'] as String, viaggio: c['viaggio_id'] as String),
+          ...c,
+          'creato_il': DateTime.now().toUtc().toIso8601String(),
+        };
+        voci.add(riga);
+        return risposta([riga], 201);
+      case 'PATCH /rest/v1/voce_lista':
+        final trovate = _filtra(voci, r.url.queryParameters);
+        if (trovate.isEmpty) return risposta(const []);
+        final voce = trovate.single;
+        final valori = _corpo(r);
+        if (valori.containsKey('versione') &&
+            valori['versione'] != voce['versione']) {
+          return _errore('TR409', 'versione superata');
+        }
+        voce
+          ..addAll(valori)
+          ..['versione'] = (voce['versione']! as int) + 1;
+        return risposta([voce]);
+      case 'GET /rest/v1/nota':
+        return risposta(_filtra(note, r.url.queryParameters));
+      case 'POST /rest/v1/nota':
+        final ignora = (r.headers['prefer'] ?? r.headers['Prefer'] ?? '')
+            .contains('ignore-duplicates');
+        final c = _corpo(r);
+        if (note.any((x) => x['id'] == c['id'])) {
+          if (ignora) return risposta(const [], 201);
+          return _errore('23505', 'nota già presente');
+        }
+        final riga = {
+          ...rigaDiNota(c['id'] as String, viaggio: c['viaggio_id'] as String),
+          ...c,
+          'creato_il': DateTime.now().toUtc().toIso8601String(),
+        };
+        note.add(riga);
+        return risposta([riga], 201);
+      case 'PATCH /rest/v1/nota':
+        final trovate = _filtra(note, r.url.queryParameters);
+        if (trovate.isEmpty) return risposta(const []);
+        final nota = trovate.single;
+        final valori = _corpo(r);
+        if (valori.containsKey('versione') &&
+            valori['versione'] != nota['versione']) {
+          return _errore('TR409', 'versione superata');
+        }
+        nota
+          ..addAll(valori)
+          ..['versione'] = (nota['versione']! as int) + 1;
+        return risposta([nota]);
+      case 'GET /rest/v1/configurazione':
+        return risposta(configurazione);
+      case 'GET /rest/v1/tasso_cambio':
+        return risposta(tassi);
+      case 'POST /rest/v1/rpc/mio_profilo':
+        return risposta([?profilo]);
+      case 'PATCH /rest/v1/utente':
+        final p = profilo;
+        if (p == null) return risposta(const []);
+        final valori = _corpo(r);
+        if (valori['versione'] != p['versione']) {
+          return _errore('TR409', 'versione superata');
+        }
+        p
+          ..addAll(valori)
+          ..['versione'] = (valori['versione']! as int) + 1;
+        return risposta([
+          {'id': p['id']},
+        ]);
       case 'POST /rest/v1/rpc/ordina_tappe':
         final c = _corpo(r);
         final ordinate = <Map<String, Object?>>[];
@@ -642,6 +859,48 @@ class Ambiente {
       ),
     );
     await tester.pumpAndSettle();
+  }
+
+  /// Entra come [idDiProva], col suo profilo nella copia e sul server: chi
+  /// registra una spesa ne è il pagante, e serve sapere chi è.
+  /// Nei test dei widget va passato il [tester], perché si parla col server.
+  Future<void> accedi({WidgetTester? tester, String valuta = 'EUR'}) async {
+    server.profilo = {
+      'id': idDiProva,
+      'nome': 'Giulia',
+      'data_nascita': '1995-04-02',
+      'valuta_predefinita': valuta,
+      'telefono_verificato': false,
+      'profilo_pubblico_attivo': false,
+      'interno': false,
+      'eliminato_il': null,
+      'versione': 1,
+    };
+    Future<void> entra() async {
+      await server.supabase.auth.recoverSession(
+        jsonEncode({
+          'access_token': 'token-finto',
+          'token_type': 'bearer',
+          'expires_in': 3600,
+          'expires_at':
+              DateTime.now()
+                  .add(const Duration(days: 1))
+                  .millisecondsSinceEpoch ~/
+              1000,
+          'refresh_token': 'rinnovo-finto',
+          'user': {
+            'id': idDiProva,
+            'aud': 'authenticated',
+            'app_metadata': <String, Object?>{},
+            'user_metadata': <String, Object?>{},
+            'created_at': _istante,
+          },
+        }),
+      );
+      await archivio.scaricaProfilo();
+    }
+
+    await (tester == null ? entra() : tester.runAsync(entra));
   }
 
   /// Gli eventi di misurazione in attesa, per nome.

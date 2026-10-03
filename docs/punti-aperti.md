@@ -64,6 +64,50 @@ La fase 1.3 (documenti sul telefono: scansione, foto, file; elenco con oggi in c
 | **Luminosità al massimo** mostrando un codice a barre | Comodo al gate; non chiesto dai documenti | Se la beta lo chiede |
 | **Rivedere sulla tela le schermate 10–14** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.3 |
 
+### Rimasto fuori dalla 1.4
+
+La fase 1.4 (spese: valuta predefinita, tasso di cambio, ultimo valore noto offline; registrare anche senza rete) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Divisione: chi paga, chi partecipa, quote e saldi** | È la 2.3. Oggi ognuno registra le spese che ha pagato lui, senza quote, e il totale dice quanto è suo. La 2.3 deve decidere come valgono le spese registrate prima, senza quote: la proposta è in parti uguali fra chi c'era | Fase 2.3 |
+| **La stessa spesa registrata da due persone** (06, casi limite) | Si segnala quando c'è più di un pagante, cioè con la divisione | Fase 2.3 |
+| **Avviso prima di rimuovere chi ha saldi aperti** | Non c'è ancora né la rimozione né il saldo | Fasi 2.1 e 2.3 |
+| **Due persone cambiano la stessa spesa** | Oggi la seconda viene rifiutata e la copia si riscarica; le due versioni affiancate sono la 2.2 | Fase 2.2 |
+| **Budget di massima allo stato idea** (06, regola 1) | Non è nel piano di costruzione: è un'altra cosa rispetto alle spese | Da decidere |
+| **Statistiche aggregate delle spese** (06, regola 11) | Funzione premium individuale | Fase 6 |
+| **Rivedere sulla tela le schermate 15–18** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.4 |
+| **La migrazione `spese_e_tassi` non è nell'elenco delle versioni del server** | È stata applicata dall'editor SQL di Supabase, che non la registra: lo schema c'è, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003090000` | Da registrare, o da lasciare scritto qui |
+
+### Rimasto fuori dalla 1.5
+
+La fase 1.5 (cose da portare: la propria lista, anche nelle idee, spuntabile senza rete) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **La lista del viaggio e chi porta cosa** (05, regole 1 e 2) | Oggi ognuno ha la sua lista personale. Il server sa già assegnare una voce solo a chi è del viaggio; mancano la lista comune, l'assegnazione e lo spostamento di una voce da una lista all'altra | Fase 2.4 |
+| **Un assegnatario esce dal viaggio: le sue voci tornano libere, con un avviso** (05, casi limite) | Non c'è ancora né l'uscita né l'assegnazione | Fasi 2.1 e 2.4 |
+| **Due persone cambiano il testo della stessa voce** | Oggi la seconda viene rifiutata e la copia si riscarica, con il testo che si stava scrivendo ancora nel campo; le due versioni affiancate sono la 2.2 | Fase 2.2 |
+| **Aggiungere una voce senza rete** | Non è uno dei quattro gesti: senza rete il campo si spegne e lo dice. Si allarga solo se H4 lo chiede | Se H4 lo chiede |
+| **Notifica prima della partenza con le cose non spuntate** (14-notifiche) | Le notifiche non ci sono ancora | Con le notifiche |
+| **Liste suggerite e modelli da riusare** (05, cosa resta fuori) | Fuori dal perimetro | Da decidere |
+| **Rivedere sulla tela le schermate 19–23** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.5 |
+| **La migrazione `cose_da_portare` non è nell'elenco delle versioni del server** | Applicata il 3 ottobre 2026 dall'editor SQL di Supabase, che non la registra: lo schema c'è e le 9 prove di `supabase/tests/liste.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003170049` | Da registrare, o da lasciare scritto qui |
+
+### Rimasto fuori dalla 1.6
+
+La fase 1.6 (l'itinerario con un assistente: richiesta da copiare, risposta incollata, anteprima con la capienza, nota sempre salvata) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Scrivere una nota a mano** (02, regola 2) | La tabella c'è (`origine = 'scritta'`); manca la schermata. Nella 1.6 le note nascono solo dalle risposte incollate | Da decidere |
+| **Cambiare il testo di una nota** | Il server lo permette, con la versione; l'app per ora la legge, la copia e la elimina | Con le note scritte a mano |
+| **Tempi di spostamento e orari che si accavallano** | L'anteprima somma le durate come la capienza (04, cosa resta fuori); due tappe proposte alla stessa ora entrano tutte e due | Se la beta lo chiede |
+| **Leggere la risposta senza rete** | La nota va salvata prima di leggere, e salvare richiede la rete. Chi incolla di solito è appena stato sull'assistente, quindi online | Se H4 lo chiede |
+| **La generazione nativa** | Dipende dalla regola asimmetrica: si costruisce se `prompt_esportato` e `incollato_riuscito` dicono che il giro viene fatto | Dopo la beta |
+| **Rivedere sulla tela le schermate 24–28** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.6 |
+| **La migrazione `itinerario_incollato` non è ancora sul server** | Il file `20261003174945_itinerario_incollato.sql` è pronto con le sue prove (`supabase/tests/note.sql`). Finché manca, leggere una risposta fallisce perché la nota non si salva, e i modelli consigliati non arrivano | Da applicare dall'editor SQL prima di provare la 1.6 sul telefono |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.
@@ -122,7 +166,7 @@ L'obiettivo dichiarato è **sei mesi alla beta**, su uno scope che la visione st
 | Se 10 collegamenti reciproci su 100 utenti è la soglia giusta | I numeri veri dei primi mesi di parte pubblica | Ondata 2 |
 | Se i coefficienti di peso dei viaggi distinguono qualcosa | Il mix reale dei primi cinquanta viaggi. Se è quasi tutto breve, il peso non sta distinguendo niente e tanto vale contare i viaggi | Dopo 50 viaggi |
 | Se il bundle di gruppo serve, e a che prezzo | Un segnale da **H6**. Il numero che reggerebbe è €19,99 per l'intero viaggio | Dopo la beta |
-| Quali modelli suggerire, nome per nome | Vive in una configurazione remota, non nel codice: si aggiorna quando cambiano i modelli | Continuo |
+| Quali modelli suggerire, nome per nome | Vive nella tabella `configurazione` di Supabase, chiave `modelli_suggeriti` (ADR-010), non nel codice: si aggiorna dal pannello quando cambiano i modelli | Continuo |
 | Il nome definitivo del prodotto | "Trolley" è un nome in codice. Nessun investimento sull'identità visiva prima | Prima del lancio pubblico |
 
 ### Dalla tela di Claude Design
