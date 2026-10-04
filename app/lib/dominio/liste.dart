@@ -1,9 +1,8 @@
 /// Le cose da portare (05-cose-da-portare.md): che cos'è una voce valida, in
-/// che ordine si vede la lista, quanto è piena la valigia.
+/// che ordine si vede la lista, quanto è piena la valigia, chi porta cosa.
 ///
-/// Nella 1.5 la lista è una, personale: la vede solo chi la scrive, anche
-/// quando nel viaggio arriva qualcun altro (regole 1 e 3). La lista del
-/// viaggio da dividere, e chi porta cosa, arrivano con la 2.4.
+/// Le liste sono due: quella del viaggio, che vedono tutti e serve a dividersi
+/// le cose, e quella personale, che vede solo chi la scrive (regole 1–3).
 library;
 
 /// Le due liste del modello dati (01-modello-dati.md, `voce_lista.tipo`).
@@ -17,9 +16,80 @@ enum TipoLista {
   String get codice => name;
 }
 
-/// La lista in cui finisce una voce nuova. Una sola, per ora: chi scrive per
-/// sé non deve scoprire dopo che altri leggono.
-const listaDellaFase = TipoLista.personale;
+/// Se si vedono tutte e due le liste, con il selettore: quando nel viaggio
+/// c'è qualcun altro, o quando la lista del viaggio ha già delle voci, che
+/// non spariscono perché gli altri sono usciti. Da soli c'è la propria, e
+/// basta: chi scrive per sé non deve scoprire dopo che altri leggono.
+bool dueListe({required bool conAltri, required bool vociDelViaggio}) =>
+    conAltri || vociDelViaggio;
+
+/// Chi porta una voce del viaggio: qualcuno che è nel viaggio adesso, o
+/// nessuno. Il server libera le voci di chi esce; se la copia è indietro, una
+/// voce di chi non c'è più si vede già libera.
+String? chiLaPorta(String? assegnatoA, Set<String> presenti) =>
+    assegnatoA != null && presenti.contains(assegnatoA) ? assegnatoA : null;
+
+/// Una voce del viaggio si sposta fra le proprie solo se è libera o la porti
+/// tu: quella che porta un altro gli sparirebbe di mano. Una propria si
+/// sposta sempre nella lista del viaggio.
+bool siSposta({
+  required TipoLista lista,
+  required String? portaChi,
+  required String io,
+}) => lista == TipoLista.personale || portaChi == null || portaChi == io;
+
+/// Che cosa rimette da mettere «…» in alto, per rifare la valigia al
+/// ritorno: della propria lista tutto; di quella del viaggio solo quello che
+/// porti tu, perché le altre spunte sono le valigie degli altri.
+bool siRimetteDaMettere({
+  required TipoLista lista,
+  required bool spuntata,
+  required String? portaChi,
+  required String io,
+}) => spuntata && (lista == TipoLista.personale || portaChi == io);
+
+/// Le voci del viaggio tornate libere perché chi le portava l'ha lasciato,
+/// per persona e nell'ordine in cui sono nate: l'avviso in cima alla lista
+/// (05, casi limite; tela, 44). Le [viste] l'avviso le ha già dette.
+Map<String, List<T>> vociLasciate<T>(
+  Iterable<VoceLasciata<T>> voci, {
+  Set<String> viste = const {},
+}) {
+  final ordinate = [...voci]
+    ..sort((a, b) {
+      final per = a.creataIl.compareTo(b.creataIl);
+      return per != 0 ? per : a.id.compareTo(b.id);
+    });
+  final perChi = <String, List<T>>{};
+  for (final v in ordinate) {
+    if (v.lasciataDa == null || v.portaChi != null || viste.contains(v.id)) {
+      continue;
+    }
+    (perChi[v.lasciataDa!] ??= []).add(v.voce);
+  }
+  return perChi;
+}
+
+/// Una voce del viaggio, quanto serve per dire se è tornata libera.
+class VoceLasciata<T> {
+  const VoceLasciata({
+    required this.voce,
+    required this.id,
+    required this.lasciataDa,
+    required this.portaChi,
+    required this.creataIl,
+  });
+
+  final T voce;
+  final String id;
+
+  /// Chi la portava quando ha lasciato il viaggio; `null` se nessuno.
+  final String? lasciataDa;
+
+  /// Chi la porta adesso: presa da qualcuno, non è più tornata libera.
+  final String? portaChi;
+  final DateTime creataIl;
+}
 
 /// Quanto può essere lungo il testo di una voce: una cosa da portare, non una
 /// nota. Lo stesso limite c'è sul server.

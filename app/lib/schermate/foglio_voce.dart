@@ -15,35 +15,40 @@ import '../dominio/liste.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'due_versioni.dart';
+import 'gesti_voce.dart';
 
-/// Una voce da cambiare (05-cose-da-portare.md, "Voce"; tela, 21): che cosa,
-/// quante, ed eliminarla. Cambiare il testo è un gesto da tavolo, non da
-/// valigia: richiede la rete, e senza lo dice prima (regola 5).
+/// Una voce da cambiare (05-cose-da-portare.md, "Voce"; tela, 21 e 43): che
+/// cosa, quante e, nella lista del viaggio, chi la porta — nessuno, tu, uno
+/// dei compagni. Quando le liste sono due, la voce si sposta dall'una
+/// all'altra; e si elimina.
 ///
-/// Chi la porta arriva con la lista del viaggio (2.4): questa è la propria, e
-/// in un viaggio con altri il foglio lo ricorda.
+/// Cambiare, assegnare e spostare sono gesti da tavolo, non da valigia:
+/// richiedono la rete, e senza lo dicono prima (regola 5).
 class FoglioVoce extends StatelessWidget {
-  const FoglioVoce({super.key, required this.voce, this.conAltri = false});
+  const FoglioVoce({super.key, required this.voce, this.dueListe = false});
 
   final VoceLista voce;
-  final bool conAltri;
+
+  /// Si vedono tutte e due le liste: il foglio dice chi vede la voce, e
+  /// propone di spostarla nell'altra.
+  final bool dueListe;
 
   @override
   Widget build(BuildContext context) => ConLaRete(
     builder: (context, rete) =>
-        _Foglio(voce: voce, conAltri: conAltri, rete: rete),
+        _Foglio(voce: voce, dueListe: dueListe, rete: rete),
   );
 }
 
 class _Foglio extends StatefulWidget {
   const _Foglio({
     required this.voce,
-    required this.conAltri,
+    required this.dueListe,
     required this.rete,
   });
 
   final VoceLista voce;
-  final bool conAltri;
+  final bool dueListe;
   final bool rete;
 
   @override
@@ -53,7 +58,25 @@ class _Foglio extends StatefulWidget {
 class _FoglioState extends State<_Foglio> {
   late final _testo = TextEditingController(text: widget.voce.testo);
   late int _quante = widget.voce.quantita;
+  late Stream<List<(Partecipazione, Utente?)>> _partecipanti;
+  late Stream<Map<String, String>> _nomi;
+  bool _avviato = false;
   bool _inCorso = false;
+
+  /// Chi la porta, se la persona l'ha scelto in questo foglio.
+  ({String? chi})? _scelta;
+
+  bool get _delViaggio => widget.voce.tipo == TipoLista.viaggio.codice;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_avviato) return;
+    _avviato = true;
+    final archivio = Servizi.of(context).archivio;
+    _partecipanti = archivio.osservaPartecipanti(widget.voce.viaggioId);
+    _nomi = archivio.osservaNomi(widget.voce.viaggioId);
+  }
 
   @override
   void dispose() {
@@ -61,25 +84,35 @@ class _FoglioState extends State<_Foglio> {
     super.dispose();
   }
 
-  Map<String, Object?> get _cambiamenti {
+  /// Chi la porta adesso nel foglio: quello che si è scelto, o chi la porta
+  /// già — se c'è ancora. Finché non si sa chi c'è, com'è nella copia.
+  String? _porta(Set<String>? presenti) {
+    if (_scelta case (:final chi)) return chi;
+    if (presenti == null) return widget.voce.assegnatoA;
+    return chiLaPorta(widget.voce.assegnatoA, presenti);
+  }
+
+  Map<String, Object?> _cambiamenti(Set<String>? presenti) {
     final testo = testoVoce(_testo.text);
+    final porta = _porta(presenti);
     return {
       if (testo != null && testo != widget.voce.testo) 'testo': testo,
       if (_quante != widget.voce.quantita) 'quantita': _quante,
+      if (_delViaggio && presenti != null && porta != widget.voce.assegnatoA)
+        'assegnato_a': porta,
     };
   }
 
   /// Perché non si può ancora salvare; `null` se si può.
-  String? get _motivo {
+  String? _motivo(Set<String>? presenti) {
     if (testoVoce(_testo.text) == null) return 'Scrivi che cosa portare';
     if (!widget.rete) return motivoSenzaRete;
-    if (_cambiamenti.isEmpty) return 'Niente da salvare';
+    if (_cambiamenti(presenti).isEmpty) return 'Niente da salvare';
     return null;
   }
 
-  Future<void> _salva() async {
-    final archivio = Servizi.of(context).archivio;
-    final cambiamenti = _cambiamenti;
+  Future<void> _salva(Set<String>? presenti) async {
+    final cambiamenti = _cambiamenti(presenti);
     setState(() => _inCorso = true);
     try {
       // Se qualcuno l'ha riscritta intanto, si sceglie fra le due versioni.
@@ -87,11 +120,56 @@ class _FoglioState extends State<_Foglio> {
       // resta nel campo: non si perde e non si fonde con l'altro (02 §3).
       final scelta = await salvaOScegli(
         context,
-        () => archivio.modificaVoce(widget.voce, cambiamenti),
+        () =>
+            cambiaLaVoce(context, voce: widget.voce, cambiamenti: cambiamenti),
       );
       if (scelta == null) return;
       HapticFeedback.lightImpact();
       if (mounted) Navigator.of(context).pop();
+    } on ErroreTrolley catch (e) {
+      if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
+    } finally {
+      if (mounted) setState(() => _inCorso = false);
+    }
+  }
+
+  /// Sposta la voce nell'altra lista. Quello che si è cambiato nel foglio si
+  /// salva prima, con le sue due versioni se serve; poi si sposta la voce
+  /// com'è sul server.
+  Future<void> _sposta(Set<String>? presenti) async {
+    final archivio = Servizi.of(context).archivio;
+    final cambiamenti = _cambiamenti(presenti);
+    setState(() => _inCorso = true);
+    try {
+      var voce = widget.voce;
+      if (cambiamenti.isNotEmpty) {
+        final scelta = await salvaOScegli(
+          context,
+          () => cambiaLaVoce(context, voce: voce, cambiamenti: cambiamenti),
+        );
+        if (scelta == null || !mounted) return;
+        // Scegliendo fra due versioni si è deciso un'altra cosa: la voce si
+        // rivede nella lista prima di spostarla.
+        if (scelta != SceltaVersione.tua) {
+          Navigator.of(context).pop();
+          return;
+        }
+        voce = await archivio.leggiVoce(voce.id) ?? voce;
+      }
+      if (!mounted) return;
+      await spostaLaVoce(context, voce);
+      if (!mounted) return;
+      final navigatore = Navigator.of(context);
+      navigatore.pop();
+      final contesto = navigatore.overlay?.context;
+      if (contesto != null && contesto.mounted) {
+        mostraMessaggio(
+          contesto,
+          _delViaggio
+              ? 'Ora è fra le tue cose: la vedi solo tu.'
+              : 'Ora è nella lista del viaggio, e la porti tu.',
+        );
+      }
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {
@@ -104,7 +182,9 @@ class _FoglioState extends State<_Foglio> {
     await AdaptiveAlertDialog.show(
       context: context,
       title: 'Eliminare «${widget.voce.testo}»?',
-      message: 'Esce dalla lista.',
+      message: _delViaggio
+          ? 'Esce dalla lista del viaggio, per tutti.'
+          : 'Esce dalla lista.',
       actions: [
         AlertAction(
           title: 'Annulla',
@@ -135,8 +215,39 @@ class _FoglioState extends State<_Foglio> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final motivo = _motivo;
+  Widget build(BuildContext context) =>
+      StreamBuilder<List<(Partecipazione, Utente?)>>(
+        stream: _partecipanti,
+        builder: (context, partecipanti) => StreamBuilder<Map<String, String>>(
+          stream: _nomi,
+          builder: (context, nomi) =>
+              _contenuto(partecipanti.data, nomi.data ?? const {}),
+        ),
+      );
+
+  Widget _contenuto(
+    List<(Partecipazione, Utente?)>? partecipanti,
+    Map<String, String> nomi,
+  ) {
+    final io = Servizi.of(context).archivio.io;
+    final presenti = partecipanti == null
+        ? null
+        : {for (final (p, _) in partecipanti) p.utenteId};
+    final motivo = _motivo(presenti);
+    final porta = _porta(presenti);
+    final lista = TipoLista.values.byName(widget.voce.tipo);
+    final spostabile =
+        widget.dueListe &&
+        io != null &&
+        siSposta(lista: lista, portaChi: porta, io: io);
+    final autore = widget.voce.creatoDa == io
+        ? 'te'
+        : nomi[widget.voce.creatoDa];
+    final altri = [
+      for (final (p, u) in partecipanti ?? const <(Partecipazione, Utente?)>[])
+        if (p.utenteId != io) (p.utenteId, u?.nome ?? 'Senza nome'),
+    ]..sort((a, b) => a.$2.toLowerCase().compareTo(b.$2.toLowerCase()));
+    void scegli(String? chi) => setState(() => _scelta = (chi: chi));
     return Foglio(
       titolo: 'La voce',
       inBasso: AzioniFoglio(
@@ -144,10 +255,17 @@ class _FoglioState extends State<_Foglio> {
         azione: PulsanteGrande(
           etichetta: 'Salva',
           inCorso: _inCorso,
-          onPressed: motivo == null ? _salva : null,
+          onPressed: motivo == null ? () => _salva(presenti) : null,
         ),
       ),
       children: [
+        if (_delViaggio && autore != null) ...[
+          Text(
+            'Aggiunta da $autore',
+            style: Testi.secondario.copyWith(color: Colori.grafite),
+          ),
+          const SizedBox(height: 16),
+        ],
         Campo(
           controller: _testo,
           etichetta: 'Cosa?',
@@ -167,7 +285,52 @@ class _FoglioState extends State<_Foglio> {
           valore: _quante,
           onCambia: (n) => setState(() => _quante = quantitaValida(n)),
         ),
-        if (widget.conAltri) ...[
+        if (_delViaggio && partecipanti != null) ...[
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.only(left: 2, bottom: 8),
+            child: Text(
+              'Chi la porta?',
+              style: Testi.etichetta.copyWith(color: Colori.ardesia),
+            ),
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Gettone(
+                etichetta: 'Nessuno',
+                scelto: porta == null,
+                onTap: widget.rete ? () => scegli(null) : null,
+              ),
+              if (io != null)
+                Gettone(
+                  etichetta: 'Tu',
+                  scelto: porta == io,
+                  onTap: widget.rete ? () => scegli(io) : null,
+                ),
+              for (final (id, nome) in altri)
+                Gettone(
+                  etichetta: nome,
+                  scelto: porta == id,
+                  onTap: widget.rete ? () => scegli(id) : null,
+                ),
+            ],
+          ),
+        ],
+        if (_delViaggio) ...[
+          const SizedBox(height: 16),
+          Avviso(
+            fondo: Colori.foschia,
+            icona: icona(
+              ios: CupertinoIcons.person_2,
+              android: Icons.people_outline_rounded,
+            ),
+            testo:
+                'La vedono tutti nel viaggio. Le tue cose che non riguardano '
+                'gli altri vanno in «Mie».',
+          ),
+        ] else if (widget.dueListe) ...[
           const SizedBox(height: 16),
           Avviso(
             fondo: Colori.foschia,
@@ -178,7 +341,20 @@ class _FoglioState extends State<_Foglio> {
             testo: 'La vedi solo tu: gli altri del viaggio non la vedono.',
           ),
         ],
-        const SizedBox(height: 20),
+        if (spostabile) ...[
+          const SizedBox(height: 20),
+          PulsanteGrande(
+            etichetta: _delViaggio
+                ? 'Spostala nella tua lista'
+                : 'Spostala nella lista del viaggio',
+            secondario: true,
+            motivo: widget.rete ? null : motivoSenzaRete,
+            onPressed: _inCorso || !widget.rete
+                ? null
+                : () => _sposta(presenti),
+          ),
+        ],
+        SizedBox(height: spostabile ? 10 : 20),
         PulsanteGrande(
           etichetta: 'Elimina la voce',
           secondario: true,

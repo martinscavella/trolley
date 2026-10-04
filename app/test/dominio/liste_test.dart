@@ -14,10 +14,78 @@ List<String> nomi(List<VoceDaPortare<String>> voci) => [
 ];
 
 void main() {
-  test('nella 1.5 una voce nuova va nella lista personale', () {
-    expect(listaDellaFase, TipoLista.personale);
+  test('le due liste hanno i nomi del server', () {
     expect(TipoLista.personale.codice, 'personale');
     expect(TipoLista.viaggio.codice, 'viaggio');
+  });
+
+  test('le liste sono due quando c\'è qualcun altro, o quando quella del '
+      'viaggio ha già qualcosa', () {
+    expect(dueListe(conAltri: false, vociDelViaggio: false), isFalse);
+    expect(dueListe(conAltri: true, vociDelViaggio: false), isTrue);
+    // Gli altri sono usciti: le voci del viaggio non spariscono.
+    expect(dueListe(conAltri: false, vociDelViaggio: true), isTrue);
+  });
+
+  test('una voce la porta chi è nel viaggio adesso, o nessuno', () {
+    expect(chiLaPorta('marco', {'io', 'marco'}), 'marco');
+    expect(chiLaPorta(null, {'io', 'marco'}), isNull);
+    // Uscito, e la copia non lo sa ancora: si vede già libera.
+    expect(chiLaPorta('luca', {'io', 'marco'}), isNull);
+  });
+
+  test('fra le proprie si sposta una voce libera o tua, non quella che porta '
+      'un altro; una propria va sempre nel viaggio', () {
+    bool sposta(TipoLista lista, String? chi) =>
+        siSposta(lista: lista, portaChi: chi, io: 'io');
+    expect(sposta(TipoLista.viaggio, null), isTrue);
+    expect(sposta(TipoLista.viaggio, 'io'), isTrue);
+    expect(sposta(TipoLista.viaggio, 'marco'), isFalse);
+    expect(sposta(TipoLista.personale, null), isTrue);
+  });
+
+  test('rifare la valigia: della propria lista tutto, di quella del viaggio '
+      'solo quello che porti tu', () {
+    bool rimette(TipoLista lista, String? chi, {bool spuntata = true}) =>
+        siRimetteDaMettere(
+          lista: lista,
+          spuntata: spuntata,
+          portaChi: chi,
+          io: 'io',
+        );
+    expect(rimette(TipoLista.personale, null), isTrue);
+    expect(rimette(TipoLista.personale, null, spuntata: false), isFalse);
+    expect(rimette(TipoLista.viaggio, 'io'), isTrue);
+    expect(rimette(TipoLista.viaggio, 'marco'), isFalse);
+    expect(rimette(TipoLista.viaggio, null), isFalse);
+  });
+
+  test('le voci tornate libere, per chi le portava e nell\'ordine in cui sono '
+      'nate; non quelle già riprese, né quelle già viste', () {
+    VoceLasciata<String> lasciata(
+      String id, {
+      String? da,
+      String? porta,
+      int minuto = 0,
+    }) => VoceLasciata(
+      voce: id,
+      id: id,
+      lasciataDa: da,
+      portaChi: porta,
+      creataIl: DateTime.utc(2026, 10, 4, 9, minuto),
+    );
+    final perChi = vociLasciate([
+      lasciata('ombrellone', da: 'luca', minuto: 2),
+      lasciata('crema', da: 'luca', minuto: 1),
+      lasciata('carte', da: 'sara', minuto: 3),
+      lasciata('adattatore', da: 'luca', porta: 'marco'),
+      lasciata('powerbank'),
+      lasciata('guida', da: 'sara', minuto: 4),
+    ], viste: {'guida'});
+    expect(perChi, {
+      'luca': ['crema', 'ombrellone'],
+      'sara': ['carte'],
+    });
   });
 
   test('il testo di una voce: senza spazi ai lati, mai vuoto, mai una nota', () {

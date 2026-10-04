@@ -44,15 +44,25 @@ void main() {
     expect(voci.every((v) => !v.spuntata), isTrue);
   });
 
-  test('della copia si vede solo la propria lista personale', () async {
-    // Se un giorno arrivassero, non si mostrerebbero: né le personali di un
-    // altro (05, regola 3) né quelle del viaggio, che arrivano con la 2.4.
+  test('della copia si vedono la lista del viaggio e la propria, mai la '
+      'personale di un altro', () async {
+    // Il server non la manda; se arrivasse, non si mostrerebbe (05, regola 3).
     ambiente.server.voci.addAll([
       rigaDiVoce('sua', viaggio: 'v', proprietario: 'altro', creatoDa: 'altro'),
-      rigaDiVoce('comune', viaggio: 'v', tipo: 'viaggio'),
+      rigaDiVoce(
+        'comune',
+        viaggio: 'v',
+        tipo: 'viaggio',
+        proprietario: 'altro',
+        creatoDa: 'altro',
+      ),
     ]);
     await ambiente.archivio.aggiornaCopia();
-    expect((await mie()).map((v) => v.id), ['passaporto', 'magliette']);
+    expect((await mie()).map((v) => v.id), [
+      'passaporto',
+      'magliette',
+      'comune',
+    ]);
   });
 
   group('spuntare, anche senza rete', () {

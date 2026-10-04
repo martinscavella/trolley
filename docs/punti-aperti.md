@@ -80,8 +80,6 @@ La fase 1.5 (cose da portare: la propria lista, anche nelle idee, spuntabile sen
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **La lista del viaggio e chi porta cosa** (05, regole 1 e 2) | Oggi ognuno ha la sua lista personale. Il server sa già assegnare una voce solo a chi è del viaggio; mancano la lista comune, l'assegnazione e lo spostamento di una voce da una lista all'altra | Fase 2.4 |
-| **Un assegnatario esce dal viaggio: le sue voci tornano libere, con un avviso** (05, casi limite) | L'uscita c'è dalla 2.1; l'assegnazione no | Fase 2.4 |
 | **Due persone cambiano il testo della stessa voce** | Oggi la seconda viene rifiutata e la copia si riscarica, con il testo che si stava scrivendo ancora nel campo; le due versioni affiancate sono la 2.2 | Fase 2.2 |
 | **Aggiungere una voce senza rete** | Non è uno dei quattro gesti: senza rete il campo si spegne e lo dice. Si allarga solo se H4 lo chiede | Se H4 lo chiede |
 | **Notifica prima della partenza con le cose non spuntate** (14-notifiche) | Le notifiche non ci sono ancora | Con le notifiche |
@@ -112,7 +110,6 @@ La fase 2.1 (chi c'è, inviti e inviti in sospeso, togliere qualcuno e passare i
 | **La migrazione `partecipanti` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: le funzioni ci sono e le 9 prove di `supabase/tests/partecipanti.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004093000` | Da registrare, o da lasciare scritto qui |
 | **Eliminare un viaggio** | Chi è responsabile ed è da solo non può uscire: il viaggio resterebbe senza nessuno. Per un'idea c'è l'archivio; per un viaggio definito che non si farà, oggi non c'è niente | Da decidere |
 | **Avvisare chi viene tolto** | Oggi lo scopre aprendo l'app: l'elenco dei viaggi lo dice. Una notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
-| **Le voci assegnate a chi esce tornano libere** | Non c'è ancora l'assegnazione | Fase 2.4 |
 | **`primo_contributo_invitato` guarda il ruolo di adesso** | Dopo un passaggio di ruolo chi ha creato il viaggio risulta partecipante: se non aveva mai aggiunto niente, il suo primo contributo conterebbe come quello di un invitato. Il caso è raro (chi crea un viaggio di solito ci mette qualcosa), e distinguerlo vorrebbe un campo in più sulla partecipazione | Se i numeri di H3 lo mostrano |
 | **Rivedere sulla tela le schermate 29–33** | Disegnate e costruite insieme il 4 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 2.1 |
 
@@ -125,7 +122,6 @@ La fase 2.2 (due versioni della stessa cosa: tappa, spesa, voce, date del viaggi
 | **La migrazione `chi_ha_scritto` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: colonne e trigger ci sono, le righe di prima hanno preso l'autore, e le 7 prove di `supabase/tests/conflitti.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004150000` | Da registrare, o da lasciare scritto qui |
 | **La notifica «Due versioni»** per chi esce prima di scegliere | Oggi chiudendo si torna al foglio, con quello che si era scritto; chiudendo anche il foglio la propria versione si perde, come per ogni foglio lasciato a metà. La notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
 | **«Tienile tutte e due» per le note** | Le note oggi non si riscrivono: non possono trovarsi in due versioni | Con le note scritte a mano |
-| **«Tienile tutte e due» per una voce della lista del viaggio** | Oggi la voce in più nasce nella propria lista personale, l'unica che c'è. Con la lista del viaggio dovrà nascere nella stessa lista dell'altra | Fase 2.4 |
 | **Rivedere sulla tela le schermate 34–36 e 88** | 34–36 disegnate prima, 88 (una tolta) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.2 |
 
 ### Rimasto fuori dalla 2.3
@@ -139,6 +135,19 @@ La fase 2.3 (chi ha pagato e per chi, importi diversi, la propria parte, i saldi
 | **«Sono due spese» vale solo su quel telefono** | È una risposta all'avviso, non un dato del viaggio. Sull'altro telefono della stessa persona l'avviso torna una volta | Se dà fastidio |
 | **Il foglio della spesa dice «Salva», la tela «Registra»** | Il pulsante c'era già dalla 1.4; nel foglio degli importi diversi è «Registra» come sulla tela | Da decidere con la tela |
 | **Rivedere sulla tela le schermate 37–41 e 89** | 37–41 disegnate prima, 89 (saldi visti da chi dà, rimborsi già fatti) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.3 |
+
+### Rimasto fuori dalla 2.4
+
+La fase 2.4 (la lista del viaggio e la propria, chi porta cosa, spostare una voce fra le due, le voci che tornano libere quando chi le portava lascia il viaggio) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| ~~**La migrazione `lista_del_viaggio` va applicata**~~ | Applicata dall'editor SQL e provata il 4 ottobre 2026 (`supabase/tests/lista_del_viaggio.sql`, tutte «ok»). La versione `20261004200000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
+| **Il foglio della voce ha quante ed «Elimina la voce»**, che il disegno 43 non mostra | Il foglio è quello della 1.5 (tela, 21) con «Chi la porta?» e lo spostamento: la tela li dice nella nota, non nel disegno | Da decidere con la tela |
+| **«Ho capito» sulle voci tornate libere vale su quel telefono** | È la risposta a un avviso, come «Sono due spese». L'avviso sparisce comunque appena qualcuno prende quelle voci | Se dà fastidio |
+| **Chi porta una voce assegnata da un altro non lo sa** | Se Marco scrive che la crema la porta Sara, Sara lo vede solo aprendo la lista. Dirglielo è delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **Una voce presa su un altro telefono non chiude il benvenuto qui** | La copia sa chi porta una voce, non chi l'ha scelto: Sara a cui Marco ha dato la crema non ha ancora contribuito. Il benvenuto si chiude al prossimo contributo, o con la × | Se dà fastidio |
+| **Rivedere sulla tela le schermate 42–44** | Disegnate prima, costruite il 4 ottobre 2026 | Prima di chiudere la 2.4 |
 
 ### Impianto di sicurezza del matching — stima
 

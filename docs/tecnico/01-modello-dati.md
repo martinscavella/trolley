@@ -123,13 +123,14 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 
 ### `voce_lista`
 
-`viaggio_id`, `testo` (al massimo 200 caratteri), `quantita` (da 1 a 99: cinque magliette sono una voce), `tipo` (`viaggio` · `personale`), `proprietario_id`, `assegnato_a`, `spuntata`.
+`viaggio_id`, `testo` (al massimo 200 caratteri), `quantita` (da 1 a 99: cinque magliette sono una voce), `tipo` (`viaggio` · `personale`), `proprietario_id`, `assegnato_a`, `spuntata`, `lasciata_da`.
+
+`lasciata_da` è chi la portava quando ha lasciato il viaggio: serve all'avviso delle voci tornate libere (05, casi limite). La scrive solo il server, e si vuota da sé quando qualcuno prende la voce.
 
 **Invarianti**
 - Una voce `personale` è visibile **solo** al suo proprietario. Non sincronizza verso gli altri partecipanti, nemmeno verso il creatore.
-- Una voce `personale` non si assegna a nessuno; una del viaggio si assegna solo a chi ne fa parte.
-- Di una voce si cambiano testo, quante, assegnatario e spunta, e la si toglie. Non cambiano mai proprietario, lista né viaggio: una voce del viaggio diventata personale sparirebbe agli altri.
-- Nella fase 1.5 le voci nascono tutte `personale`; la lista del viaggio arriva con la 2.4 (decisioni/prodotto.md).
+- Una voce `personale` non si assegna a nessuno; una del viaggio si assegna solo a chi **è nel viaggio adesso**. Chi esce o viene tolto lascia libere le voci che portava, nella stessa operazione (`esci_dal_viaggio`, `rimuovi_partecipante`).
+- Di una voce si cambiano testo, quante, assegnatario e spunta, e la si toglie. Non cambiano mai proprietario, lista né viaggio: una voce del viaggio diventata personale sparirebbe agli altri senza che la loro copia lo sappia. **Spostarla** da una lista all'altra è toglierla e farne nascere una nuova nell'altra, insieme o niente (`sposta_voce`): chi aveva la vecchia la vede togliere.
 
 ### `nota`
 

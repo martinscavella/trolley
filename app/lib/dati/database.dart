@@ -177,6 +177,10 @@ class VociLista extends Table with RigaCopiata {
   TextColumn get tipo => text()();
   TextColumn get proprietarioId => text()();
   TextColumn get assegnatoA => text().nullable()();
+
+  /// Chi la portava quando ha lasciato il viaggio: l'avviso delle voci
+  /// tornate libere (05, casi limite). Lo scrive solo il server.
+  TextColumn get lasciataDa => text().nullable()();
   BoolColumn get spuntata => boolean()();
 
   /// Chi l'ha aggiunta: il primo contributo di un invitato si riconosce così.
@@ -377,8 +381,9 @@ class DatabaseLocale extends _$DatabaseLocale {
   /// 6 (fase 1.6): le note del viaggio e la configurazione.
   /// 7 (fase 2.3): le spese sanno se sono un rimborso, le partecipazioni
   /// quando sono nate e quando sono cambiate.
+  /// 8 (fase 2.4): le voci sanno chi le portava prima di lasciare il viaggio.
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [
@@ -432,6 +437,9 @@ class DatabaseLocale extends _$DatabaseLocale {
         await _aggiungiSeManca(m, spese, spese.rimborso);
         await _aggiungiSeManca(m, partecipazioni, partecipazioni.creatoIl);
         await _aggiungiSeManca(m, partecipazioni, partecipazioni.modificatoIl);
+      }
+      if (da >= 2 && da < 8) {
+        await _aggiungiSeManca(m, vociLista, vociLista.lasciataDa);
       }
     },
   );

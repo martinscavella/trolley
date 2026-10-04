@@ -128,9 +128,12 @@ List<Map<String, Object?>> righeQuote(Map<String, int> quote) => [
     {'utente_id': utente, 'quota': importoPerIlServer(c)},
 ];
 
+/// Il ritratto di una voce: che cosa, quante, chi la porta. La spunta no:
+/// spuntato è spuntato, chiunque l'abbia fatto (02 §2).
 Map<String, Object?> ritrattoVoce(Map<String, Object?> r) => {
   'testo': (r['testo'] as String).trim(),
   'quantita': r['quantita'] ?? 1,
+  'assegnato_a': r['assegnato_a'],
   campoEliminato: r['eliminato_il'] != null,
 };
 
@@ -172,6 +175,7 @@ Map<String, Object?> rigaDellaSpesa(Spesa s, Iterable<SpesaQuota> quote) => {
 Map<String, Object?> rigaDellaVoce(VoceLista v) => {
   'testo': v.testo,
   'quantita': v.quantita,
+  'assegnato_a': v.assegnatoA,
   'eliminato_il': v.eliminatoIl,
 };
 

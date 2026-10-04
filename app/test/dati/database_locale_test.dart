@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show SupabaseClient;
@@ -129,7 +130,7 @@ void main() {
       final versione = await dopo
           .customSelect('PRAGMA user_version')
           .getSingle();
-      expect(versione.read<int>('user_version'), 7);
+      expect(versione.read<int>('user_version'), 8);
     },
   );
 
@@ -201,7 +202,7 @@ void main() {
         );
     expect(await dopo.select(dopo.documenti).get(), hasLength(1));
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 7);
+    expect(versione.read<int>('user_version'), 8);
   });
 
   test('passare dalla versione 3 alla 4 rifà solo la copia delle spese, e '
@@ -287,7 +288,7 @@ void main() {
     );
     expect(await dopo.select(dopo.tassiCambio).get(), isEmpty);
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 7);
+    expect(versione.read<int>('user_version'), 8);
   });
 
   test('passare dalla versione 4 alla 5 rifà solo la copia delle voci, e '
@@ -373,7 +374,7 @@ void main() {
       containsAll(['quantita', 'creato_da', 'creato_il']),
     );
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 7);
+    expect(versione.read<int>('user_version'), 8);
   });
 
   test('passare dalla versione 5 alla 6 aggiunge note e configurazione, e '
@@ -431,7 +432,7 @@ void main() {
     expect(await dopo.select(dopo.note).get(), isEmpty);
     expect(await dopo.select(dopo.configurazioni).get(), isEmpty);
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 7);
+    expect(versione.read<int>('user_version'), 8);
   });
 
   test('passare dalla versione 6 alla 7 aggiunge rimborso e date delle '
@@ -494,6 +495,7 @@ void main() {
           ..execute('ALTER TABLE spesa DROP COLUMN rimborso')
           ..execute('ALTER TABLE partecipazione DROP COLUMN creato_il')
           ..execute('ALTER TABLE partecipazione DROP COLUMN modificato_il')
+          ..execute('ALTER TABLE voce_lista DROP COLUMN lasciata_da')
           ..execute('PRAGMA user_version = 6'),
       ),
     );
@@ -510,7 +512,80 @@ void main() {
     expect(coda.gesto, GestoOffline.registraSpesa);
     expect(coda.carico, '{"id":"s1","importo":"12.40"}');
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 7);
+    expect(versione.read<int>('user_version'), 8);
+  });
+
+  test('passare dalla versione 7 alla 8 aggiunge chi portava una voce, e '
+      'lascia copia, coda e segni com\'erano', () async {
+    final cartella = await Directory.systemTemp.createTemp('trolley');
+    addTearDown(() => cartella.delete(recursive: true));
+    final file = File('${cartella.path}/trolley.sqlite');
+
+    final prima = DatabaseLocale(NativeDatabase(file));
+    final adesso = DateTime.utc(2026, 10, 4, 20);
+    // Una voce del viaggio spuntata senza rete: la riga nella copia e la
+    // spunta in coda.
+    await prima
+        .into(prima.vociLista)
+        .insert(
+          VociListaCompanion.insert(
+            id: 'x1',
+            versione: 3,
+            scaricatoIl: adesso,
+            viaggioId: 'v1',
+            testo: 'Adattatore',
+            quantita: 2,
+            tipo: 'viaggio',
+            proprietarioId: 'u1',
+            assegnatoA: const Value('u2'),
+            spuntata: true,
+            creatoDa: 'u1',
+            creatoIl: adesso.toIso8601String(),
+          ),
+        );
+    await prima
+        .into(prima.codaScrittura)
+        .insert(
+          CodaScritturaCompanion.insert(
+            id: 'op1',
+            viaggioId: 'v1',
+            gesto: GestoOffline.spuntaVoce,
+            carico: '{"voce_id":"x1","spuntata":true,"testo":"Adattatore"}',
+            creataIl: adesso,
+          ),
+        );
+    await prima
+        .into(prima.impostazioni)
+        .insert(
+          ImpostazioniCompanion.insert(chiave: 'benvenuto:v1', valore: 'si'),
+        );
+    await prima.close();
+
+    // Com'era la versione 7: le voci non sapevano chi le portava prima.
+    final dopo = DatabaseLocale(
+      NativeDatabase(
+        file,
+        setup: (grezzo) => grezzo
+          ..execute('ALTER TABLE voce_lista DROP COLUMN lasciata_da')
+          ..execute('PRAGMA user_version = 7'),
+      ),
+    );
+    addTearDown(dopo.close);
+
+    final voce = (await dopo.select(dopo.vociLista).get()).single;
+    expect(voce.testo, 'Adattatore');
+    expect(voce.assegnatoA, 'u2');
+    expect(voce.spuntata, isTrue);
+    expect(voce.lasciataDa, isNull);
+    final coda = (await dopo.select(dopo.codaScrittura).get()).single;
+    expect(coda.gesto, GestoOffline.spuntaVoce);
+    expect(coda.carico, contains('"voce_id":"x1"'));
+    expect(
+      (await dopo.select(dopo.impostazioni).get()).single.chiave,
+      'benvenuto:v1',
+    );
+    final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
+    expect(versione.read<int>('user_version'), 8);
   });
 
   test('una spunta in coda sopravvive alla copia ricreata', () async {

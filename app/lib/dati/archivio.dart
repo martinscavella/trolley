@@ -369,7 +369,8 @@ class Archivio {
   }
 
   /// Mette nella copia le righe di un viaggio restituite dal server dopo una
-  /// scrittura: il viaggio, i suoi giorni attivi, chi partecipa.
+  /// scrittura: il viaggio, i suoi giorni attivi, chi partecipa e, se ci
+  /// sono, le voci che la scrittura ha cambiato.
   Future<void> _nellaCopia(Map<String, dynamic> righe) async {
     final viaggio = righe['viaggio'] as Map<String, dynamic>;
     final id = viaggio['id'] as String;
@@ -389,6 +390,9 @@ class Archivio {
             _partecipazione(r as Map<String, dynamic>, adesso),
         ]);
       });
+      for (final r in (righe['voci'] as List?) ?? const []) {
+        await coda.nellaCopiaVoce(r as Map<String, dynamic>);
+      }
     });
   }
 
@@ -514,9 +518,11 @@ class Archivio {
     _db.partecipazioni,
   )..where((p) => p.viaggioId.equals(viaggioId))).watch();
 
-  /// Le proprie cose da portare per il viaggio: la lista personale, che vede
-  /// solo chi la scrive (05, regole 1 e 3). Nell'ordine in cui sono nate;
-  /// quale prima e quale dopo lo decide il dominio (dominio/liste.dart).
+  /// Le cose da portare del viaggio che la persona vede: la lista del
+  /// viaggio, di tutti, e la propria, che vede solo lei (05, regole 1 e 3).
+  /// Le personali degli altri il server non le manda; se una fosse rimasta
+  /// nella copia, qui non passa. Nell'ordine in cui sono nate; quale prima e
+  /// quale dopo lo decide il dominio (dominio/liste.dart).
   Stream<List<VoceLista>> osservaVoci(String viaggioId) {
     final io = _io;
     if (io == null) return Stream.value(const []);
@@ -524,12 +530,56 @@ class Archivio {
           ..where(
             (v) =>
                 v.viaggioId.equals(viaggioId) &
-                v.tipo.equals(TipoLista.personale.codice) &
-                v.proprietarioId.equals(io) &
+                (v.tipo.equals(TipoLista.viaggio.codice) |
+                    v.proprietarioId.equals(io)) &
                 v.eliminatoIl.isNull(),
           )
           ..orderBy([(v) => OrderingTerm.asc(v.creatoIl)]))
         .watch();
+  }
+
+  /// Una voce com'è nella copia, anche di un'altra lista; `null` se non c'è.
+  Future<VoceLista?> leggiVoce(String id) => (_db.select(
+    _db.vociLista,
+  )..where((v) => v.id.equals(id))).getSingleOrNull();
+
+  static const _vociLasciate = 'voci_lasciate:';
+
+  /// Le voci tornate libere di cui la persona ha già visto l'avviso, su
+  /// questo telefono (tela, 44: «Ho capito»).
+  Stream<Set<String>> osservaVociLasciateViste(String viaggioId) =>
+      _visteDa(viaggioId).watchSingleOrNull().map(_viste);
+
+  /// L'avviso delle voci tornate libere è stato visto: quelle [ids] non lo
+  /// fanno più tornare.
+  Future<void> vociLasciateViste(String viaggioId, Iterable<String> ids) =>
+      _db.transaction(() async {
+        final viste = _viste(await _visteDa(viaggioId).getSingleOrNull());
+        await _db
+            .into(_db.impostazioni)
+            .insertOnConflictUpdate(
+              ImpostazioniCompanion.insert(
+                chiave: '$_vociLasciate$viaggioId',
+                valore: jsonEncode([
+                  ...{...viste, ...ids},
+                ]),
+              ),
+            );
+      });
+
+  SimpleSelectStatement<$ImpostazioniTable, Impostazione> _visteDa(
+    String viaggioId,
+  ) =>
+      _db.select(_db.impostazioni)
+        ..where((i) => i.chiave.equals('$_vociLasciate$viaggioId'));
+
+  static Set<String> _viste(Impostazione? riga) {
+    final ids = riga == null ? null : jsonDecode(riga.valore);
+    return {
+      if (ids is List)
+        for (final id in ids)
+          if (id is String) id,
+    };
   }
 
   /// Le note del viaggio, dalla più recente.
@@ -792,11 +842,12 @@ class Archivio {
   });
 
   /// I segni di questo telefono legati a un viaggio: il benvenuto, il
-  /// sollecito dell'idea.
+  /// sollecito dell'idea, le voci tornate libere già viste.
   Future<void> _dimenticaSegni(String viaggioId) =>
       (_db.delete(_db.impostazioni)..where(
             (i) => i.chiave.isIn([
               '$_benvenuto$viaggioId',
+              '$_vociLasciate$viaggioId',
               _chiaveSollecito(viaggioId),
             ]),
           ))
@@ -1175,13 +1226,16 @@ class Archivio {
 
   // ─── Cose da portare: le scritture che richiedono la rete ─────────────────
 
-  /// Aggiunge una voce alla propria lista. Richiede la rete: senza, le liste
-  /// si leggono e si spuntano e basta (05, regola 5). L'id nasce qui, così
-  /// una risposta persa per strada non la aggiunge due volte.
+  /// Aggiunge una voce a una delle due liste: la propria, o quella del
+  /// viaggio, dove la può portare [portaChi]. Richiede la rete: senza, le
+  /// liste si leggono e si spuntano e basta (05, regola 5). L'id nasce qui,
+  /// così una risposta persa per strada non la aggiunge due volte.
   Future<VoceLista> aggiungiVoce({
     required String viaggioId,
     required String testo,
     int quantita = 1,
+    TipoLista lista = TipoLista.personale,
+    String? portaChi,
   }) async {
     final io = _io;
     final pulito = testoVoce(testo);
@@ -1198,8 +1252,9 @@ class Archivio {
               'viaggio_id': viaggioId,
               'testo': pulito,
               'quantita': quantitaValida(quantita),
-              'tipo': listaDellaFase.codice,
+              'tipo': lista.codice,
               'proprietario_id': io,
+              'assegnato_a': lista == TipoLista.viaggio ? portaChi : null,
               'creato_da': io,
             },
             onConflict: 'id',
@@ -1209,7 +1264,7 @@ class Archivio {
       messaggi: const {
         '42501':
             'Il server non l\'ha accettata: forse non fai più parte di questo '
-            'viaggio.',
+            'viaggio, o non ne fa più parte chi doveva portarla.',
       },
     );
     final riga =
@@ -1226,10 +1281,10 @@ class Archivio {
     )..where((v) => v.id.equals(id))).getSingle());
   }
 
-  /// Cambia una voce: il testo, quante. Con la versione che la persona ha
-  /// visto: due testi non si fondono mai, e se qualcuno l'ha cambiata nel
-  /// frattempo si mostrano le due versioni (02 §3). Prima parte quello che è
-  /// in coda, così la voce ha la sua versione del server.
+  /// Cambia una voce: il testo, quante, chi la porta. Con la versione che la
+  /// persona ha visto: due testi non si fondono mai, e se qualcuno l'ha
+  /// cambiata nel frattempo si mostrano le due versioni (02 §3). Prima parte
+  /// quello che è in coda, così la voce ha la sua versione del server.
   Future<void> modificaVoce(VoceLista voce, Map<String, Object?> valori) async {
     await coda.svuota();
     final attuale = await (_db.select(
@@ -1249,6 +1304,83 @@ class Archivio {
   Future<void> togliVoce(VoceLista voce) => modificaVoce(voce, {
     'eliminato_il': DateTime.now().toUtc().toIso8601String(),
   });
+
+  /// Sposta una voce nell'altra lista: da quella del viaggio alla propria, o
+  /// il contrario (05, «Voce»). Sul server la voce si toglie da una lista e
+  /// ne nasce una nuova nell'altra, insieme o niente (`sposta_voce`): chi
+  /// aveva la vecchia la vede togliere. Si sposta com'è sul server: chi ha
+  /// cambiato qualcosa nel foglio prima lo salva.
+  ///
+  /// Con la versione che la persona ha visto. Se intanto qualcuno l'ha
+  /// cambiata — l'ha spuntata, l'ha riscritta — si guarda com'è adesso: se la
+  /// si può ancora spostare si sposta quella, che non porta niente di scritto
+  /// da chi sposta; se intanto l'ha presa un altro, resta dov'è.
+  Future<VoceLista> spostaVoce(VoceLista voce) async {
+    final io = _io;
+    if (io == null) throw const ErroreTrolley('Serve l\'accesso.');
+    await coda.svuota();
+    final nuova = const Uuid().v4();
+    final attuale = await (_db.select(
+      _db.vociLista,
+    )..where((v) => v.id.equals(voce.id))).getSingleOrNull();
+    var versione = voce.versione == 0 ? attuale?.versione ?? 0 : voce.versione;
+    final lista = TipoLista.values.byName(voce.tipo);
+    Future<void> siPuoSpostare(
+      String? assegnatoA, {
+      bool intanto = false,
+    }) async {
+      final presenti = {
+        for (final (p, _) in await osservaPartecipanti(voce.viaggioId).first)
+          p.utenteId,
+      };
+      final porta = chiLaPorta(assegnatoA, presenti);
+      if (siSposta(lista: lista, portaChi: porta, io: io)) return;
+      final nome = (await osservaNomi(voce.viaggioId).first)[porta];
+      throw ErroreTrolley(
+        '${intanto ? 'Intanto l\'ha presa' : 'La porta'} '
+        '${nome ?? 'qualcun altro'}: resta nella lista del viaggio.',
+      );
+    }
+
+    await siPuoSpostare(attuale?.assegnatoA ?? voce.assegnatoA);
+    for (var giro = 1; ; giro++) {
+      try {
+        final righe = await alServer(
+          () => _server.rpc<Map<String, dynamic>>(
+            'sposta_voce',
+            params: {
+              'p_voce': voce.id,
+              'p_versione': versione,
+              'p_nuova': nuova,
+            },
+          ),
+          rete: rete,
+        );
+        await _db.transaction(() async {
+          await coda.nellaCopiaVoce(righe['vecchia'] as Map<String, dynamic>);
+          await coda.nellaCopiaVoce(righe['nuova'] as Map<String, dynamic>);
+        });
+        return (await (_db.select(
+          _db.vociLista,
+        )..where((v) => v.id.equals(nuova))).getSingle());
+      } on ErroreTrolley catch (e) {
+        if (e.codice == CodiciServer.nonTrovato) {
+          await _nonCePiu(_voceVersionata(voce.id));
+        }
+        if (e.codice != CodiciServer.versioneSuperata || giro >= 3) rethrow;
+        final adesso = await alServer(
+          _rileggi('voce_lista', voce.id),
+          rete: rete,
+        );
+        if (adesso == null || adesso['eliminato_il'] != null) {
+          await _nonCePiu(_voceVersionata(voce.id));
+        }
+        await coda.nellaCopiaVoce(adesso);
+        await siPuoSpostare(adesso['assegnato_a'] as String?, intanto: true);
+        versione = adesso['versione']! as int;
+      }
+    }
+  }
 
   // ─── Note: le scritture che richiedono la rete ───────────────────────────
 
@@ -1345,15 +1477,24 @@ class Archivio {
   );
 
   /// «Tienile tutte e due»: quella del server resta com'è, e la propria
-  /// diventa una voce nuova. Solo dove due versioni possono convivere.
+  /// diventa una voce nuova, nella stessa lista dell'altra. Solo dove due
+  /// versioni possono convivere.
   Future<void> tieniTutteEDue(Conflitto conflitto) async {
     if (!conflitto.possonoConvivere) {
       throw const ErroreTrolley('Qui si sceglie una delle due versioni.');
     }
+    final altra = await (_db.select(
+      _db.vociLista,
+    )..where((v) => v.id.equals(conflitto.id))).getSingleOrNull();
+    final lista = altra == null
+        ? TipoLista.personale
+        : TipoLista.values.byName(altra.tipo);
     await aggiungiVoce(
       viaggioId: conflitto.viaggioId,
       testo: conflitto.mia['testo']! as String,
       quantita: conflitto.mia['quantita']! as int,
+      lista: lista,
+      portaChi: conflitto.mia['assegnato_a'] as String?,
     );
   }
 

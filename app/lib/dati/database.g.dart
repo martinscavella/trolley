@@ -5260,6 +5260,17 @@ class $VociListaTable extends VociLista
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _lasciataDaMeta = const VerificationMeta(
+    'lasciataDa',
+  );
+  @override
+  late final GeneratedColumn<String> lasciataDa = GeneratedColumn<String>(
+    'lasciata_da',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _spuntataMeta = const VerificationMeta(
     'spuntata',
   );
@@ -5308,6 +5319,7 @@ class $VociListaTable extends VociLista
     tipo,
     proprietarioId,
     assegnatoA,
+    lasciataDa,
     spuntata,
     creatoDa,
     creatoIl,
@@ -5406,6 +5418,12 @@ class $VociListaTable extends VociLista
         assegnatoA.isAcceptableOrUnknown(data['assegnato_a']!, _assegnatoAMeta),
       );
     }
+    if (data.containsKey('lasciata_da')) {
+      context.handle(
+        _lasciataDaMeta,
+        lasciataDa.isAcceptableOrUnknown(data['lasciata_da']!, _lasciataDaMeta),
+      );
+    }
     if (data.containsKey('spuntata')) {
       context.handle(
         _spuntataMeta,
@@ -5479,6 +5497,10 @@ class $VociListaTable extends VociLista
         DriftSqlType.string,
         data['${effectivePrefix}assegnato_a'],
       ),
+      lasciataDa: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lasciata_da'],
+      ),
       spuntata: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}spuntata'],
@@ -5516,6 +5538,10 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
   final String tipo;
   final String proprietarioId;
   final String? assegnatoA;
+
+  /// Chi la portava quando ha lasciato il viaggio: l'avviso delle voci
+  /// tornate libere (05, casi limite). Lo scrive solo il server.
+  final String? lasciataDa;
   final bool spuntata;
 
   /// Chi l'ha aggiunta: il primo contributo di un invitato si riconosce così.
@@ -5534,6 +5560,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     required this.tipo,
     required this.proprietarioId,
     this.assegnatoA,
+    this.lasciataDa,
     required this.spuntata,
     required this.creatoDa,
     required this.creatoIl,
@@ -5554,6 +5581,9 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     map['proprietario_id'] = Variable<String>(proprietarioId);
     if (!nullToAbsent || assegnatoA != null) {
       map['assegnato_a'] = Variable<String>(assegnatoA);
+    }
+    if (!nullToAbsent || lasciataDa != null) {
+      map['lasciata_da'] = Variable<String>(lasciataDa);
     }
     map['spuntata'] = Variable<bool>(spuntata);
     map['creato_da'] = Variable<String>(creatoDa);
@@ -5577,6 +5607,9 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
       assegnatoA: assegnatoA == null && nullToAbsent
           ? const Value.absent()
           : Value(assegnatoA),
+      lasciataDa: lasciataDa == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lasciataDa),
       spuntata: Value(spuntata),
       creatoDa: Value(creatoDa),
       creatoIl: Value(creatoIl),
@@ -5599,6 +5632,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
       tipo: serializer.fromJson<String>(json['tipo']),
       proprietarioId: serializer.fromJson<String>(json['proprietarioId']),
       assegnatoA: serializer.fromJson<String?>(json['assegnatoA']),
+      lasciataDa: serializer.fromJson<String?>(json['lasciataDa']),
       spuntata: serializer.fromJson<bool>(json['spuntata']),
       creatoDa: serializer.fromJson<String>(json['creatoDa']),
       creatoIl: serializer.fromJson<String>(json['creatoIl']),
@@ -5618,6 +5652,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
       'tipo': serializer.toJson<String>(tipo),
       'proprietarioId': serializer.toJson<String>(proprietarioId),
       'assegnatoA': serializer.toJson<String?>(assegnatoA),
+      'lasciataDa': serializer.toJson<String?>(lasciataDa),
       'spuntata': serializer.toJson<bool>(spuntata),
       'creatoDa': serializer.toJson<String>(creatoDa),
       'creatoIl': serializer.toJson<String>(creatoIl),
@@ -5635,6 +5670,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     String? tipo,
     String? proprietarioId,
     Value<String?> assegnatoA = const Value.absent(),
+    Value<String?> lasciataDa = const Value.absent(),
     bool? spuntata,
     String? creatoDa,
     String? creatoIl,
@@ -5649,6 +5685,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     tipo: tipo ?? this.tipo,
     proprietarioId: proprietarioId ?? this.proprietarioId,
     assegnatoA: assegnatoA.present ? assegnatoA.value : this.assegnatoA,
+    lasciataDa: lasciataDa.present ? lasciataDa.value : this.lasciataDa,
     spuntata: spuntata ?? this.spuntata,
     creatoDa: creatoDa ?? this.creatoDa,
     creatoIl: creatoIl ?? this.creatoIl,
@@ -5673,6 +5710,9 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
       assegnatoA: data.assegnatoA.present
           ? data.assegnatoA.value
           : this.assegnatoA,
+      lasciataDa: data.lasciataDa.present
+          ? data.lasciataDa.value
+          : this.lasciataDa,
       spuntata: data.spuntata.present ? data.spuntata.value : this.spuntata,
       creatoDa: data.creatoDa.present ? data.creatoDa.value : this.creatoDa,
       creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
@@ -5692,6 +5732,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
           ..write('tipo: $tipo, ')
           ..write('proprietarioId: $proprietarioId, ')
           ..write('assegnatoA: $assegnatoA, ')
+          ..write('lasciataDa: $lasciataDa, ')
           ..write('spuntata: $spuntata, ')
           ..write('creatoDa: $creatoDa, ')
           ..write('creatoIl: $creatoIl')
@@ -5711,6 +5752,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
     tipo,
     proprietarioId,
     assegnatoA,
+    lasciataDa,
     spuntata,
     creatoDa,
     creatoIl,
@@ -5729,6 +5771,7 @@ class VoceLista extends DataClass implements Insertable<VoceLista> {
           other.tipo == this.tipo &&
           other.proprietarioId == this.proprietarioId &&
           other.assegnatoA == this.assegnatoA &&
+          other.lasciataDa == this.lasciataDa &&
           other.spuntata == this.spuntata &&
           other.creatoDa == this.creatoDa &&
           other.creatoIl == this.creatoIl);
@@ -5745,6 +5788,7 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
   final Value<String> tipo;
   final Value<String> proprietarioId;
   final Value<String?> assegnatoA;
+  final Value<String?> lasciataDa;
   final Value<bool> spuntata;
   final Value<String> creatoDa;
   final Value<String> creatoIl;
@@ -5760,6 +5804,7 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     this.tipo = const Value.absent(),
     this.proprietarioId = const Value.absent(),
     this.assegnatoA = const Value.absent(),
+    this.lasciataDa = const Value.absent(),
     this.spuntata = const Value.absent(),
     this.creatoDa = const Value.absent(),
     this.creatoIl = const Value.absent(),
@@ -5776,6 +5821,7 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     required String tipo,
     required String proprietarioId,
     this.assegnatoA = const Value.absent(),
+    this.lasciataDa = const Value.absent(),
     required bool spuntata,
     required String creatoDa,
     required String creatoIl,
@@ -5802,6 +5848,7 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     Expression<String>? tipo,
     Expression<String>? proprietarioId,
     Expression<String>? assegnatoA,
+    Expression<String>? lasciataDa,
     Expression<bool>? spuntata,
     Expression<String>? creatoDa,
     Expression<String>? creatoIl,
@@ -5818,6 +5865,7 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
       if (tipo != null) 'tipo': tipo,
       if (proprietarioId != null) 'proprietario_id': proprietarioId,
       if (assegnatoA != null) 'assegnato_a': assegnatoA,
+      if (lasciataDa != null) 'lasciata_da': lasciataDa,
       if (spuntata != null) 'spuntata': spuntata,
       if (creatoDa != null) 'creato_da': creatoDa,
       if (creatoIl != null) 'creato_il': creatoIl,
@@ -5836,6 +5884,7 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     Value<String>? tipo,
     Value<String>? proprietarioId,
     Value<String?>? assegnatoA,
+    Value<String?>? lasciataDa,
     Value<bool>? spuntata,
     Value<String>? creatoDa,
     Value<String>? creatoIl,
@@ -5852,6 +5901,7 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
       tipo: tipo ?? this.tipo,
       proprietarioId: proprietarioId ?? this.proprietarioId,
       assegnatoA: assegnatoA ?? this.assegnatoA,
+      lasciataDa: lasciataDa ?? this.lasciataDa,
       spuntata: spuntata ?? this.spuntata,
       creatoDa: creatoDa ?? this.creatoDa,
       creatoIl: creatoIl ?? this.creatoIl,
@@ -5892,6 +5942,9 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
     if (assegnatoA.present) {
       map['assegnato_a'] = Variable<String>(assegnatoA.value);
     }
+    if (lasciataDa.present) {
+      map['lasciata_da'] = Variable<String>(lasciataDa.value);
+    }
     if (spuntata.present) {
       map['spuntata'] = Variable<bool>(spuntata.value);
     }
@@ -5920,6 +5973,7 @@ class VociListaCompanion extends UpdateCompanion<VoceLista> {
           ..write('tipo: $tipo, ')
           ..write('proprietarioId: $proprietarioId, ')
           ..write('assegnatoA: $assegnatoA, ')
+          ..write('lasciataDa: $lasciataDa, ')
           ..write('spuntata: $spuntata, ')
           ..write('creatoDa: $creatoDa, ')
           ..write('creatoIl: $creatoIl, ')
@@ -11296,6 +11350,7 @@ typedef $$VociListaTableCreateCompanionBuilder = VociListaCompanion Function({
   required String tipo,
   required String proprietarioId,
   Value<String?> assegnatoA,
+  Value<String?> lasciataDa,
   required bool spuntata,
   required String creatoDa,
   required String creatoIl,
@@ -11312,6 +11367,7 @@ typedef $$VociListaTableUpdateCompanionBuilder = VociListaCompanion Function({
   Value<String> tipo,
   Value<String> proprietarioId,
   Value<String?> assegnatoA,
+  Value<String?> lasciataDa,
   Value<bool> spuntata,
   Value<String> creatoDa,
   Value<String> creatoIl,
@@ -11374,6 +11430,11 @@ class $$VociListaTableFilterComposer
 
   ColumnFilters<String> get assegnatoA => $composableBuilder(
     column: $table.assegnatoA,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lasciataDa => $composableBuilder(
+    column: $table.lasciataDa,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11452,6 +11513,11 @@ class $$VociListaTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get lasciataDa => $composableBuilder(
+    column: $table.lasciataDa,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get spuntata => $composableBuilder(
     column: $table.spuntata,
     builder: (column) => ColumnOrderings(column),
@@ -11515,6 +11581,11 @@ class $$VociListaTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get lasciataDa => $composableBuilder(
+    column: $table.lasciataDa,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get spuntata =>
       $composableBuilder(column: $table.spuntata, builder: (column) => column);
 
@@ -11566,6 +11637,7 @@ class $$VociListaTableTableManager
                 Value<String> tipo = const Value.absent(),
                 Value<String> proprietarioId = const Value.absent(),
                 Value<String?> assegnatoA = const Value.absent(),
+                Value<String?> lasciataDa = const Value.absent(),
                 Value<bool> spuntata = const Value.absent(),
                 Value<String> creatoDa = const Value.absent(),
                 Value<String> creatoIl = const Value.absent(),
@@ -11581,6 +11653,7 @@ class $$VociListaTableTableManager
                 tipo: tipo,
                 proprietarioId: proprietarioId,
                 assegnatoA: assegnatoA,
+                lasciataDa: lasciataDa,
                 spuntata: spuntata,
                 creatoDa: creatoDa,
                 creatoIl: creatoIl,
@@ -11598,6 +11671,7 @@ class $$VociListaTableTableManager
                 required String tipo,
                 required String proprietarioId,
                 Value<String?> assegnatoA = const Value.absent(),
+                Value<String?> lasciataDa = const Value.absent(),
                 required bool spuntata,
                 required String creatoDa,
                 required String creatoIl,
@@ -11613,6 +11687,7 @@ class $$VociListaTableTableManager
                 tipo: tipo,
                 proprietarioId: proprietarioId,
                 assegnatoA: assegnatoA,
+                lasciataDa: lasciataDa,
                 spuntata: spuntata,
                 creatoDa: creatoDa,
                 creatoIl: creatoIl,

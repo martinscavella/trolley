@@ -216,6 +216,8 @@ Map<String, Object?> rigaDiVoce(
   int quantita = 1,
   String tipo = 'personale',
   String proprietario = idDiProva,
+  String? assegnatoA,
+  String? lasciataDa,
   bool spuntata = false,
   String creatoDa = idDiProva,
   String creatoIl = _istante,
@@ -227,7 +229,8 @@ Map<String, Object?> rigaDiVoce(
   'quantita': quantita,
   'tipo': tipo,
   'proprietario_id': proprietario,
-  'assegnato_a': null,
+  'assegnato_a': assegnatoA,
+  'lasciata_da': lasciataDa,
   'spuntata': spuntata,
   'creato_da': creatoDa,
   'creato_il': creatoIl,
@@ -419,6 +422,7 @@ class ServerFinto {
           return _errore('TR412', 'prima passa il ruolo');
         }
         mia['stato'] = 'uscito';
+        _liberaVoci(_corpo(r)['p_viaggio'], idDiProva);
         return http.Response('', 204);
       case 'POST /rest/v1/rpc/rimuovi_partecipante':
       case 'POST /rest/v1/rpc/passa_il_ruolo':
@@ -441,6 +445,10 @@ class ServerFinto {
           for (final i in inviti) {
             if (i['viaggio_id'] == viaggio) i['eliminato_il'] ??= _istante;
           }
+          return risposta({
+            ..._righe(viaggio),
+            'voci': _liberaVoci(viaggio, altra['utente_id']),
+          });
         } else {
           mia['ruolo'] = 'partecipante';
           altra['ruolo'] = 'creatore';
@@ -611,6 +619,9 @@ class ServerFinto {
           if (ignora) return risposta(const [], 201);
           return _errore('23505', 'voce già presente');
         }
+        if (!_puoPortarla(c['viaggio_id'], c['assegnato_a'])) {
+          return _errore('42501', 'assegnatario non nel viaggio');
+        }
         final riga = {
           ...rigaDiVoce(c['id'] as String, viaggio: c['viaggio_id'] as String),
           ...c,
@@ -627,11 +638,51 @@ class ServerFinto {
             valori['versione'] != voce['versione']) {
           return _errore('TR409', 'versione superata');
         }
+        if (!_puoPortarla(
+          voce['viaggio_id'],
+          valori.containsKey('assegnato_a')
+              ? valori['assegnato_a']
+              : voce['assegnato_a'],
+        )) {
+          return _errore('42501', 'assegnatario non nel viaggio');
+        }
         voce
           ..addAll(valori)
           ..['versione'] = (voce['versione']! as int) + 1
           ..['modificato_da'] = idDiProva;
+        // Come privato.voce_presa: presa da qualcuno, non è più tornata libera.
+        if (voce['assegnato_a'] != null) voce['lasciata_da'] = null;
         return risposta([voce]);
+      case 'POST /rest/v1/rpc/sposta_voce':
+        final c = _corpo(r);
+        final gia = voci.where((x) => x['id'] == c['p_nuova']).firstOrNull;
+        final vecchia = voci.where((x) => x['id'] == c['p_voce']).firstOrNull;
+        if (gia != null) return risposta({'vecchia': vecchia, 'nuova': gia});
+        if (vecchia == null || vecchia['eliminato_il'] != null) {
+          return _errore('TR404', 'voce non trovata');
+        }
+        if (vecchia['versione'] != c['p_versione']) {
+          return _errore('TR409', 'versione superata');
+        }
+        vecchia
+          ..['eliminato_il'] = DateTime.now().toUtc().toIso8601String()
+          ..['versione'] = (vecchia['versione']! as int) + 1
+          ..['modificato_da'] = idDiProva;
+        final nelViaggio = vecchia['tipo'] == 'personale';
+        final nuova = {
+          ...rigaDiVoce(
+            c['p_nuova'] as String,
+            viaggio: vecchia['viaggio_id'] as String,
+            testo: vecchia['testo'] as String,
+            quantita: vecchia['quantita'] as int,
+            tipo: nelViaggio ? 'viaggio' : 'personale',
+            assegnatoA: nelViaggio ? idDiProva : null,
+            spuntata: vecchia['spuntata'] as bool,
+          ),
+          'creato_il': DateTime.now().toUtc().toIso8601String(),
+        };
+        voci.add(nuova);
+        return risposta({'vecchia': vecchia, 'nuova': nuova});
       case 'GET /rest/v1/nota':
         return risposta(_filtra(note, r.url.queryParameters));
       case 'POST /rest/v1/nota':
@@ -832,6 +883,22 @@ class ServerFinto {
 
   Map<String, Object?>? _viaggio(String id) =>
       viaggi.where((v) => v['id'] == id).firstOrNull;
+
+  /// Come le regole di accesso della 2.4: una voce la porta nessuno, o
+  /// qualcuno che è nel viaggio adesso.
+  bool _puoPortarla(Object? viaggio, Object? utente) =>
+      utente == null || _partecipazione(viaggio, utente)?['stato'] == 'attivo';
+
+  /// Come privato.libera_voci: le voci che [utente] portava tornano libere,
+  /// e si sa chi le portava.
+  List<Map<String, Object?>> _liberaVoci(Object? viaggio, Object? utente) => [
+    for (final v in voci)
+      if (v['viaggio_id'] == viaggio && v['assegnato_a'] == utente)
+        v
+          ..['lasciata_da'] = utente
+          ..['assegnato_a'] = null
+          ..['versione'] = (v['versione']! as int) + 1,
+  ];
 
   Map<String, Object?>? _partecipazione(Object? viaggio, Object? utente) =>
       partecipazioni

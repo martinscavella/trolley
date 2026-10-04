@@ -281,7 +281,7 @@ Due conseguenze: il tasso più recente entra nell'insieme dei dati essenziali of
 
 ### Cose da portare: una lista sola, personale, fino alla 2.4 (fase 1.5)
 
-Nella fase 1.5 ogni persona ha **una lista per viaggio, ed è personale**: la vede solo lei, anche quando nel viaggio arriva qualcun altro. La lista del viaggio da dividere con i compagni, e chi porta cosa, arrivano con la 2.4.
+Nella fase 1.5 ogni persona ha **una lista per viaggio, ed è personale**: la vede solo lei, anche quando nel viaggio arriva qualcun altro. La lista del viaggio da dividere con i compagni, e chi porta cosa, arrivano con la 2.4 (più sotto).
 
 **Perché personale e non del viaggio**: chi viaggia da solo scrive la lista per sé — lo spazzolino, le medicine. Se la lista nascesse del viaggio, il primo invitato si troverebbe davanti le cose di un altro senza che nessuno l'abbia scelto (05, regola 3). Il contrario non fa danni: quando arriva la 2.4, una voce si potrà spostare nella lista comune.
 
@@ -291,6 +291,22 @@ Come funziona:
 - Spuntata, una voce **resta un attimo al suo posto e poi scende in «In valigia»**; non sparisce mai (regola 6). Quando è tutto dentro, il timbro **FATTA**.
 - **«Rimetti tutto da mettere»** toglie tutte le spunte, per rifare la valigia al ritorno. Sono spunte: funziona anche senza rete.
 - Senza rete si legge e si spunta; **aggiungere, cambiare ed eliminare richiedono la rete** (regola 5). Aggiungere una voce non è uno dei quattro gesti offline: la colonna si allarga solo se H4 lo chiede.
+
+### La lista del viaggio: come funziona (fase 2.4)
+
+Scelto con la fase 2.4 (tela, file 42–44).
+
+- **Due liste, solo quando servono.** Con qualcun altro nel viaggio, in cima alle cose da portare c'è il selettore: «Del viaggio», che vedono tutti, e «Mie», che vede solo la persona (05, regole 1–3). Da soli c'è la propria e basta, come nella 1.5. Se gli altri escono e la lista del viaggio ha ancora delle voci, il selettore resta: le voci non spariscono.
+- **Si apre sulla lista del viaggio**, a meno che sia vuota e la propria no: chi aveva scritto la sua lista prima che arrivassero gli altri la ritrova. Una volta aperta, la scelta non cambia da sola mentre si guarda.
+- **Ogni voce del viaggio dice chi la porta**, con le sue iniziali, o «Libera». Nella voce: «Chi la porta?» — nessuno, tu, o uno di quelli che sono nel viaggio adesso. Chi è uscito non si sceglie. Chi l'ha aggiunta si legge sotto il titolo.
+- **Chi spunta una voce del viaggio: chiunque.** Spuntato è spuntato (02 §2), anche quando la porta un altro: chi vede Marco mettere in valigia l'adattatore può segnarlo. Spuntare resta uno dei quattro gesti offline, nelle due liste.
+- **«Chi la porta» entra nelle due versioni** (02 §3): se due persone prendono la stessa voce insieme, si mostrano tutte e due. È proprio il caso dei due caricabatterie. «Tienile tutte e due» fa nascere la voce in più nella stessa lista dell'altra, con chi la porta.
+- **Spostare una voce da una lista all'altra.** Dal foglio della voce: «Spostala nella tua lista» per una voce del viaggio libera o tua (quella che porta un altro gli sparirebbe di mano); «Spostala nella lista del viaggio» per una propria, che allora la porti tu, perché la tenevi fra le tue. La spunta resta. Sul server la voce si toglie da una lista e ne nasce una nuova nell'altra, insieme o niente: chi aveva la vecchia la vede togliere, come ogni voce tolta. Quello che si è cambiato nel foglio si salva prima; se intanto un altro l'ha presa, resta dov'è e lo si dice.
+- **Chi lascia il viaggio libera le voci che portava**, nel momento in cui esce o viene tolto: lo fa il server, nella stessa operazione, e ricorda chi le portava. In cima alla lista del viaggio un avviso dice «Luca ha lasciato il viaggio: Crema solare e Ombrellone, che portava, sono tornate libere», finché non si tocca «Ho capito» (su quel telefono) o qualcuno le prende. Il dialogo per uscire e quello per togliere qualcuno lo dicono prima.
+- **Rifare la valigia al ritorno**: nella propria lista «…» rimette tutto da mettere; in quella del viaggio solo quello che porti tu, perché le altre spunte sono le valigie degli altri.
+- **Nella schermata del viaggio** conta la propria valigia: le proprie voci e quelle del viaggio che porta la persona. Le voci del viaggio che non porta ancora nessuno si contano a parte.
+- **Prendere una voce del viaggio è un contributo**: per chi è appena entrato da un invito conta come primo contributo (H3) e chiude il benvenuto, come aggiungerne una (03, regola 9).
+- Senza rete le liste si leggono e si spuntano; aggiungere, cambiare, scegliere chi porta e spostare richiedono la rete, e lo dicono prima (05, regola 5).
 
 ---
 

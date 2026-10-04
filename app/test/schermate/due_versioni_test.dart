@@ -227,4 +227,69 @@ void main() {
     expect(pulsante('Tienile tutte e due'), findsNothing);
     expect(find.text('Serve la connessione'), findsOneWidget);
   });
+
+  testWidgets('una voce del viaggio: si vede chi la porta; se nella propria '
+      'la portava chi è uscito, la propria non si tiene', (tester) async {
+    const luca = '33333333-3333-4333-8333-333333333333';
+    ambiente.server
+      ..partecipazioni.add(
+        rigaPartecipazione(
+          'v',
+          utente: luca,
+          ruolo: 'partecipante',
+          stato: 'uscito',
+        ),
+      )
+      ..utenti.add({
+        'id': luca,
+        'nome': 'Luca',
+        'versione': 1,
+        'eliminato_il': null,
+      });
+    await viaggio(
+      tester,
+      voci: [
+        rigaDiVoce(
+          'a',
+          viaggio: 'v',
+          testo: 'Adattatore',
+          tipo: 'viaggio',
+          lasciataDa: luca,
+        ),
+      ],
+    );
+    final conflitto = Conflitto(
+      cosa: CosaInConflitto.voce,
+      id: 'a',
+      viaggioId: 'v',
+      mia: {
+        'testo': 'Adattatore universale',
+        'quantita': 1,
+        'assegnato_a': luca,
+        campoEliminato: false,
+      },
+      loro: {
+        'testo': 'Adattatore',
+        'quantita': 1,
+        'assegnato_a': null,
+        campoEliminato: false,
+      },
+      versioneLoro: 2,
+      autoreId: marco,
+      salvataIl: DateTime.now(),
+    );
+    await ambiente.monta(tester, SchermataDueVersioni(conflitto: conflitto));
+    // Il contesto legge nomi, voce e chi c'è dalla copia.
+    await aspetta(tester);
+    await aspetta(tester);
+
+    expect(find.text('Chi la porta'), findsNWidgets(2));
+    expect(find.text('Luca'), findsOneWidget);
+    expect(find.text('Nessuno'), findsOneWidget);
+    expect(find.text('Luca non è più nel viaggio'), findsWidgets);
+    await tester.tap(pulsante('Tieni la tua'));
+    await aspetta(tester);
+    expect(find.text('Due versioni'), findsOneWidget);
+    expect(ambiente.server.chiamate('PATCH', '/rest/v1/voce_lista'), isEmpty);
+  });
 }

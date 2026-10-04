@@ -16,6 +16,7 @@ import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
 import '../dominio/divisione.dart';
 import '../dominio/giornate.dart';
+import '../dominio/liste.dart';
 import '../dominio/periodo.dart';
 import '../dominio/tappe.dart';
 import '../dominio/valute.dart';
@@ -203,7 +204,7 @@ class _SchermataDueVersioniState extends State<SchermataDueVersioni> {
             etichetta: parole.tieniLaTua,
             pericolo: c.laTogli,
             inCorso: _inCorso == SceltaVersione.tua,
-            motivo: scrive ?? contesto.nonEntra,
+            motivo: scrive ?? contesto.nonSiTiene,
             onPressed: _inCorso == null
                 ? () => _scegli(SceltaVersione.tua)
                 : null,
@@ -227,7 +228,7 @@ class _SchermataDueVersioniState extends State<SchermataDueVersioni> {
                 android: Icons.format_list_bulleted_rounded,
               ),
               inCorso: _inCorso == SceltaVersione.entrambe,
-              motivo: scrive,
+              motivo: scrive ?? contesto.nonSiTiene,
               onPressed: _inCorso == null
                   ? () => _scegli(SceltaVersione.entrambe)
                   : null,
@@ -390,12 +391,16 @@ class _Contesto {
     required this.io,
     required this.nomi,
     required this.giorni,
-    required this.nonEntra,
+    required this.nonSiTiene,
+    this.lista,
   });
 
   final String? io;
   final Map<String, String> nomi;
   final Map<String, DateTime> giorni;
+
+  /// La lista di una voce: in quella del viaggio conta anche chi la porta.
+  final TipoLista? lista;
 
   /// «Tu», «Marco».
   String? chi(String? id) => id == null
@@ -404,8 +409,9 @@ class _Contesto {
       ? 'Tu'
       : nomi[id] ?? '?';
 
-  /// Perché la propria tappa non si può tenere: non entra più nel giorno.
-  final String? nonEntra;
+  /// Perché la propria versione non si può tenere: la tappa non entra più nel
+  /// giorno, la voce la porterebbe chi non è più nel viaggio.
+  final String? nonSiTiene;
 
   static Future<_Contesto> di(Servizi servizi, Conflitto c) async {
     final archivio = servizi.archivio;
@@ -413,14 +419,42 @@ class _Contesto {
     final giorni = c.cosa == CosaInConflitto.tappa
         ? await archivio.osservaGiorni(c.viaggioId).first
         : const <Giorno>[];
+    final voce = c.cosa == CosaInConflitto.voce
+        ? await archivio.leggiVoce(c.id)
+        : null;
     return _Contesto(
       io: archivio.io,
       nomi: nomi,
       giorni: {for (final g in giorni) g.id: g.finestra.data},
-      nonEntra: c.cosa == CosaInConflitto.tappa
-          ? _nonEntra(c, giorni, await archivio.osservaTappe(c.viaggioId).first)
-          : null,
+      lista: voce == null ? null : TipoLista.values.byName(voce.tipo),
+      nonSiTiene: switch (c.cosa) {
+        CosaInConflitto.tappa => _nonEntra(
+          c,
+          giorni,
+          await archivio.osservaTappe(c.viaggioId).first,
+        ),
+        CosaInConflitto.voce => _nonCePiu(
+          c,
+          nomi,
+          await archivio.osservaPartecipanti(c.viaggioId).first,
+        ),
+        _ => null,
+      },
     );
+  }
+
+  /// Una voce del viaggio si dà solo a chi c'è (05, regola 2): se intanto
+  /// chi doveva portarla nella propria versione ha lasciato il viaggio, la
+  /// propria non si tiene, né da sola né come voce in più.
+  static String? _nonCePiu(
+    Conflitto c,
+    Map<String, String> nomi,
+    List<(Partecipazione, Utente?)> presenti,
+  ) {
+    final porta = c.mia['assegnato_a'] as String?;
+    if (c.laTogli || porta == null) return null;
+    if (presenti.any((p) => p.$1.utenteId == porta)) return null;
+    return '${nomi[porta] ?? 'Chi doveva portarla'} non è più nel viaggio';
   }
 
   /// La capienza è l'unica regola che rifiuta (04, regola 4): la propria
@@ -530,6 +564,10 @@ List<_RigaConfronto> _righe(Conflitto c, _Contesto contesto) {
     CosaInConflitto.voce => [
       riga('Cosa', ['testo'], (v) => v['testo'] as String?),
       riga('Quante', ['quantita'], (v) => '${v['quantita']}'),
+      if (contesto.lista == TipoLista.viaggio)
+        riga('Chi la porta', [
+          'assegnato_a',
+        ], (v) => contesto.chi(v['assegnato_a'] as String?) ?? 'Nessuno'),
     ],
     CosaInConflitto.viaggio => [
       riga('Quando', [

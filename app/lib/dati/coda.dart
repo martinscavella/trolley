@@ -179,6 +179,7 @@ VociListaCompanion rigaVoce(Map<String, dynamic> r, DateTime adesso) =>
       tipo: r['tipo'] as String,
       proprietarioId: r['proprietario_id'] as String,
       assegnatoA: Value(r['assegnato_a'] as String?),
+      lasciataDa: Value(r['lasciata_da'] as String?),
       spuntata: r['spuntata'] as bool,
       creatoDa: r['creato_da'] as String,
       creatoIl: r['creato_il'] as String,

@@ -15,6 +15,7 @@ import '../dati/archivio.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
+import '../dominio/liste.dart';
 import '../dominio/stato_viaggio.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
@@ -188,15 +189,27 @@ class _SchermataPartecipantiState extends State<SchermataPartecipanti> {
     // rimozione non azzera niente.
     final conto = await contoDi(archivio, widget.viaggioId);
     final saldo = saldoInParole(conto, utenteId);
+    // Le voci che porta tornano libere (05, casi limite): lo si dice prima.
+    final porta = _cosePortateDa(
+      await archivio.osservaVoci(widget.viaggioId).first,
+      utenteId,
+    );
     if (!mounted) return;
     if (!await _conferma(
       titolo: 'Togliere $nome dal viaggio?',
-      messaggio: saldo != null
-          ? 'Ha ancora un saldo aperto: $saldo. Il saldo resta anche dopo, e '
-                'quello che ha aggiunto resta con il suo nome.'
-          : 'Non vedrà più il viaggio; quello che ha aggiunto resta, con il '
-                'suo nome. I link d\'invito ancora validi si ritirano: chi deve '
-                'ancora entrare ne riceverà uno nuovo.',
+      messaggio: [
+        if (saldo != null)
+          'Ha ancora un saldo aperto: $saldo. Il saldo resta anche dopo, e '
+              'quello che ha aggiunto resta con il suo nome.'
+        else
+          'Non vedrà più il viaggio; quello che ha aggiunto resta, con il '
+              'suo nome. I link d\'invito ancora validi si ritirano: chi deve '
+              'ancora entrare ne riceverà uno nuovo.',
+        if (porta == 1)
+          'Porta una cosa della lista del viaggio, che tornerà libera.'
+        else if (porta > 1)
+          'Porta $porta cose della lista del viaggio, che torneranno libere.',
+      ].join(' '),
       azione: 'Togli',
     )) {
       return;
@@ -261,11 +274,13 @@ class _SchermataPartecipantiState extends State<SchermataPartecipanti> {
     (String, String)? passaA,
   }) async {
     final servizi = Servizi.of(context);
-    final (documenti, coda) = await (
+    final (documenti, coda, voci) = await (
       servizi.documenti.osserva(viaggio.id).first,
       servizi.archivio.coda.osserva(viaggio.id).first,
+      servizi.archivio.osservaVoci(viaggio.id).first,
     ).wait;
     final persi = coda.where((op) => op.messaDaParte).length;
+    final porto = _cosePortateDa(voci, servizi.archivio.io);
     final nome = viaggio.destinazione?.nome;
     if (!mounted) return;
     final navigatore = Navigator.of(context);
@@ -274,6 +289,11 @@ class _SchermataPartecipantiState extends State<SchermataPartecipanti> {
       messaggio: [
         if (passaA != null) '${passaA.$2} sarà responsabile del viaggio.',
         'Quello che hai aggiunto resta agli altri.',
+        if (porto == 1)
+          'La cosa che porti nella lista del viaggio tornerà libera.'
+        else if (porto > 1)
+          'Le $porto cose che porti nella lista del viaggio torneranno '
+              'libere.',
         if (documenti.length == 1)
           'Il tuo documento di questo viaggio si cancella da questo telefono.'
         else if (documenti.length > 1)
@@ -1146,3 +1166,14 @@ class _FoglioDocumentiRimasti extends StatelessWidget {
     },
   );
 }
+
+/// Quante voci della lista del viaggio porta [utenteId]: se lascia il viaggio
+/// tornano libere (05, casi limite).
+int _cosePortateDa(List<VoceLista> voci, String? utenteId) => voci
+    .where(
+      (v) =>
+          v.tipo == TipoLista.viaggio.codice &&
+          utenteId != null &&
+          v.assegnatoA == utenteId,
+    )
+    .length;
