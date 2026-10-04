@@ -20,6 +20,10 @@ I termini che in questi documenti hanno un significato preciso. Quando compaiono
 
 **Modello paritario** — Ogni partecipante a un viaggio può aggiungere e modificare, e matura gli stessi traguardi di chi il viaggio l'ha creato. L'organizzatore con poteri speciali esiste solo nei viaggi di gruppo organizzati da un ente, che non sono nell'MVP.
 
+**Responsabile del viaggio** — Il nome che l'app dà al ruolo `creatore`: l'unico che può togliere qualcuno dal viaggio. All'inizio è chi l'ha creato, ma il ruolo si può passare a un altro partecipante; ce n'è sempre esattamente uno.
+
+**Inviti in sospeso** — I link d'invito di un viaggio ancora validi. Chi ne ha uno entra; si possono ritirare tutti insieme, e togliere qualcuno li ritira da sé.
+
 **Collegamento reciproco** — Il contatto tra due persone nella parte pubblica: uno chiede, l'altro accetta, e solo allora esiste. Non è il seguito unilaterale dei social: senza il sì dell'altro non si accumula niente.
 
 **Pacchetto viaggio** — L'acquisto una tantum da €9,99 che sblocca tutto per un singolo viaggio, per sempre e per tutti i partecipanti. Si compra solo prima del viaggio.

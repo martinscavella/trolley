@@ -26,6 +26,7 @@ import 'archivio_idee.dart';
 import 'con_la_rete.dart';
 import 'impostazioni.dart';
 import 'nuovo_viaggio.dart';
+import 'partecipanti.dart';
 import 'viaggio.dart';
 
 /// I propri viaggi, divisi per stato: in corso, in programma, idee, conclusi.
@@ -268,6 +269,9 @@ class _SchermataViaggiState extends State<SchermataViaggi>
                 ),
               ),
               SliverToBoxAdapter(child: _SenzaRete(viaggi: viaggi ?? const [])),
+              // I viaggi da cui ti hanno tolto, o da cui sei uscito da un
+              // altro telefono: non spariscono in silenzio (tela, 33).
+              const SliverToBoxAdapter(child: AvvisiViaggiLasciati()),
               if (sezioni == null)
                 const SliverFillRemaining(
                   hasScrollBody: false,

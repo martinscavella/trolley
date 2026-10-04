@@ -83,12 +83,19 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 | `stato` | `invitato` · `attivo` · `uscito` · `rimosso` |
 
 **Invarianti**
-- Solo il creatore può portare un `attivo` a `rimosso`.
-- Chi passa a `uscito` o `rimosso` **non perde i propri contributi**: spese, tappe e voci restano attribuite a lui.
+- Solo il creatore può portare un `attivo` a `rimosso`, e mai se stesso.
+- Chi passa a `uscito` o `rimosso` **non perde i propri contributi**: spese, tappe e voci restano attribuite a lui, e i compagni ne vedono ancora il nome.
+- Il creatore passa a `uscito` solo dopo aver passato il ruolo. Passarlo cambia anche `viaggio.creatore_id`; `viaggio.creato_da`, chi l'ha creato davvero, non cambia mai.
+- La partecipazione non si scrive dall'app: la cambiano solo le funzioni del server, una per gesto — `accetta_invito`, `esci_dal_viaggio`, `rimuovi_partecipante`, `passa_il_ruolo`.
+- Nell'app il ruolo `creatore` si chiama «responsabile del viaggio» ([decisioni](../decisioni/prodotto.md)).
 
 ### `invito`
 
-`viaggio_id`, `token`, `creato_da`. Il token è un link, non una credenziale: chi lo riceve entra, e chi invita lo sa.
+`viaggio_id`, `token`, `creato_da`, `eliminato_il`. Il token è un link, non una credenziale: chi lo riceve entra, e chi invita lo sa. Ogni invito è un link nuovo; quelli con `eliminato_il` vuoto sono gli **inviti in sospeso**, e qualunque partecipante può ritirarli.
+
+**Invarianti**
+- Rimuovere qualcuno ritira tutti gli inviti ancora validi del viaggio.
+- Chi è `rimosso` rientra solo con un invito valido creato dal creatore attuale: per quanto detto sopra, è per forza uno creato dopo la rimozione. Chi è `uscito` rientra con qualunque invito valido.
 
 ---
 

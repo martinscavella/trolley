@@ -209,6 +209,21 @@ Tecnicamente serve un **deep link differito**: dopo l'installazione l'app deve s
 
 **Conseguenza sulla soglia di H3**: l'invitato **non vede il viaggio prima di installare**. Decide di scaricare sulla fiducia in chi lo invita e su quello che promette la pagina dello store, non su un'anteprima del contenuto. È la variante più esigente, e va tenuta presente quando si legge il 35%.
 
+### Chi c'è e gli inviti: come funziona (fase 2.1)
+
+- **Il ruolo si chiama «responsabile del viaggio».** Nei dati resta `creatore`; nell'app no, per due ragioni: il ruolo si può passare, e dopo un passaggio «ha creato il viaggio» non sarebbe più vero; e «creatore/creatrice» presuppone il genere di chi lo è, che non conosciamo. Chi ha creato il viaggio davvero resta scritto in `viaggio.creato_da`.
+- **Nel viaggio, «Chi c'è» è una riga sola** sotto il biglietto: le iniziali, i nomi, chi è responsabile. Toccandola si apre l'elenco. Da soli dice «Solo tu, per ora» e invita a invitare.
+- **Ogni «Invita qualcuno» crea un link nuovo.** Gli **inviti in sospeso** sono i link ancora validi: l'elenco dice quanti sono e chi ha creato l'ultimo, e si possono **ritirare tutti insieme** — è la risposta al link inoltrato a chi non doveva averlo (03, casi limite). Li ritira chiunque partecipi: non è un potere, è una difesa.
+- **Chi è responsabile tocca «…» su una persona**: renderla responsabile, o toglierla dal viaggio, sempre con una conferma.
+- **Togliere qualcuno ritira anche i link d'invito ancora validi**: quello con cui è entrato potrebbe essere passato di mano. Chi deve ancora entrare riceve un link nuovo.
+- **Chi è stato tolto rientra solo con un link nuovo di chi è responsabile.** Con nessun altro: rientrare è l'inverso di togliere, e sta con lo stesso potere. Prima della 2.1 chi era tolto non rientrava mai, e un errore non si poteva rimediare.
+- **Chiunque esce da solo.** Chi è responsabile prima sceglie a chi passare il ruolo, nello stesso gesto. Chi è responsabile ed è **da solo non esce**: il viaggio resterebbe senza nessuno. Eliminare un viaggio non è nell'MVP.
+- **Uscendo, i propri documenti di quel viaggio si cancellano dal telefono**, dopo che il server ha detto sì, e la conferma lo dice prima con il numero. Uscire è una scelta: tenere file che nessuna schermata mostra più non servirebbe a niente.
+- **Se ti tolgono, o esci da un altro telefono**, l'elenco dei viaggi lo dice invece di far sparire il viaggio in silenzio: perché, quante cose fatte senza rete non sono arrivate, e quanti tuoi documenti restano sul telefono, da guardare o eliminare. Qui non si cancellano da soli: non l'hai scelto tu, e possono essere il tuo biglietto.
+- **Il primo minuto di chi entra da un invito** (03, regola 9): il viaggio completo, e in cima «Sei dentro!» con tre cose sue da fare — il biglietto, una spesa, le cose da portare (biglietto e spesa solo con le date). Sparisce al primo contributo, o con la ×.
+- **«Non ci sono più»**: in fondo all'elenco chi è uscito o è stato tolto, senza distinguere i due casi, con quello che ha aggiunto che resta nel viaggio.
+- Senza rete l'elenco si legge; invitare, togliere, passare il ruolo, uscire e vedere gli inviti in sospeso richiedono la rete, e lo dicono prima.
+
 ### Documenti: solo sul telefono
 
 I documenti stanno in una cartella locale dell'app, non su un server.

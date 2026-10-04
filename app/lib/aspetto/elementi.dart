@@ -274,7 +274,9 @@ class IconaTonda extends StatelessWidget {
 }
 
 /// Il pulsante quadrato in alto: indietro, codice d'invito, altro. Scuro per
-/// tornare indietro e per l'azione che conta, bianco per il resto.
+/// tornare indietro e per l'azione che conta, bianco per il resto. Dentro una
+/// scheda bianca prende il [fondo] che gli si dà, con l'icona grafite: «…» su
+/// una persona, la × di un riquadro.
 class PulsanteTondo extends StatelessWidget {
   const PulsanteTondo({
     super.key,
@@ -282,6 +284,7 @@ class PulsanteTondo extends StatelessWidget {
     required this.etichetta,
     required this.onPressed,
     this.scuro = false,
+    this.fondo,
   });
 
   final IconData icona;
@@ -290,10 +293,15 @@ class PulsanteTondo extends StatelessWidget {
   final String etichetta;
   final VoidCallback? onPressed;
   final bool scuro;
+  final Color? fondo;
 
   @override
   Widget build(BuildContext context) {
-    final tinta = scuro ? Colori.bianco : Colori.inchiostro;
+    final tinta = scuro
+        ? Colori.bianco
+        : fondo != null
+        ? Colori.grafite
+        : Colori.inchiostro;
     return Tooltip(
       message: etichetta,
       excludeFromSemantics: true,
@@ -305,7 +313,7 @@ class PulsanteTondo extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: scuro ? Colori.inchiostro : Colori.bianco,
+            color: scuro ? Colori.inchiostro : (fondo ?? Colori.bianco),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(

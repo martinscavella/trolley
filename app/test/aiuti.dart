@@ -241,13 +241,20 @@ Map<String, Object?> rigaTasso(String valuta, num perEuro, String del) => {
   'del': del,
 };
 
-Map<String, Object?> rigaPartecipazione(String viaggio) => {
-  'id': 'p-$viaggio',
+/// Una riga di `partecipazione`: senza altro, chi è entrato ha creato il
+/// viaggio.
+Map<String, Object?> rigaPartecipazione(
+  String viaggio, {
+  String utente = idDiProva,
+  String ruolo = 'creatore',
+  String stato = 'attivo',
+}) => {
+  'id': utente == idDiProva ? 'p-$viaggio' : 'p-$viaggio-$utente',
   'viaggio_id': viaggio,
-  'utente_id': idDiProva,
-  'ruolo': 'creatore',
-  'stato': 'attivo',
-  'creato_da': idDiProva,
+  'utente_id': utente,
+  'ruolo': ruolo,
+  'stato': stato,
+  'creato_da': utente,
   'creato_il': _istante,
   'modificato_il': _istante,
   'eliminato_il': null,
@@ -272,6 +279,10 @@ class ServerFinto {
   final voci = <Map<String, Object?>>[];
   final note = <Map<String, Object?>>[];
   final tassi = <Map<String, Object?>>[];
+
+  /// I link d'invito: `token`, `viaggio_id`, `creato_da`, `creato_il`,
+  /// `eliminato_il`.
+  final inviti = <Map<String, Object?>>[];
 
   /// La configurazione, come la scrive chi gestisce il progetto.
   final configurazione = <Map<String, Object?>>[
@@ -326,9 +337,87 @@ class ServerFinto {
   Future<http.Response> _comeIlVero(http.Request r, String chiave) async {
     switch (chiave) {
       case 'GET /rest/v1/viaggio':
-        return risposta(viaggi);
+        // Chi è uscito o è stato tolto non legge più il viaggio.
+        return risposta([
+          for (final v in viaggi)
+            if (!partecipazioni.any(
+              (p) =>
+                  p['viaggio_id'] == v['id'] &&
+                  p['utente_id'] == idDiProva &&
+                  p['stato'] != 'attivo',
+            ))
+              v,
+        ]);
       case 'GET /rest/v1/partecipazione':
-        return risposta(partecipazioni);
+        return risposta(_filtra(partecipazioni, r.url.queryParameters));
+      case 'GET /rest/v1/invito':
+        return risposta(_filtra(inviti, r.url.queryParameters));
+      case 'PATCH /rest/v1/invito':
+        final valori = _corpo(r);
+        for (final i in _filtra(inviti, r.url.queryParameters)) {
+          i.addAll(valori);
+        }
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/accetta_invito':
+        final invito = inviti
+            .where(
+              (i) =>
+                  i['token'] == _corpo(r)['p_token'] &&
+                  i['eliminato_il'] == null,
+            )
+            .firstOrNull;
+        if (invito == null) return _errore('TR404', 'invito non valido');
+        final viaggio = invito['viaggio_id']! as String;
+        final mia = _partecipazione(viaggio, idDiProva);
+        if (mia == null) {
+          partecipazioni.add(
+            rigaPartecipazione(viaggio, ruolo: 'partecipante'),
+          );
+        } else if (mia['stato'] == 'rimosso') {
+          return _errore('TR403', 'rimosso dal viaggio');
+        } else {
+          mia['stato'] = 'attivo';
+        }
+        return risposta(viaggio);
+      case 'POST /rest/v1/rpc/esci_dal_viaggio':
+        final mia = _partecipazione(_corpo(r)['p_viaggio'], idDiProva);
+        if (mia == null || mia['stato'] != 'attivo') {
+          return _errore('TR404', 'non partecipi');
+        }
+        if (mia['ruolo'] == 'creatore') {
+          return _errore('TR412', 'prima passa il ruolo');
+        }
+        mia['stato'] = 'uscito';
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/rimuovi_partecipante':
+      case 'POST /rest/v1/rpc/passa_il_ruolo':
+        final c = _corpo(r);
+        final viaggio = c['p_viaggio'] as String;
+        final mia = _partecipazione(viaggio, idDiProva);
+        if (mia == null ||
+            mia['ruolo'] != 'creatore' ||
+            mia['stato'] != 'attivo') {
+          return _errore('TR403', 'non responsabile');
+        }
+        final altra = _partecipazione(viaggio, c['p_utente'] ?? c['p_a']);
+        if (altra == null ||
+            altra['ruolo'] != 'partecipante' ||
+            altra['stato'] != 'attivo') {
+          return _errore('TR404', 'non partecipa');
+        }
+        if (chiave.endsWith('rimuovi_partecipante')) {
+          altra['stato'] = 'rimosso';
+          for (final i in inviti) {
+            if (i['viaggio_id'] == viaggio) i['eliminato_il'] ??= _istante;
+          }
+        } else {
+          mia['ruolo'] = 'partecipante';
+          altra['ruolo'] = 'creatore';
+          _viaggio(viaggio)!
+            ..['creatore_id'] = altra['utente_id']
+            ..['versione'] = (_viaggio(viaggio)!['versione']! as int) + 1;
+        }
+        return risposta(_righe(viaggio));
       case 'GET /rest/v1/utente':
         return risposta(_filtra(utenti, r.url.queryParameters));
       case 'GET /rest/v1/giorno':
@@ -584,9 +673,16 @@ class ServerFinto {
           ..['versione'] = (valori['versione']! as int) + 1;
         return risposta([viaggio]);
       case 'POST /rest/v1/invito':
-        return risposta([
-          {'token': 'ABCD2345'},
-        ], 201);
+        final token = 'ABCD${2345 + inviti.length}';
+        inviti.add({
+          'token': token,
+          'viaggio_id': _corpo(r)['viaggio_id'],
+          'creato_da': idDiProva,
+          'creato_il': DateTime.now().toUtc().toIso8601String(),
+          'eliminato_il': null,
+        });
+        // L'app lo chiede con `.single()`: un oggetto, non un elenco.
+        return risposta({'token': token}, 201);
       case 'POST /rest/v1/evento':
         return http.Response('', 201);
     }
@@ -620,6 +716,11 @@ class ServerFinto {
 
   Map<String, Object?>? _viaggio(String id) =>
       viaggi.where((v) => v['id'] == id).firstOrNull;
+
+  Map<String, Object?>? _partecipazione(Object? viaggio, Object? utente) =>
+      partecipazioni
+          .where((p) => p['viaggio_id'] == viaggio && p['utente_id'] == utente)
+          .firstOrNull;
 
   /// Come privato.applica_giorni: i giorni che escono si marcano, quelli
   /// che tornano riprendono la loro riga.

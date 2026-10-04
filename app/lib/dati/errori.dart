@@ -29,6 +29,9 @@ abstract final class CodiciServer {
   static const nonPermesso = 'TR403';
   static const nonTrovato = 'TR404';
   static const versioneSuperata = 'TR409';
+
+  /// Chi è responsabile del viaggio esce solo dopo aver passato il ruolo.
+  static const primaPassaIlRuolo = 'TR412';
 }
 
 /// Il motivo scritto sotto un controllo spento perché manca la rete.

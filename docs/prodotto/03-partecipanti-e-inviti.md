@@ -34,7 +34,10 @@ Portare gli altri dentro il viaggio e dare a ciascuno la possibilità di contrib
 | Situazione | Comportamento |
 |---|---|
 | Il link viene inoltrato a qualcuno che non era invitato | Entra. È un link, non una credenziale — chi invita lo sa, e può rimuovere |
-| Chi ha creato il viaggio esce | Prima deve passare il ruolo a un altro partecipante. Un viaggio senza creatore non può esistere, perché non ci sarebbe più nessuno legittimato a rimuovere |
+| Chi ha creato il viaggio esce | Prima deve passare il ruolo a un altro partecipante. Un viaggio senza creatore non può esistere, perché non ci sarebbe più nessuno legittimato a rimuovere. Se è da solo, non esce |
+| Chi è stato rimosso vuole rientrare | Rientra solo con un link nuovo del creatore. Rimuovere qualcuno ritira i link ancora validi: quello con cui era entrato potrebbe essere passato di mano |
+| Chi esce ha documenti di quel viaggio sul telefono | Si cancellano, dopo che l'uscita è riuscita; la conferma lo dice prima |
+| Chi viene rimosso, o esce da un altro telefono | Il viaggio non sparisce in silenzio: l'elenco dei viaggi lo dice, con le cose fatte senza rete che non arriveranno e i propri documenti rimasti sul telefono, da guardare o eliminare |
 | L'invitato installa ma non apre il viaggio giusto | È il guasto più grave dell'app e non dà nessun errore. Va sorvegliato con una misura apposta: quota di installazioni da invito che arrivano sul viaggio corretto |
 | L'invitato ha meno di 16 anni | Non può creare un account, quindi non può entrare. Non è una situazione gestibile lato viaggio |
 | La stessa persona è invitata due volte | Il secondo link riconosce che è già dentro e apre il viaggio |

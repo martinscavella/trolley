@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../aspetto/barra.dart';
 import '../aspetto/biglietto.dart';
@@ -21,21 +19,21 @@ import '../dati/destinazioni.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
-import '../dominio/codice_invito.dart';
 import '../dominio/giornate.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
-import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'cose.dart';
 import 'date_viaggio.dart';
 import 'documenti.dart';
+import 'gesti_partecipanti.dart';
 import 'giornata.dart';
 import 'impostazioni.dart';
 import 'itinerario.dart';
 import 'note.dart';
 import 'nuovo_viaggio.dart';
+import 'partecipanti.dart';
 import 'problemi_coda.dart';
 import 'scelta_periodo.dart';
 import 'spese.dart';
@@ -82,27 +80,12 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
 
   Future<void> _invita() async {
     if (_invitoInCorso) return;
-    final servizi = Servizi.of(context);
-    if (!servizi.rete.disponibile) {
-      mostraMessaggio(context, 'Per invitare qualcuno serve la connessione.');
-      return;
-    }
-    // Il foglio di condivisione su iPad vuole sapere da dove parte.
-    final box = _origineInvito.currentContext?.findRenderObject() as RenderBox?;
     setState(() => _invitoInCorso = true);
     try {
-      final codice = await servizi.archivio.creaInvito(widget.viaggioId);
-      await servizi.misurazione.registra(Eventi.invitoCreato, {
-        'viaggio_id': widget.viaggioId,
-      });
-      HapticFeedback.lightImpact();
-      await SharePlus.instance.share(
-        ShareParams(
-          text: messaggioInvito(codice),
-          sharePositionOrigin: box == null
-              ? null
-              : box.localToGlobal(Offset.zero) & box.size,
-        ),
+      await invitaQualcuno(
+        context,
+        widget.viaggioId,
+        origine: posizioneDi(_origineInvito),
       );
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
@@ -172,6 +155,14 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
               children: [
                 _Testata(viaggio: viaggio, stato: stato).entra(context),
                 if (stato == StatoViaggio.idea) _Sollecito(viaggio: viaggio),
+                // Il primo minuto di chi è appena entrato da un invito (03,
+                // regola 9; tela, 29), e chi c'è.
+                BenvenutoInvitato(viaggio: viaggio, stato: stato),
+                const SizedBox(height: 28),
+                const TitoloSezione('Chi c\'è')
+                    .entra(context, ritardo: Ritmo.passo),
+                SezioneChiCe(viaggioId: viaggio.id)
+                    .entra(context, ritardo: Ritmo.passo),
                 if (!stato.haGiorni) _DocumentiInAttesa(viaggioId: viaggio.id),
                 if (stato.haGiorni) ...[
                   const SizedBox(height: 28),
@@ -204,11 +195,6 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                       .entra(context, ritardo: Ritmo.passo * 2),
                 ],
                 SezioneNote(viaggio: viaggio),
-                const SizedBox(height: 28),
-                const TitoloSezione('Partecipanti')
-                    .entra(context, ritardo: Ritmo.passo * 2),
-                _Partecipanti(viaggioId: widget.viaggioId)
-                    .entra(context, ritardo: Ritmo.passo * 3),
                 const SizedBox(height: 28),
                 ConLaRete(
                   builder: (context, rete) => PulsanteGrande(
@@ -777,63 +763,4 @@ class _DaRicollocare extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _Partecipanti extends StatelessWidget {
-  const _Partecipanti({required this.viaggioId});
-
-  final String viaggioId;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<(Partecipazione, Utente?)>>(
-      stream: Servizi.of(context).archivio.osservaPartecipanti(viaggioId),
-      builder: (context, snapshot) {
-        final persone = snapshot.data ?? const <(Partecipazione, Utente?)>[];
-        return Column(
-          children: [
-            for (final (i, (partecipazione, utente)) in persone.indexed)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Pannello(
-                  raggio: 18,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Avatar(nome: utente?.nome ?? '?')
-                          .sboccia(context, ritardo: Ritmo.passo * (i + 2)),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              utente?.nome ?? '…',
-                              style: Testi.evidenza.copyWith(
-                                color: Colori.inchiostro,
-                              ),
-                            ),
-                            Text(
-                              partecipazione.ruolo == 'creatore'
-                                  ? 'Ha creato il viaggio'
-                                  : 'Partecipa',
-                              style: Testi.secondario.copyWith(
-                                color: Colori.grafite,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
 }

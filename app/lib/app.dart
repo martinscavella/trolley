@@ -145,10 +145,16 @@ class _TrolleyAppState extends State<TrolleyApp> {
     final (codice, via) = invito;
     _invitoInCorso = true;
     try {
-      final viaggioId = await _servizi.archivio.accettaInvito(codice);
+      final (:viaggioId, :giaDentro) = await _servizi.archivio.accettaInvito(
+        codice,
+      );
       _invitoInAttesa = null;
+      // Chi arriva adesso trova il viaggio completo e qualcosa di suo da fare
+      // (03, regola 9); chi c'era già ritrova il viaggio e basta.
+      if (!giaDentro) await _servizi.archivio.segnaBenvenuto(viaggioId);
       await _servizi.misurazione.registra(Eventi.viaggioCorrettoAperto, {
         'via': via.name,
+        'gia_dentro': giaDentro,
       });
       unawaited(_servizi.misurazione.invia());
       _navigatore.currentState

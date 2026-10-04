@@ -27,16 +27,54 @@ import 'errori.dart';
 import 'lettura.dart';
 import 'rete.dart';
 
-/// Un viaggio come compare nell'elenco: con i nomi di chi c'è.
 /// Quanto può essere lunga una nota: come sul server. Una risposta lunga di
 /// un assistente ci sta comoda.
 const lunghezzaMassimaNota = 20000;
 
+/// Un viaggio come compare nell'elenco: con i nomi di chi c'è.
 class ViaggioInElenco {
   const ViaggioInElenco(this.viaggio, this.persone);
 
   final Viaggio viaggio;
   final List<String> persone;
+}
+
+/// Un link d'invito ancora valido: chi ne ha uno entra (03, casi limite).
+class InvitoValido {
+  const InvitoValido({required this.creatoDa, required this.creatoIl});
+
+  final String creatoDa;
+  final DateTime creatoIl;
+}
+
+/// Perché un viaggio non è più tra i propri.
+enum MotivoUscita {
+  /// Chi è responsabile del viaggio ti ha tolto.
+  rimosso,
+
+  /// Sei uscito, da un altro telefono.
+  uscito,
+}
+
+/// Un viaggio sparito dal server mentre era su questo telefono: lo si dice,
+/// invece di farlo sparire in silenzio (02, casi limite: rimosso mentre è
+/// offline). Resta finché la persona non l'ha visto.
+class ViaggioLasciato {
+  const ViaggioLasciato({
+    required this.viaggioId,
+    required this.nome,
+    required this.motivo,
+    required this.gestiPersi,
+  });
+
+  final String viaggioId;
+
+  /// La meta com'era sul telefono; `null` per un'idea senza meta.
+  final String? nome;
+  final MotivoUscita motivo;
+
+  /// I gesti fatti senza rete che non sono arrivati e non arriveranno più.
+  final int gestiPersi;
 }
 
 class Archivio {
@@ -126,8 +164,10 @@ class Archivio {
   /// e dichiarata tale che vuota.
   Future<void> aggiornaCopia() async {
     await coda.svuota();
+    final io = _io;
     final (
       viaggi,
+      lasciati,
       partecipazioni,
       utenti,
       giorni,
@@ -136,14 +176,26 @@ class Archivio {
       voci,
       note,
     ) = await _alServer(() async {
-      final viaggi = await _server
-          .from('viaggio')
-          .select()
-          .isFilter('eliminato_il', null);
+      // I viaggi da cui si è usciti o si è stati tolti: il viaggio non si
+      // legge più, la propria partecipazione sì, e dice perché.
+      // Future.wait, non `.wait`: senza rete arriva l'errore com'è, e
+      // alServer lo riconosce.
+      final [viaggi, lasciati] = await Future.wait([
+        _server.from('viaggio').select().isFilter('eliminato_il', null),
+        if (io == null)
+          Future.value(<Map<String, dynamic>>[])
+        else
+          _server
+              .from('partecipazione')
+              .select('viaggio_id, stato')
+              .eq('utente_id', io)
+              .inFilter('stato', ['uscito', 'rimosso']),
+      ]);
       final ids = [for (final v in viaggi) v['id'] as String];
       if (ids.isEmpty) {
         return (
           viaggi,
+          lasciati,
           <Map<String, dynamic>>[],
           <Map<String, dynamic>>[],
           <Map<String, dynamic>>[],
@@ -191,12 +243,28 @@ class Archivio {
             'id',
             {for (final p in partecipazioni) p['utente_id'] as String}.toList(),
           );
-      return (viaggi, partecipazioni, utenti, giorni, tappe, spese, voci, note);
+      return (
+        viaggi,
+        lasciati,
+        partecipazioni,
+        utenti,
+        giorni,
+        tappe,
+        spese,
+        voci,
+        note,
+      );
     });
 
     final adesso = DateTime.now().toUtc();
-    final io = _io;
     await _db.transaction(() async {
+      await _segnaLasciati(
+        visibili: {for (final v in viaggi) v['id'] as String},
+        lasciati: {
+          for (final p in lasciati)
+            p['viaggio_id'] as String: p['stato'] as String,
+        },
+      );
       await _db.delete(_db.viaggi).go();
       await _db.delete(_db.partecipazioni).go();
       await _db.delete(_db.giorni).go();
@@ -481,10 +549,21 @@ class Archivio {
   /// Chi sono, per riconoscere le proprie tappe.
   String? get io => _io;
 
-  /// Chi partecipa, con il nome. Chi è uscito o è stato rimosso non compare qui,
-  /// ma i suoi contributi restano nel viaggio.
+  /// Chi partecipa, con il nome: chi è responsabile del viaggio per primo.
+  /// Chi è uscito o è stato rimosso non compare qui ([osservaUsciti]), ma i
+  /// suoi contributi restano nel viaggio.
   Stream<List<(Partecipazione, Utente?)>> osservaPartecipanti(
     String viaggioId,
+  ) => _osservaPartecipazioni(viaggioId, const ['attivo']);
+
+  /// Chi c'era e non c'è più: è uscito, o è stato tolto. Quello che ha
+  /// aggiunto resta, con il suo nome (03, regola 8).
+  Stream<List<(Partecipazione, Utente?)>> osservaUsciti(String viaggioId) =>
+      _osservaPartecipazioni(viaggioId, const ['uscito', 'rimosso']);
+
+  Stream<List<(Partecipazione, Utente?)>> _osservaPartecipazioni(
+    String viaggioId,
+    List<String> stati,
   ) {
     final query =
         _db.select(_db.partecipazioni).join([
@@ -495,9 +574,12 @@ class Archivio {
           ])
           ..where(
             _db.partecipazioni.viaggioId.equals(viaggioId) &
-                _db.partecipazioni.stato.equals('attivo'),
+                _db.partecipazioni.stato.isIn(stati),
           )
-          ..orderBy([OrderingTerm.asc(_db.partecipazioni.ruolo)]);
+          ..orderBy([
+            OrderingTerm.asc(_db.partecipazioni.ruolo),
+            OrderingTerm.asc(_db.utenti.nome),
+          ]);
     return query.watch().map(
       (righe) => [
         for (final r in righe)
@@ -505,6 +587,171 @@ class Archivio {
       ],
     );
   }
+
+  // ─── Il primo minuto di chi entra da un invito ──────────────────────────
+
+  static const _benvenuto = 'benvenuto:';
+
+  /// Segna che la persona è appena entrata nel viaggio da un invito: la
+  /// schermata del viaggio le dà il benvenuto e qualcosa di suo da fare (03,
+  /// regola 9).
+  Future<void> segnaBenvenuto(String viaggioId) => _db
+      .into(_db.impostazioni)
+      .insertOnConflictUpdate(
+        ImpostazioniCompanion.insert(
+          chiave: '$_benvenuto$viaggioId',
+          valore: DateTime.now().toUtc().toIso8601String(),
+        ),
+      );
+
+  Future<void> chiudiBenvenuto(String viaggioId) => (_db.delete(
+    _db.impostazioni,
+  )..where((i) => i.chiave.equals('$_benvenuto$viaggioId'))).go();
+
+  /// Se il benvenuto va mostrato: la persona è entrata da un invito su questo
+  /// telefono, non l'ha chiuso, e non ha ancora aggiunto niente di suo — una
+  /// tappa, una spesa, una cosa da portare, un documento. Al primo
+  /// contributo ha fatto il suo lavoro, e sparisce.
+  Stream<bool> osservaBenvenuto(String viaggioId) {
+    final io = _io;
+    if (io == null) return Stream.value(false);
+    return _db
+        .customSelect(
+          'SELECT EXISTS (SELECT 1 FROM impostazione WHERE chiave = ?1) '
+          'AND NOT EXISTS (SELECT 1 FROM tappa WHERE viaggio_id = ?2 '
+          '  AND creato_da = ?3 AND eliminato_il IS NULL) '
+          'AND NOT EXISTS (SELECT 1 FROM spesa WHERE viaggio_id = ?2 '
+          '  AND creato_da = ?3 AND eliminato_il IS NULL) '
+          'AND NOT EXISTS (SELECT 1 FROM voce_lista WHERE viaggio_id = ?2 '
+          '  AND proprietario_id = ?3 AND eliminato_il IS NULL) '
+          'AND NOT EXISTS (SELECT 1 FROM documento WHERE viaggio_id = ?2 '
+          '  AND proprietario_id = ?3) AS mostra',
+          variables: [
+            Variable.withString('$_benvenuto$viaggioId'),
+            Variable.withString(viaggioId),
+            Variable.withString(io),
+          ],
+          readsFrom: {
+            _db.impostazioni,
+            _db.tappe,
+            _db.spese,
+            _db.vociLista,
+            _db.documenti,
+          },
+        )
+        .watchSingle()
+        .map((r) => r.read<bool>('mostra'));
+  }
+
+  // ─── I viaggi lasciati ──────────────────────────────────────────────────
+
+  static const _lasciato = 'lasciato:';
+
+  /// Per ogni viaggio che era sul telefono e che il server non manda più
+  /// perché se ne è usciti o si è stati tolti, un avviso per l'elenco. I
+  /// gesti in coda per quel viaggio non arriveranno più: si contano, lo si
+  /// dice, e si tolgono invece di riprovarli per sempre (02, casi limite). Un
+  /// viaggio in cui si è rientrati non ha più bisogno del suo avviso.
+  Future<void> _segnaLasciati({
+    required Set<String> visibili,
+    required Map<String, String> lasciati,
+  }) async {
+    await (_db.delete(_db.impostazioni)..where(
+          (i) => i.chiave.isIn([for (final id in visibili) '$_lasciato$id']),
+        ))
+        .go();
+    final locali = await _db.select(_db.viaggi).get();
+    for (final v in locali) {
+      final stato = lasciati[v.id];
+      if (visibili.contains(v.id) || stato == null) continue;
+      final gestiPersi = await (_db.delete(
+        _db.codaScrittura,
+      )..where((o) => o.viaggioId.equals(v.id))).go();
+      await _db
+          .into(_db.impostazioni)
+          .insertOnConflictUpdate(
+            ImpostazioniCompanion.insert(
+              chiave: '$_lasciato${v.id}',
+              valore: jsonEncode({
+                'nome': v.destinazione?.nome,
+                'motivo': stato,
+                'gesti_persi': gestiPersi,
+              }),
+            ),
+          );
+      await _dimenticaSegni(v.id);
+    }
+  }
+
+  /// I viaggi lasciati di cui la persona non ha ancora visto l'avviso.
+  Stream<List<ViaggioLasciato>> osservaViaggiLasciati() =>
+      (_db.select(_db.impostazioni)
+            ..where((i) => i.chiave.like('$_lasciato%'))
+            ..orderBy([(i) => OrderingTerm.asc(i.chiave)]))
+          .watch()
+          .map((righe) => [for (final r in righe) ?_lasciatoDa(r)]);
+
+  /// Toglie l'avviso: la persona l'ha visto.
+  Future<void> dimenticaViaggioLasciato(String viaggioId) => (_db.delete(
+    _db.impostazioni,
+  )..where((i) => i.chiave.equals('$_lasciato$viaggioId'))).go();
+
+  static ViaggioLasciato? _lasciatoDa(Impostazione riga) {
+    final dati = jsonDecode(riga.valore);
+    if (dati is! Map) return null;
+    return ViaggioLasciato(
+      viaggioId: riga.chiave.substring(_lasciato.length),
+      nome: dati['nome'] as String?,
+      motivo: dati['motivo'] == 'rimosso'
+          ? MotivoUscita.rimosso
+          : MotivoUscita.uscito,
+      gestiPersi: (dati['gesti_persi'] as int?) ?? 0,
+    );
+  }
+
+  /// Toglie dalla copia un viaggio da cui si è usciti, con tutto quello che
+  /// gli era agganciato, i gesti ancora in coda e i segni di questo telefono.
+  /// I documenti no: stanno in un'altra cartella, e li toglie chi chiama
+  /// (dati/documenti.dart).
+  Future<void> _togliDallaCopia(String viaggioId) => _db.transaction(() async {
+    await (_db.delete(_db.viaggi)..where((v) => v.id.equals(viaggioId))).go();
+    await (_db.delete(
+      _db.partecipazioni,
+    )..where((p) => p.viaggioId.equals(viaggioId))).go();
+    await (_db.delete(
+      _db.giorni,
+    )..where((g) => g.viaggioId.equals(viaggioId))).go();
+    await (_db.delete(
+      _db.tappe,
+    )..where((t) => t.viaggioId.equals(viaggioId))).go();
+    await (_db.delete(
+      _db.spese,
+    )..where((s) => s.viaggioId.equals(viaggioId))).go();
+    await (_db.delete(
+      _db.speseQuote,
+    )..where((q) => q.viaggioId.equals(viaggioId))).go();
+    await (_db.delete(
+      _db.vociLista,
+    )..where((v) => v.viaggioId.equals(viaggioId))).go();
+    await (_db.delete(
+      _db.note,
+    )..where((n) => n.viaggioId.equals(viaggioId))).go();
+    await (_db.delete(
+      _db.codaScrittura,
+    )..where((o) => o.viaggioId.equals(viaggioId))).go();
+    await _dimenticaSegni(viaggioId);
+  });
+
+  /// I segni di questo telefono legati a un viaggio: il benvenuto, il
+  /// sollecito dell'idea.
+  Future<void> _dimenticaSegni(String viaggioId) =>
+      (_db.delete(_db.impostazioni)..where(
+            (i) => i.chiave.isIn([
+              '$_benvenuto$viaggioId',
+              _chiaveSollecito(viaggioId),
+            ]),
+          ))
+          .go();
 
   // ─── Scritture che richiedono la rete ───────────────────────────────────
 
@@ -608,7 +855,8 @@ class Archivio {
         .insertOnConflictUpdate(_viaggio(righe.single, DateTime.now().toUtc()));
   }
 
-  /// Un nuovo codice d'invito per il viaggio.
+  /// Un nuovo codice d'invito per il viaggio. Ogni invito è un link nuovo:
+  /// così chi è stato tolto può rientrare con uno creato dopo (03, regola 6).
   Future<String> creaInvito(String viaggioId) async {
     final riga = await _alServer(
       () => _server
@@ -620,21 +868,138 @@ class Archivio {
     return riga['token'] as String;
   }
 
-  /// Entra nel viaggio del codice e restituisce il suo id.
-  Future<String> accettaInvito(String codice) async {
+  /// Entra nel viaggio del codice. Dice anche se la persona c'era già: il
+  /// secondo link riconosce chi è dentro e apre il viaggio (03, casi limite),
+  /// senza contarlo come un arrivo nuovo.
+  Future<({String viaggioId, bool giaDentro})> accettaInvito(
+    String codice,
+  ) async {
     final viaggioId = await _alServer(
       () => _server.rpc<String>('accetta_invito', params: {'p_token': codice}),
       messaggi: {
         CodiciServer.nonTrovato:
-            'Questo codice non corrisponde a nessun viaggio. Controlla di averlo '
-            'scritto bene, o chiedi un nuovo invito.',
+            'Questo codice non corrisponde a nessun viaggio, o è stato '
+            'ritirato. Controlla di averlo scritto bene, o chiedi un nuovo '
+            'invito.',
         CodiciServer.nonPermesso:
-            'Non puoi rientrare in questo viaggio con questo invito. '
-            'Chiedi a chi l\'ha creato.',
+            'Non fai più parte di questo viaggio: per rientrare ti serve un '
+            'invito nuovo di chi ne è responsabile.',
       },
     );
+    final io = _io;
+    final giaDentro =
+        io != null &&
+        await (_db.select(_db.partecipazioni)..where(
+                  (p) =>
+                      p.viaggioId.equals(viaggioId) &
+                      p.utenteId.equals(io) &
+                      p.stato.equals('attivo'),
+                ))
+                .getSingleOrNull() !=
+            null;
     await aggiornaCopia();
-    return viaggioId;
+    return (viaggioId: viaggioId, giaDentro: giaDentro);
+  }
+
+  /// I link d'invito ancora validi del viaggio, dal più recente: gli inviti
+  /// in sospeso (03, schermate). Richiede la rete: non stanno nella copia.
+  Future<List<InvitoValido>> invitiValidi(String viaggioId) async {
+    final righe = await _alServer(
+      () => _server
+          .from('invito')
+          .select('creato_da, creato_il')
+          .eq('viaggio_id', viaggioId)
+          .isFilter('eliminato_il', null)
+          .order('creato_il'),
+    );
+    return [
+      for (final r in righe)
+        InvitoValido(
+          creatoDa: r['creato_da'] as String,
+          creatoIl: DateTime.parse(r['creato_il'] as String),
+        ),
+    ];
+  }
+
+  /// Ritira tutti i link d'invito ancora validi: chi non è ancora entrato
+  /// avrà bisogno di uno nuovo. Per quando un link è finito nelle mani
+  /// sbagliate (03, casi limite).
+  Future<void> ritiraInviti(String viaggioId) => _alServer(
+    () => _server
+        .from('invito')
+        .update({'eliminato_il': DateTime.now().toUtc().toIso8601String()})
+        .eq('viaggio_id', viaggioId)
+        .isFilter('eliminato_il', null),
+  );
+
+  // ─── Partecipanti: le scritture che richiedono la rete ──────────────────
+
+  /// Esce dal viaggio (03, regola 7). Prima parte quello che è in coda, così
+  /// i gesti fatti senza rete arrivano finché si è ancora dentro; poi il
+  /// viaggio esce dalla copia. Quello che si è aggiunto resta agli altri.
+  /// I documenti li toglie chi chiama: stanno in un'altra cartella.
+  Future<void> esciDalViaggio(String viaggioId) async {
+    await coda.svuota();
+    await _sullaPartecipazione(
+      () => _server.rpc<dynamic>(
+        'esci_dal_viaggio',
+        params: {'p_viaggio': viaggioId},
+      ),
+      messaggi: const {
+        CodiciServer.primaPassaIlRuolo:
+            'Prima di uscire rendi responsabile qualcun altro.',
+        CodiciServer.nonTrovato: 'Non fai già più parte di questo viaggio.',
+      },
+    );
+    await _togliDallaCopia(viaggioId);
+  }
+
+  /// Toglie qualcuno dal viaggio: solo chi ne è responsabile (03, regola 6).
+  /// Il server ritira anche i link d'invito ancora validi.
+  Future<void> togliPartecipante(String viaggioId, String utenteId) async {
+    final righe = await _sullaPartecipazione(
+      () => _server.rpc<Map<String, dynamic>>(
+        'rimuovi_partecipante',
+        params: {'p_viaggio': viaggioId, 'p_utente': utenteId},
+      ),
+    );
+    await _nellaCopia(righe);
+  }
+
+  /// Passa il ruolo di responsabile del viaggio a un altro partecipante.
+  Future<void> rendiResponsabile(String viaggioId, String utenteId) async {
+    final righe = await _sullaPartecipazione(
+      () => _server.rpc<Map<String, dynamic>>(
+        'passa_il_ruolo',
+        params: {'p_viaggio': viaggioId, 'p_a': utenteId},
+      ),
+    );
+    await _nellaCopia(righe);
+  }
+
+  /// Una scrittura su chi partecipa. Se il server la rifiuta, qualcosa è
+  /// cambiato nel frattempo — il ruolo è passato, la persona è già uscita —
+  /// e la copia si riscarica, così la schermata mostra com'è adesso.
+  Future<T> _sullaPartecipazione<T>(
+    Future<T> Function() chiamata, {
+    Map<String, String> messaggi = const {},
+  }) async {
+    try {
+      return await _alServer(
+        chiamata,
+        messaggi: {
+          CodiciServer.nonPermesso:
+              'Solo chi è responsabile del viaggio può farlo. Ora vedi chi '
+              'lo è.',
+          CodiciServer.nonTrovato:
+              'Questa persona non fa già più parte del viaggio.',
+          ...messaggi,
+        },
+      );
+    } on ErroreTrolley catch (e) {
+      if (e.codice != null) await aggiornaCopia().catchError((_) {});
+      rethrow;
+    }
   }
 
   // ─── Tappe: le scritture che richiedono la rete ──────────────────────────

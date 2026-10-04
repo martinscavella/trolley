@@ -59,7 +59,7 @@ La fase 1.3 (documenti sul telefono: scansione, foto, file; elenco con oggi in c
 |---|---|---|
 | **Android** | Il canale `trolley/documenti` esiste solo in Swift ([ADR-008](tecnico/adr/008-documenti-sul-telefono.md)): va scritto in Kotlin, e va capito il backup (l'Auto Backup si ferma a 25 MB per app) | Prima della prima build Android |
 | **Schermata di chiusura account** | 03 vuole che dica che disinstallare porta via i documenti. Oggi l'avviso sta al primo documento e nel dialogo "Esci"; la chiusura account non esiste ancora | Con la chiusura account |
-| **Rimuovere un viaggio dal telefono** | `eliminaViaggio` cancella cartella e righe, ma nessun gesto oggi toglie un viaggio: si chiamerà uscendo da un viaggio (2.1). Un viaggio che sparisse dal server lascerebbe i documenti sul disco, non visibili: si è scelto di non cancellarli da soli, perché sono l'unica copia | Fase 2.1 |
+| ~~**Rimuovere un viaggio dal telefono**~~ | Fatto nella 2.1: uscendo da un viaggio i propri documenti si cancellano, dopo una conferma che li conta. Se invece il viaggio sparisce perché ti tolgono, i documenti restano e l'elenco dei viaggi lo dice, con «Guardali» ed «Eliminali» | ✅ Fase 2.1 |
 | **Il documento di adesso** | La schermata "adesso" mostrerà il documento agganciato a questo momento ([09](prodotto/09-durante-il-viaggio.md)) | Fase 3.1 |
 | **Luminosità al massimo** mostrando un codice a barre | Comodo al gate; non chiesto dai documenti | Se la beta lo chiede |
 | **Rivedere sulla tela le schermate 10–14** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.3 |
@@ -72,7 +72,7 @@ La fase 1.4 (spese: valuta predefinita, tasso di cambio, ultimo valore noto offl
 |---|---|---|
 | **Divisione: chi paga, chi partecipa, quote e saldi** | È la 2.3. Oggi ognuno registra le spese che ha pagato lui, senza quote, e il totale dice quanto è suo. La 2.3 deve decidere come valgono le spese registrate prima, senza quote: la proposta è in parti uguali fra chi c'era | Fase 2.3 |
 | **La stessa spesa registrata da due persone** (06, casi limite) | Si segnala quando c'è più di un pagante, cioè con la divisione | Fase 2.3 |
-| **Avviso prima di rimuovere chi ha saldi aperti** | Non c'è ancora né la rimozione né il saldo | Fasi 2.1 e 2.3 |
+| **Avviso prima di rimuovere chi ha saldi aperti** | La rimozione c'è dalla 2.1; il saldo no | Fase 2.3 |
 | **Due persone cambiano la stessa spesa** | Oggi la seconda viene rifiutata e la copia si riscarica; le due versioni affiancate sono la 2.2 | Fase 2.2 |
 | **Budget di massima allo stato idea** (06, regola 1) | Non è nel piano di costruzione: è un'altra cosa rispetto alle spese | Da decidere |
 | **Statistiche aggregate delle spese** (06, regola 11) | Funzione premium individuale | Fase 6 |
@@ -86,7 +86,7 @@ La fase 1.5 (cose da portare: la propria lista, anche nelle idee, spuntabile sen
 | Voce | Perché aspetta | Quando |
 |---|---|---|
 | **La lista del viaggio e chi porta cosa** (05, regole 1 e 2) | Oggi ognuno ha la sua lista personale. Il server sa già assegnare una voce solo a chi è del viaggio; mancano la lista comune, l'assegnazione e lo spostamento di una voce da una lista all'altra | Fase 2.4 |
-| **Un assegnatario esce dal viaggio: le sue voci tornano libere, con un avviso** (05, casi limite) | Non c'è ancora né l'uscita né l'assegnazione | Fasi 2.1 e 2.4 |
+| **Un assegnatario esce dal viaggio: le sue voci tornano libere, con un avviso** (05, casi limite) | L'uscita c'è dalla 2.1; l'assegnazione no | Fase 2.4 |
 | **Due persone cambiano il testo della stessa voce** | Oggi la seconda viene rifiutata e la copia si riscarica, con il testo che si stava scrivendo ancora nel campo; le due versioni affiancate sono la 2.2 | Fase 2.2 |
 | **Aggiungere una voce senza rete** | Non è uno dei quattro gesti: senza rete il campo si spegne e lo dice. Si allarga solo se H4 lo chiede | Se H4 lo chiede |
 | **Notifica prima della partenza con le cose non spuntate** (14-notifiche) | Le notifiche non ci sono ancora | Con le notifiche |
@@ -106,7 +106,21 @@ La fase 1.6 (l'itinerario con un assistente: richiesta da copiare, risposta inco
 | **Leggere la risposta senza rete** | La nota va salvata prima di leggere, e salvare richiede la rete. Chi incolla di solito è appena stato sull'assistente, quindi online | Se H4 lo chiede |
 | **La generazione nativa** | Dipende dalla regola asimmetrica: si costruisce se `prompt_esportato` e `incollato_riuscito` dicono che il giro viene fatto | Dopo la beta |
 | **Rivedere sulla tela le schermate 24–28** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.6 |
-| **La migrazione `itinerario_incollato` non è ancora sul server** | Il file `20261003174945_itinerario_incollato.sql` è pronto con le sue prove (`supabase/tests/note.sql`). Finché manca, leggere una risposta fallisce perché la nota non si salva, e i modelli consigliati non arrivano | Da applicare dall'editor SQL prima di provare la 1.6 sul telefono |
+| **La migrazione `itinerario_incollato` non è nell'elenco delle versioni del server** | Applicata dall'editor SQL di Supabase, che non la registra: lo schema c'è e le 6 prove di `supabase/tests/note.sql` passano (verificato il 4 ottobre 2026), la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003174945` | Da registrare, o da lasciare scritto qui |
+
+### Rimasto fuori dalla 2.1
+
+La fase 2.1 (chi c'è, inviti e inviti in sospeso, togliere qualcuno e passare il ruolo, uscire, il primo minuto di chi entra da un invito, il viaggio lasciato che non sparisce in silenzio) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **La migrazione `partecipanti` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: le funzioni ci sono e le 9 prove di `supabase/tests/partecipanti.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004093000` | Da registrare, o da lasciare scritto qui |
+| **Eliminare un viaggio** | Chi è responsabile ed è da solo non può uscire: il viaggio resterebbe senza nessuno. Per un'idea c'è l'archivio; per un viaggio definito che non si farà, oggi non c'è niente | Da decidere |
+| **Avvisare chi viene tolto** | Oggi lo scopre aprendo l'app: l'elenco dei viaggi lo dice. Una notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **Saldi aperti prima di togliere qualcuno** | Non c'è ancora il saldo | Fase 2.3 |
+| **Le voci assegnate a chi esce tornano libere** | Non c'è ancora l'assegnazione | Fase 2.4 |
+| **`primo_contributo_invitato` guarda il ruolo di adesso** | Dopo un passaggio di ruolo chi ha creato il viaggio risulta partecipante: se non aveva mai aggiunto niente, il suo primo contributo conterebbe come quello di un invitato. Il caso è raro (chi crea un viaggio di solito ci mette qualcosa), e distinguerlo vorrebbe un campo in più sulla partecipazione | Se i numeri di H3 lo mostrano |
+| **Rivedere sulla tela le schermate 29–33** | Disegnate e costruite insieme il 4 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 2.1 |
 
 ### Impianto di sicurezza del matching — stima
 

@@ -70,6 +70,9 @@ void main() {
     await ambiente.monta(tester, const SchermataViaggio(viaggioId: 'v'));
 
     await tester.scrollUntilVisible(find.text('Scrivi la lista'), 200);
+    // Che non resti sotto la barra in basso.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+    await tester.pumpAndSettle();
     expect(find.text('Cose da portare'), findsOneWidget);
     await tester.tap(find.text('Scrivi la lista'));
     await tester.pumpAndSettle();
@@ -148,8 +151,7 @@ void main() {
     final registrati = await eventi(tester);
     expect(
       registrati.where(
-        (e) =>
-            e.$1 == 'apertura_senza_rete' && e.$2['schermata'] == 'liste',
+        (e) => e.$1 == 'apertura_senza_rete' && e.$2['schermata'] == 'liste',
       ),
       hasLength(1),
     );

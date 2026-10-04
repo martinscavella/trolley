@@ -281,12 +281,20 @@ class AzioneMenu {
 }
 
 /// Un menu di poche azioni, con il componente di sistema: il foglio di azioni
-/// di iOS, un elenco dal basso su Android.
-Future<void> scegliAzione(BuildContext context, List<AzioneMenu> azioni) async {
+/// di iOS, un elenco dal basso su Android. Con [titolo] e [messaggio] sopra,
+/// quando la scelta va spiegata.
+Future<void> scegliAzione(
+  BuildContext context,
+  List<AzioneMenu> azioni, {
+  String? titolo,
+  String? messaggio,
+}) async {
   final scelta = suIOS
       ? await showCupertinoModalPopup<AzioneMenu>(
           context: context,
           builder: (contesto) => CupertinoActionSheet(
+            title: titolo == null ? null : Text(titolo),
+            message: messaggio == null ? null : Text(messaggio),
             actions: [
               for (final a in azioni)
                 CupertinoActionSheetAction(
@@ -308,6 +316,11 @@ Future<void> scegliAzione(BuildContext context, List<AzioneMenu> azioni) async {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (titolo != null || messaggio != null)
+                  ListTile(
+                    title: titolo == null ? null : Text(titolo),
+                    subtitle: messaggio == null ? null : Text(messaggio),
+                  ),
                 for (final a in azioni)
                   ListTile(
                     title: Text(

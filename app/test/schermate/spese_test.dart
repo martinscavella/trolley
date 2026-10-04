@@ -90,6 +90,9 @@ void main() {
     await ambiente.monta(tester, const SchermataViaggio(viaggioId: 'v'));
 
     await tester.scrollUntilVisible(find.text('Registra una spesa'), 200);
+    // Che non resti sotto la barra in basso.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Registra una spesa'));
     await tester.pumpAndSettle();
     expect(find.text('Nuova spesa'), findsOneWidget);
