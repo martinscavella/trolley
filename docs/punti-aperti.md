@@ -122,7 +122,7 @@ La fase 2.2 (due versioni della stessa cosa: tappa, spesa, voce, date del viaggi
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **La migrazione `chi_ha_scritto` va applicata** | Aggiunge `modificato_da` e il trigger che lo scrive (viaggio, tappa, spesa, voce, nota). Senza, l'app funziona lo stesso ma l'altra versione dice «già salvata» invece di «di Marco». Il file porta la versione `20261004150000`; le prove sono in `supabase/tests/conflitti.sql`. Applicata dall'editor SQL non finisce in `schema_migrations` | Da applicare |
+| **La migrazione `chi_ha_scritto` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: colonne e trigger ci sono, le righe di prima hanno preso l'autore, e le 7 prove di `supabase/tests/conflitti.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004150000` | Da registrare, o da lasciare scritto qui |
 | **La notifica «Due versioni»** per chi esce prima di scegliere | Oggi chiudendo si torna al foglio, con quello che si era scritto; chiudendo anche il foglio la propria versione si perde, come per ogni foglio lasciato a metà. La notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
 | **«Tienile tutte e due» per le note** | Le note oggi non si riscrivono: non possono trovarsi in due versioni | Con le note scritte a mano |
 | **«Tienile tutte e due» per una voce della lista del viaggio** | Oggi la voce in più nasce nella propria lista personale, l'unica che c'è. Con la lista del viaggio dovrà nascere nella stessa lista dell'altra | Fase 2.4 |
@@ -134,7 +134,7 @@ La fase 2.3 (chi ha pagato e per chi, importi diversi, la propria parte, i saldi
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **La migrazione `divisione_spese` va applicata** | Aggiunge `rimborso`, le regole su chi può avere una quota, `registra_spesa` e `cambia_spesa`. Senza, l'app non riesce a mandare le spese nuove né a cambiarle: va applicata prima di installare questa versione. Il file porta la versione `20261004170000`; le prove sono in `supabase/tests/divisione.sql`. Applicata dall'editor SQL non finisce in `schema_migrations` | Da applicare, dopo `chi_ha_scritto` |
+| **La migrazione `divisione_spese` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: `rimborso`, le regole sulle quote, `registra_spesa` e `cambia_spesa` ci sono, e le 10 prove di `supabase/tests/divisione.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004170000` | Da registrare, o da lasciare scritto qui |
 | **Un rimborso in una valuta diversa da quella di chi lo vede** | «Li ho ricevuti» registra il rimborso nella valuta di chi lo riceve. Chi vede le spese in un'altra valuta lo converte con il suo tasso: il saldo si chiude esatto per chi riceve, al centesimo di cambio per gli altri | Se la beta lo mostra |
 | **«Sono due spese» vale solo su quel telefono** | È una risposta all'avviso, non un dato del viaggio. Sull'altro telefono della stessa persona l'avviso torna una volta | Se dà fastidio |
 | **Il foglio della spesa dice «Salva», la tela «Registra»** | Il pulsante c'era già dalla 1.4; nel foglio degli importi diversi è «Registra» come sulla tela | Da decidere con la tela |
