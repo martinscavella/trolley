@@ -23,6 +23,7 @@ import '../dominio/giornate.dart';
 import '../dominio/tappe.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'due_versioni.dart';
 import 'gesti_tappa.dart';
 
 /// Una tappa: nuova, o da cambiare (04-itinerario.md, "Nuova tappa"; tela,
@@ -209,10 +210,16 @@ class _SchermataTappaState extends State<SchermataTappa> {
       Navigator.of(context).pop();
       return;
     }
+    final archivio = Servizi.of(context).archivio;
     setState(() => _inCorso = true);
     try {
-      await Servizi.of(context).archivio.modificaTappa(tappa, valori);
-      if (mounted) Navigator.of(context).pop();
+      // Se qualcuno l'ha cambiata intanto, si sceglie fra le due versioni;
+      // tornando indietro senza scegliere, quello che si è scritto è qui.
+      final scelta = await salvaOScegli(
+        context,
+        () => archivio.modificaTappa(tappa, valori),
+      );
+      if (scelta != null && mounted) Navigator.of(context).pop();
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {
@@ -267,10 +274,14 @@ class _SchermataTappaState extends State<SchermataTappa> {
       ],
     );
     if (!conferma || !mounted) return;
+    final archivio = Servizi.of(context).archivio;
     setState(() => _inCorso = true);
     try {
-      await Servizi.of(context).archivio.togliTappa(tappa);
-      if (mounted) Navigator.of(context).pop();
+      final scelta = await salvaOScegli(
+        context,
+        () => archivio.togliTappa(tappa),
+      );
+      if (scelta != null && mounted) Navigator.of(context).pop();
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {

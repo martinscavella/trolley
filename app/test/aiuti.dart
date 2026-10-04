@@ -98,6 +98,7 @@ Map<String, Object?> rigaViaggio(
   'creato_da': idDiProva,
   'creato_il': creatoIl,
   'modificato_il': creatoIl,
+  'modificato_da': idDiProva,
   'eliminato_il': null,
   'versione': versione,
 };
@@ -152,6 +153,7 @@ Map<String, Object?> rigaDiTappa(
   'creato_da': creatoDa,
   'creato_il': _istante,
   'modificato_il': _istante,
+  'modificato_da': creatoDa,
   'eliminato_il': null,
   'versione': versione,
 };
@@ -181,6 +183,7 @@ Map<String, Object?> rigaDiSpesa(
   'creato_da': creatoDa,
   'creato_il': creatoIl,
   'modificato_il': creatoIl,
+  'modificato_da': creatoDa,
   'eliminato_il': null,
   'versione': versione,
 };
@@ -209,6 +212,7 @@ Map<String, Object?> rigaDiVoce(
   'creato_da': creatoDa,
   'creato_il': creatoIl,
   'modificato_il': creatoIl,
+  'modificato_da': creatoDa,
   'eliminato_il': null,
   'versione': versione,
 };
@@ -230,6 +234,7 @@ Map<String, Object?> rigaDiNota(
   'creato_da': creatoDa,
   'creato_il': creatoIl,
   'modificato_il': creatoIl,
+  'modificato_da': creatoDa,
   'eliminato_il': null,
   'versione': versione,
 };
@@ -338,16 +343,18 @@ class ServerFinto {
     switch (chiave) {
       case 'GET /rest/v1/viaggio':
         // Chi è uscito o è stato tolto non legge più il viaggio.
-        return risposta([
-          for (final v in viaggi)
-            if (!partecipazioni.any(
-              (p) =>
-                  p['viaggio_id'] == v['id'] &&
-                  p['utente_id'] == idDiProva &&
-                  p['stato'] != 'attivo',
-            ))
-              v,
-        ]);
+        return risposta(
+          _filtra([
+            for (final v in viaggi)
+              if (!partecipazioni.any(
+                (p) =>
+                    p['viaggio_id'] == v['id'] &&
+                    p['utente_id'] == idDiProva &&
+                    p['stato'] != 'attivo',
+              ))
+                v,
+          ], r.url.queryParameters),
+        );
       case 'GET /rest/v1/partecipazione':
         return risposta(_filtra(partecipazioni, r.url.queryParameters));
       case 'GET /rest/v1/invito':
@@ -458,7 +465,8 @@ class ServerFinto {
         }
         tappa
           ..addAll(valori)
-          ..['versione'] = (tappa['versione']! as int) + 1;
+          ..['versione'] = (tappa['versione']! as int) + 1
+          ..['modificato_da'] = idDiProva;
         // Senza versione passa sempre, e il trigger la fa avanzare lo stesso.
         return risposta([tappa]);
       case 'GET /rest/v1/spesa':
@@ -494,7 +502,8 @@ class ServerFinto {
         }
         spesa
           ..addAll(valori)
-          ..['versione'] = (spesa['versione']! as int) + 1;
+          ..['versione'] = (spesa['versione']! as int) + 1
+          ..['modificato_da'] = idDiProva;
         return risposta([spesa]);
       case 'GET /rest/v1/voce_lista':
         return risposta(_filtra(voci, r.url.queryParameters));
@@ -524,7 +533,8 @@ class ServerFinto {
         }
         voce
           ..addAll(valori)
-          ..['versione'] = (voce['versione']! as int) + 1;
+          ..['versione'] = (voce['versione']! as int) + 1
+          ..['modificato_da'] = idDiProva;
         return risposta([voce]);
       case 'GET /rest/v1/nota':
         return risposta(_filtra(note, r.url.queryParameters));
@@ -554,7 +564,8 @@ class ServerFinto {
         }
         nota
           ..addAll(valori)
-          ..['versione'] = (nota['versione']! as int) + 1;
+          ..['versione'] = (nota['versione']! as int) + 1
+          ..['modificato_da'] = idDiProva;
         return risposta([nota]);
       case 'GET /rest/v1/configurazione':
         return risposta(configurazione);
@@ -670,7 +681,8 @@ class ServerFinto {
         }
         viaggio
           ..addAll(valori)
-          ..['versione'] = (valori['versione']! as int) + 1;
+          ..['versione'] = (valori['versione']! as int) + 1
+          ..['modificato_da'] = idDiProva;
         return risposta([viaggio]);
       case 'POST /rest/v1/invito':
         final token = 'ABCD${2345 + inviti.length}';

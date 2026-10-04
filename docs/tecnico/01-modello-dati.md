@@ -4,6 +4,8 @@ Le entità, le loro regole, e cosa si sincronizza. È il capitolo da cui dipende
 
 Convenzione: ogni entità sincronizzata ha `id` (UUID generato dal client), `creato_da`, `creato_il`, `modificato_il`, `eliminato_il`. Si cancella marcando, mai togliendo la riga — altrimenti una cancellazione fatta offline non sa come propagarsi.
 
+Le cose che possono trovarsi in due versioni — viaggio, tappa, spesa, voce di lista, nota — hanno anche `modificato_da`: chi ha scritto l'ultima versione, per dire «di Marco, salvata alle 18:42» davanti a un conflitto. Lo scrive il server da sé, a ogni inserimento e modifica, con l'accesso di chi scrive: nessuno lo dichiara a nome di un altro. Sul telefono non serve, e non c'è: si legge dal server quando le versioni sono due.
+
 ---
 
 ## Persone

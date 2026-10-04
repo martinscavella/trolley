@@ -9,6 +9,7 @@ import '../aspetto/testi.dart';
 import '../dati/errori.dart';
 import '../dominio/periodo.dart';
 import 'con_la_rete.dart';
+import 'due_versioni.dart';
 
 /// Il periodo di un'idea, fra i mesi e le stagioni che vengono: si sceglie,
 /// non si scrive, così l'app sa quando è passato (02-il-viaggio.md, regola 5).
@@ -128,8 +129,11 @@ class _SchermataPeriodoState extends State<SchermataPeriodo> {
   Future<void> _conferma() async {
     setState(() => _inCorso = true);
     try {
-      await widget.onConferma(_periodo);
-      if (mounted) Navigator.of(context).pop(true);
+      final scelta = await salvaOScegli(
+        context,
+        () => widget.onConferma(_periodo),
+      );
+      if (scelta != null && mounted) Navigator.of(context).pop(true);
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {

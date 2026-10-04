@@ -14,6 +14,7 @@ import '../dati/errori.dart';
 import '../dominio/liste.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'due_versioni.dart';
 
 /// Una voce da cambiare (05-cose-da-portare.md, "Voce"; tela, 21): che cosa,
 /// quante, ed eliminarla. Cambiare il testo è un gesto da tavolo, non da
@@ -77,15 +78,21 @@ class _FoglioState extends State<_Foglio> {
   }
 
   Future<void> _salva() async {
+    final archivio = Servizi.of(context).archivio;
+    final cambiamenti = _cambiamenti;
     setState(() => _inCorso = true);
     try {
-      await Servizi.of(context).archivio
-          .modificaVoce(widget.voce, _cambiamenti);
+      // Se qualcuno l'ha riscritta intanto, si sceglie fra le due versioni.
+      // Tornando indietro senza scegliere, il testo che si stava scrivendo
+      // resta nel campo: non si perde e non si fonde con l'altro (02 §3).
+      final scelta = await salvaOScegli(
+        context,
+        () => archivio.modificaVoce(widget.voce, cambiamenti),
+      );
+      if (scelta == null) return;
       HapticFeedback.lightImpact();
       if (mounted) Navigator.of(context).pop();
     } on ErroreTrolley catch (e) {
-      // Il testo che si stava scrivendo resta nel campo: non si perde e non
-      // si fonde con quello nuovo (02 §3).
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {
       if (mounted) setState(() => _inCorso = false);
@@ -112,10 +119,14 @@ class _FoglioState extends State<_Foglio> {
       ],
     );
     if (!conferma || !mounted) return;
+    final archivio = Servizi.of(context).archivio;
     setState(() => _inCorso = true);
     try {
-      await Servizi.of(context).archivio.togliVoce(widget.voce);
-      if (mounted) Navigator.of(context).pop();
+      final scelta = await salvaOScegli(
+        context,
+        () => archivio.togliVoce(widget.voce),
+      );
+      if (scelta != null && mounted) Navigator.of(context).pop();
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {

@@ -15,12 +15,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../dominio/calendario.dart';
+import '../dominio/conflitti.dart';
 import '../dominio/giornate.dart';
 import '../dominio/liste.dart';
 import '../dominio/periodo.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
 import 'coda.dart';
+import 'conflitti.dart';
 import 'database.dart';
 import 'destinazioni.dart';
 import 'errori.dart';
@@ -783,54 +785,73 @@ class Archivio {
   }
 
   /// Fissa o sposta le date. Un'idea diventa definita; i giorni che escono si
-  /// marcano e tornano se le date tornano a comprenderli.
-  Future<void> programma(Viaggio viaggio, Programma programma) async {
-    final righe = await _alServer(
-      () => _server.rpc<Map<String, dynamic>>(
-        'programma_viaggio',
-        params: {
-          'p_viaggio': viaggio.id,
-          'p_versione': viaggio.versione,
-          ..._dateDelProgramma(programma),
-          'p_giorni': _giorniPerIlServer(programma),
-        },
-      ),
-    );
-    await _nellaCopia(righe);
-  }
+  /// marcano e tornano se le date tornano a comprenderli. Con la versione su
+  /// cui la persona ha deciso: se qualcuno ha cambiato le date nel frattempo,
+  /// si mostrano le due versioni ([Conflitto]).
+  Future<void> programma(Viaggio viaggio, Programma programma) => _quando(
+    viaggio,
+    (base) => {
+      ...base,
+      'stato': base['stato'] == 'idea' || base['stato'] == 'archiviato'
+          ? 'definito'
+          : base['stato'],
+      'periodo_approssimativo': null,
+      'data_inizio': scriviData(programma.inizio),
+      'data_fine': scriviData(programma.fine),
+      'ora_arrivo': scriviOra(programma.arrivo),
+      'ora_partenza': scriviOra(programma.partenza),
+    },
+  );
 
   /// Da definito a idea: le date spariscono, quello che vi era agganciato resta
   /// e torna se si rifissano le stesse date (02, casi limite).
-  Future<void> tornaIdea(Viaggio viaggio, {Periodo? periodo}) async {
-    final righe = await _alServer(
-      () => _server.rpc<Map<String, dynamic>>(
-        'torna_idea',
-        params: {
-          'p_viaggio': viaggio.id,
-          'p_versione': viaggio.versione,
-          'p_periodo': periodo?.testo,
-        },
-      ),
-    );
-    await _nellaCopia(righe);
-  }
+  Future<void> tornaIdea(Viaggio viaggio, {Periodo? periodo}) => _quando(
+    viaggio,
+    (base) => {
+      ...base,
+      'stato': 'idea',
+      'periodo_approssimativo': periodo?.testo,
+      'data_inizio': null,
+      'data_fine': null,
+      'ora_arrivo': null,
+      'ora_partenza': null,
+    },
+  );
 
   /// Cambia il periodo di un'idea.
-  Future<void> cambiaPeriodo(Viaggio viaggio, Periodo? periodo) =>
-      _aggiornaViaggio(viaggio, statoAtteso: 'idea', {
-        'periodo_approssimativo': periodo?.testo,
-      });
+  Future<void> cambiaPeriodo(Viaggio viaggio, Periodo? periodo) => _quando(
+    viaggio,
+    (base) => {...base, 'periodo_approssimativo': periodo?.testo},
+  );
 
   /// Riprende un'idea dall'archivio, con un periodo nuovo: quello vecchio è
   /// passato (02, casi limite).
-  Future<void> riprendi(Viaggio viaggio, Periodo? periodo) => _aggiornaViaggio(
+  Future<void> riprendi(Viaggio viaggio, Periodo? periodo) => _quando(
     viaggio,
-    statoAtteso: 'archiviato',
-    {'stato': 'idea', 'periodo_approssimativo': periodo?.testo},
+    (base) => {
+      ...base,
+      'stato': 'idea',
+      'periodo_approssimativo': periodo?.testo,
+    },
   );
 
+  /// Cambia quando si parte: dal viaggio come la persona l'ha visto a [mia].
+  Future<void> _quando(
+    Viaggio viaggio,
+    Map<String, Object?> Function(Map<String, Object?> base) mia,
+  ) {
+    final base = ritrattoViaggio(rigaDelViaggio(viaggio));
+    return _conLaVersione(
+      _viaggioVersionato(viaggio.id),
+      riferimento: base,
+      versione: viaggio.versione,
+      mia: mia(base),
+    );
+  }
+
   /// Aggiorna il viaggio solo se è ancora nello stato in cui la persona l'ha
-  /// visto, con la versione su cui ha deciso.
+  /// visto, con la versione su cui ha deciso. Per le scritture che l'app fa da
+  /// sé, come archiviare un'idea scaduta: lì non c'è nessuno a cui chiedere.
   Future<void> _aggiornaViaggio(
     Viaggio viaggio,
     Map<String, Object?> valori, {
@@ -1005,31 +1026,23 @@ class Archivio {
   // ─── Tappe: le scritture che richiedono la rete ──────────────────────────
 
   /// Cambia una tappa: titolo, tipo, durata, ora, luogo, giorno. Con la
-  /// versione su cui la persona ha deciso: se qualcuno l'ha cambiata nel
-  /// frattempo si rifiuta, e la copia si riscarica (02 §3). Prima parte quello
-  /// che è in coda, così la tappa ha la sua versione del server.
+  /// versione che la persona ha visto: se qualcuno l'ha cambiata nel frattempo
+  /// si mostrano le due versioni ([Conflitto], 02 §3). Prima parte quello che
+  /// è in coda: una tappa aggiunta senza rete prende così la sua versione del
+  /// server.
   Future<void> modificaTappa(Tappa tappa, Map<String, Object?> valori) async {
     await coda.svuota();
-    final attuale =
-        await (_db.select(
-          _db.tappe,
-        )..where((t) => t.id.equals(tappa.id))).getSingleOrNull() ??
-        tappa;
-    final righe = await _alServer(
-      () => _server
-          .from('tappa')
-          .update({...valori, 'versione': attuale.versione})
-          .eq('id', tappa.id)
-          .select(),
+    final attuale = await (_db.select(
+      _db.tappe,
+    )..where((t) => t.id.equals(tappa.id))).getSingleOrNull();
+    final vista = tappa.versione == 0 ? attuale ?? tappa : tappa;
+    final riga = rigaDellaTappa(vista);
+    await _conLaVersione(
+      _tappaVersionata(tappa.id),
+      riferimento: ritrattoTappa(riga),
+      versione: vista.versione,
+      mia: ritrattoTappa({...riga, ...valori}),
     );
-    if (righe.isEmpty) {
-      await aggiornaCopia().catchError((_) {});
-      throw const ErroreTrolley(
-        'Questa tappa non è ancora arrivata sul server, o non c\'è più. Ora '
-        'vedi la giornata com\'è adesso.',
-      );
-    }
-    await coda.nellaCopia(righe.single);
   }
 
   /// Toglie una tappa: si marca, non si cancella (01-modello-dati.md).
@@ -1038,17 +1051,8 @@ class Archivio {
   });
 
   /// Sposta una tappa in fondo a un altro giorno del viaggio.
-  Future<void> spostaTappa(Tappa tappa, {required String giornoId}) async {
-    final ordini =
-        await (_db.select(_db.tappe)..where(
-              (t) => t.giornoId.equals(giornoId) & t.eliminatoIl.isNull(),
-            ))
-            .get();
-    await modificaTappa(tappa, {
-      'giorno_id': giornoId,
-      'ordine': ordineInFondo(ordini.map((t) => t.ordine)),
-    });
-  }
+  Future<void> spostaTappa(Tappa tappa, {required String giornoId}) =>
+      modificaTappa(tappa, {'giorno_id': giornoId});
 
   /// Riordina le tappe di un giorno: [ids] nell'ordine voluto. Non porta la
   /// versione: due persone che riordinano la stessa giornata non sono un
@@ -1070,39 +1074,30 @@ class Archivio {
 
   // ─── Spese: le scritture che richiedono la rete ──────────────────────────
 
-  /// Cambia una spesa: importo, valuta, descrizione, data. Con la versione su
-  /// cui la persona ha deciso: sui soldi non si indovina, e se qualcuno l'ha
-  /// cambiata nel frattempo si rifiuta e la copia si riscarica (06, casi
-  /// limite). Prima parte quello che è in coda, così la spesa ha la sua
-  /// versione del server.
+  /// Cambia una spesa: importo, valuta, descrizione, data. Con la versione che
+  /// la persona ha visto: sui soldi non si indovina, e se qualcuno l'ha
+  /// cambiata nel frattempo si mostrano le due versioni (06, casi limite).
+  /// Prima parte quello che è in coda, così la spesa ha la sua versione del
+  /// server.
   Future<void> modificaSpesa(Spesa spesa, Map<String, Object?> valori) async {
     await coda.svuota();
-    final attuale =
-        await (_db.select(
-          _db.spese,
-        )..where((s) => s.id.equals(spesa.id))).getSingleOrNull() ??
-        spesa;
-    if (attuale.versione == 0) {
+    final attuale = await (_db.select(
+      _db.spese,
+    )..where((s) => s.id.equals(spesa.id))).getSingleOrNull();
+    final vista = spesa.versione == 0 ? attuale ?? spesa : spesa;
+    if (vista.versione == 0) {
       throw const ErroreTrolley(
         'Questa spesa non è ancora arrivata sul server: si potrà cambiare '
         'quando parte.',
       );
     }
-    final righe = await _alServer(
-      () => _server
-          .from('spesa')
-          .update({...valori, 'versione': attuale.versione})
-          .eq('id', spesa.id)
-          .select(),
+    final riga = rigaDellaSpesa(vista);
+    await _conLaVersione(
+      _spesaVersionata(spesa.id),
+      riferimento: ritrattoSpesa(riga),
+      versione: vista.versione,
+      mia: ritrattoSpesa({...riga, ...valori}),
     );
-    if (righe.isEmpty) {
-      await aggiornaCopia().catchError((_) {});
-      throw const ErroreTrolley(
-        'Questa spesa non c\'è più sul server. Ora vedi le spese come sono '
-        'adesso.',
-      );
-    }
-    await coda.nellaCopiaSpesa(righe.single);
   }
 
   /// Toglie una spesa: si marca, non si cancella (01-modello-dati.md).
@@ -1181,36 +1176,23 @@ class Archivio {
     )..where((v) => v.id.equals(id))).getSingle());
   }
 
-  /// Cambia una voce: il testo, quante. Con la versione su cui la persona ha
-  /// deciso: due testi non si fondono mai, e se qualcuno l'ha cambiata nel
-  /// frattempo si rifiuta e la copia si riscarica (02 §3). Prima parte quello
-  /// che è in coda, così la voce ha la sua versione del server.
+  /// Cambia una voce: il testo, quante. Con la versione che la persona ha
+  /// visto: due testi non si fondono mai, e se qualcuno l'ha cambiata nel
+  /// frattempo si mostrano le due versioni (02 §3). Prima parte quello che è
+  /// in coda, così la voce ha la sua versione del server.
   Future<void> modificaVoce(VoceLista voce, Map<String, Object?> valori) async {
     await coda.svuota();
-    final attuale =
-        await (_db.select(
-          _db.vociLista,
-        )..where((v) => v.id.equals(voce.id))).getSingleOrNull() ??
-        voce;
-    final righe = await _alServer(
-      () => _server
-          .from('voce_lista')
-          .update({...valori, 'versione': attuale.versione})
-          .eq('id', voce.id)
-          .select(),
-      messaggi: const {
-        CodiciServer.versioneSuperata:
-            'Questa voce è appena cambiata su un altro telefono. Ora vedi '
-            'com\'è adesso: controlla e riprova.',
-      },
+    final attuale = await (_db.select(
+      _db.vociLista,
+    )..where((v) => v.id.equals(voce.id))).getSingleOrNull();
+    final vista = voce.versione == 0 ? attuale ?? voce : voce;
+    final riga = rigaDellaVoce(vista);
+    await _conLaVersione(
+      _voceVersionata(voce.id),
+      riferimento: ritrattoVoce(riga),
+      versione: vista.versione,
+      mia: ritrattoVoce({...riga, ...valori}),
     );
-    if (righe.isEmpty) {
-      await aggiornaCopia().catchError((_) {});
-      throw const ErroreTrolley(
-        'Questa voce non c\'è più sul server. Ora vedi la lista com\'è adesso.',
-      );
-    }
-    await coda.nellaCopiaVoce(righe.single);
   }
 
   /// Toglie una voce: si marca, non si cancella (01-modello-dati.md).
@@ -1299,6 +1281,265 @@ class Archivio {
         .into(_db.note)
         .insertOnConflictUpdate(_nota(riga, DateTime.now().toUtc()));
   }
+
+  // ─── Due versioni (02 §3) ───────────────────────────────────────────────
+
+  /// «Tieni la tua»: la cosa diventa esattamente com'era la versione della
+  /// persona, scritta sopra quella del server. Se nel frattempo è cambiata
+  /// ancora, arriva un [Conflitto] nuovo.
+  Future<void> tieniLaTua(Conflitto conflitto) => _conLaVersione(
+    _versionata(conflitto.cosa, conflitto.id),
+    riferimento: conflitto.loro,
+    versione: conflitto.versioneLoro,
+    mia: conflitto.mia,
+  );
+
+  /// «Tienile tutte e due»: quella del server resta com'è, e la propria
+  /// diventa una voce nuova. Solo dove due versioni possono convivere.
+  Future<void> tieniTutteEDue(Conflitto conflitto) async {
+    if (!conflitto.possonoConvivere) {
+      throw const ErroreTrolley('Qui si sceglie una delle due versioni.');
+    }
+    await aggiungiVoce(
+      viaggioId: conflitto.viaggioId,
+      testo: conflitto.mia['testo']! as String,
+      quantita: conflitto.mia['quantita']! as int,
+    );
+  }
+
+  /// Scrive [mia] sopra la versione [versione], che allora era [riferimento].
+  /// Se nel frattempo qualcuno l'ha cambiata il server rifiuta (TR409), e si
+  /// guarda com'è adesso: se dice già quello che si voleva, è fatta; se l'altro
+  /// non ha toccato niente di quello che si cambia qui (ha segnato la tappa,
+  /// spuntato la voce, riordinato la giornata) si riscrive sulla versione
+  /// nuova; altrimenti si lancia un [Conflitto] e sceglie la persona. In ogni
+  /// caso la copia ha la versione del server.
+  Future<void> _conLaVersione(
+    _Versionata cosa, {
+    required Map<String, Object?> riferimento,
+    required int versione,
+    required Map<String, Object?> mia,
+  }) async {
+    var rif = riferimento;
+    var ver = versione;
+    // Ogni giro riprova solo se qualcuno ha appena scritto: tre bastano, e
+    // oltre è meglio chiedere che girare.
+    for (var giro = 1; ; giro++) {
+      final bool scritta;
+      try {
+        scritta = await alServer(() => cosa.scrivi(mia, rif, ver), rete: rete);
+      } on ErroreTrolley catch (e) {
+        if (e.codice != CodiciServer.versioneSuperata) rethrow;
+        final adesso = await alServer(cosa.rileggi, rete: rete);
+        if (adesso == null) await _nonCePiu(cosa);
+        await cosa.nellaCopia(adesso);
+        final loro = cosa.ritratto(adesso);
+        switch (confronta(base: rif, mia: mia, loro: loro)) {
+          case EsitoConfronto.uguali:
+            return;
+          case EsitoConfronto.nienteInComune when giro < 3:
+            rif = loro;
+            ver = adesso['versione']! as int;
+            continue;
+          case _:
+            throw Conflitto(
+              cosa: cosa.cosa,
+              id: cosa.id,
+              viaggioId: (adesso['viaggio_id'] ?? adesso['id'])! as String,
+              mia: mia,
+              loro: loro,
+              versioneLoro: adesso['versione']! as int,
+              autoreId: adesso['modificato_da'] as String?,
+              salvataIl: DateTime.tryParse('${adesso['modificato_il']}'),
+            );
+        }
+      }
+      if (!scritta) await _nonCePiu(cosa);
+      return;
+    }
+  }
+
+  Future<Never> _nonCePiu(_Versionata cosa) async {
+    await aggiornaCopia().catchError((_) {});
+    throw ErroreTrolley(cosa.nonCePiu);
+  }
+
+  _Versionata _versionata(CosaInConflitto cosa, String id) => switch (cosa) {
+    CosaInConflitto.viaggio => _viaggioVersionato(id),
+    CosaInConflitto.tappa => _tappaVersionata(id),
+    CosaInConflitto.spesa => _spesaVersionata(id),
+    CosaInConflitto.voce => _voceVersionata(id),
+  };
+
+  /// La riga di una tabella del viaggio com'è adesso sul server, anche tolta.
+  Future<Map<String, dynamic>?> Function() _rileggi(
+    String tabella,
+    String id,
+  ) =>
+      () async =>
+          (await _server.from(tabella).select().eq('id', id)).firstOrNull;
+
+  /// Aggiorna una riga di [tabella] con i campi in cui [mia] e il riferimento
+  /// non coincidono, e la mette nella copia.
+  Future<bool> _aggiornaRiga(
+    String tabella,
+    String id,
+    Map<String, Object?> valori,
+    int versione,
+    Future<void> Function(Map<String, dynamic>) nellaCopia,
+  ) async {
+    final righe = await _server
+        .from(tabella)
+        .update({...valori, 'versione': versione})
+        .eq('id', id)
+        .select();
+    if (righe.isEmpty) return false;
+    await nellaCopia(righe.single);
+    return true;
+  }
+
+  _Versionata _tappaVersionata(String id) => _Versionata(
+    cosa: CosaInConflitto.tappa,
+    id: id,
+    ritratto: ritrattoTappa,
+    rileggi: _rileggi('tappa', id),
+    nellaCopia: coda.nellaCopia,
+    scrivi: (mia, rif, versione) async {
+      final campi = campiDiversi(mia, rif);
+      final giorno = mia['giorno_id']! as String;
+      // In un altro giorno va in fondo: l'ordine non è una scelta da
+      // confrontare, segue il giorno.
+      final ordine = campi.contains('giorno_id')
+          ? ordineInFondo(
+              (await (_db.select(_db.tappe)..where(
+                        (t) =>
+                            t.giornoId.equals(giorno) &
+                            t.id.equals(id).not() &
+                            t.eliminatoIl.isNull(),
+                      ))
+                      .get())
+                  .map((t) => t.ordine),
+            )
+          : null;
+      return _aggiornaRiga(
+        'tappa',
+        id,
+        {...perIlServer(mia, campi), 'ordine': ?ordine},
+        versione,
+        coda.nellaCopia,
+      );
+    },
+    nonCePiu:
+        'Questa tappa non è ancora arrivata sul server, o non c\'è più. Ora '
+        'vedi la giornata com\'è adesso.',
+  );
+
+  _Versionata _spesaVersionata(String id) => _Versionata(
+    cosa: CosaInConflitto.spesa,
+    id: id,
+    ritratto: ritrattoSpesa,
+    rileggi: _rileggi('spesa', id),
+    nellaCopia: coda.nellaCopiaSpesa,
+    scrivi: (mia, rif, versione) => _aggiornaRiga(
+      'spesa',
+      id,
+      perIlServer(mia, campiDiversi(mia, rif)),
+      versione,
+      coda.nellaCopiaSpesa,
+    ),
+    nonCePiu:
+        'Questa spesa non c\'è più sul server. Ora vedi le spese come sono '
+        'adesso.',
+  );
+
+  _Versionata _voceVersionata(String id) => _Versionata(
+    cosa: CosaInConflitto.voce,
+    id: id,
+    ritratto: ritrattoVoce,
+    rileggi: _rileggi('voce_lista', id),
+    nellaCopia: coda.nellaCopiaVoce,
+    scrivi: (mia, rif, versione) => _aggiornaRiga(
+      'voce_lista',
+      id,
+      perIlServer(mia, campiDiversi(mia, rif)),
+      versione,
+      coda.nellaCopiaVoce,
+    ),
+    nonCePiu:
+        'Questa voce non c\'è più sul server. Ora vedi la lista com\'è adesso.',
+  );
+
+  /// Quando si parte. Si scrive con la funzione che porta il viaggio dove lo
+  /// vuole la persona: con le date `programma_viaggio`, che sistema anche i
+  /// giorni; da definito a idea `torna_idea`; fra idee, periodo e stato.
+  _Versionata _viaggioVersionato(String id) => _Versionata(
+    cosa: CosaInConflitto.viaggio,
+    id: id,
+    ritratto: ritrattoViaggio,
+    rileggi: _rileggi('viaggio', id),
+    // Le date cambiate si portano dietro i giorni: si riscarica tutto.
+    nellaCopia: (_) => aggiornaCopia().catchError((_) {}),
+    scrivi: (mia, rif, versione) async {
+      final inizio = leggiData(mia['data_inizio'] as String?);
+      final fine = leggiData(mia['data_fine'] as String?);
+      final arrivo = leggiOra(mia['ora_arrivo'] as String?);
+      final partenza = leggiOra(mia['ora_partenza'] as String?);
+      if (inizio != null &&
+          fine != null &&
+          arrivo != null &&
+          partenza != null) {
+        final programma = Programma(
+          inizio: inizio,
+          fine: fine,
+          arrivo: arrivo,
+          partenza: partenza,
+        );
+        await _nellaCopia(
+          await _server.rpc<Map<String, dynamic>>(
+            'programma_viaggio',
+            params: {
+              'p_viaggio': id,
+              'p_versione': versione,
+              ..._dateDelProgramma(programma),
+              'p_giorni': _giorniPerIlServer(programma),
+            },
+          ),
+        );
+        return true;
+      }
+      if (rif['stato'] == 'definito') {
+        await _nellaCopia(
+          await _server.rpc<Map<String, dynamic>>(
+            'torna_idea',
+            params: {
+              'p_viaggio': id,
+              'p_versione': versione,
+              'p_periodo': mia['periodo_approssimativo'],
+            },
+          ),
+        );
+        return true;
+      }
+      final righe = await _server
+          .from('viaggio')
+          .update({
+            'stato': mia['stato'],
+            'periodo_approssimativo': mia['periodo_approssimativo'],
+            'versione': versione,
+          })
+          .eq('id', id)
+          .select();
+      if (righe.isEmpty) return false;
+      await _db
+          .into(_db.viaggi)
+          .insertOnConflictUpdate(
+            _viaggio(righe.single, DateTime.now().toUtc()),
+          );
+      return true;
+    },
+    nonCePiu:
+        'Questo viaggio non c\'è più. Ora vedi i tuoi viaggi come sono adesso.',
+  );
 
   // ─── Idee e archivio ────────────────────────────────────────────────────
 
@@ -1451,4 +1692,41 @@ class Archivio {
         finestraInizio: r['finestra_inizio'] as String,
         finestraFine: r['finestra_fine'] as String,
       );
+}
+
+/// Una cosa che si scrive con la versione: come scriverla, come rileggerla,
+/// come farne un ritratto per il confronto.
+class _Versionata {
+  const _Versionata({
+    required this.cosa,
+    required this.id,
+    required this.ritratto,
+    required this.rileggi,
+    required this.nellaCopia,
+    required this.scrivi,
+    required this.nonCePiu,
+  });
+
+  final CosaInConflitto cosa;
+  final String id;
+  final Map<String, Object?> Function(Map<String, Object?> riga) ritratto;
+
+  /// La riga com'è adesso sul server; `null` se non la si legge più.
+  final Future<Map<String, dynamic>?> Function() rileggi;
+
+  /// Mette nella copia una riga riletta dopo un rifiuto.
+  final Future<void> Function(Map<String, dynamic> riga) nellaCopia;
+
+  /// Scrive [mia] sopra la versione [versione], che era [riferimento], e
+  /// mette nella copia quello che il server ha scritto. `false` se la cosa
+  /// sul server non c'è.
+  final Future<bool> Function(
+    Map<String, Object?> mia,
+    Map<String, Object?> riferimento,
+    int versione,
+  )
+  scrivi;
+
+  /// Cosa dire se la cosa sul server non c'è più.
+  final String nonCePiu;
 }

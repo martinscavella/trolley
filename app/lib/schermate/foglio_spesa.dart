@@ -18,6 +18,7 @@ import '../dominio/spese.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'due_versioni.dart';
 import 'gesti_spesa.dart';
 import 'scelta_valuta.dart';
 import 'spese.dart';
@@ -174,6 +175,7 @@ class _FoglioState extends State<_Foglio> {
   Future<void> _salva() async {
     final centesimi = _centesimi;
     if (centesimi == null) return;
+    final archivio = Servizi.of(context).archivio;
     setState(() => _inCorso = true);
     try {
       if (_nuova) {
@@ -186,8 +188,12 @@ class _FoglioState extends State<_Foglio> {
           descrizione: _descrizione.text,
         );
       } else {
-        await Servizi.of(context).archivio
-            .modificaSpesa(widget.spesa!, _cambiamenti);
+        final cambiamenti = _cambiamenti;
+        final scelta = await salvaOScegli(
+          context,
+          () => archivio.modificaSpesa(widget.spesa!, cambiamenti),
+        );
+        if (scelta == null) return;
         HapticFeedback.lightImpact();
       }
       if (mounted) Navigator.of(context).pop();
@@ -226,10 +232,14 @@ class _FoglioState extends State<_Foglio> {
       ],
     );
     if (!conferma || !mounted) return;
+    final archivio = Servizi.of(context).archivio;
     setState(() => _inCorso = true);
     try {
-      await Servizi.of(context).archivio.togliSpesa(spesa);
-      if (mounted) Navigator.of(context).pop();
+      final scelta = await salvaOScegli(
+        context,
+        () => archivio.togliSpesa(spesa),
+      );
+      if (scelta != null && mounted) Navigator.of(context).pop();
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {

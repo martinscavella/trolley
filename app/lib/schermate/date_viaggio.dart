@@ -16,6 +16,7 @@ import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'campi_date.dart';
 import 'con_la_rete.dart';
+import 'due_versioni.dart';
 import 'scelta_periodo.dart';
 
 /// Le date di un viaggio che esiste già: fissarle per un'idea, che così
@@ -51,8 +52,13 @@ class _SchermataDateState extends State<SchermataDate> {
     final eraIdea = _eUnIdea;
     setState(() => _inCorso = true);
     try {
-      await servizi.archivio.programma(widget.viaggio, programma);
-      if (eraIdea) {
+      final scelta = await salvaOScegli(
+        context,
+        () => servizi.archivio.programma(widget.viaggio, programma),
+      );
+      if (scelta == null) return;
+      // Tenendo l'altra versione, l'idea l'ha definita chi l'ha scritta.
+      if (eraIdea && scelta == SceltaVersione.tua) {
         await servizi.misurazione.registra(Eventi.ideaDefinita, {
           'giorni_dalla_creazione':
               giorniDiCalendario(widget.viaggio.creato, DateTime.now()) - 1,

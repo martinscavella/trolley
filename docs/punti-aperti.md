@@ -36,7 +36,6 @@ La fase 1.1 (stati idea e definito, giorni, capienza) è costruita. Restano, cia
 | Voce | Perché aspetta | Quando |
 |---|---|---|
 | **Notifica "è ancora un'idea?"** | Oggi il sollecito sta dentro l'app, sulla scheda e nell'idea. La notifica ha bisogno del permesso, che si chiede quando serve davvero ([14](prodotto/14-notifiche.md)) | Con le notifiche |
-| **Schermata dei conflitti** | Una modifica su versione superata oggi si rifiuta, la copia si riscarica e la persona riprova. Mostrare le due versioni affiancate è la 2.2 | Fase 2.2 |
 | **Chiusura del viaggio** | "In corso" e "concluso" si ricavano dalle date; scriverli sul server, con verifica e traguardi, è la 4.1 | Fase 4.1 |
 
 ### Rimasto fuori dalla 1.2
@@ -121,6 +120,19 @@ La fase 2.1 (chi c'è, inviti e inviti in sospeso, togliere qualcuno e passare i
 | **Le voci assegnate a chi esce tornano libere** | Non c'è ancora l'assegnazione | Fase 2.4 |
 | **`primo_contributo_invitato` guarda il ruolo di adesso** | Dopo un passaggio di ruolo chi ha creato il viaggio risulta partecipante: se non aveva mai aggiunto niente, il suo primo contributo conterebbe come quello di un invitato. Il caso è raro (chi crea un viaggio di solito ci mette qualcosa), e distinguerlo vorrebbe un campo in più sulla partecipazione | Se i numeri di H3 lo mostrano |
 | **Rivedere sulla tela le schermate 29–33** | Disegnate e costruite insieme il 4 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 2.1 |
+
+### Rimasto fuori dalla 2.2
+
+La fase 2.2 (due versioni della stessa cosa: tappa, spesa, voce, date del viaggio; chi e quando; tienila, tieni l'altra, tutte e due per le voci; una cosa tolta) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **La migrazione `chi_ha_scritto` va applicata** | Aggiunge `modificato_da` e il trigger che lo scrive (viaggio, tappa, spesa, voce, nota). Senza, l'app funziona lo stesso ma l'altra versione dice «già salvata» invece di «di Marco». Il file porta la versione `20261004150000`; le prove sono in `supabase/tests/conflitti.sql`. Applicata dall'editor SQL non finisce in `schema_migrations` | Da applicare |
+| **La notifica «Due versioni»** per chi esce prima di scegliere | Oggi chiudendo si torna al foglio, con quello che si era scritto; chiudendo anche il foglio la propria versione si perde, come per ogni foglio lasciato a metà. La notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **«Tienile tutte e due» per le note** | Le note oggi non si riscrivono: non possono trovarsi in due versioni | Con le note scritte a mano |
+| **«Tienile tutte e due» per una voce della lista del viaggio** | Oggi la voce in più nasce nella propria lista personale, l'unica che c'è. Con la lista del viaggio dovrà nascere nella stessa lista dell'altra | Fase 2.4 |
+| **Le quote di una spesa divisa** nelle due versioni | Con la divisione (2.3) una spesa ha anche chi ha pagato e per chi: vanno nel confronto | Fase 2.3 |
+| **Rivedere sulla tela le schermate 34–36 e 88** | 34–36 disegnate prima, 88 (una tolta) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.2 |
 
 ### Impianto di sicurezza del matching — stima
 

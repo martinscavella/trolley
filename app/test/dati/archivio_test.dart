@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/dati/archivio.dart';
+import 'package:trolley/dati/conflitti.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/destinazioni.dart';
 import 'package:trolley/dati/errori.dart';
@@ -147,22 +148,21 @@ void main() {
       expect(await archivio.osservaGiorni(idea.id).first, hasLength(1));
     });
 
-    test(
-      'su una versione superata si rifiuta, e la copia si riscarica',
-      () async {
-        server.percorsi['POST /rest/v1/rpc/programma_viaggio'] = (_) async =>
-            risposta({
-              'code': 'TR409',
-              'message': 'versione superata: attesa 2, ricevuta 1',
-              'details': null,
-              'hint': null,
-            }, 400);
-        server.percorsi['GET /rest/v1/viaggio'] = (_) async => risposta([
-          rigaViaggio(idea.id, versione: 2, periodo: 'settembre 2027'),
-        ]);
+    test('se intanto qualcuno ha cambiato le date, si mostrano le due versioni '
+        'e la copia ha la sua', () async {
+      // Marco le ha già fissate, dal suo telefono.
+      server.viaggi.single
+        ..['stato'] = 'definito'
+        ..['periodo_approssimativo'] = null
+        ..['data_inizio'] = '2027-08-10'
+        ..['data_fine'] = '2027-08-12'
+        ..['ora_arrivo'] = '10:00:00'
+        ..['ora_partenza'] = '18:00:00'
+        ..['modificato_da'] = 'marco'
+        ..['versione'] = 2;
 
-        await expectLater(
-          archivio.programma(
+      final conflitto = await archivio
+          .programma(
             idea,
             Programma(
               inizio: DateTime(2027, 8, 1),
@@ -170,51 +170,66 @@ void main() {
               arrivo: const Duration(hours: 9),
               partenza: const Duration(hours: 20),
             ),
-          ),
-          throwsA(
-            isA<ErroreTrolley>()
-                .having(
-                  (e) => e.codice,
-                  'codice',
-                  CodiciServer.versioneSuperata,
-                )
-                .having(
-                  (e) => e.messaggio,
-                  'messaggio',
-                  contains('Qualcun altro'),
-                ),
-          ),
-        );
-        final adesso = (await archivio.osservaViaggio(idea.id).first)!;
-        expect(adesso.versione, 2);
-        expect(adesso.periodoApprossimativo, 'settembre 2027');
-      },
-    );
+          )
+          .then<Conflitto?>((_) => null, onError: (Object e) => e as Conflitto);
 
-    test(
-      'se il viaggio non è più nello stato visto, non si scrive e lo si dice',
-      () async {
-        // Qualcuno ha già fissato le date: l'aggiornamento non trova l'idea.
-        server.percorsi['PATCH /rest/v1/viaggio'] = (_) async => risposta([]);
+      expect(conflitto!.cosa, CosaInConflitto.viaggio);
+      expect(conflitto.codice, CodiciServer.versioneSuperata);
+      expect(conflitto.autoreId, 'marco');
+      expect(conflitto.mia['data_inizio'], '2027-08-01');
+      expect(conflitto.loro['data_inizio'], '2027-08-10');
+      expect(conflitto.diversi, containsAll(['data_inizio', 'ora_arrivo']));
+      final adesso = (await archivio.osservaViaggio(idea.id).first)!;
+      expect(adesso.versione, 2);
+      expect(adesso.dataInizio, '2027-08-10');
 
-        await expectLater(
-          archivio.cambiaPeriodo(idea, const MeseDi(2027, 9)),
-          throwsA(
-            isA<ErroreTrolley>().having(
-              (e) => e.messaggio,
-              'messaggio',
-              contains('cambiato nel frattempo'),
-            ),
-          ),
-        );
-        final patch = server.richieste.firstWhere((r) => r.method == 'PATCH');
-        expect(patch.url.queryParameters['stato'], 'eq.idea');
-        expect(corpoDi(patch), {
-          'periodo_approssimativo': 'settembre 2027',
-          'versione': idea.versione,
-        });
-      },
-    );
+      // «Tieni la tua»: le date diventano quelle scelte, sopra la versione
+      // di Marco.
+      await archivio.tieniLaTua(conflitto);
+      final mio = (await archivio.osservaViaggio(idea.id).first)!;
+      expect(mio.dataInizio, '2027-08-01');
+      expect(mio.oraPartenza, '20:00:00');
+      expect(mio.versione, 3);
+      expect(await archivio.osservaGiorni(idea.id).first, hasLength(2));
+    });
+
+    test('se qualcuno ha toccato altro, si scrive sulla versione nuova senza '
+        'chiedere', () async {
+      // Il ruolo è passato di mano: la versione è avanzata, il periodo no.
+      server.viaggi.single['versione'] = 2;
+
+      await archivio.cambiaPeriodo(idea, const MeseDi(2027, 9));
+
+      final patch = server.chiamate('PATCH', '/rest/v1/viaggio');
+      expect(patch.map((r) => corpoDi(r)['versione']), [1, 2]);
+      final adesso = (await archivio.osservaViaggio(idea.id).first)!;
+      expect(adesso.periodoApprossimativo, 'settembre 2027');
+      expect(adesso.versione, 3);
+    });
+
+    test('se intanto le date le ha fissate qualcuno, cambiare il periodo '
+        'mostra le due versioni; tenere la propria torna a idea', () async {
+      server.viaggi.single
+        ..['stato'] = 'definito'
+        ..['periodo_approssimativo'] = null
+        ..['data_inizio'] = '2027-08-10'
+        ..['data_fine'] = '2027-08-10'
+        ..['ora_arrivo'] = '10:00:00'
+        ..['ora_partenza'] = '18:00:00'
+        ..['versione'] = 2;
+
+      final conflitto = await archivio
+          .cambiaPeriodo(idea, const MeseDi(2027, 9))
+          .then<Conflitto?>((_) => null, onError: (Object e) => e as Conflitto);
+      expect(conflitto!.loro['stato'], 'definito');
+      expect(conflitto.mia['stato'], 'idea');
+
+      await archivio.tieniLaTua(conflitto);
+      expect(server.chiamate('POST', '/rest/v1/rpc/torna_idea'), hasLength(1));
+      final adesso = (await archivio.osservaViaggio(idea.id).first)!;
+      expect(adesso.stato, 'idea');
+      expect(adesso.periodoApprossimativo, 'settembre 2027');
+    });
   });
 
   test('riscaricare la copia porta i giorni, e tiene a parte le idee in '

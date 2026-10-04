@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/dati/coda.dart';
+import 'package:trolley/dati/conflitti.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/errori.dart';
 import 'package:trolley/dominio/valute.dart';
@@ -228,18 +229,33 @@ void main() {
       expect((await spesa()).versione, 3);
     });
 
-    test(
-      'se qualcuno l\'ha cambiata intanto, si rifiuta e si riscarica',
-      () async {
-        final vista = await spesa();
-        ambiente.server.spese.single['versione'] = 5;
-        await expectLater(
-          ambiente.archivio.modificaSpesa(vista, {'importo': '14.00'}),
-          throwsA(isA<ErroreTrolley>()),
-        );
-        expect((await spesa()).versione, 5);
-      },
-    );
+    test('se qualcuno ha cambiato l\'importo intanto, si mostrano le due '
+        'versioni e la copia ha la sua', () async {
+      final vista = await spesa();
+      ambiente.server.spese.single
+        ..['importo'] = 20
+        ..['versione'] = 5;
+      await expectLater(
+        ambiente.archivio.modificaSpesa(vista, {'importo': '14.00'}),
+        throwsA(
+          isA<Conflitto>()
+              .having((c) => c.mia['importo'], 'la mia', 1400)
+              .having((c) => c.loro['importo'], 'la loro', 2000)
+              .having((c) => c.diversi, 'diversi', {'importo'}),
+        ),
+      );
+      expect((await spesa()).versione, 5);
+      expect(centesimiDa((await spesa()).importo), 2000);
+    });
+
+    test('se intanto è cambiato solo il numero di versione, si scrive sulla '
+        'nuova', () async {
+      final vista = await spesa();
+      ambiente.server.spese.single['versione'] = 5;
+      await ambiente.archivio.modificaSpesa(vista, {'importo': '14.00'});
+      expect(centesimiDa((await spesa()).importo), 1400);
+      expect((await spesa()).versione, 6);
+    });
 
     test('togliere la marca, non la cancella', () async {
       await ambiente.archivio.togliSpesa(await spesa());

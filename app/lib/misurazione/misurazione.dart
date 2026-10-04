@@ -33,6 +33,8 @@ abstract final class Eventi {
   static const promptEsportato = 'prompt_esportato';
   static const incollatoRiuscito = 'incollato_riuscito';
   static const incollatoNonInterpretato = 'incollato_non_interpretato';
+  static const conflittoMostrato = 'conflitto_mostrato';
+  static const conflittoRisolto = 'conflitto_risolto';
 }
 
 class Misurazione {

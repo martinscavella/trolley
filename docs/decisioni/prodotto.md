@@ -85,6 +85,21 @@ Quando due persone modificano lo stesso punto del viaggio si mostrano le due ver
 
 Con il server autoritativo i conflitti nascono solo fra **due persone entrambe online** che modificano la stessa cosa: offline si può soltanto aggiungere. Si riconoscono con un controllo di versione al salvataggio, e a decidere è la persona — mai una fusione automatica, che produrrebbe una terza versione che nessuno ha scritto. Il dettaglio è in [02 — Copia locale, coda e conflitti](../tecnico/02-sincronizzazione-e-offline.md).
 
+### Due versioni: come funziona
+
+Scelto con la fase 2.2 (tela, file 34–36 e 88).
+
+- **Si confronta solo quello che si cambia.** Le due versioni sono i campi che la persona può modificare: per una tappa titolo, tipo, durata, ora, luogo, giorno; per una spesa importo, valuta, data, descrizione; per una voce testo e quante; per un viaggio quando si parte (date, orari, idea e periodo). Se intanto l'altro ha solo segnato la tappa, spuntato la voce, riordinato la giornata o passato il ruolo, si salva sulla versione nuova senza chiedere niente: quei gesti non toccano quello che si stava cambiando. Se l'altro ha scritto proprio la stessa cosa, non c'è niente da scegliere.
+- **Anche su campi diversi si chiede.** Se uno ha cambiato il titolo e l'altro l'ora, si mostrano le due versioni: unirle darebbe una tappa che nessuno dei due ha visto.
+- **«Tieni la tua» rende la cosa esattamente come la propria scheda**, anche nei campi che aveva cambiato solo l'altro. «Tieni quella di Marco» non scrive niente: è già quella sul telefono.
+- **«Tienile tutte e due» solo per le voci**: la propria diventa una voce in più. Una tappa o una spesa no — la cena da 42 o da 48 euro è una cena sola. Le note, che oggi non si riscrivono, lo avranno quando si potranno riscrivere.
+- **Una cosa tolta.** Se l'altro l'ha tolta mentre la si cambiava: «Rimettila con la tua» o «Lasciala tolta». Se la si toglie mentre l'altro la cambiava, prima si vede com'è adesso: «Toglila lo stesso» o tienila.
+- **Le date del viaggio** usano la stessa schermata: «Tieni la tua» le rifissa, o torna a idea, a seconda di qual era la propria versione.
+- **La propria tappa deve ancora entrare.** La capienza è l'unica regola che rifiuta: se intanto il giorno si è riempito, «Tieni la tua» è spento e dice perché.
+- **Chiudendo senza scegliere** si torna al foglio, con quello che si era scritto: non si perde niente. La notifica «Due versioni» per chi esce prima di scegliere arriva con le notifiche.
+- **La stessa persona su due telefoni** vede «Dall'altro telefono» e «Tieni l'altra», non il proprio nome.
+- **Chi e quando** sono di chi ha scritto per ultimo la cosa, anche solo segnandola: se Sara ha segnato la tappa dopo che Marco l'aveva cambiata, l'altra versione è «di Sara». È raro, e dire chi ha scritto cosa campo per campo costerebbe una cronologia che non c'è.
+
 ---
 
 ## Itinerario generato

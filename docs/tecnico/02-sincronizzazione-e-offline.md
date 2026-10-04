@@ -71,6 +71,8 @@ A quel punto:
 
 Quali entità possono generarlo: campi di testo, importi, date, durate. Tutte cose che ora **richiedono rete comunque**, il che riduce parecchio la finestra in cui due persone si pestano i piedi.
 
+Il rifiuto dice solo che la versione è andata avanti, non perché. Prima di mostrare due versioni l'app rilegge la riga e confronta i soli campi che la persona stava cambiando: se l'altro ha toccato altro — i quattro gesti, il riordino, il ruolo — si riscrive sulla versione nuova senza chiedere; se ha scritto la stessa cosa, è fatta. Le regole sono in `dominio/conflitti.dart`, le scelte in [Decisioni di prodotto](../decisioni/prodotto.md) («Due versioni: come funziona»). Chi ha scritto l'altra versione lo dice `modificato_da`, che scrive il server.
+
 ---
 
 ## Casi che si scoprono tardi
