@@ -672,11 +672,15 @@ class Gettone extends StatelessWidget {
     required this.etichetta,
     required this.scelto,
     required this.onTap,
+    this.spunta = false,
   });
 
   final String etichetta;
   final bool scelto;
   final VoidCallback? onTap;
+
+  /// Una scelta fra tante insieme («Per chi»): scelto, mostra la spunta.
+  final bool spunta;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -701,13 +705,24 @@ class Gettone extends StatelessWidget {
         // Stretta sul testo: una capsula fra le altre, non una riga intera.
         child: Center(
           widthFactor: 1,
-          child: Text(
-            etichetta,
-            style: Testi.secondario.copyWith(
-              color: scelto ? Colori.bianco : Colori.inchiostro,
-              fontWeight: scelto ? FontWeight.w700 : FontWeight.w600,
-              height: 1,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (spunta && scelto) ...[
+                const Icon(Icons.check_rounded, size: 16, color: Colori.bianco),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(
+                  etichetta,
+                  style: Testi.secondario.copyWith(
+                    color: scelto ? Colori.bianco : Colori.inchiostro,
+                    fontWeight: scelto ? FontWeight.w700 : FontWeight.w600,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

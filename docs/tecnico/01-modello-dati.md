@@ -109,12 +109,13 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 |---|---|
 | `importo`, `valuta` | L'importo nella valuta originale è **il dato vero**, e non cambia mai |
 | `tasso_usato`, `tasso_al` | Il tasso applicato e quando è stato recuperato. Si conserva perché una conversione senza la sua data è una bugia |
-| `pagante_id` | |
+| `pagante_id` | Qualcuno del viaggio, anche se ne è uscito |
 | `data`, `descrizione` | |
+| `rimborso` | Un rimborso che chiude un saldo: pagato da chi dà i soldi, tutto per chi li riceve. Il totale del viaggio lo lascia fuori |
 
 ### `spesa_quota`
 
-`spesa_id`, `utente_id`, `quota`. In un viaggio con un solo partecipante non esistono quote: la spesa si registra e basta, e nessuna schermata parla di dividere.
+`spesa_id`, `utente_id`, `quota`, nella valuta della spesa. In un viaggio con un solo partecipante non esistono quote: la spesa si registra e basta, e nessuna schermata parla di dividere. La quota è di qualcuno del viaggio, come il pagante. Spesa e quote si scrivono insieme o niente: `registra_spesa` (il gesto della coda, rimandabile senza duplicare) e `cambia_spesa` (con la versione della spesa, che vale anche per le sue quote). Che le quote facciano l'importo lo controlla l'app. Una spesa senza quote — registrata prima della divisione — vale in parti uguali fra chi era nel viaggio quando è stata registrata.
 
 ---
 

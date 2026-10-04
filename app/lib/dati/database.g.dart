@@ -1551,6 +1551,28 @@ class $PartecipazioniTable extends Partecipazioni
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _creatoIlMeta = const VerificationMeta(
+    'creatoIl',
+  );
+  @override
+  late final GeneratedColumn<String> creatoIl = GeneratedColumn<String>(
+    'creato_il',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _modificatoIlMeta = const VerificationMeta(
+    'modificatoIl',
+  );
+  @override
+  late final GeneratedColumn<String> modificatoIl = GeneratedColumn<String>(
+    'modificato_il',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1561,6 +1583,8 @@ class $PartecipazioniTable extends Partecipazioni
     utenteId,
     ruolo,
     stato,
+    creatoIl,
+    modificatoIl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1639,6 +1663,21 @@ class $PartecipazioniTable extends Partecipazioni
     } else if (isInserting) {
       context.missing(_statoMeta);
     }
+    if (data.containsKey('creato_il')) {
+      context.handle(
+        _creatoIlMeta,
+        creatoIl.isAcceptableOrUnknown(data['creato_il']!, _creatoIlMeta),
+      );
+    }
+    if (data.containsKey('modificato_il')) {
+      context.handle(
+        _modificatoIlMeta,
+        modificatoIl.isAcceptableOrUnknown(
+          data['modificato_il']!,
+          _modificatoIlMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1680,6 +1719,14 @@ class $PartecipazioniTable extends Partecipazioni
         DriftSqlType.string,
         data['${effectivePrefix}stato'],
       )!,
+      creatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}creato_il'],
+      ),
+      modificatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}modificato_il'],
+      ),
     );
   }
 
@@ -1701,6 +1748,14 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
   final String utenteId;
   final String ruolo;
   final String stato;
+
+  /// Quando è entrato nel viaggio: una spesa registrata prima della 2.3,
+  /// senza quote, si divide fra chi c'era (decisioni/prodotto.md).
+  final String? creatoIl;
+
+  /// L'ultima volta che la partecipazione è cambiata: per chi è uscito, più o
+  /// meno quando è uscito.
+  final String? modificatoIl;
   const Partecipazione({
     required this.id,
     required this.versione,
@@ -1710,6 +1765,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     required this.utenteId,
     required this.ruolo,
     required this.stato,
+    this.creatoIl,
+    this.modificatoIl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1724,6 +1781,12 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     map['utente_id'] = Variable<String>(utenteId);
     map['ruolo'] = Variable<String>(ruolo);
     map['stato'] = Variable<String>(stato);
+    if (!nullToAbsent || creatoIl != null) {
+      map['creato_il'] = Variable<String>(creatoIl);
+    }
+    if (!nullToAbsent || modificatoIl != null) {
+      map['modificato_il'] = Variable<String>(modificatoIl);
+    }
     return map;
   }
 
@@ -1739,6 +1802,12 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       utenteId: Value(utenteId),
       ruolo: Value(ruolo),
       stato: Value(stato),
+      creatoIl: creatoIl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(creatoIl),
+      modificatoIl: modificatoIl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modificatoIl),
     );
   }
 
@@ -1756,6 +1825,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       utenteId: serializer.fromJson<String>(json['utenteId']),
       ruolo: serializer.fromJson<String>(json['ruolo']),
       stato: serializer.fromJson<String>(json['stato']),
+      creatoIl: serializer.fromJson<String?>(json['creatoIl']),
+      modificatoIl: serializer.fromJson<String?>(json['modificatoIl']),
     );
   }
   @override
@@ -1770,6 +1841,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       'utenteId': serializer.toJson<String>(utenteId),
       'ruolo': serializer.toJson<String>(ruolo),
       'stato': serializer.toJson<String>(stato),
+      'creatoIl': serializer.toJson<String?>(creatoIl),
+      'modificatoIl': serializer.toJson<String?>(modificatoIl),
     };
   }
 
@@ -1782,6 +1855,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     String? utenteId,
     String? ruolo,
     String? stato,
+    Value<String?> creatoIl = const Value.absent(),
+    Value<String?> modificatoIl = const Value.absent(),
   }) => Partecipazione(
     id: id ?? this.id,
     versione: versione ?? this.versione,
@@ -1791,6 +1866,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     utenteId: utenteId ?? this.utenteId,
     ruolo: ruolo ?? this.ruolo,
     stato: stato ?? this.stato,
+    creatoIl: creatoIl.present ? creatoIl.value : this.creatoIl,
+    modificatoIl: modificatoIl.present ? modificatoIl.value : this.modificatoIl,
   );
   Partecipazione copyWithCompanion(PartecipazioniCompanion data) {
     return Partecipazione(
@@ -1806,6 +1883,10 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       utenteId: data.utenteId.present ? data.utenteId.value : this.utenteId,
       ruolo: data.ruolo.present ? data.ruolo.value : this.ruolo,
       stato: data.stato.present ? data.stato.value : this.stato,
+      creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
+      modificatoIl: data.modificatoIl.present
+          ? data.modificatoIl.value
+          : this.modificatoIl,
     );
   }
 
@@ -1819,7 +1900,9 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
           ..write('viaggioId: $viaggioId, ')
           ..write('utenteId: $utenteId, ')
           ..write('ruolo: $ruolo, ')
-          ..write('stato: $stato')
+          ..write('stato: $stato, ')
+          ..write('creatoIl: $creatoIl, ')
+          ..write('modificatoIl: $modificatoIl')
           ..write(')'))
         .toString();
   }
@@ -1834,6 +1917,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     utenteId,
     ruolo,
     stato,
+    creatoIl,
+    modificatoIl,
   );
   @override
   bool operator ==(Object other) =>
@@ -1846,7 +1931,9 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
           other.viaggioId == this.viaggioId &&
           other.utenteId == this.utenteId &&
           other.ruolo == this.ruolo &&
-          other.stato == this.stato);
+          other.stato == this.stato &&
+          other.creatoIl == this.creatoIl &&
+          other.modificatoIl == this.modificatoIl);
 }
 
 class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
@@ -1858,6 +1945,8 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
   final Value<String> utenteId;
   final Value<String> ruolo;
   final Value<String> stato;
+  final Value<String?> creatoIl;
+  final Value<String?> modificatoIl;
   final Value<int> rowid;
   const PartecipazioniCompanion({
     this.id = const Value.absent(),
@@ -1868,6 +1957,8 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     this.utenteId = const Value.absent(),
     this.ruolo = const Value.absent(),
     this.stato = const Value.absent(),
+    this.creatoIl = const Value.absent(),
+    this.modificatoIl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PartecipazioniCompanion.insert({
@@ -1879,6 +1970,8 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     required String utenteId,
     required String ruolo,
     required String stato,
+    this.creatoIl = const Value.absent(),
+    this.modificatoIl = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        versione = Value(versione),
@@ -1896,6 +1989,8 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     Expression<String>? utenteId,
     Expression<String>? ruolo,
     Expression<String>? stato,
+    Expression<String>? creatoIl,
+    Expression<String>? modificatoIl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1907,6 +2002,8 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
       if (utenteId != null) 'utente_id': utenteId,
       if (ruolo != null) 'ruolo': ruolo,
       if (stato != null) 'stato': stato,
+      if (creatoIl != null) 'creato_il': creatoIl,
+      if (modificatoIl != null) 'modificato_il': modificatoIl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1920,6 +2017,8 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     Value<String>? utenteId,
     Value<String>? ruolo,
     Value<String>? stato,
+    Value<String?>? creatoIl,
+    Value<String?>? modificatoIl,
     Value<int>? rowid,
   }) {
     return PartecipazioniCompanion(
@@ -1931,6 +2030,8 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
       utenteId: utenteId ?? this.utenteId,
       ruolo: ruolo ?? this.ruolo,
       stato: stato ?? this.stato,
+      creatoIl: creatoIl ?? this.creatoIl,
+      modificatoIl: modificatoIl ?? this.modificatoIl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1962,6 +2063,12 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     if (stato.present) {
       map['stato'] = Variable<String>(stato.value);
     }
+    if (creatoIl.present) {
+      map['creato_il'] = Variable<String>(creatoIl.value);
+    }
+    if (modificatoIl.present) {
+      map['modificato_il'] = Variable<String>(modificatoIl.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1979,6 +2086,8 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
           ..write('utenteId: $utenteId, ')
           ..write('ruolo: $ruolo, ')
           ..write('stato: $stato, ')
+          ..write('creatoIl: $creatoIl, ')
+          ..write('modificatoIl: $modificatoIl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3792,6 +3901,21 @@ class $SpeseTable extends Spese with TableInfo<$SpeseTable, Spesa> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _rimborsoMeta = const VerificationMeta(
+    'rimborso',
+  );
+  @override
+  late final GeneratedColumn<bool> rimborso = GeneratedColumn<bool>(
+    'rimborso',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("rimborso" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3808,6 +3932,7 @@ class $SpeseTable extends Spese with TableInfo<$SpeseTable, Spesa> {
     descrizione,
     creatoDa,
     creatoIl,
+    rimborso,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3931,6 +4056,12 @@ class $SpeseTable extends Spese with TableInfo<$SpeseTable, Spesa> {
     } else if (isInserting) {
       context.missing(_creatoIlMeta);
     }
+    if (data.containsKey('rimborso')) {
+      context.handle(
+        _rimborsoMeta,
+        rimborso.isAcceptableOrUnknown(data['rimborso']!, _rimborsoMeta),
+      );
+    }
     return context;
   }
 
@@ -3996,6 +4127,10 @@ class $SpeseTable extends Spese with TableInfo<$SpeseTable, Spesa> {
         DriftSqlType.string,
         data['${effectivePrefix}creato_il'],
       )!,
+      rimborso: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}rimborso'],
+      )!,
     );
   }
 
@@ -4030,6 +4165,10 @@ class Spesa extends DataClass implements Insertable<Spesa> {
 
   /// A pari data, l'ultima registrata va in cima.
   final String creatoIl;
+
+  /// Un rimborso: chi dà i soldi l'ha «pagato», chi li riceve ne ha tutta la
+  /// quota. Chiude un saldo, e il totale del viaggio lo lascia fuori.
+  final bool rimborso;
   const Spesa({
     required this.id,
     required this.versione,
@@ -4045,6 +4184,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     this.descrizione,
     required this.creatoDa,
     required this.creatoIl,
+    required this.rimborso,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4071,6 +4211,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     }
     map['creato_da'] = Variable<String>(creatoDa);
     map['creato_il'] = Variable<String>(creatoIl);
+    map['rimborso'] = Variable<bool>(rimborso);
     return map;
   }
 
@@ -4098,6 +4239,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
           : Value(descrizione),
       creatoDa: Value(creatoDa),
       creatoIl: Value(creatoIl),
+      rimborso: Value(rimborso),
     );
   }
 
@@ -4121,6 +4263,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
       descrizione: serializer.fromJson<String?>(json['descrizione']),
       creatoDa: serializer.fromJson<String>(json['creatoDa']),
       creatoIl: serializer.fromJson<String>(json['creatoIl']),
+      rimborso: serializer.fromJson<bool>(json['rimborso']),
     );
   }
   @override
@@ -4141,6 +4284,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
       'descrizione': serializer.toJson<String?>(descrizione),
       'creatoDa': serializer.toJson<String>(creatoDa),
       'creatoIl': serializer.toJson<String>(creatoIl),
+      'rimborso': serializer.toJson<bool>(rimborso),
     };
   }
 
@@ -4159,6 +4303,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     Value<String?> descrizione = const Value.absent(),
     String? creatoDa,
     String? creatoIl,
+    bool? rimborso,
   }) => Spesa(
     id: id ?? this.id,
     versione: versione ?? this.versione,
@@ -4174,6 +4319,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     descrizione: descrizione.present ? descrizione.value : this.descrizione,
     creatoDa: creatoDa ?? this.creatoDa,
     creatoIl: creatoIl ?? this.creatoIl,
+    rimborso: rimborso ?? this.rimborso,
   );
   Spesa copyWithCompanion(SpeseCompanion data) {
     return Spesa(
@@ -4199,6 +4345,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
           : this.descrizione,
       creatoDa: data.creatoDa.present ? data.creatoDa.value : this.creatoDa,
       creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
+      rimborso: data.rimborso.present ? data.rimborso.value : this.rimborso,
     );
   }
 
@@ -4218,7 +4365,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
           ..write('data: $data, ')
           ..write('descrizione: $descrizione, ')
           ..write('creatoDa: $creatoDa, ')
-          ..write('creatoIl: $creatoIl')
+          ..write('creatoIl: $creatoIl, ')
+          ..write('rimborso: $rimborso')
           ..write(')'))
         .toString();
   }
@@ -4239,6 +4387,7 @@ class Spesa extends DataClass implements Insertable<Spesa> {
     descrizione,
     creatoDa,
     creatoIl,
+    rimborso,
   );
   @override
   bool operator ==(Object other) =>
@@ -4257,7 +4406,8 @@ class Spesa extends DataClass implements Insertable<Spesa> {
           other.data == this.data &&
           other.descrizione == this.descrizione &&
           other.creatoDa == this.creatoDa &&
-          other.creatoIl == this.creatoIl);
+          other.creatoIl == this.creatoIl &&
+          other.rimborso == this.rimborso);
 }
 
 class SpeseCompanion extends UpdateCompanion<Spesa> {
@@ -4275,6 +4425,7 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
   final Value<String?> descrizione;
   final Value<String> creatoDa;
   final Value<String> creatoIl;
+  final Value<bool> rimborso;
   final Value<int> rowid;
   const SpeseCompanion({
     this.id = const Value.absent(),
@@ -4291,6 +4442,7 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     this.descrizione = const Value.absent(),
     this.creatoDa = const Value.absent(),
     this.creatoIl = const Value.absent(),
+    this.rimborso = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SpeseCompanion.insert({
@@ -4308,6 +4460,7 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     this.descrizione = const Value.absent(),
     required String creatoDa,
     required String creatoIl,
+    this.rimborso = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        versione = Value(versione),
@@ -4334,6 +4487,7 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     Expression<String>? descrizione,
     Expression<String>? creatoDa,
     Expression<String>? creatoIl,
+    Expression<bool>? rimborso,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4351,6 +4505,7 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
       if (descrizione != null) 'descrizione': descrizione,
       if (creatoDa != null) 'creato_da': creatoDa,
       if (creatoIl != null) 'creato_il': creatoIl,
+      if (rimborso != null) 'rimborso': rimborso,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4370,6 +4525,7 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     Value<String?>? descrizione,
     Value<String>? creatoDa,
     Value<String>? creatoIl,
+    Value<bool>? rimborso,
     Value<int>? rowid,
   }) {
     return SpeseCompanion(
@@ -4387,6 +4543,7 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
       descrizione: descrizione ?? this.descrizione,
       creatoDa: creatoDa ?? this.creatoDa,
       creatoIl: creatoIl ?? this.creatoIl,
+      rimborso: rimborso ?? this.rimborso,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4436,6 +4593,9 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
     if (creatoIl.present) {
       map['creato_il'] = Variable<String>(creatoIl.value);
     }
+    if (rimborso.present) {
+      map['rimborso'] = Variable<bool>(rimborso.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4459,6 +4619,7 @@ class SpeseCompanion extends UpdateCompanion<Spesa> {
           ..write('descrizione: $descrizione, ')
           ..write('creatoDa: $creatoDa, ')
           ..write('creatoIl: $creatoIl, ')
+          ..write('rimborso: $rimborso, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9391,6 +9552,8 @@ typedef $$PartecipazioniTableCreateCompanionBuilder =
       required String utenteId,
       required String ruolo,
       required String stato,
+      Value<String?> creatoIl,
+      Value<String?> modificatoIl,
       Value<int> rowid,
     });
 typedef $$PartecipazioniTableUpdateCompanionBuilder =
@@ -9403,6 +9566,8 @@ typedef $$PartecipazioniTableUpdateCompanionBuilder =
       Value<String> utenteId,
       Value<String> ruolo,
       Value<String> stato,
+      Value<String?> creatoIl,
+      Value<String?> modificatoIl,
       Value<int> rowid,
     });
 
@@ -9452,6 +9617,16 @@ class $$PartecipazioniTableFilterComposer
 
   ColumnFilters<String> get stato => $composableBuilder(
     column: $table.stato,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modificatoIl => $composableBuilder(
+    column: $table.modificatoIl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9504,6 +9679,16 @@ class $$PartecipazioniTableOrderingComposer
     column: $table.stato,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get creatoIl => $composableBuilder(
+    column: $table.creatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modificatoIl => $composableBuilder(
+    column: $table.modificatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PartecipazioniTableAnnotationComposer
@@ -9542,6 +9727,14 @@ class $$PartecipazioniTableAnnotationComposer
 
   GeneratedColumn<String> get stato =>
       $composableBuilder(column: $table.stato, builder: (column) => column);
+
+  GeneratedColumn<String> get creatoIl =>
+      $composableBuilder(column: $table.creatoIl, builder: (column) => column);
+
+  GeneratedColumn<String> get modificatoIl => $composableBuilder(
+    column: $table.modificatoIl,
+    builder: (column) => column,
+  );
 }
 
 class $$PartecipazioniTableTableManager
@@ -9589,6 +9782,8 @@ class $$PartecipazioniTableTableManager
                 Value<String> utenteId = const Value.absent(),
                 Value<String> ruolo = const Value.absent(),
                 Value<String> stato = const Value.absent(),
+                Value<String?> creatoIl = const Value.absent(),
+                Value<String?> modificatoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PartecipazioniCompanion(
                 id: id,
@@ -9599,6 +9794,8 @@ class $$PartecipazioniTableTableManager
                 utenteId: utenteId,
                 ruolo: ruolo,
                 stato: stato,
+                creatoIl: creatoIl,
+                modificatoIl: modificatoIl,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9611,6 +9808,8 @@ class $$PartecipazioniTableTableManager
                 required String utenteId,
                 required String ruolo,
                 required String stato,
+                Value<String?> creatoIl = const Value.absent(),
+                Value<String?> modificatoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PartecipazioniCompanion.insert(
                 id: id,
@@ -9621,6 +9820,8 @@ class $$PartecipazioniTableTableManager
                 utenteId: utenteId,
                 ruolo: ruolo,
                 stato: stato,
+                creatoIl: creatoIl,
+                modificatoIl: modificatoIl,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -10432,6 +10633,7 @@ typedef $$SpeseTableCreateCompanionBuilder = SpeseCompanion Function({
   Value<String?> descrizione,
   required String creatoDa,
   required String creatoIl,
+  Value<bool> rimborso,
   Value<int> rowid,
 });
 typedef $$SpeseTableUpdateCompanionBuilder = SpeseCompanion Function({
@@ -10449,6 +10651,7 @@ typedef $$SpeseTableUpdateCompanionBuilder = SpeseCompanion Function({
   Value<String?> descrizione,
   Value<String> creatoDa,
   Value<String> creatoIl,
+  Value<bool> rimborso,
   Value<int> rowid,
 });
 
@@ -10528,6 +10731,11 @@ class $$SpeseTableFilterComposer
 
   ColumnFilters<String> get creatoIl => $composableBuilder(
     column: $table.creatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get rimborso => $composableBuilder(
+    column: $table.rimborso,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10610,6 +10818,11 @@ class $$SpeseTableOrderingComposer
     column: $table.creatoIl,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get rimborso => $composableBuilder(
+    column: $table.rimborso,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SpeseTableAnnotationComposer
@@ -10670,6 +10883,9 @@ class $$SpeseTableAnnotationComposer
 
   GeneratedColumn<String> get creatoIl =>
       $composableBuilder(column: $table.creatoIl, builder: (column) => column);
+
+  GeneratedColumn<bool> get rimborso =>
+      $composableBuilder(column: $table.rimborso, builder: (column) => column);
 }
 
 class $$SpeseTableTableManager
@@ -10714,6 +10930,7 @@ class $$SpeseTableTableManager
                 Value<String?> descrizione = const Value.absent(),
                 Value<String> creatoDa = const Value.absent(),
                 Value<String> creatoIl = const Value.absent(),
+                Value<bool> rimborso = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SpeseCompanion(
                 id: id,
@@ -10730,6 +10947,7 @@ class $$SpeseTableTableManager
                 descrizione: descrizione,
                 creatoDa: creatoDa,
                 creatoIl: creatoIl,
+                rimborso: rimborso,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10748,6 +10966,7 @@ class $$SpeseTableTableManager
                 Value<String?> descrizione = const Value.absent(),
                 required String creatoDa,
                 required String creatoIl,
+                Value<bool> rimborso = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SpeseCompanion.insert(
                 id: id,
@@ -10764,6 +10983,7 @@ class $$SpeseTableTableManager
                 descrizione: descrizione,
                 creatoDa: creatoDa,
                 creatoIl: creatoIl,
+                rimborso: rimborso,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -69,10 +69,6 @@ La fase 1.4 (spese: valuta predefinita, tasso di cambio, ultimo valore noto offl
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Divisione: chi paga, chi partecipa, quote e saldi** | È la 2.3. Oggi ognuno registra le spese che ha pagato lui, senza quote, e il totale dice quanto è suo. La 2.3 deve decidere come valgono le spese registrate prima, senza quote: la proposta è in parti uguali fra chi c'era | Fase 2.3 |
-| **La stessa spesa registrata da due persone** (06, casi limite) | Si segnala quando c'è più di un pagante, cioè con la divisione | Fase 2.3 |
-| **Avviso prima di rimuovere chi ha saldi aperti** | La rimozione c'è dalla 2.1; il saldo no | Fase 2.3 |
-| **Due persone cambiano la stessa spesa** | Oggi la seconda viene rifiutata e la copia si riscarica; le due versioni affiancate sono la 2.2 | Fase 2.2 |
 | **Budget di massima allo stato idea** (06, regola 1) | Non è nel piano di costruzione: è un'altra cosa rispetto alle spese | Da decidere |
 | **Statistiche aggregate delle spese** (06, regola 11) | Funzione premium individuale | Fase 6 |
 | **Rivedere sulla tela le schermate 15–18** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.4 |
@@ -116,7 +112,6 @@ La fase 2.1 (chi c'è, inviti e inviti in sospeso, togliere qualcuno e passare i
 | **La migrazione `partecipanti` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: le funzioni ci sono e le 9 prove di `supabase/tests/partecipanti.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004093000` | Da registrare, o da lasciare scritto qui |
 | **Eliminare un viaggio** | Chi è responsabile ed è da solo non può uscire: il viaggio resterebbe senza nessuno. Per un'idea c'è l'archivio; per un viaggio definito che non si farà, oggi non c'è niente | Da decidere |
 | **Avvisare chi viene tolto** | Oggi lo scopre aprendo l'app: l'elenco dei viaggi lo dice. Una notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
-| **Saldi aperti prima di togliere qualcuno** | Non c'è ancora il saldo | Fase 2.3 |
 | **Le voci assegnate a chi esce tornano libere** | Non c'è ancora l'assegnazione | Fase 2.4 |
 | **`primo_contributo_invitato` guarda il ruolo di adesso** | Dopo un passaggio di ruolo chi ha creato il viaggio risulta partecipante: se non aveva mai aggiunto niente, il suo primo contributo conterebbe come quello di un invitato. Il caso è raro (chi crea un viaggio di solito ci mette qualcosa), e distinguerlo vorrebbe un campo in più sulla partecipazione | Se i numeri di H3 lo mostrano |
 | **Rivedere sulla tela le schermate 29–33** | Disegnate e costruite insieme il 4 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 2.1 |
@@ -131,8 +126,19 @@ La fase 2.2 (due versioni della stessa cosa: tappa, spesa, voce, date del viaggi
 | **La notifica «Due versioni»** per chi esce prima di scegliere | Oggi chiudendo si torna al foglio, con quello che si era scritto; chiudendo anche il foglio la propria versione si perde, come per ogni foglio lasciato a metà. La notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
 | **«Tienile tutte e due» per le note** | Le note oggi non si riscrivono: non possono trovarsi in due versioni | Con le note scritte a mano |
 | **«Tienile tutte e due» per una voce della lista del viaggio** | Oggi la voce in più nasce nella propria lista personale, l'unica che c'è. Con la lista del viaggio dovrà nascere nella stessa lista dell'altra | Fase 2.4 |
-| **Le quote di una spesa divisa** nelle due versioni | Con la divisione (2.3) una spesa ha anche chi ha pagato e per chi: vanno nel confronto | Fase 2.3 |
 | **Rivedere sulla tela le schermate 34–36 e 88** | 34–36 disegnate prima, 88 (una tolta) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.2 |
+
+### Rimasto fuori dalla 2.3
+
+La fase 2.3 (chi ha pagato e per chi, importi diversi, la propria parte, i saldi con il giro più corto, «Li ho ricevuti», la stessa spesa registrata due volte, il saldo nel dialogo di chi si toglie) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **La migrazione `divisione_spese` va applicata** | Aggiunge `rimborso`, le regole su chi può avere una quota, `registra_spesa` e `cambia_spesa`. Senza, l'app non riesce a mandare le spese nuove né a cambiarle: va applicata prima di installare questa versione. Il file porta la versione `20261004170000`; le prove sono in `supabase/tests/divisione.sql`. Applicata dall'editor SQL non finisce in `schema_migrations` | Da applicare, dopo `chi_ha_scritto` |
+| **Un rimborso in una valuta diversa da quella di chi lo vede** | «Li ho ricevuti» registra il rimborso nella valuta di chi lo riceve. Chi vede le spese in un'altra valuta lo converte con il suo tasso: il saldo si chiude esatto per chi riceve, al centesimo di cambio per gli altri | Se la beta lo mostra |
+| **«Sono due spese» vale solo su quel telefono** | È una risposta all'avviso, non un dato del viaggio. Sull'altro telefono della stessa persona l'avviso torna una volta | Se dà fastidio |
+| **Il foglio della spesa dice «Salva», la tela «Registra»** | Il pulsante c'era già dalla 1.4; nel foglio degli importi diversi è «Registra» come sulla tela | Da decidere con la tela |
+| **Rivedere sulla tela le schermate 37–41 e 89** | 37–41 disegnate prima, 89 (saldi visti da chi dà, rimborsi già fatti) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.3 |
 
 ### Impianto di sicurezza del matching — stima
 

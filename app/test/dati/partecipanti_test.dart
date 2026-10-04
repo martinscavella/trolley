@@ -271,7 +271,7 @@ void main() {
         ambiente.server.partecipazioni.singleWhere(
           (p) => p['utente_id'] == idDiProva,
         )['stato'] = 'rimosso';
-        ambiente.server.percorsi['POST /rest/v1/spesa'] = (_) async =>
+        ambiente.server.percorsi['POST /rest/v1/rpc/registra_spesa'] = (_) async =>
             risposta({
               'code': '42501',
               'message': 'new row violates row-level security policy',

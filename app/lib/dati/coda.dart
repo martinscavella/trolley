@@ -78,6 +78,8 @@ class NuovaSpesa {
     this.descrizione,
     this.tassoUsato,
     this.tassoAl,
+    this.quote = const {},
+    this.rimborso = false,
   });
 
   /// Generato sul telefono: rimandarla non la registra due volte.
@@ -98,6 +100,19 @@ class NuovaSpesa {
   final String? tassoUsato;
   final DateTime? tassoAl;
 
+  /// Per chi è, in centesimi della sua valuta. Vuota da soli: non si parla di
+  /// dividere (06, regola 3).
+  final Map<String, int> quote;
+
+  /// Un rimborso: [paganteId] dà i soldi a chi ne ha la quota.
+  final bool rimborso;
+
+  /// Le quote come le scrive il server.
+  List<Map<String, Object?>> get righeQuote => [
+    for (final MapEntry(key: utente, value: c) in quote.entries)
+      {'utente_id': utente, 'quota': importoPerIlServer(c)},
+  ];
+
   /// La riga come la scrive il server.
   Map<String, Object?> get riga {
     final cosa = descrizione?.trim();
@@ -113,6 +128,7 @@ class NuovaSpesa {
       'tasso_al': tassoUsato == null
           ? null
           : tassoAl?.toUtc().toIso8601String(),
+      if (rimborso) 'rimborso': true,
     };
   }
 }
@@ -134,6 +150,20 @@ SpeseCompanion rigaSpesa(Map<String, dynamic> r, DateTime adesso) =>
       descrizione: Value(r['descrizione'] as String?),
       creatoDa: r['creato_da'] as String,
       creatoIl: r['creato_il'] as String,
+      rimborso: Value((r['rimborso'] as bool?) ?? false),
+    );
+
+/// Una riga di `spesa_quota` del server, come va nella copia.
+SpeseQuoteCompanion rigaQuota(Map<String, dynamic> r, DateTime adesso) =>
+    SpeseQuoteCompanion.insert(
+      id: r['id'] as String,
+      versione: r['versione'] as int,
+      eliminatoIl: Value(r['eliminato_il'] as String?),
+      scaricatoIl: adesso,
+      viaggioId: r['viaggio_id'] as String,
+      spesaId: r['spesa_id'] as String,
+      utenteId: r['utente_id'] as String,
+      quota: '${r['quota']}',
     );
 
 /// Una riga di `voce_lista` del server, come va nella copia.
@@ -239,14 +269,19 @@ class Coda {
     },
   );
 
-  /// Registra una spesa: nella copia subito, al server appena si può. È il
-  /// gesto del mercato, e non conosce conflitti: due spese sono due spese
-  /// (02 §2).
+  /// Registra una spesa, con per chi è: nella copia subito, al server appena
+  /// si può, spesa e quote insieme. È il gesto del mercato, e non conosce
+  /// conflitti: due spese sono due spese (02 §2). Anche un rimborso è una
+  /// spesa: chi riceve i soldi lo segna anche senza rete.
   Future<void> registraSpesa(NuovaSpesa spesa) => _metti(
     id: spesa.id,
     viaggioId: spesa.viaggioId,
     gesto: GestoOffline.registraSpesa,
-    carico: {...spesa.riga, 'creato_da': ?_supabase.auth.currentUser?.id},
+    carico: {
+      ...spesa.riga,
+      'creato_da': ?_supabase.auth.currentUser?.id,
+      if (spesa.quote.isNotEmpty) 'quote': spesa.righeQuote,
+    },
   );
 
   /// Spunta una voce, o le toglie la spunta. Spuntato è spuntato, chiunque
@@ -469,20 +504,18 @@ class Coda {
     await nellaCopiaVoce(scritte.single);
   }
 
-  /// Rimandata, non si duplica: se c'è già, vale la riga del server.
+  /// Spesa e quote insieme, o niente. Rimandata, non si duplica: se c'è già,
+  /// valgono le righe del server. Un carico di prima della divisione non ha
+  /// quote, e va bene lo stesso.
   Future<void> _inviaSpesa(Map<String, dynamic> carico) async {
-    final id = carico['id'] as String;
-    final scritte = await _alServer(
-      () => _server
-          .from('spesa')
-          .upsert(carico, onConflict: 'id', ignoreDuplicates: true)
-          .select(),
+    final spesa = {...carico}..remove('quote');
+    final righe = await _alServer(
+      () => _server.rpc<Map<String, dynamic>?>(
+        'registra_spesa',
+        params: {'p_spesa': spesa, 'p_quote': carico['quote'] ?? const []},
+      ),
     );
-    final riga =
-        scritte.firstOrNull ??
-        (await _alServer(() => _server.from('spesa').select().eq('id', id)))
-            .firstOrNull;
-    if (riga != null) await nellaCopiaSpesa(riga);
+    if (righe != null) await nellaCopiaRigheSpesa(righe);
   }
 
   static const _nonCapita =
@@ -515,6 +548,27 @@ class Coda {
         .into(_db.spese)
         .insertOnConflictUpdate(rigaSpesa(riga, DateTime.now().toUtc()));
   }
+
+  /// Mette nella copia una spesa con le sue quote, come le restituiscono
+  /// `registra_spesa` e `cambia_spesa`: le quote prendono il posto di quelle
+  /// che c'erano.
+  Future<void> nellaCopiaRigheSpesa(Map<String, dynamic> righe) =>
+      _db.transaction(() async {
+        final spesa = righe['spesa'] as Map<String, dynamic>;
+        final id = spesa['id'] as String;
+        await nellaCopiaSpesa(spesa);
+        await (_db.delete(
+          _db.speseQuote,
+        )..where((q) => q.spesaId.equals(id))).go();
+        if (spesa['eliminato_il'] != null) return;
+        final adesso = DateTime.now().toUtc();
+        await _db.batch(
+          (b) => b.insertAll(_db.speseQuote, [
+            for (final q in (righe['quote'] as List? ?? const []))
+              rigaQuota(q as Map<String, dynamic>, adesso),
+          ]),
+        );
+      });
 
   /// Mette nella copia una voce come l'ha scritta il server. Tolta, esce.
   Future<void> nellaCopiaVoce(Map<String, dynamic> riga) async {
@@ -606,9 +660,36 @@ class Coda {
                 descrizione: Value(c['descrizione'] as String?),
                 creatoDa: (c['creato_da'] as String?) ?? '',
                 creatoIl: creataIl.toUtc().toIso8601String(),
+                rimborso: Value(c['rimborso'] == true),
               ),
               mode: InsertMode.insertOrIgnore,
             );
+        // Le quote finché non partono: un id che dice di chi è, rifatto
+        // dalle righe del server quando arrivano. Se il server le ha già
+        // mandate (la spesa è arrivata, la risposta no), valgono le sue.
+        final spesaId = c['id']! as String;
+        final giaArrivate = await (_db.select(
+          _db.speseQuote,
+        )..where((q) => q.spesaId.equals(spesaId))).get();
+        if (giaArrivate.isNotEmpty) break;
+        for (final q in (c['quote'] as List? ?? const [])) {
+          final quota = (q as Map).cast<String, Object?>();
+          final utente = quota['utente_id']! as String;
+          await _db
+              .into(_db.speseQuote)
+              .insert(
+                SpeseQuoteCompanion.insert(
+                  id: '$spesaId:$utente',
+                  versione: 0,
+                  scaricatoIl: DateTime.now().toUtc(),
+                  viaggioId: c['viaggio_id']! as String,
+                  spesaId: spesaId,
+                  utenteId: utente,
+                  quota: quota['quota']! as String,
+                ),
+                mode: InsertMode.insertOrIgnore,
+              );
+        }
       case GestoOffline.spuntaVoce:
         await (_db.update(_db.vociLista)
               ..where((v) => v.id.equals(c['voce_id']! as String)))
@@ -704,10 +785,16 @@ class Coda {
         )..where((t) => t.id.equals(tappa ?? '') & t.versione.equals(0))).go();
       }
       if (op.gesto == GestoOffline.registraSpesa) {
-        await (_db.delete(_db.spese)..where(
-              (s) => s.id.equals(spesaDi(op) ?? '') & s.versione.equals(0),
+        final spesa = spesaDi(op) ?? '';
+        final mai = await (_db.delete(_db.spese)..where(
+              (s) => s.id.equals(spesa) & s.versione.equals(0),
             ))
             .go();
+        if (mai > 0) {
+          await (_db.delete(
+            _db.speseQuote,
+          )..where((q) => q.spesaId.equals(spesa))).go();
+        }
       }
     });
   }

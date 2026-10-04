@@ -175,6 +175,7 @@ class Archivio {
       giorni,
       tappe,
       spese,
+      quote,
       voci,
       note,
     ) = await _alServer(() async {
@@ -205,12 +206,13 @@ class Archivio {
           <Map<String, dynamic>>[],
           <Map<String, dynamic>>[],
           <Map<String, dynamic>>[],
+          <Map<String, dynamic>>[],
         );
       }
       // Anche le tappe dei giorni usciti dalle date: sono da ricollocare.
       // Delle liste arrivano quelle del viaggio e le proprie personali: le
       // personali degli altri il server non le manda (05, regola 3).
-      final (partecipazioni, giorni, tappe, spese, voci, note) = await (
+      final (partecipazioni, giorni, tappe, spese, quote, voci, note) = await (
         _server.from('partecipazione').select().inFilter('viaggio_id', ids),
         _server
             .from('giorno')
@@ -224,6 +226,11 @@ class Archivio {
             .isFilter('eliminato_il', null),
         _server
             .from('spesa')
+            .select()
+            .inFilter('viaggio_id', ids)
+            .isFilter('eliminato_il', null),
+        _server
+            .from('spesa_quota')
             .select()
             .inFilter('viaggio_id', ids)
             .isFilter('eliminato_il', null),
@@ -253,6 +260,7 @@ class Archivio {
         giorni,
         tappe,
         spese,
+        quote,
         voci,
         note,
       );
@@ -272,6 +280,7 @@ class Archivio {
       await _db.delete(_db.giorni).go();
       await _db.delete(_db.tappe).go();
       await _db.delete(_db.spese).go();
+      await _db.delete(_db.speseQuote).go();
       await _db.delete(_db.vociLista).go();
       await _db.delete(_db.note).go();
       // Il proprio profilo completo non si butta: dagli altri arriva solo il nome.
@@ -287,6 +296,9 @@ class Archivio {
         b.insertAll(_db.giorni, [for (final r in giorni) _giorno(r, adesso)]);
         b.insertAll(_db.tappe, [for (final r in tappe) rigaTappa(r, adesso)]);
         b.insertAll(_db.spese, [for (final r in spese) rigaSpesa(r, adesso)]);
+        b.insertAll(_db.speseQuote, [
+          for (final r in quote) rigaQuota(r, adesso),
+        ]);
         b.insertAll(_db.vociLista, [for (final r in voci) rigaVoce(r, adesso)]);
         b.insertAll(_db.note, [for (final r in note) _nota(r, adesso)]);
         b.insertAllOnConflictUpdate(_db.utenti, [
@@ -466,6 +478,41 @@ class Archivio {
             )
             ..orderBy([(s) => OrderingTerm.asc(s.creatoIl)]))
           .watch();
+
+  /// Per chi sono le spese del viaggio: le quote, nella valuta di ogni spesa.
+  Stream<List<SpesaQuota>> osservaQuote(String viaggioId) =>
+      (_db.select(_db.speseQuote)..where(
+            (q) => q.viaggioId.equals(viaggioId) & q.eliminatoIl.isNull(),
+          ))
+          .watch();
+
+  static const _dueSpese = 'due_spese:';
+
+  /// Le coppie di spese che sembravano la stessa e che chi le ha registrate
+  /// ha detto essere due: l'avviso non torna (06, casi limite). Restano su
+  /// questo telefono: è una cosa che si dice a sé.
+  Stream<Set<String>> osservaDueSpese() =>
+      (_db.select(
+        _db.impostazioni,
+      )..where((i) => i.chiave.like('$_dueSpese%'))).watch().map(
+        (righe) => {
+          for (final r in righe) r.chiave.substring(_dueSpese.length),
+        },
+      );
+
+  /// Segna che due spese simili sono due spese. [chiave] viene da
+  /// `chiaveDueSpese`.
+  Future<void> sonoDueSpese(String chiave) => _db
+      .into(_db.impostazioni)
+      .insertOnConflictUpdate(
+        ImpostazioniCompanion.insert(chiave: '$_dueSpese$chiave', valore: 'si'),
+      );
+
+  /// Tutte le partecipazioni del viaggio, anche di chi è uscito: chi c'era
+  /// quando una spesa senza quote è stata registrata (06, regola 10).
+  Stream<List<Partecipazione>> osservaPresenze(String viaggioId) => (_db.select(
+    _db.partecipazioni,
+  )..where((p) => p.viaggioId.equals(viaggioId))).watch();
 
   /// Le proprie cose da portare per il viaggio: la lista personale, che vede
   /// solo chi la scrive (05, regole 1 e 3). Nell'ordine in cui sono nate;
@@ -1074,11 +1121,11 @@ class Archivio {
 
   // ─── Spese: le scritture che richiedono la rete ──────────────────────────
 
-  /// Cambia una spesa: importo, valuta, descrizione, data. Con la versione che
-  /// la persona ha visto: sui soldi non si indovina, e se qualcuno l'ha
-  /// cambiata nel frattempo si mostrano le due versioni (06, casi limite).
-  /// Prima parte quello che è in coda, così la spesa ha la sua versione del
-  /// server.
+  /// Cambia una spesa: importo, valuta, descrizione, data, chi ha pagato e
+  /// per chi (`quote`, come le scrive il server). Con la versione che la
+  /// persona ha visto: sui soldi non si indovina, e se qualcuno l'ha cambiata
+  /// nel frattempo si mostrano le due versioni (06, casi limite). Prima parte
+  /// quello che è in coda, così la spesa ha la sua versione del server.
   Future<void> modificaSpesa(Spesa spesa, Map<String, Object?> valori) async {
     await coda.svuota();
     final attuale = await (_db.select(
@@ -1091,7 +1138,10 @@ class Archivio {
         'quando parte.',
       );
     }
-    final riga = rigaDellaSpesa(vista);
+    final quote = await (_db.select(
+      _db.speseQuote,
+    )..where((q) => q.spesaId.equals(spesa.id))).get();
+    final riga = rigaDellaSpesa(vista, quote);
     await _conLaVersione(
       _spesaVersionata(spesa.id),
       riferimento: ritrattoSpesa(riga),
@@ -1329,6 +1379,7 @@ class Archivio {
       try {
         scritta = await alServer(() => cosa.scrivi(mia, rif, ver), rete: rete);
       } on ErroreTrolley catch (e) {
+        if (e.codice == CodiciServer.nonTrovato) await _nonCePiu(cosa);
         if (e.codice != CodiciServer.versioneSuperata) rethrow;
         final adesso = await alServer(cosa.rileggi, rete: rete);
         if (adesso == null) await _nonCePiu(cosa);
@@ -1434,19 +1485,45 @@ class Archivio {
         'vedi la giornata com\'è adesso.',
   );
 
+  /// Una spesa con le sue quote: si scrivono insieme, o niente
+  /// (`cambia_spesa`), e si rileggono insieme.
   _Versionata _spesaVersionata(String id) => _Versionata(
     cosa: CosaInConflitto.spesa,
     id: id,
     ritratto: ritrattoSpesa,
-    rileggi: _rileggi('spesa', id),
-    nellaCopia: coda.nellaCopiaSpesa,
-    scrivi: (mia, rif, versione) => _aggiornaRiga(
-      'spesa',
-      id,
-      perIlServer(mia, campiDiversi(mia, rif)),
-      versione,
-      coda.nellaCopiaSpesa,
-    ),
+    rileggi: () async {
+      final [spese, quote] = await Future.wait([
+        _server.from('spesa').select().eq('id', id),
+        _server
+            .from('spesa_quota')
+            .select()
+            .eq('spesa_id', id)
+            .isFilter('eliminato_il', null),
+      ]);
+      final spesa = spese.firstOrNull;
+      return spesa == null ? null : {...spesa, 'quote': quote};
+    },
+    nellaCopia: (riga) => coda.nellaCopiaRigheSpesa({
+      'spesa': {...riga}..remove('quote'),
+      'quote': riga['quote'],
+    }),
+    scrivi: (mia, rif, versione) async {
+      final campi = campiDiversi(mia, rif);
+      final righe = await _server.rpc<Map<String, dynamic>?>(
+        'cambia_spesa',
+        params: {
+          'p_spesa': id,
+          'p_versione': versione,
+          'p_valori': perIlServer(mia, campi),
+          'p_quote': campi.contains('quote')
+              ? righeQuote(leggiQuote(mia['quote']))
+              : null,
+        },
+      );
+      if (righe == null || righe['spesa'] == null) return false;
+      await coda.nellaCopiaRigheSpesa(righe);
+      return true;
+    },
     nonCePiu:
         'Questa spesa non c\'è più sul server. Ora vedi le spese come sono '
         'adesso.',
@@ -1666,6 +1743,8 @@ class Archivio {
     utenteId: r['utente_id'] as String,
     ruolo: r['ruolo'] as String,
     stato: r['stato'] as String,
+    creatoIl: Value(r['creato_il'] as String?),
+    modificatoIl: Value(r['modificato_il'] as String?),
   );
 
   NoteCompanion _nota(Map<String, dynamic> r, DateTime adesso) =>

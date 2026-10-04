@@ -37,6 +37,8 @@ Le scritture che richiedono rete ricevono dal server **le righe che hanno scritt
 
 Quattro operazioni, e nessun'altra: **registrare una spesa**, **marcare una tappa**, **spuntare una voce**, **aggiungere una tappa**.
 
+Registrare una spesa porta con sé per chi è — le quote, che arrivano al server insieme alla spesa o niente — e vale anche per un rimborso, che è una spesa segnata come tale. Resta un gesto solo: due rimborsi sono due rimborsi, come due spese.
+
 | Proprietà | Perché |
 |---|---|
 | **Persistente** | Sopravvive alla chiusura dell'app e al riavvio. È l'unico dato che esiste solo in locale: se si perde, si perde davvero |

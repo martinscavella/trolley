@@ -10,29 +10,49 @@ import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
+import '../dati/archivio.dart';
 import '../dati/database.dart';
+import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
+import '../dominio/divisione.dart';
 import '../dominio/spese.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'due_versioni.dart';
 import 'foglio_spesa.dart';
 import 'problemi_coda.dart';
+import 'saldi.dart';
 
 /// Quello che serve per mostrare le spese di un viaggio: le spese, la valuta
-/// della persona, gli ultimi tassi noti e di quando sono, chi ha pagato.
+/// della persona, gli ultimi tassi noti e di quando sono, chi ha pagato e per
+/// chi, chi è passato dal viaggio.
 class ContoViaggio {
-  const ContoViaggio({
-    required this.spese,
+  ContoViaggio({
+    required List<Spesa> spese,
     required this.mia,
     required this.perEuro,
     required this.giornoTassi,
     required this.nomi,
     required this.io,
-  });
+    this.quote = const [],
+    this.presenze = const [],
+    this.dueSpese = const {},
+  }) : spese = [
+         for (final s in spese)
+           if (!s.rimborso) s,
+       ],
+       rimborsi = [
+         for (final s in spese)
+           if (s.rimborso) s,
+       ];
 
+  /// Le spese vere, senza i rimborsi.
   final List<Spesa> spese;
+
+  /// I soldi già passati di mano per pareggiare (06, regola 9).
+  final List<Spesa> rimborsi;
 
   /// La valuta in cui la persona vede le spese (06, regola 4).
   final String mia;
@@ -45,6 +65,15 @@ class ContoViaggio {
   final Map<String, String> nomi;
   final String? io;
 
+  /// Per chi sono le spese: le quote, nella valuta di ogni spesa.
+  final List<SpesaQuota> quote;
+
+  /// Chi è passato dal viaggio, con quando è entrato e se è uscito.
+  final List<Partecipazione> presenze;
+
+  /// Le coppie di spese che chi le ha registrate ha detto essere due.
+  final Set<String> dueSpese;
+
   Totale totale([Iterable<Spesa>? quali]) => totaleSpese(
     (quali ?? spese).map((s) => s.voce),
     mia: mia,
@@ -54,16 +83,189 @@ class ContoViaggio {
   /// Qualche spesa è in un'altra valuta: il totale passa da un tasso.
   bool get convertite => spese.any((s) => s.valuta != mia);
 
-  /// Qualcun altro ha pagato qualcosa: si dice quanto è proprio.
-  bool get condivise => spese.any((s) => s.paganteId != io);
+  /// Nel viaggio c'è, o c'è stato, qualcun altro: si parla di dividere. Da
+  /// soli si tiene il conto e basta (06, regola 3).
+  bool get diviso => presenze.length > 1 || spese.any((s) => s.paganteId != io);
 
   /// Quello che vale una spesa nella valuta della persona; `null` senza tasso.
   int? inMiaValuta(Spesa s) =>
       converti(s.centesimi, da: s.valuta, a: mia, perEuro: perEuro);
+
+  /// Chi è nel viaggio adesso: prima la persona, poi gli altri per nome.
+  late final List<String> attivi = () {
+    final ids = [
+      for (final p in presenze)
+        if (p.stato == 'attivo') p.utenteId,
+    ];
+    if (ids.isEmpty && io != null) ids.add(io!);
+    return ids..sort((a, b) {
+      if (a == io) return -1;
+      if (b == io) return 1;
+      return (nomi[a] ?? '').compareTo(nomi[b] ?? '');
+    });
+  }();
+
+  /// Ha lasciato il viaggio: resta nei conti, tratteggiato.
+  bool uscito(String id) =>
+      presenze.any((p) => p.utenteId == id && p.stato != 'attivo');
+
+  /// «tu», «Marco», «chi è uscito» se il nome non c'è.
+  String nome(String id) => id == io ? 'tu' : nomi[id] ?? 'chi è uscito';
+
+  late final Map<String, Map<String, int>> _quotePerSpesa = () {
+    final per = <String, Map<String, int>>{};
+    for (final q in quote) {
+      per.putIfAbsent(q.spesaId, () => {})[q.utenteId] = centesimiDa(q.quota);
+    }
+    return per;
+  }();
+
+  late final List<Presenza> _presenze = [
+    for (final p in presenze)
+      Presenza(
+        p.utenteId,
+        entrato: DateTime.tryParse(p.creatoIl ?? ''),
+        uscito: p.stato == 'attivo'
+            ? null
+            : DateTime.tryParse(p.modificatoIl ?? ''),
+      ),
+  ];
+
+  /// Per chi è una spesa: le sue quote, o — se è di prima della divisione —
+  /// in parti uguali fra chi c'era quando è stata registrata.
+  Map<String, int> quoteDi(Spesa s) =>
+      _quotePerSpesa[s.id] ??
+      partiUguali(
+        s.centesimi,
+        chiCera(s.registrata, presenze: _presenze, pagante: s.paganteId),
+      );
+
+  /// Le quote scritte di una spesa, senza ricavarle: vuote se non ce ne sono.
+  Map<String, int> quoteScritte(Spesa s) => _quotePerSpesa[s.id] ?? const {};
+
+  SpesaDaDividere _daDividere(Spesa s) => SpesaDaDividere(
+    pagante: s.paganteId,
+    centesimi: s.centesimi,
+    valuta: s.valuta,
+    quote: quoteDi(s),
+    rimborso: s.rimborso,
+  );
+
+  /// Quanto deve ricevere o dare ognuno, rimborsi compresi.
+  late final Saldi saldi = calcolaSaldi(
+    [
+      for (final s in [...spese, ...rimborsi]) _daDividere(s),
+    ],
+    mia: mia,
+    perEuro: perEuro,
+  );
+
+  /// Il giro più corto per pareggiare.
+  late final List<Passaggio> passaggi = pareggia(saldi.netti);
+
+  /// Quanti passaggi servirebbero spesa per spesa, senza il giro più corto.
+  late final int passaggiSenzaGiro = passaggiUnoAUno(
+    [
+      for (final s in [...spese, ...rimborsi]) _daDividere(s),
+    ],
+    mia: mia,
+    perEuro: perEuro,
+  );
+
+  /// La propria parte delle spese del viaggio.
+  Totale get laMiaParte => totaleSpese(
+    [
+      for (final s in spese)
+        if ((quoteDi(s)[io] ?? 0) > 0)
+          VoceSpesa(
+            spesa: s,
+            centesimi: quoteDi(s)[io]!,
+            valuta: s.valuta,
+            data: s.giorno,
+            creataIl: s.registrata,
+          ),
+    ],
+    mia: mia,
+    perEuro: perEuro,
+  );
+
+  /// Quello che la persona ha pagato.
+  Totale get hoPagato => totale(spese.where((s) => s.paganteId == io));
+
+  /// Le spese registrate da altri che sembrano la stessa di una propria
+  /// registrata dopo: quella dell'altro, e la propria (06, casi limite).
+  late final List<(Spesa, Spesa)> doppie = [
+    for (final (sua, mia) in forseDoppie([
+      for (final s in spese)
+        SpesaRegistrata(
+          spesa: s,
+          creatore: s.creatoDa,
+          centesimi: s.centesimi,
+          valuta: s.valuta,
+          registrata: s.registrata,
+        ),
+    ]))
+      if (mia.creatoDa == io && !dueSpese.contains(chiaveDueSpese(sua, mia)))
+        (sua, mia),
+  ];
+
+  /// «Pagata da te», «Pagata da Sara».
+  String pagataDa(Spesa s) =>
+      s.paganteId == io ? 'pagata da te' : 'pagata da ${nome(s.paganteId)}';
+
+  /// «per tutti e 3», «per te», «per Marco e Sara · importi diversi».
+  String perChi(Spesa s) {
+    final quote = quoteDi(s);
+    final persone = [
+      for (final p in [
+        ...attivi,
+        ...quote.keys.where((k) => !attivi.contains(k)),
+      ])
+        if ((quote[p] ?? 0) > 0) p,
+    ];
+    final tutti =
+        persone.length == attivi.length && attivi.every(persone.contains);
+    final chi = tutti && persone.length > 1
+        ? persone.length == 2
+              ? 'per tutti e due'
+              : 'per tutti e ${persone.length}'
+        : persone.length == 1 && persone.single == io
+        ? 'per te'
+        : 'per ${elenco([for (final p in persone) p == io ? 'te' : nome(p)])}';
+    return inPartiUguali(s.centesimi, quote) ? chi : '$chi · importi diversi';
+  }
 }
 
-/// Mette insieme le spese di un viaggio, la valuta della persona, i tassi e i
-/// nomi, dalla copia locale: si legge anche senza rete.
+/// Il saldo di qualcuno in parole, dai passaggi del giro più corto: «deve
+/// 6,20 € a te», «deve ricevere 9,00 € da Sara». `null` se è pari.
+String? saldoInParole(ContoViaggio conto, String persona) {
+  final parti = [
+    for (final p in conto.passaggi)
+      if (p.da == persona)
+        'deve ${scriviImporto(p.centesimi, conto.mia)} a '
+            '${p.a == conto.io ? 'te' : conto.nome(p.a)}'
+      else if (p.a == persona)
+        'deve ricevere ${scriviImporto(p.centesimi, conto.mia)} da '
+            '${p.da == conto.io ? 'te' : conto.nome(p.da)}',
+  ];
+  return parti.isEmpty ? null : elenco(parti);
+}
+
+/// La chiave di due spese che chi le ha registrate ha detto essere due.
+String chiaveDueSpese(Spesa a, Spesa b) {
+  final ids = [a.id, b.id]..sort();
+  return ids.join('|');
+}
+
+/// «Marco», «Marco e Sara», «te, Marco e Sara».
+String elenco(List<String> nomi) => switch (nomi.length) {
+  0 => 'nessuno',
+  1 => nomi.single,
+  _ => '${nomi.sublist(0, nomi.length - 1).join(', ')} e ${nomi.last}',
+};
+
+/// Mette insieme le spese di un viaggio, la valuta della persona, i tassi, i
+/// nomi, le quote e chi c'è, dalla copia locale: si legge anche senza rete.
 class ConConto extends StatefulWidget {
   const ConConto({super.key, required this.viaggioId, required this.builder});
 
@@ -75,10 +277,7 @@ class ConConto extends StatefulWidget {
 }
 
 class _ConContoState extends State<ConConto> {
-  late Stream<List<Spesa>> _spese;
-  late Stream<List<TassoCambio>> _tassi;
-  late Stream<Utente?> _profilo;
-  late Stream<Map<String, String>> _nomi;
+  late Stream<ContoViaggio> _conto;
   bool _avviato = false;
 
   @override
@@ -86,43 +285,97 @@ class _ConContoState extends State<ConConto> {
     super.didChangeDependencies();
     if (_avviato) return;
     _avviato = true;
-    final archivio = Servizi.of(context).archivio;
-    _spese = archivio.osservaSpese(widget.viaggioId);
-    _tassi = archivio.osservaTassi();
-    _profilo = archivio.osservaProfilo();
-    _nomi = archivio.osservaNomi(widget.viaggioId);
+    _conto = osservaConto(Servizi.of(context).archivio, widget.viaggioId);
   }
 
   @override
-  Widget build(BuildContext context) => StreamBuilder<List<Spesa>>(
-    stream: _spese,
-    builder: (context, spese) => StreamBuilder<List<TassoCambio>>(
-      stream: _tassi,
-      builder: (context, tassi) => StreamBuilder<Utente?>(
-        stream: _profilo,
-        builder: (context, profilo) => StreamBuilder<Map<String, String>>(
-          stream: _nomi,
-          builder: (context, nomi) {
-            final elenco = spese.data;
-            if (elenco == null) return widget.builder(context, null);
-            final t = tassi.data ?? const <TassoCambio>[];
-            return widget.builder(
-              context,
-              ContoViaggio(
-                spese: elenco,
-                mia: profilo.data?.valutaPredefinita ?? valutaIniziale,
-                perEuro: tassiPerEuro(t),
-                giornoTassi: giornoDeiTassi(t),
-                nomi: nomi.data ?? const {},
-                io: Servizi.of(context).archivio.io,
-              ),
-            );
-          },
-        ),
-      ),
-    ),
+  Widget build(BuildContext context) => StreamBuilder<ContoViaggio>(
+    stream: _conto,
+    builder: (context, conto) => widget.builder(context, conto.data),
   );
 }
+
+/// Il conto del viaggio dalla copia, che si aggiorna con lei.
+Stream<ContoViaggio> osservaConto(Archivio archivio, String viaggioId) {
+  final controllore = StreamController<ContoViaggio>();
+  List<Spesa>? spese;
+  var tassi = const <TassoCambio>[];
+  Utente? profilo;
+  var nomi = const <String, String>{};
+  var quote = const <SpesaQuota>[];
+  var presenze = const <Partecipazione>[];
+  var dueSpese = const <String>{};
+  void manda() {
+    final elenco = spese;
+    if (elenco == null || controllore.isClosed) return;
+    controllore.add(
+      ContoViaggio(
+        spese: elenco,
+        mia: profilo?.valutaPredefinita ?? valutaIniziale,
+        perEuro: tassiPerEuro(tassi),
+        giornoTassi: giornoDeiTassi(tassi),
+        nomi: nomi,
+        io: archivio.io,
+        quote: quote,
+        presenze: presenze,
+        dueSpese: dueSpese,
+      ),
+    );
+  }
+
+  // Si manda solo quando ogni pezzo è arrivato almeno una volta: un saldo
+  // senza le quote sarebbe sbagliato, anche per un istante.
+  final arrivati = <int>{};
+  void arrivato(int pezzo) {
+    arrivati.add(pezzo);
+    if (arrivati.length == 7) manda();
+  }
+
+  final abbonamenti = <StreamSubscription<Object?>>[];
+  controllore
+    ..onListen = () {
+      abbonamenti.addAll([
+        archivio.osservaSpese(viaggioId).listen((v) {
+          spese = v;
+          arrivato(0);
+        }),
+        archivio.osservaTassi().listen((v) {
+          tassi = v;
+          arrivato(1);
+        }),
+        archivio.osservaProfilo().listen((v) {
+          profilo = v;
+          arrivato(2);
+        }),
+        archivio.osservaNomi(viaggioId).listen((v) {
+          nomi = v;
+          arrivato(3);
+        }),
+        archivio.osservaQuote(viaggioId).listen((v) {
+          quote = v;
+          arrivato(4);
+        }),
+        archivio.osservaPresenze(viaggioId).listen((v) {
+          presenze = v;
+          arrivato(5);
+        }),
+        archivio.osservaDueSpese().listen((v) {
+          dueSpese = v;
+          arrivato(6);
+        }),
+      ]);
+    }
+    ..onCancel = () async {
+      for (final a in abbonamenti) {
+        await a.cancel();
+      }
+    };
+  return controllore.stream;
+}
+
+/// Il conto del viaggio com'è adesso: per un dialogo, una volta.
+Future<ContoViaggio> contoDi(Archivio archivio, String viaggioId) =>
+    osservaConto(archivio, viaggioId).first;
 
 /// Apre il foglio di una spesa nuova.
 Future<void> nuovaSpesa(BuildContext context, Viaggio viaggio) =>
@@ -263,6 +516,18 @@ class _SchermataSpeseState extends State<SchermataSpese> {
                 conto: conto,
                 rete: rete,
               ).entra(context, ritardo: Ritmo.passo),
+            if (conto.diviso &&
+                (conto.spese.isNotEmpty || conto.rimborsi.isNotEmpty)) ...[
+              const SizedBox(height: 10),
+              _RigaSaldi(
+                conto: conto,
+                viaggio: viaggio,
+              ).entra(context, ritardo: Ritmo.passo),
+            ],
+            for (final (sua, mia) in conto.doppie) ...[
+              const SizedBox(height: 12),
+              _ForseDoppia(sua: sua, mia: mia, conto: conto, rete: rete),
+            ],
             ProblemiDellaCoda(
               operazioni: [
                 for (final op in coda)
@@ -333,9 +598,9 @@ class _Totale extends StatelessWidget {
       ] else
         quanti(conto.spese.length, 'spesa', 'spese'),
     ].join(' ');
-    final mie = conto.condivise
-        ? conto.totale(conto.spese.where((s) => s.paganteId == conto.io))
-        : null;
+    final (parte, pagato) = conto.diviso
+        ? (conto.laMiaParte, conto.hoPagato)
+        : (null, null);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
@@ -366,11 +631,25 @@ class _Totale extends StatelessWidget {
                 style: Testi.numero.copyWith(color: Colori.ardesia),
               ),
             ),
-          if (mie != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              'Pagate da te: ${scriviImporto(mie.centesimi, conto.mia)}',
-              style: Testi.evidenza.copyWith(color: Colori.ardesia),
+          if (parte != null && pagato != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _Cifra(
+                    'La tua parte',
+                    scriviImporto(parte.centesimi, conto.mia),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _Cifra(
+                    'Hai pagato',
+                    scriviImporto(pagato.centesimi, conto.mia),
+                  ),
+                ),
+              ],
             ),
           ],
           const SizedBox(height: 8),
@@ -380,6 +659,169 @@ class _Totale extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Una cifra piccola sotto il totale: «La tua parte», «Hai pagato».
+class _Cifra extends StatelessWidget {
+  const _Cifra(this.etichetta, this.valore);
+
+  final String etichetta;
+  final String valore;
+
+  @override
+  Widget build(BuildContext context) => MergeSemantics(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          etichetta,
+          style: Testi.didascalia.copyWith(color: Colori.grafite),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            valore,
+            style: Testi.numero.copyWith(color: Colori.inchiostro),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// La riga dei saldi sotto il totale (tela, 37): quanto ti devono o devi, e
+/// un tocco porta al giro più corto per pareggiare.
+class _RigaSaldi extends StatelessWidget {
+  const _RigaSaldi({required this.conto, required this.viaggio});
+
+  final ContoViaggio conto;
+  final Viaggio viaggio;
+
+  @override
+  Widget build(BuildContext context) {
+    final io = conto.io;
+    final mio = io == null ? 0 : conto.saldi.di(io);
+    final miei = [
+      for (final p in conto.passaggi)
+        if (p.da == io) p.a else if (p.a == io) p.da,
+    ];
+    final titolo = mio > 0
+        ? 'Ti devono ${scriviImporto(mio, conto.mia)}'
+        : mio < 0
+        ? 'Devi ${scriviImporto(-mio, conto.mia)}'
+        : conto.passaggi.isEmpty
+        ? 'Siete pari'
+        : 'Tu sei pari';
+    return Premibile(
+      onTap: () => apri<void>(context, SchermataSaldi(viaggioId: viaggio.id)),
+      scala: 0.98,
+      etichetta: '$titolo. Saldi: il giro più corto per pareggiare',
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            color: Colori.bianco,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              if (miei.isNotEmpty) ...[
+                PilaAvatar(
+                  nomi: [for (final p in miei) conto.nomi[p] ?? '?'],
+                  dimensione: 32,
+                ),
+                const SizedBox(width: 14),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titolo,
+                      style: Testi.evidenza.copyWith(color: Colori.inchiostro),
+                    ),
+                    Text(
+                      'Saldi: il giro più corto per pareggiare',
+                      style: Testi.didascalia.copyWith(color: Colori.grafite),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                icona(
+                  ios: CupertinoIcons.chevron_forward,
+                  android: Icons.chevron_right_rounded,
+                ),
+                size: 16,
+                color: Colori.grafite,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Due spese che sembrano la stessa, registrate da due persone (tela, 37; 06,
+/// casi limite): non si può impedire, si segnala a chi ha registrato la
+/// seconda. Togliere la propria richiede la rete; «Sono due spese» no.
+class _ForseDoppia extends StatelessWidget {
+  const _ForseDoppia({
+    required this.sua,
+    required this.mia,
+    required this.conto,
+    required this.rete,
+  });
+
+  final Spesa sua;
+  final Spesa mia;
+  final ContoViaggio conto;
+  final bool rete;
+
+  @override
+  Widget build(BuildContext context) {
+    final archivio = Servizi.of(context).archivio;
+    final minuti = mia.registrata.difference(sua.registrata).inMinutes;
+    final quando = minuti < 1
+        ? 'un attimo prima della tua'
+        : '${quanti(minuti, 'minuto', 'minuti')} prima della tua';
+    final cosa = [
+      scriviImporto(sua.centesimi, sua.valuta),
+      ?sua.descrizione,
+    ].join(' · ');
+    return Avviso(
+      icona: icona(
+        ios: CupertinoIcons.arrow_right_arrow_left,
+        android: Icons.swap_horiz_rounded,
+      ),
+      inizio: 'Sembra la stessa spesa di ${conto.nome(sua.creatoDa)}:',
+      testo: '$cosa, $quando.',
+      azioni: [
+        PulsantePiccolo(
+          etichetta: 'È la stessa: togli la mia',
+          pericolo: true,
+          onPressed: rete
+              ? () async {
+                  try {
+                    await salvaOScegli(context, () => archivio.togliSpesa(mia));
+                  } on ErroreTrolley catch (e) {
+                    if (context.mounted) {
+                      mostraMessaggio(context, e.messaggio, errore: true);
+                    }
+                  }
+                }
+              : null,
+        ),
+        PulsantePiccolo(
+          etichetta: 'Sono due spese',
+          onPressed: () => archivio.sonoDueSpese(chiaveDueSpese(sua, mia)),
+        ),
+      ],
     );
   }
 }
@@ -408,16 +850,18 @@ class RigaSpesa extends StatelessWidget {
     final s = spesa;
     final straniera = s.valuta != conto.mia;
     final convertita = conto.inMiaValuta(s);
-    final pagante = s.paganteId == conto.io
-        ? null
-        : 'pagata da ${conto.nomi[s.paganteId] ?? 'chi è uscito'}';
-    final dettaglio = [
-      if (straniera) scriviImporto(s.centesimi, s.valuta),
-      if (conData) '${s.giorno.day} ${nomiDeiMesi[s.giorno.month - 1]}',
-      ?pagante,
-      if (straniera && convertita == null) 'senza tasso',
-      if (s.inCoda) 'parte con la rete',
-    ].join(' · ');
+    final pagante = conto.diviso
+        ? '${conto.pagataDa(s)} · ${conto.perChi(s)}'
+        : null;
+    final dettaglio = conMaiuscola(
+      [
+        if (straniera) scriviImporto(s.centesimi, s.valuta),
+        if (conData) '${s.giorno.day} ${nomiDeiMesi[s.giorno.month - 1]}',
+        ?pagante,
+        if (straniera && convertita == null) 'senza tasso',
+        if (s.inCoda) 'parte con la rete',
+      ].join(' · '),
+    );
     final destra = straniera
         ? convertita == null
               ? scriviImporto(s.centesimi, s.valuta)

@@ -88,14 +88,45 @@ Map<String, Object?> ritrattoTappa(Map<String, Object?> r) => {
 };
 
 /// Il ritratto di una spesa: l'importo in centesimi, perché `12.4` del server
-/// e `12.40` del telefono sono la stessa cifra.
+/// e `12.40` del telefono sono la stessa cifra; chi ha pagato e per chi è.
 Map<String, Object?> ritrattoSpesa(Map<String, Object?> r) => {
   'importo': centesimiDa('${r['importo']}'),
   'valuta': r['valuta'],
   'data': _data(r['data']),
   'descrizione': _testo(r['descrizione']),
+  'pagante_id': r['pagante_id'],
+  'quote': scriviQuote(leggiRigheQuote(r['quote'])),
   campoEliminato: r['eliminato_il'] != null,
 };
+
+/// Le quote di una riga, come le scrive il server: `[{utente_id, quota}]`.
+Map<String, int> leggiRigheQuote(Object? righe) => {
+  for (final q in (righe as List?) ?? const [])
+    (q as Map)['utente_id'] as String: centesimiDa('${q['quota']}'),
+};
+
+/// Le quote nel ritratto: un testo, così due ritratti si confrontano.
+/// `null` se non ce ne sono — una spesa di prima della divisione, o da soli.
+String? scriviQuote(Map<String, int> quote) {
+  if (quote.isEmpty) return null;
+  final persone = quote.keys.toList()..sort();
+  return [for (final p in persone) '$p:${quote[p]}'].join(',');
+}
+
+/// Dal testo del ritratto alle quote.
+Map<String, int> leggiQuote(Object? testo) => {
+  for (final parte in ((testo as String?) ?? '').split(','))
+    if (parte.contains(':'))
+      parte.substring(0, parte.lastIndexOf(':')): int.parse(
+        parte.substring(parte.lastIndexOf(':') + 1),
+      ),
+};
+
+/// Le quote come le vuole il server.
+List<Map<String, Object?>> righeQuote(Map<String, int> quote) => [
+  for (final MapEntry(key: utente, value: c) in quote.entries)
+    {'utente_id': utente, 'quota': importoPerIlServer(c)},
+];
 
 Map<String, Object?> ritrattoVoce(Map<String, Object?> r) => {
   'testo': (r['testo'] as String).trim(),
@@ -125,11 +156,16 @@ Map<String, Object?> rigaDellaTappa(Tappa t) => {
   'eliminato_il': t.eliminatoIl,
 };
 
-Map<String, Object?> rigaDellaSpesa(Spesa s) => {
+Map<String, Object?> rigaDellaSpesa(Spesa s, Iterable<SpesaQuota> quote) => {
   'importo': s.importo,
   'valuta': s.valuta,
   'data': s.data,
   'descrizione': s.descrizione,
+  'pagante_id': s.paganteId,
+  'quote': [
+    for (final q in quote)
+      if (q.spesaId == s.id) {'utente_id': q.utenteId, 'quota': q.quota},
+  ],
   'eliminato_il': s.eliminatoIl,
 };
 
@@ -149,7 +185,8 @@ Map<String, Object?> rigaDelViaggio(Viaggio v) => {
 };
 
 /// Dal ritratto alla riga da mandare, per i soli [campi]: togliere è
-/// marcare `eliminato_il`, rimettere è vuotarlo; l'importo torna testo.
+/// marcare `eliminato_il`, rimettere è vuotarlo; l'importo torna testo. Le
+/// quote non sono una colonna: le manda a parte chi scrive la spesa.
 Map<String, Object?> perIlServer(
   Map<String, Object?> ritratto,
   Iterable<String> campi, {
@@ -162,7 +199,7 @@ Map<String, Object?> perIlServer(
           : null
     else if (campo == 'importo')
       'importo': importoPerIlServer(ritratto[campo]! as int)
-    else
+    else if (campo != 'quote')
       campo: ritratto[campo],
 };
 

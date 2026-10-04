@@ -129,7 +129,7 @@ void main() {
       final versione = await dopo
           .customSelect('PRAGMA user_version')
           .getSingle();
-      expect(versione.read<int>('user_version'), 6);
+      expect(versione.read<int>('user_version'), 7);
     },
   );
 
@@ -201,7 +201,7 @@ void main() {
         );
     expect(await dopo.select(dopo.documenti).get(), hasLength(1));
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 6);
+    expect(versione.read<int>('user_version'), 7);
   });
 
   test('passare dalla versione 3 alla 4 rifà solo la copia delle spese, e '
@@ -287,7 +287,7 @@ void main() {
     );
     expect(await dopo.select(dopo.tassiCambio).get(), isEmpty);
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 6);
+    expect(versione.read<int>('user_version'), 7);
   });
 
   test('passare dalla versione 4 alla 5 rifà solo la copia delle voci, e '
@@ -373,7 +373,7 @@ void main() {
       containsAll(['quantita', 'creato_da', 'creato_il']),
     );
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 6);
+    expect(versione.read<int>('user_version'), 7);
   });
 
   test('passare dalla versione 5 alla 6 aggiunge note e configurazione, e '
@@ -431,7 +431,86 @@ void main() {
     expect(await dopo.select(dopo.note).get(), isEmpty);
     expect(await dopo.select(dopo.configurazioni).get(), isEmpty);
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 6);
+    expect(versione.read<int>('user_version'), 7);
+  });
+
+  test('passare dalla versione 6 alla 7 aggiunge rimborso e date delle '
+      'partecipazioni, e lascia copia e coda com\'erano', () async {
+    final cartella = await Directory.systemTemp.createTemp('trolley');
+    addTearDown(() => cartella.delete(recursive: true));
+    final file = File('${cartella.path}/trolley.sqlite');
+
+    final prima = DatabaseLocale(NativeDatabase(file));
+    final adesso = DateTime.utc(2026, 10, 4, 18);
+    await prima
+        .into(prima.partecipazioni)
+        .insert(
+          PartecipazioniCompanion.insert(
+            id: 'p1',
+            versione: 1,
+            scaricatoIl: adesso,
+            viaggioId: 'v1',
+            utenteId: 'u1',
+            ruolo: 'creatore',
+            stato: 'attivo',
+          ),
+        );
+    // Una spesa registrata senza rete: la riga nella copia e il gesto in coda.
+    await prima
+        .into(prima.spese)
+        .insert(
+          SpeseCompanion.insert(
+            id: 's1',
+            versione: 0,
+            scaricatoIl: adesso,
+            viaggioId: 'v1',
+            importo: '12.40',
+            valuta: 'EUR',
+            paganteId: 'u1',
+            data: '2026-10-04',
+            creatoDa: 'u1',
+            creatoIl: adesso.toIso8601String(),
+          ),
+        );
+    await prima
+        .into(prima.codaScrittura)
+        .insert(
+          CodaScritturaCompanion.insert(
+            id: 's1',
+            viaggioId: 'v1',
+            gesto: GestoOffline.registraSpesa,
+            carico: '{"id":"s1","importo":"12.40"}',
+            creataIl: adesso,
+          ),
+        );
+    await prima.close();
+
+    // Com'era la versione 6: senza rimborso, senza le date delle
+    // partecipazioni.
+    final dopo = DatabaseLocale(
+      NativeDatabase(
+        file,
+        setup: (grezzo) => grezzo
+          ..execute('ALTER TABLE spesa DROP COLUMN rimborso')
+          ..execute('ALTER TABLE partecipazione DROP COLUMN creato_il')
+          ..execute('ALTER TABLE partecipazione DROP COLUMN modificato_il')
+          ..execute('PRAGMA user_version = 6'),
+      ),
+    );
+    addTearDown(dopo.close);
+
+    final spesa = (await dopo.select(dopo.spese).get()).single;
+    expect(spesa.versione, 0);
+    expect(spesa.rimborso, isFalse);
+    final partecipazione =
+        (await dopo.select(dopo.partecipazioni).get()).single;
+    expect(partecipazione.stato, 'attivo');
+    expect(partecipazione.creatoIl, isNull);
+    final coda = (await dopo.select(dopo.codaScrittura).get()).single;
+    expect(coda.gesto, GestoOffline.registraSpesa);
+    expect(coda.carico, '{"id":"s1","importo":"12.40"}');
+    final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
+    expect(versione.read<int>('user_version'), 7);
   });
 
   test('una spunta in coda sopravvive alla copia ricreata', () async {

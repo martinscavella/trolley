@@ -258,6 +258,21 @@ I documenti stanno in una cartella locale dell'app, non su un server.
 - Tutto, anche cambiarli ed eliminarli, funziona senza rete: la rete non c'entra.
 - Se il telefono non ha un codice di sblocco, l'elenco lo dice: senza, la cifratura non protegge niente.
 
+### Dividere le spese: come funziona (fase 2.3)
+
+Scelto con la fase 2.3 (tela, file 37–41 e 89).
+
+- **Da soli non si parla di dividere** (06, regola 3): né nel foglio né nell'elenco. Appena nel viaggio c'è, o c'è stato, qualcun altro, la spesa dice chi ha pagato e per chi.
+- **Registrare resta un gesto da due secondi**: ha pagato «tu», per «tutti» quelli che sono nel viaggio adesso, in parti uguali. Si cambia solo se serve. Le parti uguali tornano sempre al centesimo: quelli che avanzano vanno ai primi dell'elenco, uno ciascuno.
+- **Importi diversi** si scrivono in un foglio a parte: si vede quanto manca, e «Registra» si accende solo quando le parti fanno l'importo pagato. Che tornino lo controlla l'app; il server controlla solo che le quote siano di qualcuno del viaggio, come il pagante.
+- **Le quote viaggiano con la spesa**, anche senza rete: registrare una spesa resta uno solo dei quattro gesti, e spesa e quote arrivano insieme o niente. Cambiarle richiede la rete e la versione, come ogni modifica: chi ha pagato e per chi entrano nelle due versioni.
+- **Le spese di prima della divisione** (senza quote) valgono in parti uguali fra chi era nel viaggio quando sono state registrate: chi è entrato dopo non le divide.
+- **La propria parte e quanto si è pagato** stanno sotto il totale; sotto ancora, quanto ti devono o devi, che porta ai saldi.
+- **Saldi: il giro più corto** (06, regola 9), nella valuta della persona con l'ultimo tasso, dicendo di quando è. Prima si accoppia chi deve esattamente quanto un altro aspetta, poi sempre il debito più grande con il credito più grande. Chi ha lasciato il viaggio resta, tratteggiato. Una spesa in una valuta senza tasso resta fuori dai saldi, e si dice.
+- **«Li ho ricevuti» registra un rimborso**: una spesa pagata da chi dà i soldi, tutta per chi li riceve, segnata come rimborso, così il totale del viaggio la lascia fuori. Lo tocca solo chi riceve — chi dà legge che a segnarlo sarà chi riceve, con il suo nome — e funziona anche senza rete, perché è registrare una spesa. Un rimborso segnato per sbaglio si toglie, con la rete. I soldi passano fuori da Trolley.
+- **La stessa spesa registrata da due persone** (stesso importo e valuta, a meno di dieci minuti) si segnala a chi l'ha registrata dopo: «È la stessa: togli la mia» o «Sono due spese». La seconda risposta resta su quel telefono.
+- **Togliere qualcuno con un saldo aperto** lo dice nel dialogo, con quanto deve o deve ricevere e da chi. Non lo impedisce, e il saldo resta.
+
 ### Valuta e cambio: servizio esterno, ultimo valore noto offline
 
 Il tasso di cambio arriva da un servizio esterno. Senza rete si usa **l'ultimo tasso recuperato**, dicendo esplicitamente che il valore può essere cambiato perché non è in tempo reale.

@@ -189,7 +189,10 @@ void main() {
 
     await tester.tap(pulsante('Tieni quella di Marco'));
     await aspetta(tester);
-    expect(ambiente.server.chiamate('PATCH', '/rest/v1/spesa'), isEmpty);
+    expect(
+      ambiente.server.chiamate('POST', '/rest/v1/rpc/cambia_spesa'),
+      isEmpty,
+    );
     expect(
       await eventi(tester),
       contains('conflitto_risolto {"tipo":"spesa","scelta":"loro"}'),

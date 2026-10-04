@@ -263,8 +263,11 @@ void main() {
     await tester.tap(pulsante('Salva'));
     await aspetta(tester);
 
-    final chiamata = ambiente.server.chiamate('PATCH', '/rest/v1/spesa').single;
-    expect(corpoDi(chiamata), {'importo': '14.00', 'versione': 1});
+    final chiamata = ambiente.server
+        .chiamate('POST', '/rest/v1/rpc/cambia_spesa')
+        .single;
+    expect(corpoDi(chiamata)['p_valori'], {'importo': '14.00'});
+    expect(corpoDi(chiamata)['p_versione'], 1);
   });
 
   testWidgets('un\'idea non ha spese: servono le date', (tester) async {

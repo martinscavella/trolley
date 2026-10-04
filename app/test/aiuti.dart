@@ -180,12 +180,32 @@ Map<String, Object?> rigaDiSpesa(
   'pagante_id': pagante,
   'data': data,
   'descrizione': descrizione,
+  'rimborso': false,
   'creato_da': creatoDa,
   'creato_il': creatoIl,
   'modificato_il': creatoIl,
   'modificato_da': creatoDa,
   'eliminato_il': null,
   'versione': versione,
+};
+
+/// Una riga di `spesa_quota` come la restituisce il server.
+Map<String, Object?> rigaDiQuota(
+  String spesa, {
+  required String viaggio,
+  required String utente,
+  required String quota,
+}) => {
+  'id': 'q-$spesa-$utente',
+  'viaggio_id': viaggio,
+  'spesa_id': spesa,
+  'utente_id': utente,
+  'quota': num.parse(quota),
+  'creato_da': idDiProva,
+  'creato_il': _istante,
+  'modificato_il': _istante,
+  'eliminato_il': null,
+  'versione': 1,
 };
 
 /// Una riga di `voce_lista` come la restituisce il server.
@@ -281,6 +301,10 @@ class ServerFinto {
   final partecipazioni = <Map<String, Object?>>[];
   final tappe = <Map<String, Object?>>[];
   final spese = <Map<String, Object?>>[];
+
+  /// Le righe di `spesa_quota`: `id`, `viaggio_id`, `spesa_id`, `utente_id`,
+  /// `quota`, `eliminato_il`, `versione`.
+  final quote = <Map<String, Object?>>[];
   final voci = <Map<String, Object?>>[];
   final note = <Map<String, Object?>>[];
   final tassi = <Map<String, Object?>>[];
@@ -505,6 +529,78 @@ class ServerFinto {
           ..['versione'] = (spesa['versione']! as int) + 1
           ..['modificato_da'] = idDiProva;
         return risposta([spesa]);
+      case 'GET /rest/v1/spesa_quota':
+        return risposta(_filtra(quote, r.url.queryParameters));
+      case 'POST /rest/v1/rpc/registra_spesa':
+        // Come la funzione vera: spesa e quote insieme, e rimandata non si
+        // duplica.
+        final c = _corpo(r);
+        final p = (c['p_spesa'] as Map).cast<String, Object?>();
+        final id = p['id']! as String;
+        if (!spese.any((x) => x['id'] == id)) {
+          spese.add({
+            ...rigaDiSpesa(
+              id,
+              viaggio: p['viaggio_id']! as String,
+              data: p['data']! as String,
+            ),
+            ...p,
+            'importo': num.parse(p['importo']! as String),
+            'rimborso': p['rimborso'] == true,
+            'creato_il': DateTime.now().toUtc().toIso8601String(),
+          });
+          for (final q in (c['p_quote'] as List? ?? const [])) {
+            final quota = (q as Map).cast<String, Object?>();
+            quote.add(
+              rigaDiQuota(
+                id,
+                viaggio: p['viaggio_id']! as String,
+                utente: quota['utente_id']! as String,
+                quota: quota['quota']! as String,
+              ),
+            );
+          }
+        }
+        return risposta(_righeDellaSpesa(id));
+      case 'POST /rest/v1/rpc/cambia_spesa':
+        final c = _corpo(r);
+        final id = c['p_spesa']! as String;
+        final spesa = spese.where((x) => x['id'] == id).firstOrNull;
+        if (spesa == null) return _errore('TR404', 'spesa non trovata');
+        if (spesa['versione'] != c['p_versione']) {
+          return _errore('TR409', 'versione superata');
+        }
+        final valori = (c['p_valori'] as Map).cast<String, Object?>();
+        spesa
+          ..addAll(valori)
+          ..['versione'] = (spesa['versione']! as int) + 1
+          ..['modificato_da'] = idDiProva;
+        if (valori['importo'] case final String importo) {
+          spesa['importo'] = num.parse(importo);
+        }
+        if (c['p_quote'] case final List nuove) {
+          final per = {
+            for (final q in nuove.cast<Map>())
+              q['utente_id'] as String: q['quota'] as String,
+          };
+          for (final q in quote.where((q) => q['spesa_id'] == id)) {
+            final nuova = per.remove(q['utente_id']);
+            q
+              ..['quota'] = nuova == null ? q['quota'] : num.parse(nuova)
+              ..['eliminato_il'] = nuova == null ? _istante : null;
+          }
+          for (final MapEntry(key: utente, value: quota) in per.entries) {
+            quote.add(
+              rigaDiQuota(
+                id,
+                viaggio: spesa['viaggio_id']! as String,
+                utente: utente,
+                quota: quota,
+              ),
+            );
+          }
+        }
+        return risposta(_righeDellaSpesa(id));
       case 'GET /rest/v1/voce_lista':
         return risposta(_filtra(voci, r.url.queryParameters));
       case 'POST /rest/v1/voce_lista':
@@ -725,6 +821,14 @@ class ServerFinto {
     }
     return true;
   }
+
+  Map<String, Object?> _righeDellaSpesa(String id) => {
+    'spesa': spese.where((x) => x['id'] == id).firstOrNull,
+    'quote': [
+      for (final q in quote)
+        if (q['spesa_id'] == id && q['eliminato_il'] == null) q,
+    ],
+  };
 
   Map<String, Object?>? _viaggio(String id) =>
       viaggi.where((v) => v['id'] == id).firstOrNull;

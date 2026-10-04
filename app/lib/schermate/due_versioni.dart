@@ -14,6 +14,7 @@ import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
+import '../dominio/divisione.dart';
 import '../dominio/giornate.dart';
 import '../dominio/periodo.dart';
 import '../dominio/tappe.dart';
@@ -21,6 +22,7 @@ import '../dominio/valute.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'spese.dart' show elenco;
 
 /// Che cosa ha scelto la persona davanti a due versioni. Il nome è quello
 /// dell'evento (07-misurazione.md): `conflitto_risolto.scelta`.
@@ -395,6 +397,13 @@ class _Contesto {
   final Map<String, String> nomi;
   final Map<String, DateTime> giorni;
 
+  /// «Tu», «Marco».
+  String? chi(String? id) => id == null
+      ? null
+      : id == io
+      ? 'Tu'
+      : nomi[id] ?? '?';
+
   /// Perché la propria tappa non si può tenere: non entra più nel giorno.
   final String? nonEntra;
 
@@ -500,6 +509,22 @@ List<_RigaConfronto> _righe(Conflitto c, _Contesto contesto) {
       riga('Quando', ['data'], (v) {
         final data = leggiData(v['data'] as String?);
         return data == null ? null : dataBreve(data);
+      }),
+      riga('Ha pagato', [
+        'pagante_id',
+      ], (v) => contesto.chi(v['pagante_id'] as String?)),
+      riga('Per chi', ['quote'], (v) {
+        final quote = leggiQuote(v['quote']);
+        if (quote.isEmpty) return null;
+        final persone = quote.keys.toList();
+        final totale = v['importo']! as int;
+        return inPartiUguali(totale, quote)
+            ? elenco([for (final p in persone) contesto.chi(p) ?? '?'])
+            : [
+                for (final p in persone)
+                  '${contesto.chi(p)} '
+                      '${scriviImporto(quote[p]!, v['valuta']! as String)}',
+              ].join(' · ');
       }),
     ],
     CosaInConflitto.voce => [

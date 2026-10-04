@@ -128,8 +128,9 @@ void main() {
       await coda.registraSpesa(nuova('s1'));
       // La coda non parte (il server la rifiuta), ma la copia si riscarica.
       ambiente.rete.disponibile = true;
-      ambiente.server.percorsi['POST /rest/v1/spesa'] = (_) async =>
-          risposta({'code': '42501', 'message': 'no'}, 403);
+      ambiente.server.percorsi['POST /rest/v1/rpc/registra_spesa'] = (
+        _,
+      ) async => risposta({'code': '42501', 'message': 'no'}, 403);
       await ambiente.archivio.aggiornaCopia();
 
       expect((await copia()).single.id, 's1');
@@ -137,8 +138,9 @@ void main() {
     });
 
     test('scartata dopo i rifiuti, esce anche dalla copia', () async {
-      ambiente.server.percorsi['POST /rest/v1/spesa'] = (_) async =>
-          risposta({'code': '42501', 'message': 'no'}, 403);
+      ambiente.server.percorsi['POST /rest/v1/rpc/registra_spesa'] = (
+        _,
+      ) async => risposta({'code': '42501', 'message': 'no'}, 403);
       await coda.registraSpesa(nuova('s1'));
       for (var i = 0; i < Coda.tentativiMassimi; i++) {
         await coda.svuota();
@@ -222,9 +224,14 @@ void main() {
         'importo': '14.00',
       });
       final chiamata = ambiente.server
-          .chiamate('PATCH', '/rest/v1/spesa')
+          .chiamate('POST', '/rest/v1/rpc/cambia_spesa')
           .single;
-      expect(corpoDi(chiamata), {'importo': '14.00', 'versione': 2});
+      expect(corpoDi(chiamata), {
+        'p_spesa': 'a',
+        'p_versione': 2,
+        'p_valori': {'importo': '14.00'},
+        'p_quote': null,
+      });
       expect(centesimiDa((await spesa()).importo), 1400);
       expect((await spesa()).versione, 3);
     });
@@ -295,5 +302,134 @@ void main() {
         .single;
     expect(corpoDi(chiamata), {'valuta_predefinita': 'USD', 'versione': 1});
     expect((await ambiente.archivio.profiloLocale())!.valutaPredefinita, 'USD');
+  });
+
+  group('dividere', () {
+    Future<List<SpesaQuota>> quoteNellaCopia() =>
+        ambiente.db.select(ambiente.db.speseQuote).get();
+
+    test('le quote viaggiano con la spesa: senza rete sono subito nella '
+        'copia, poi arrivano insieme e valgono quelle del server', () async {
+      ambiente.rete.disponibile = false;
+      await coda.registraSpesa(
+        NuovaSpesa(
+          id: 's1',
+          viaggioId: 'v',
+          centesimi: 4200,
+          valuta: 'EUR',
+          paganteId: idDiProva,
+          data: DateTime.utc(2026, 10, 10),
+          quote: const {idDiProva: 2100, 'marco': 2100},
+        ),
+      );
+      expect(
+        (await quoteNellaCopia()).map((q) => (q.utenteId, q.quota)),
+        unorderedEquals([(idDiProva, '21.00'), ('marco', '21.00')]),
+      );
+
+      ambiente.rete.disponibile = true;
+      await coda.svuota();
+
+      final chiamata = ambiente.server
+          .chiamate('POST', '/rest/v1/rpc/registra_spesa')
+          .single;
+      expect(corpoDi(chiamata)['p_quote'], [
+        {'utente_id': idDiProva, 'quota': '21.00'},
+        {'utente_id': 'marco', 'quota': '21.00'},
+      ]);
+      expect(ambiente.server.quote, hasLength(2));
+      final arrivate = await quoteNellaCopia();
+      expect(arrivate, hasLength(2));
+      expect(arrivate.every((q) => q.versione == 1), isTrue);
+    });
+
+    test('un rimborso è una spesa segnata come tale', () async {
+      await coda.registraSpesa(
+        NuovaSpesa(
+          id: 'r1',
+          viaggioId: 'v',
+          centesimi: 1220,
+          valuta: 'EUR',
+          paganteId: 'sara',
+          data: DateTime.utc(2026, 10, 12),
+          quote: const {idDiProva: 1220},
+          rimborso: true,
+        ),
+      );
+      await coda.svuota();
+      expect(ambiente.server.spese.single['rimborso'], isTrue);
+      expect((await copia()).single.rimborso, isTrue);
+    });
+
+    test('scaricando la copia arrivano le quote, senza quelle tolte', () async {
+      ambiente.server
+        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2026-10-10'))
+        ..quote.addAll([
+          rigaDiQuota('a', viaggio: 'v', utente: idDiProva, quota: '6.20'),
+          rigaDiQuota('a', viaggio: 'v', utente: 'marco', quota: '6.20')
+            ..['eliminato_il'] = '2026-10-11T20:00:00Z',
+        ]);
+      await ambiente.archivio.aggiornaCopia();
+      expect((await quoteNellaCopia()).map((q) => q.utenteId), [idDiProva]);
+    });
+
+    test('chi ha pagato e per chi si cambiano con la spesa, in una '
+        'scrittura sola', () async {
+      ambiente.server
+        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2026-10-10'))
+        ..quote.addAll([
+          rigaDiQuota('a', viaggio: 'v', utente: idDiProva, quota: '6.20'),
+          rigaDiQuota('a', viaggio: 'v', utente: 'marco', quota: '6.20'),
+        ]);
+      await ambiente.archivio.aggiornaCopia();
+
+      await ambiente.archivio.modificaSpesa((await copia()).single, {
+        'pagante_id': 'marco',
+        'quote': [
+          {'utente_id': 'marco', 'quota': '12.40'},
+        ],
+      });
+
+      final c = corpoDi(
+        ambiente.server.chiamate('POST', '/rest/v1/rpc/cambia_spesa').single,
+      );
+      expect(c['p_valori'], {'pagante_id': 'marco'});
+      expect(c['p_quote'], [
+        {'utente_id': 'marco', 'quota': '12.40'},
+      ]);
+      expect((await copia()).single.paganteId, 'marco');
+      expect((await quoteNellaCopia()).map((q) => (q.utenteId, q.quota)), [
+        ('marco', '12.4'),
+      ]);
+    });
+
+    test('se intanto qualcuno ha cambiato per chi è, due versioni', () async {
+      ambiente.server
+        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2026-10-10'))
+        ..quote.add(
+          rigaDiQuota('a', viaggio: 'v', utente: idDiProva, quota: '12.40'),
+        );
+      await ambiente.archivio.aggiornaCopia();
+      final vista = (await copia()).single;
+      // Marco l'ha divisa a metà, dal suo telefono.
+      ambiente.server.spese.single['versione'] = 2;
+      ambiente.server.quote
+        ..single['quota'] = 6.2
+        ..add(rigaDiQuota('a', viaggio: 'v', utente: 'marco', quota: '6.20'));
+
+      await expectLater(
+        ambiente.archivio.modificaSpesa(vista, {
+          'descrizione': 'Pranzo al mercato',
+        }),
+        throwsA(
+          isA<Conflitto>().having(
+            (c) => c.diversi,
+            'diversi',
+            containsAll(['descrizione', 'quote']),
+          ),
+        ),
+      );
+      expect(await quoteNellaCopia(), hasLength(2));
+    });
   });
 }

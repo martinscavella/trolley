@@ -107,7 +107,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Rendi Marco responsabile'), findsOneWidget);
     await tester.tap(find.text('Togli Marco dal viaggio'));
-    await tester.pumpAndSettle();
+    await aspetta(tester);
     expect(find.text('Togliere Marco dal viaggio?'), findsOneWidget);
     await tester.tap(find.text('Togli').last);
     await aspetta(tester);
@@ -116,6 +116,34 @@ void main() {
     expect(find.text('NON CI SONO PIÙ'), findsOneWidget);
     expect(
       find.text('Quello che ha aggiunto resta nel viaggio'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('con un saldo aperto, togliere qualcuno lo dice prima '
+      '(tela, 41)', (tester) async {
+    ambiente.server
+      ..spese.add(
+        rigaDiSpesa('s', viaggio: 'v', importo: '12.40', data: fra(30)),
+      )
+      ..quote.addAll([
+        rigaDiQuota('s', viaggio: 'v', utente: idDiProva, quota: '6.20'),
+        rigaDiQuota('s', viaggio: 'v', utente: marco, quota: '6.20'),
+      ]);
+    await viaggio(tester);
+    await ambiente.monta(tester, const SchermataPartecipanti(viaggioId: 'v'));
+    await aspetta(tester);
+
+    await tester.tap(find.byTooltip('Cosa puoi fare con Marco'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Togli Marco dal viaggio'));
+    await aspetta(tester);
+    expect(
+      find.textContaining('Ha ancora un saldo aperto: deve 6,20'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('a te. Il saldo resta anche dopo'),
       findsOneWidget,
     );
   });

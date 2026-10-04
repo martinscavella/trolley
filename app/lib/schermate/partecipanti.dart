@@ -184,12 +184,19 @@ class _SchermataPartecipantiState extends State<SchermataPartecipanti> {
 
   Future<void> _togli(String utenteId, String nome) async {
     final archivio = Servizi.of(context).archivio;
+    // Con un saldo aperto lo si dice prima (06, casi limite; tela, 41): la
+    // rimozione non azzera niente.
+    final conto = await contoDi(archivio, widget.viaggioId);
+    final saldo = saldoInParole(conto, utenteId);
+    if (!mounted) return;
     if (!await _conferma(
       titolo: 'Togliere $nome dal viaggio?',
-      messaggio:
-          'Non vedrà più il viaggio; quello che ha aggiunto resta, con il suo '
-          'nome. I link d\'invito ancora validi si ritirano: chi deve ancora '
-          'entrare ne riceverà uno nuovo.',
+      messaggio: saldo != null
+          ? 'Ha ancora un saldo aperto: $saldo. Il saldo resta anche dopo, e '
+                'quello che ha aggiunto resta con il suo nome.'
+          : 'Non vedrà più il viaggio; quello che ha aggiunto resta, con il '
+                'suo nome. I link d\'invito ancora validi si ritirano: chi deve '
+                'ancora entrare ne riceverà uno nuovo.',
       azione: 'Togli',
     )) {
       return;

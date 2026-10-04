@@ -10,14 +10,17 @@ import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
+import '../dati/conflitti.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
+import '../dominio/divisione.dart';
 import '../dominio/spese.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'divisione_spesa.dart';
 import 'due_versioni.dart';
 import 'gesti_spesa.dart';
 import 'scelta_valuta.dart';
@@ -89,7 +92,120 @@ class _FoglioState extends State<_Foglio> {
   late DateTime _data = widget.spesa?.giorno ?? soloData(DateTime.now());
   bool _inCorso = false;
 
+  // Chi ha pagato e per chi (2.3): già scelti, si cambiano solo se serve.
+  late String _pagante = widget.spesa?.paganteId ?? widget.conto.io ?? '';
+  late Set<String> _perChi = switch (widget.spesa) {
+    final s? => {
+      for (final MapEntry(key: p, value: c) in widget.conto.quoteDi(s).entries)
+        if (c > 0) p,
+    },
+    null => {...widget.conto.attivi},
+  };
+  late bool _uguali = switch (widget.spesa) {
+    final s? => inPartiUguali(s.centesimi, widget.conto.quoteDi(s)),
+    null => true,
+  };
+  late Map<String, int>? _importi = switch (widget.spesa) {
+    final s? when !_uguali => widget.conto.quoteDi(s),
+    _ => null,
+  };
+
+  /// La persona ha cambiato chi ha pagato o per chi: le quote si riscrivono.
+  bool _divisioneToccata = false;
+
   bool get _nuova => widget.spesa == null;
+
+  /// Nel viaggio c'è, o c'è stato, qualcun altro: si divide.
+  bool get _divisa => widget.conto.diviso;
+
+  /// Chi può aver pagato: chi è nel viaggio, e chi aveva pagato se ne è
+  /// uscito.
+  List<String> get _paganti => [
+    ...widget.conto.attivi,
+    if (_pagante.isNotEmpty && !widget.conto.attivi.contains(_pagante))
+      _pagante,
+  ];
+
+  /// Per chi può essere: chi è nel viaggio, e chi era già nella spesa.
+  List<String> get _persone => [
+    ...widget.conto.attivi,
+    if (widget.spesa case final s?)
+      for (final p in widget.conto.quoteDi(s).keys)
+        if (!widget.conto.attivi.contains(p)) p,
+  ];
+
+  /// Le quote da scrivere, nell'ordine in cui si vedono le persone. `null`
+  /// da soli, o finché non si sa quanto.
+  Map<String, int>? get _quote {
+    final c = _centesimi;
+    if (!_divisa || c == null) return null;
+    final scelti = [
+      for (final p in _persone)
+        if (_perChi.contains(p)) p,
+    ];
+    if (scelti.isEmpty) return null;
+    if (_uguali) return partiUguali(c, scelti);
+    return {for (final p in scelti) p: _importi?[p] ?? 0};
+  }
+
+  /// Le quote cambiate rispetto a quelle scritte, se sono da riscrivere.
+  Map<String, int>? get _quoteNuove {
+    final s = widget.spesa;
+    final q = _quote;
+    if (s == null || q == null) return null;
+    if (!_divisioneToccata && _centesimi == s.centesimi) return null;
+    final scritte = widget.conto.quoteScritte(s);
+    final uguali =
+        scritte.length == q.length &&
+        q.entries.every((e) => scritte[e.key] == e.value);
+    return uguali ? null : q;
+  }
+
+  void _tocca(VoidCallback cambio) => setState(() {
+    cambio();
+    _divisioneToccata = true;
+  });
+
+  Future<void> _importiDiversi() async {
+    final c = _centesimi;
+    final scelti = [
+      for (final p in _persone)
+        if (_perChi.contains(p)) p,
+    ];
+    if (c == null) {
+      mostraMessaggio(context, 'Prima scrivi quanto si è speso.');
+      return;
+    }
+    if (scelti.isEmpty) {
+      mostraMessaggio(context, 'Prima scegli per chi è.');
+      return;
+    }
+    final cosa = _descrizione.text.trim();
+    final parti = await apriFoglio<Map<String, int>>(
+      context,
+      FoglioImportiDiversi(
+        conto: widget.conto,
+        sottotitolo: [
+          if (cosa.isNotEmpty) cosa,
+          '${scriviImporto(c, _valuta)} pagati da '
+              '${_pagante == widget.conto.io ? 'te' : widget.conto.nome(_pagante)}',
+        ].join(' · '),
+        persone: scelti,
+        centesimi: c,
+        valuta: _valuta,
+        conferma: _nuova ? 'Registra' : 'Salva',
+        iniziali: _uguali ? partiUguali(c, scelti) : _importi,
+      ),
+    );
+    if (parti == null || !mounted) return;
+    _tocca(() {
+      _uguali = false;
+      _importi = parti;
+      _perChi = parti.keys.toSet();
+    });
+    // «Registra» del foglio degli importi registra davvero (tela, 39).
+    if (_motivo == null) await _salva();
+  }
 
   @override
   void dispose() {
@@ -124,6 +240,8 @@ class _FoglioState extends State<_Foglio> {
       if (_data != s.giorno) 'data': scriviData(_data),
       if (descrizione != (s.descrizione ?? ''))
         'descrizione': descrizione.isEmpty ? null : descrizione,
+      if (_divisa && _pagante != s.paganteId) 'pagante_id': _pagante,
+      if (_quoteNuove case final q?) 'quote': righeQuote(q),
     };
   }
 
@@ -136,6 +254,14 @@ class _FoglioState extends State<_Foglio> {
           ? 'In ${nomeCortoValuta(_valuta).toLowerCase()} non ci sono '
                 'centesimi'
           : 'Questo non è un importo';
+    }
+    if (_divisa) {
+      if (_perChi.isEmpty) return 'Scegli per chi è';
+      final manca = mancaAlleParti(_centesimi!, (_quote ?? const {}).values);
+      if (!_uguali && manca != 0) {
+        return 'Le parti devono fare '
+            '${scriviImporto(_centesimi!, _valuta)}, l\'importo pagato';
+      }
     }
     if (_nuovo) return null;
     if (widget.spesa!.inCoda) {
@@ -186,6 +312,8 @@ class _FoglioState extends State<_Foglio> {
           valuta: _valuta,
           data: _data,
           descrizione: _descrizione.text,
+          pagante: _divisa ? _pagante : null,
+          quote: _quote ?? const {},
         );
       } else {
         final cambiamenti = _cambiamenti;
@@ -265,6 +393,14 @@ class _FoglioState extends State<_Foglio> {
         ),
       ),
       children: [
+        if (_nuova && _divisa) ...[
+          Text(
+            'Chi ha pagato e per chi sono già scelti: tu, per tutti. Cambiali '
+            'solo se serve.',
+            style: Testi.secondario.copyWith(color: Colori.grafite),
+          ),
+          const SizedBox(height: 16),
+        ],
         const _Etichetta('Quanto?'),
         _CampoImporto(
           controller: _importo,
@@ -301,6 +437,28 @@ class _FoglioState extends State<_Foglio> {
                   ),
                 ),
         ),
+        if (_divisa) ...[
+          const SizedBox(height: 16),
+          SezioneDivisione(
+            conto: widget.conto,
+            paganti: _paganti,
+            persone: _persone,
+            pagante: _pagante,
+            perChi: _perChi,
+            uguali: _uguali,
+            importi: _importi,
+            centesimi: _centesimi,
+            valuta: _valuta,
+            onPagante: (p) => _tocca(() => _pagante = p),
+            onPerChi: (p) => _tocca(
+              () => _perChi = _perChi.contains(p)
+                  ? ({..._perChi}..remove(p))
+                  : {..._perChi, p},
+            ),
+            onUguali: (u) => _tocca(() => _uguali = u),
+            onImportiDiversi: _importiDiversi,
+          ),
+        ],
         const SizedBox(height: 16),
         Campo(
           controller: _descrizione,
@@ -349,7 +507,7 @@ class _FoglioState extends State<_Foglio> {
           ),
         ],
         if (spesa != null) ...[
-          if (spesa.paganteId != widget.conto.io) ...[
+          if (!_divisa && spesa.paganteId != widget.conto.io) ...[
             const SizedBox(height: 16),
             Text(
               'Pagata da ${widget.conto.nomi[spesa.paganteId] ?? 'chi è uscito dal viaggio'}.',

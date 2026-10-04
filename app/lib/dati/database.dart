@@ -74,6 +74,14 @@ class Partecipazioni extends Table with RigaCopiata {
   TextColumn get utenteId => text()();
   TextColumn get ruolo => text()();
   TextColumn get stato => text()();
+
+  /// Quando è entrato nel viaggio: una spesa registrata prima della 2.3,
+  /// senza quote, si divide fra chi c'era (decisioni/prodotto.md).
+  TextColumn get creatoIl => text().nullable()();
+
+  /// L'ultima volta che la partecipazione è cambiata: per chi è uscito, più o
+  /// meno quando è uscito.
+  TextColumn get modificatoIl => text().nullable()();
 }
 
 @DataClassName('Giorno')
@@ -139,6 +147,10 @@ class Spese extends Table with RigaCopiata {
 
   /// A pari data, l'ultima registrata va in cima.
   TextColumn get creatoIl => text()();
+
+  /// Un rimborso: chi dà i soldi l'ha «pagato», chi li riceve ne ha tutta la
+  /// quota. Chiude un saldo, e il totale del viaggio lo lascia fuori.
+  BoolColumn get rimborso => boolean().withDefault(const Constant(false))();
 }
 
 @DataClassName('SpesaQuota')
@@ -363,8 +375,10 @@ class DatabaseLocale extends _$DatabaseLocale {
   /// di cambio.
   /// 5 (fase 1.5): la copia delle voci prende quantita, creato_da e creato_il.
   /// 6 (fase 1.6): le note del viaggio e la configurazione.
+  /// 7 (fase 2.3): le spese sanno se sono un rimborso, le partecipazioni
+  /// quando sono nate e quando sono cambiate.
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [
@@ -411,8 +425,28 @@ class DatabaseLocale extends _$DatabaseLocale {
         await m.createTable(note);
         await m.createTable(configurazioni);
       }
+      // Colonne in più: la copia resta leggibile senza rete com'era, e quelle
+      // nuove arrivano con la prossima copia. Le spese in coda restano spese.
+      // Una tabella già rifatta da un passo di prima ha già le colonne.
+      if (da >= 2 && da < 7) {
+        await _aggiungiSeManca(m, spese, spese.rimborso);
+        await _aggiungiSeManca(m, partecipazioni, partecipazioni.creatoIl);
+        await _aggiungiSeManca(m, partecipazioni, partecipazioni.modificatoIl);
+      }
     },
   );
+
+  Future<void> _aggiungiSeManca(
+    Migrator m,
+    TableInfo tabella,
+    GeneratedColumn colonna,
+  ) async {
+    final colonne = await customSelect(
+      'PRAGMA table_info("${tabella.actualTableName}")',
+    ).get();
+    if (colonne.any((c) => c.read<String>('name') == colonna.name)) return;
+    await m.addColumn(tabella, colonna);
+  }
 
   /// Butta e ricrea le tabelle della copia, lasciando intatto tutto il resto.
   Future<void> ricreaCopia([Migrator? migrator]) async {
