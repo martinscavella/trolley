@@ -59,7 +59,7 @@ La fase 1.3 (documenti sul telefono: scansione, foto, file; elenco con oggi in c
 | **Android** | Il canale `trolley/documenti` esiste solo in Swift ([ADR-008](tecnico/adr/008-documenti-sul-telefono.md)): va scritto in Kotlin, e va capito il backup (l'Auto Backup si ferma a 25 MB per app) | Prima della prima build Android |
 | **Schermata di chiusura account** | 03 vuole che dica che disinstallare porta via i documenti. Oggi l'avviso sta al primo documento e nel dialogo "Esci"; la chiusura account non esiste ancora | Con la chiusura account |
 | ~~**Rimuovere un viaggio dal telefono**~~ | Fatto nella 2.1: uscendo da un viaggio i propri documenti si cancellano, dopo una conferma che li conta. Se invece il viaggio sparisce perché ti tolgono, i documenti restano e l'elenco dei viaggi lo dice, con «Guardali» ed «Eliminali» | ✅ Fase 2.1 |
-| **Il documento di adesso** | La schermata "adesso" mostrerà il documento agganciato a questo momento ([09](prodotto/09-durante-il-viaggio.md)) | Fase 3.1 |
+| ~~**Il documento di adesso**~~ | Fatto nella 3.1: «Adesso» mostra il primo documento di oggi con l'ora non passata da più di un'ora, o quello di oggi senza ora; con la giornata libera, quello di domani | ✅ Fase 3.1 |
 | **Luminosità al massimo** mostrando un codice a barre | Comodo al gate; non chiesto dai documenti | Se la beta lo chiede |
 | **Rivedere sulla tela le schermate 10–14** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.3 |
 
@@ -148,6 +148,17 @@ La fase 2.4 (la lista del viaggio e la propria, chi porta cosa, spostare una voc
 | **Chi porta una voce assegnata da un altro non lo sa** | Se Marco scrive che la crema la porta Sara, Sara lo vede solo aprendo la lista. Dirglielo è delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
 | **Una voce presa su un altro telefono non chiude il benvenuto qui** | La copia sa chi porta una voce, non chi l'ha scelto: Sara a cui Marco ha dato la crema non ha ancora contribuito. Il benvenuto si chiude al prossimo contributo, o con la × | Se dà fastidio |
 | **Rivedere sulla tela le schermate 42–44** | Disegnate prima, costruite il 4 ottobre 2026 | Prima di chiudere la 2.4 |
+
+### Rimasto fuori dalla 3.1
+
+La fase 3.1 (la schermata «Adesso»: la tappa di adesso con «Fatta» e «Salta», cosa viene dopo, il documento di questo momento, la spesa con un tocco, oggi e domani, la giornata libera, senza rete, due viaggi in corso) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Il promemoria di fine giornata** (09, regola 11) | Se restano tappe non marcate l'app lo ricorda una volta sola: è una notifica locale, dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **Due cose che la tela non disegna** | Il pulsante in alto che apre tutto il viaggio (la tela 45 non ha un'uscita verso il viaggio) e «Per oggi è tutto», quando le tappe di oggi sono tutte segnate (fatto nella forma della giornata libera, 47) | Da disegnare sulla tela |
+| **«Adesso» si apre da solo solo all'avvio** | Chi lascia l'app aperta da ieri e la riprende la ritrova dov'era; il viaggio che comincia oggi si apre al prossimo avvio | Se la beta lo chiede |
+| **Rivedere sulla tela le schermate 45–49** | Disegnate prima, costruite il 4 ottobre 2026 | Prima di chiudere la 3.1 |
 
 ### Impianto di sicurezza del matching — stima
 

@@ -308,6 +308,22 @@ Scelto con la fase 2.4 (tela, file 42–44).
 - **Prendere una voce del viaggio è un contributo**: per chi è appena entrato da un invito conta come primo contributo (H3) e chiude il benvenuto, come aggiungerne una (03, regola 9).
 - Senza rete le liste si leggono e si spuntano; aggiungere, cambiare, scegliere chi porta e spostare richiedono la rete, e lo dicono prima (05, regola 5).
 
+### Adesso: come funziona (fase 3.1)
+
+Scelto con la fase 3.1 (tela, file 45–49).
+
+- **Con un viaggio in corso l'app si apre su «Adesso»** (09, regola 1), una volta all'avvio, dalla copia sul telefono: anche senza rete. Dall'elenco, il biglietto di un viaggio in corso porta lì; da «Adesso», il pulsante in alto apre tutto il viaggio. La barra in basso resta quella di «Viaggi».
+- **La tappa di adesso è la prima ancora da fare**, come la «prossima» della giornata: non quella che l'orologio direbbe. Così il programma non si riorganizza mai da solo (09, casi limite).
+- **Gli orari si ricavano dal programma**: una tappa con l'ora la tiene, le altre cominciano quando finisce quella prima, la prima all'inizio della giornata. Gli spostamenti non si contano, come nella capienza.
+- **Tre modi di dirla**: «Ora · 10:30–11:30» se l'orologio è dentro il suo orario, «Alle 10:30–11:30» se deve ancora cominciare, «In programma dalle 10:30» se è passato — e allora sotto si dice quante tappe restano e fino a quando. Nessun rimprovero, nessun «in ritardo».
+- **«Dopo» dice fra quanto** solo se la tappa seguente deve ancora cominciare: «tra 25 minuti», «tra 2 ore e 15 minuti». Un tempo passato non si dice.
+- **Il documento di adesso** è il primo di oggi con l'ora che non è passata da più di un'ora (la carta d'imbarco delle 7:05 serve ancora alle 7:40, non a mezzogiorno); se non ce n'è, il primo di oggi senza ora. Con una giornata libera si mostra quello di domani.
+- **Giornata senza tappe**: si dice libera, si guarda a domani (la prima tappa, quante altre, fino a quando) e si può aggiungere una tappa anche senza rete. Se le tappe di oggi sono tutte segnate, «Per oggi è tutto», con la stessa forma.
+- **Una spesa da «Adesso»**: un tocco, l'importo col tastierino, «Registra» (09, regola 9). Valuta della persona, oggi, pagata da lei per tutti quelli che sono nel viaggio adesso, in parti uguali; da soli non si parla di dividere. Descrizione, valuta e per chi si cambiano dopo, dalle spese.
+- **«Oggi» e «Domani»** mostrano la giornata come percorso, da segnare con un tocco, e «La giornata intera» apre quella vera. L'ultimo giorno «Domani» non c'è.
+- **Senza rete** lo dice una volta, con l'età della copia, e conta i gesti fatti che aspettano di partire.
+- **Due viaggi in corso**: si sceglie quale aprire, e la scelta vale su quel telefono fino a sera; il giorno dopo si richiede. Toccare il biglietto di un viaggio in corso nell'elenco conta come sceglierlo.
+
 ---
 
 ## Ricordo e traguardi

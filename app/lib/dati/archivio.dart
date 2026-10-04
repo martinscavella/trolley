@@ -1759,6 +1759,30 @@ class Archivio {
         'Questo viaggio non c\'è più. Ora vedi i tuoi viaggi come sono adesso.',
   );
 
+  // ─── Adesso ─────────────────────────────────────────────────────────────
+
+  static const _sceltoOggi = 'adesso_scelto';
+
+  /// Il viaggio scelto oggi fra due in corso, su questo telefono: la scelta
+  /// vale fino a sera (09, casi limite). `null` se oggi non si è scelto.
+  Future<String?> viaggioSceltoOggi(DateTime oggi) async {
+    final riga = await (_db.select(
+      _db.impostazioni,
+    )..where((i) => i.chiave.equals(_sceltoOggi))).getSingleOrNull();
+    final parti = (riga?.valore ?? '').split('|');
+    if (parti.length != 2 || parti.first != scriviData(oggi)) return null;
+    return parti.last;
+  }
+
+  Future<void> scegliViaggioDiOggi(String viaggioId, DateTime oggi) => _db
+      .into(_db.impostazioni)
+      .insertOnConflictUpdate(
+        ImpostazioniCompanion.insert(
+          chiave: _sceltoOggi,
+          valore: '${scriviData(oggi)}|$viaggioId',
+        ),
+      );
+
   // ─── Idee e archivio ────────────────────────────────────────────────────
 
   /// Il giorno in cui questo telefono ha mostrato il sollecito "è ancora

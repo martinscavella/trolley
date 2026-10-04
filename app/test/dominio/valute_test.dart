@@ -66,6 +66,39 @@ void main() {
     },
   );
 
+  group('il tastierino della spesa veloce', () {
+    String scrivi(List<String> tasti, {int decimali = 2}) => tasti.fold(
+      '',
+      (testo, tasto) => conIlTasto(testo, tasto, decimali: decimali),
+    );
+
+    test('cifre e virgola fanno un importo che si legge', () {
+      final testo = scrivi(['1', '2', ',', '5', '0']);
+      expect(testo, '12,50');
+      expect(leggiImporto(testo), 1250);
+    });
+
+    test('la virgola per prima diventa «0,», e una seconda non entra', () {
+      expect(scrivi([',', '5']), '0,5');
+      expect(scrivi(['3', ',', ',', '2']), '3,2');
+    });
+
+    test('non più decimali di quanti ne ha la valuta', () {
+      expect(scrivi(['1', ',', '2', '3', '4']), '1,23');
+      expect(scrivi(['1', '5', ',', '0'], decimali: 0), '150');
+    });
+
+    test('niente zeri davanti, e non oltre le cifre del server', () {
+      expect(scrivi(['0', '0', '7']), '7');
+      expect(scrivi(List.filled(12, '9')), '9' * cifreMassime);
+    });
+
+    test('si cancella dall\'ultima', () {
+      expect(scrivi(['1', '2', ',', tastoCancella, tastoCancella]), '1');
+      expect(scrivi([tastoCancella]), '');
+    });
+  });
+
   group('convertire', () {
     const perEuro = {'MAD': 11.18, 'USD': 1.125, 'JPY': 176.99};
 

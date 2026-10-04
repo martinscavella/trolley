@@ -22,6 +22,7 @@ import '../dominio/calendario.dart';
 import '../dominio/codice_invito.dart';
 import '../dominio/stato_viaggio.dart';
 import '../servizi.dart';
+import 'adesso.dart';
 import 'archivio_idee.dart';
 import 'con_la_rete.dart';
 import 'impostazioni.dart';
@@ -54,6 +55,9 @@ class _SchermataViaggiState extends State<SchermataViaggi>
   /// Le idee per cui questo elenco ha già segnato il sollecito.
   final _sollecitate = <String>{};
 
+  /// «Adesso» si apre da solo una volta, all'avvio, dalla copia.
+  bool _adessoValutato = false;
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +74,7 @@ class _SchermataViaggiState extends State<SchermataViaggi>
         if (disponibile) _aggiorna();
       });
       unawaited(segnaAperturaSenzaRete(context, 'viaggi'));
+      unawaited(_apriAdesso());
       _aggiorna();
     });
   }
@@ -114,6 +119,17 @@ class _SchermataViaggiState extends State<SchermataViaggi>
     } finally {
       _aggiornamentoInCorso = false;
     }
+  }
+
+  /// Con un viaggio in corso sul telefono, l'app non resta sull'elenco: apre
+  /// «adesso», o chiede quale fra due (09, regola 1).
+  Future<void> _apriAdesso() async {
+    if (_adessoValutato) return;
+    _adessoValutato = true;
+    final viaggi = await Servizi.of(context).archivio
+        .osservaViaggiInElenco()
+        .first;
+    if (mounted) await apriAdessoSeServe(context, viaggi);
   }
 
   Future<void> _nuovoViaggio() =>
@@ -317,10 +333,15 @@ class _SchermataViaggiState extends State<SchermataViaggi>
                                 stato: stato,
                                 oggi: oggi,
                                 sollecito: daSollecitare.contains(v.viaggio),
-                                onTap: () => apri<void>(
-                                  context,
-                                  SchermataViaggio(viaggioId: v.viaggio.id),
-                                ),
+                                // Un viaggio in corso si apre su «adesso».
+                                onTap: () => stato == StatoViaggio.inCorso
+                                    ? apriAdesso(context, v.viaggio.id)
+                                    : apri<void>(
+                                        context,
+                                        SchermataViaggio(
+                                          viaggioId: v.viaggio.id,
+                                        ),
+                                      ),
                               ).entra(
                                 context,
                                 ritardo: Ritmo.passo * min(indice++, 6),

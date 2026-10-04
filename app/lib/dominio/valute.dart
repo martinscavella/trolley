@@ -369,6 +369,36 @@ String importoDaModificare(int centesimi) {
       : '$unita,${frazione.toString().padLeft(2, '0')}';
 }
 
+/// Il tasto della virgola e quello che cancella, sul tastierino della spesa
+/// veloce (09, regola 9).
+const tastoVirgola = ',';
+const tastoCancella = '⌫';
+
+/// Quante cifre si scrivono prima della virgola: il server ne tiene dieci.
+const cifreMassime = 9;
+
+/// L'importo scritto con il tastierino dopo aver premuto [tasto]: una cifra, la
+/// virgola o la cancellazione. Quello che non avrebbe senso non entra — una
+/// seconda virgola, la virgola in una valuta senza decimali, un decimale di
+/// troppo, uno zero davanti — e il testo resta com'era.
+String conIlTasto(String testo, String tasto, {int decimali = 2}) {
+  if (tasto == tastoCancella) {
+    return testo.isEmpty ? testo : testo.substring(0, testo.length - 1);
+  }
+  final virgola = testo.indexOf(tastoVirgola);
+  if (tasto == tastoVirgola) {
+    if (decimali == 0 || virgola >= 0) return testo;
+    return testo.isEmpty ? '0,' : '$testo,';
+  }
+  if (!RegExp(r'^\d$').hasMatch(tasto)) return testo;
+  if (virgola >= 0) {
+    final dopo = testo.length - virgola - 1;
+    return dopo >= decimali ? testo : '$testo$tasto';
+  }
+  if (testo == '0') return tasto;
+  return testo.length >= cifreMassime ? testo : '$testo$tasto';
+}
+
 // ─── Conversioni ────────────────────────────────────────────────────────────
 
 /// Converte [centesimi] da una valuta all'altra con i tassi per euro.
