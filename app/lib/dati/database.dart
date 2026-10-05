@@ -82,6 +82,10 @@ class Partecipazioni extends Table with RigaCopiata {
   /// L'ultima volta che la partecipazione è cambiata: per chi è uscito, più o
   /// meno quando è uscito.
   TextColumn get modificatoIl => text().nullable()();
+
+  /// Quando il suo telefono l'ha trovato sul posto, mentre il viaggio era in
+  /// corso: una delle tre condizioni della verifica. Mai dove (fase 3.4).
+  TextColumn get sulPostoIl => text().nullable()();
 }
 
 @DataClassName('Giorno')
@@ -382,8 +386,9 @@ class DatabaseLocale extends _$DatabaseLocale {
   /// 7 (fase 2.3): le spese sanno se sono un rimborso, le partecipazioni
   /// quando sono nate e quando sono cambiate.
   /// 8 (fase 2.4): le voci sanno chi le portava prima di lasciare il viaggio.
+  /// 9 (fase 3.4): le partecipazioni sanno chi è stato sul posto.
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [
@@ -440,6 +445,9 @@ class DatabaseLocale extends _$DatabaseLocale {
       }
       if (da >= 2 && da < 8) {
         await _aggiungiSeManca(m, vociLista, vociLista.lasciataDa);
+      }
+      if (da >= 2 && da < 9) {
+        await _aggiungiSeManca(m, partecipazioni, partecipazioni.sulPostoIl);
       }
     },
   );

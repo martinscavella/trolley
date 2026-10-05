@@ -330,11 +330,17 @@ void main() {
   });
 
   group('la posizione', () {
-    testWidgets('mentre il viaggio è in corso il permesso si chiede, e il '
-        'puntino compare', (tester) async {
+    testWidgets('mentre il viaggio è in corso il permesso si chiede, dopo '
+        'aver detto a cosa serve, e il puntino compare', (tester) async {
       ambiente.posizione.stato = PermessoPosizione.daChiedere;
       await viaggio(tester);
       await mappa(tester);
+
+      // Prima di iOS, a cosa serve (tela, 58).
+      expect(ambiente.posizione.richieste, 0);
+      expect(find.text('Sei davvero a Porto?'), findsOneWidget);
+      await tester.tap(find.text('Continua'));
+      await aspetta(tester);
 
       expect(ambiente.posizione.richieste, 1);
       expect(find.byType(PuntinoPosizione), findsNothing);
@@ -348,6 +354,11 @@ void main() {
       ambiente.posizione.stato = PermessoPosizione.negato;
       await viaggio(tester);
       await mappa(tester);
+
+      // Si dice una volta che il viaggio non sarà verificato (tela, 59).
+      expect(find.text('Va bene anche così'), findsOneWidget);
+      await tester.tap(find.text('Ho capito'));
+      await aspetta(tester);
 
       expect(ambiente.posizione.seguita, isFalse);
       expect(find.byType(SegnoSullaMappa), findsNWidgets(3));
@@ -406,6 +417,8 @@ void main() {
       ambiente.posizione.stato = PermessoPosizione.negato;
       await viaggio(tester);
       await mappa(tester);
+      await tester.tap(find.text('Ho capito'));
+      await aspetta(tester);
 
       await tester.tap(find.text('Portami'));
       await tester.pumpAndSettle();

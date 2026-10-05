@@ -190,6 +190,20 @@ La fase 3.3 (la copia che riscarica solo quello che serve, «Prima di partire» 
 | **Rivedere sulla tela le schermate 56, 57 e 90–92** | Disegnate (56 e 57 il 4 ottobre, 90–92 il 5 ottobre 2026) e costruite il 5 ottobre 2026 | Prima di chiudere la 3.3 |
 | **Provare la preparazione sull'iPhone** | Le prove girano sul server finto; manca il giro vero, due giorni prima di un viaggio, con la rete e poi in modalità aereo | Al primo viaggio vero |
 
+### Rimasto fuori dalla 3.4
+
+La fase 3.4 (le regole della verifica, «sul posto» confrontato sul telefono e mandato come sì, il permesso di posizione con le schermate 58 e 59) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Applicare la migrazione `sul_posto`** | `supabase/migrations/20261006090000_sul_posto.sql`, con le prove in `supabase/tests/sul_posto.sql`. Finché non c'è, l'app ricorda il sì sul telefono e riprova a ogni apertura | Prima di provare la 3.4 sul telefono |
+| **Scrivere `viaggio.verificato`, e i traguardi** | La verifica si calcola alla chiusura: è la 4.1, con il riepilogo e l'evento `viaggio_chiuso` | Fase 4.1 |
+| **La deroga nella copia locale** | `verifica_per_deroga` sta sul server; l'app la leggerà quando chiude il viaggio | Fase 4.1 |
+| **Vicino a un confine il paese può sbagliare** | Il paese di un punto è quello della città più vicina dell'elenco: a Ginevra si può risultare in Francia. Per le mete-città conta la distanza, non il paese | Se la beta lo mostra |
+| **50 km dal centro** | Abbastanza per la periferia e l'aeroporto; poco per un parco nazionale scritto come città | Se la beta lo mostra |
+| **Rivedere sulla tela le schermate 58 e 59** | Disegnate il 4 ottobre 2026, costruite il 6 ottobre: la domanda «quando chiederla» è decisa (decisioni) | Prima di chiudere la 3.4 |
+| **Provare sul telefono, in viaggio** | Le prove girano sul server e sulla posizione finti | Al primo viaggio vero |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.

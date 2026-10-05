@@ -32,6 +32,9 @@ abstract final class CodiciServer {
 
   /// Chi è responsabile del viaggio esce solo dopo aver passato il ruolo.
   static const primaPassaIlRuolo = 'TR412';
+
+  /// Il viaggio non è in corso: sul posto si è solo mentre si viaggia.
+  static const nonInCorso = 'TR422';
 }
 
 /// Il motivo scritto sotto un controllo spento perché manca la rete.

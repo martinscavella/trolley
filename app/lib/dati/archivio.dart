@@ -172,6 +172,7 @@ class Archivio {
   /// dice con la sua età ([copiaDelViaggio]).
   Future<void> aggiornaCopia({String? viaggioId}) async {
     await coda.svuota();
+    await mandaSulPosto().catchError((_) {});
     final io = _io;
     final oggi = DateTime.now();
     final (
@@ -381,6 +382,111 @@ class Archivio {
             .get();
     return giorni.isEmpty ? 'contenuto' : null;
   }
+
+  // ─── Sul posto ──────────────────────────────────────────────────────────
+
+  static const _sulPosto = 'sul_posto:';
+
+  /// Il viaggio, una volta, dalla copia.
+  Future<Viaggio?> leggiViaggio(String id) =>
+      (_db.select(_db.viaggi)..where((v) => v.id.equals(id))).getSingleOrNull();
+
+  /// Se questa persona risulta sul posto nel viaggio (fase 3.4): per il
+  /// server, o per questo telefono che deve ancora dirglielo.
+  Future<bool> sulPosto(String viaggioId) async {
+    final io = _io;
+    if (io == null) return false;
+    final mia =
+        await (_db.select(_db.partecipazioni)..where(
+              (p) => p.viaggioId.equals(viaggioId) & p.utenteId.equals(io),
+            ))
+            .getSingleOrNull();
+    if (mia?.sulPostoIl != null) return true;
+    final inAttesa = await (_db.select(
+      _db.impostazioni,
+    )..where((i) => i.chiave.equals('$_sulPosto$viaggioId'))).getSingleOrNull();
+    return inAttesa != null;
+  }
+
+  /// Il telefono ha trovato la persona sul posto: lo ricorda, e lo dice al
+  /// server appena può. Come gli eventi, parte anche giorni dopo, quando
+  /// torna la rete; il server l'accetta fino al giorno dopo la fine.
+  Future<void> ricordaSulPosto(String viaggioId) async {
+    await _db
+        .into(_db.impostazioni)
+        .insertOnConflictUpdate(
+          ImpostazioniCompanion.insert(
+            chiave: '$_sulPosto$viaggioId',
+            valore: DateTime.now().toUtc().toIso8601String(),
+          ),
+        );
+    await mandaSulPosto().catchError((_) {});
+  }
+
+  /// Manda al server gli esiti «sul posto» che aspettano. Senza rete si
+  /// ferma e riproverà; un viaggio che non è più in corso, o di cui non si
+  /// fa più parte, non li vuole più, e si lasciano.
+  Future<void> mandaSulPosto() async {
+    final inAttesa = await (_db.select(
+      _db.impostazioni,
+    )..where((i) => i.chiave.like('$_sulPosto%'))).get();
+    for (final r in inAttesa) {
+      final viaggioId = r.chiave.substring(_sulPosto.length);
+      try {
+        final riga = await _alServer(
+          () => _server.rpc<Map<String, dynamic>>(
+            'segna_sul_posto',
+            params: {'p_viaggio': viaggioId},
+          ),
+        );
+        await _db
+            .into(_db.partecipazioni)
+            .insertOnConflictUpdate(
+              _partecipazione(riga, DateTime.now().toUtc()),
+            );
+      } on ErroreTrolley catch (e) {
+        if (e.serveLaRete) rethrow;
+        if (e.codice != CodiciServer.nonInCorso &&
+            e.codice != CodiciServer.nonTrovato) {
+          continue;
+        }
+      }
+      await (_db.delete(
+        _db.impostazioni,
+      )..where((i) => i.chiave.equals(r.chiave))).go();
+    }
+  }
+
+  static const _nonOra = 'posizione_non_ora';
+  static const _negataDetta = 'posizione_negata_detta';
+
+  /// La persona ha detto «Non ora» alla posizione [oggi]: fino a domani non
+  /// si richiede da sola (tela, 58).
+  Future<void> posizioneNonOra(DateTime oggi) => _db
+      .into(_db.impostazioni)
+      .insertOnConflictUpdate(
+        ImpostazioniCompanion.insert(chiave: _nonOra, valore: scriviData(oggi)),
+      );
+
+  Future<bool> posizioneNonOraOggi(DateTime oggi) async =>
+      (await (_db.select(
+        _db.impostazioni,
+      )..where((i) => i.chiave.equals(_nonOra))).getSingleOrNull())?.valore ==
+      scriviData(oggi);
+
+  /// Se si è già detto, una volta, che senza posizione il viaggio non sarà
+  /// verificato (tela, 59; 02, regola 9).
+  Future<bool> posizioneNegataDetta() async =>
+      await (_db.select(
+        _db.impostazioni,
+      )..where((i) => i.chiave.equals(_negataDetta))).getSingleOrNull() !=
+      null;
+
+  Future<void> segnaPosizioneNegataDetta() => _db
+      .into(_db.impostazioni)
+      .insertOnConflictUpdate(
+        ImpostazioniCompanion.insert(chiave: _negataDetta, valore: '1'),
+      );
 
   // ─── Prima di partire ───────────────────────────────────────────────────
 
@@ -971,6 +1077,7 @@ class Archivio {
               _chiaveSollecito(viaggioId),
               '$_copia$viaggioId',
               '$_preparato$viaggioId',
+              '$_sulPosto$viaggioId',
             ]),
           ))
           .go();
@@ -2075,6 +2182,7 @@ class Archivio {
     stato: r['stato'] as String,
     creatoIl: Value(r['creato_il'] as String?),
     modificatoIl: Value(r['modificato_il'] as String?),
+    sulPostoIl: Value(r['sul_posto_il'] as String?),
   );
 
   NoteCompanion _nota(Map<String, dynamic> r, DateTime adesso) =>

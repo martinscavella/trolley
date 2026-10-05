@@ -37,6 +37,7 @@ abstract final class Eventi {
   static const conflittoRisolto = 'conflitto_risolto';
   static const consumoMappe = 'consumo_mappe';
   static const viaggioPreparato = 'viaggio_preparato';
+  static const permessoPosizione = 'permesso_posizione';
 }
 
 class Misurazione {

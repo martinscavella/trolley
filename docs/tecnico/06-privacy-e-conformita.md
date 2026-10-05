@@ -15,7 +15,7 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 | Viaggi, tappe, spese, liste | Server | Rivelano dove una persona è stata e con chi |
 | **Documenti d'identità e biglietti** | **Solo telefono** | Non esiste un endpoint che li accetti |
 | **Posizione durante la navigazione** | **Solo telefono** | Va al fornitore di mappe (Geoapify) solo come partenza di un percorso chiesto dalla persona, mai a noi. Si chiede «mentre si usa l'app», mai in sottofondo, e solo per un viaggio in corso o per farsi portare a una tappa |
-| **Posizione per la verifica** | **Solo telefono** | Al server arriva solo l'esito vero/falso |
+| **Posizione per la verifica** | **Solo telefono** | Il confronto con la meta lo fa il telefono, con l'elenco delle destinazioni che ha dentro (ADR-005): nessun fornitore la vede. Al server arriva solo il sì, con il momento (`partecipazione.sul_posto_il`), una volta per viaggio. Si guarda solo mentre il viaggio è in corso, e solo finché non si è trovato il sì |
 | Presenza in città | Server | Ricavata dalla destinazione del viaggio, non dalla posizione rilevata. Cancellata a fine viaggio |
 | Eventi di misurazione | Server | Azioni, mai contenuti |
 

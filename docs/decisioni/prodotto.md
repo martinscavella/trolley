@@ -362,6 +362,17 @@ Scelto con la fase 3.3 (tela, 56, 57, 90–92), il 5 ottobre 2026.
 - **«Preparalo per l'uso senza rete»** scarica l'ultima versione di tutto il viaggio e i tassi di cambio, anche se quelli sul telefono sono di poche ore fa, e lo ricorda su quel telefono. Richiede la rete e senza lo dice prima. Fatto, dice che cosa c'è sul telefono, di quando è, e che mappa e navigazione restano dalla rete (08, regola 6). Le mappe scaricabili restano fuori.
 - **La notifica prima della partenza** con quello che manca è dell'insieme delle notifiche ([14](../prodotto/14-notifiche.md)).
 
+### La verifica: sul posto e il permesso di posizione (fase 3.4)
+
+Scelto con la fase 3.4 (tela, 58 e 59), il 6 ottobre 2026. Le regole sono in `dominio/verifica.dart`; la chiusura (4.1) le userà per dire se un viaggio è verificato.
+
+- **Sul posto è di ciascuno.** Il viaggio è verificato per chi c'era: chi nega la posizione non avrà mai un viaggio verificato, anche se un compagno era sul posto (02, regola 9). Le tappe invece sono di tutti: le segna chiunque, e valgono per tutti.
+- **Il confronto lo fa il telefono**, con l'elenco delle destinazioni che ha dentro (ADR-005): nessun fornitore vede la posizione, e al server va solo il sì (06). Per una città: entro 50 km dal centro — la periferia, l'aeroporto, la gita fuori porta. Per un paese intero, o una città che l'elenco non conosce ma di cui si sa il paese: il paese, che è quello della città più vicina dell'elenco. Senza né città né paese non si può dire.
+- **Basta una volta per viaggio**: dal primo sì il telefono non guarda più. Si guarda aprendo «Adesso», tornando all'app e aprendo la mappa, solo mentre il viaggio è in corso. Senza rete il sì si ricorda e parte quando torna; il server lo accetta fino al giorno dopo la fine.
+- **Quando si chiede la posizione** (la domanda aperta della tela): la prima volta che si apre «Adesso» o la mappa di un viaggio in corso, o al primo «Portami». Prima del telefono, la 58 dice a cosa serve: «Continua» fa chiedere il permesso a iOS, «Non ora» non lo richiede da solo fino a domani — «Portami» sì, perché lo chiede la persona.
+- **Il no si dice una volta**, con la 59, subito dopo — o la prima volta che si apre «Adesso» o la mappa, per chi l'aveva negato prima della 3.4. «Apri Impostazioni» porta dove si cambia idea.
+- **La deroga** resta `viaggio.verifica_per_deroga`, che scrive solo chi gestisce il progetto: vale come «sul posto» e toglie il viaggio da ogni metrica.
+
 ---
 
 ## Ricordo e traguardi

@@ -287,6 +287,7 @@ Map<String, Object?> rigaPartecipazione(
   String stato = 'attivo',
 }) => {
   'id': utente == idDiProva ? 'p-$viaggio' : 'p-$viaggio-$utente',
+  'sul_posto_il': null,
   'viaggio_id': viaggio,
   'utente_id': utente,
   'ruolo': ruolo,
@@ -422,6 +423,28 @@ class ServerFinto {
           mia['stato'] = 'attivo';
         }
         return risposta(viaggio);
+      case 'POST /rest/v1/rpc/segna_sul_posto':
+        final id = _corpo(r)['p_viaggio'];
+        final mia = _partecipazione(id, idDiProva);
+        if (mia == null || mia['stato'] != 'attivo') {
+          return _errore('TR404', 'non partecipi');
+        }
+        final v = _viaggio(id as String);
+        final oggi = DateTime.now().toUtc();
+        final giorno = DateTime.utc(oggi.year, oggi.month, oggi.day);
+        final inizio = DateTime.tryParse('${v?['data_inizio']}');
+        final fine = DateTime.tryParse('${v?['data_fine']}');
+        if (v == null ||
+            v['importato'] == true ||
+            inizio == null ||
+            fine == null ||
+            giorno.isBefore(inizio.subtract(const Duration(days: 1))) ||
+            giorno.isAfter(fine.add(const Duration(days: 1)))) {
+          return _errore('TR422', 'il viaggio non è in corso');
+        }
+        mia['sul_posto_il'] ??= oggi.toIso8601String();
+        mia['versione'] = (mia['versione']! as int) + 1;
+        return risposta(mia);
       case 'POST /rest/v1/rpc/esci_dal_viaggio':
         final mia = _partecipazione(_corpo(r)['p_viaggio'], idDiProva);
         if (mia == null || mia['stato'] != 'attivo') {
@@ -1157,6 +1180,27 @@ class PosizioneFinta implements Posizione {
 
   /// Il telefono si è spostato in [p].
   void vai(Coordinate p) => _posizioni.add(p);
+
+  /// Dove dice di essere quando glielo si chiede una volta: `null`, non lo sa.
+  Coordinate? dove;
+
+  /// Quante volte si sono aperte le impostazioni.
+  int impostazioniAperte = 0;
+
+  /// Quante volte gliel'hanno chiesto.
+  int volteQui = 0;
+
+  @override
+  Future<Coordinate?> qui() async {
+    volteQui++;
+    return stato == PermessoPosizione.concesso ? dove : null;
+  }
+
+  @override
+  Future<bool> apriImpostazioni() async {
+    impostazioniAperte++;
+    return true;
+  }
 
   bool get seguita => _posizioni.hasListener;
 

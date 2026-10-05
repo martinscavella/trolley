@@ -118,6 +118,16 @@ void main() {
       expect(elenco.cerca('   '), isEmpty);
       expect(elenco.cerca('xqzwv'), isEmpty);
     });
+
+    test('il paese di un punto è quello della città più vicina: per la '
+        'verifica, non per tracciare confini', () {
+      expect(elenco.paeseDi((lat: 41.1496, lon: -8.6110)), 'PT'); // Porto
+      expect(elenco.paeseDi((lat: 55.6761, lon: 12.5683)), 'DK'); // Copenaghen
+      expect(elenco.paeseDi((lat: 40.6280, lon: 14.4850)), 'IT'); // Positano
+      expect(elenco.paeseDi((lat: 45.8150, lon: 15.9819)), 'HR'); // Zagabria
+      // In mezzo all'Atlantico non si dice.
+      expect(elenco.paeseDi((lat: 35.0, lon: -40.0)), isNull);
+    });
   });
 
   test('un nome scritto a mano resta com\'è, col paese se c\'è', () {

@@ -83,12 +83,13 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 | `viaggio_id`, `utente_id` | |
 | `ruolo` | `creatore` · `partecipante` |
 | `stato` | `invitato` · `attivo` · `uscito` · `rimosso` |
+| `sul_posto_il` | Quando il suo telefono l'ha trovato nella città o nel paese della meta, mentre il viaggio era in corso: una delle tre condizioni della verifica, **di ciascuno** (02, regola 9). Mai dove. La scrive solo `segna_sul_posto`, una volta (fase 3.4) |
 
 **Invarianti**
 - Solo il creatore può portare un `attivo` a `rimosso`, e mai se stesso.
 - Chi passa a `uscito` o `rimosso` **non perde i propri contributi**: spese, tappe e voci restano attribuite a lui, e i compagni ne vedono ancora il nome.
 - Il creatore passa a `uscito` solo dopo aver passato il ruolo. Passarlo cambia anche `viaggio.creatore_id`; `viaggio.creato_da`, chi l'ha creato davvero, non cambia mai.
-- La partecipazione non si scrive dall'app: la cambiano solo le funzioni del server, una per gesto — `accetta_invito`, `esci_dal_viaggio`, `rimuovi_partecipante`, `passa_il_ruolo`.
+- La partecipazione non si scrive dall'app: la cambiano solo le funzioni del server, una per gesto — `accetta_invito`, `esci_dal_viaggio`, `rimuovi_partecipante`, `passa_il_ruolo`, `segna_sul_posto`.
 - Nell'app il ruolo `creatore` si chiama «responsabile del viaggio» ([decisioni](../decisioni/prodotto.md)).
 
 ### `invito`

@@ -33,6 +33,7 @@ import 'giornata.dart';
 import 'impostazioni.dart';
 import 'mappa.dart';
 import 'nuovo_viaggio.dart';
+import 'permesso_posizione.dart';
 import 'spese.dart';
 import 'tappa.dart';
 import 'viaggio.dart';
@@ -104,7 +105,8 @@ class SchermataAdesso extends StatefulWidget {
   State<SchermataAdesso> createState() => _SchermataAdessoState();
 }
 
-class _SchermataAdessoState extends State<SchermataAdesso> {
+class _SchermataAdessoState extends State<SchermataAdesso>
+    with WidgetsBindingObserver {
   late Stream<Viaggio?> _viaggio;
   late Stream<List<Giorno>> _giorni;
   late Stream<List<Tappa>> _tappe;
@@ -127,6 +129,11 @@ class _SchermataAdessoState extends State<SchermataAdesso> {
     _documenti = servizi.documenti.osserva(widget.viaggioId);
     _coda = archivio.coda.osserva(widget.viaggioId);
     unawaited(segnaAperturaSenzaRete(context, 'adesso'));
+    // Il primo giorno la posizione si chiede da qui, dicendo prima a cosa
+    // serve; poi si guarda se si è sul posto (02, regola 7; tela, 58).
+    WidgetsBinding.instance
+      ..addObserver(this)
+      ..addPostFrameCallback((_) => _guardaIlPosto(chiedi: true));
     // «Fra 25 minuti» cambia con l'orologio.
     _minuto = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
@@ -135,8 +142,38 @@ class _SchermataAdessoState extends State<SchermataAdesso> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _minuto?.cancel();
     super.dispose();
+  }
+
+  /// Tornando all'app si riguarda, senza richiedere niente: basta una volta
+  /// sul posto per tutto il viaggio.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState stato) {
+    if (stato == AppLifecycleState.resumed) unawaited(_guardaIlPosto());
+  }
+
+  Future<void> _guardaIlPosto({bool chiedi = false}) async {
+    if (!mounted) return;
+    final archivio = Servizi.of(context).archivio;
+    final Viaggio? viaggio;
+    try {
+      viaggio = await archivio.leggiViaggio(widget.viaggioId);
+    } on Object {
+      return;
+    }
+    if (viaggio == null ||
+        !mounted ||
+        viaggio.statoA(widget.orologio()) != StatoViaggio.inCorso) {
+      return;
+    }
+    await guardaIlPosto(
+      context,
+      viaggio: viaggio,
+      chiedi: chiedi,
+      orologio: widget.orologio,
+    );
   }
 
   @override

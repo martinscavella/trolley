@@ -17,6 +17,7 @@ import '../dominio/mappa.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'navigazione.dart';
+import 'permesso_posizione.dart';
 
 /// Dove guardare quando la mappa si apre o si cerca un posto: il centro delle
 /// tappe che hanno un posto, altrimenti la meta del viaggio. `null` se non si
@@ -70,7 +71,8 @@ Future<void> registraConsumo(
 /// «Portami»: la navigazione dentro Trolley se si può (rete, fornitore,
 /// posizione), altrimenti le Mappe del telefono — chi sta viaggiando non
 /// resta mai senza indicazioni (ADR-006). Il permesso di posizione si chiede
-/// qui, la prima volta; dopo un no non si insiste.
+/// qui, la prima volta, dopo aver detto a cosa serve (tela, 58); dopo un no
+/// non si insiste.
 Future<void> portamiAllaTappa(
   BuildContext context, {
   required Viaggio viaggio,
@@ -95,7 +97,7 @@ Future<void> portamiAllaTappa(
       !servizi.mappe.disponibili) {
     return alleMappe();
   }
-  final permesso = await servizi.posizione.chiedi();
+  final permesso = await chiediLaPosizione(context, viaggio: viaggio);
   if (!context.mounted) return;
   if (permesso != PermessoPosizione.concesso) {
     mostraMessaggio(

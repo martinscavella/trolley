@@ -4,7 +4,8 @@
 ///
 /// Non lascia mai il telefono: non si scrive, non si manda al server, non va
 /// negli eventi. Al fornitore di mappe arriva solo come partenza di un
-/// percorso chiesto dalla persona. Si chiede solo «mentre si usa l'app»: in
+/// percorso chiesto dalla persona; per la verifica del viaggio si confronta
+/// qui con la meta, e al server va solo l'esito (dati/sul_posto.dart). Si chiede solo «mentre si usa l'app»: in
 /// sottofondo no, mai.
 library;
 
@@ -35,6 +36,14 @@ abstract interface class Posizione {
 
   /// Le posizioni man mano che ci si muove, finché qualcuno ascolta.
   Stream<Coordinate> segui();
+
+  /// Dov'è il telefono adesso, all'ingrosso: per la verifica del viaggio
+  /// basta la città (dominio/verifica.dart). `null` se non si sa in pochi
+  /// secondi, o senza permesso.
+  Future<Coordinate?> qui();
+
+  /// Apre le impostazioni dell'app, dove si concede il permesso dopo un no.
+  Future<bool> apriImpostazioni();
 }
 
 /// Il telefono vero, con geolocator.
@@ -66,6 +75,25 @@ class PosizioneDelTelefono implements Posizione {
       pauseLocationUpdatesAutomatically: true,
     ),
   ).map((p) => (lat: p.latitude, lon: p.longitude));
+
+  @override
+  Future<Coordinate?> qui() async {
+    try {
+      final p = await Geolocator.getCurrentPosition(
+        locationSettings: AppleSettings(
+          // La città, non la via: più in fretta, e con meno batteria.
+          accuracy: LocationAccuracy.low,
+          timeLimit: const Duration(seconds: 15),
+        ),
+      );
+      return (lat: p.latitude, lon: p.longitude);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> apriImpostazioni() => Geolocator.openAppSettings();
 
   static PermessoPosizione _traduci(LocationPermission p) => switch (p) {
     LocationPermission.always ||

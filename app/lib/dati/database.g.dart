@@ -1573,6 +1573,17 @@ class $PartecipazioniTable extends Partecipazioni
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sulPostoIlMeta = const VerificationMeta(
+    'sulPostoIl',
+  );
+  @override
+  late final GeneratedColumn<String> sulPostoIl = GeneratedColumn<String>(
+    'sul_posto_il',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1585,6 +1596,7 @@ class $PartecipazioniTable extends Partecipazioni
     stato,
     creatoIl,
     modificatoIl,
+    sulPostoIl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1678,6 +1690,15 @@ class $PartecipazioniTable extends Partecipazioni
         ),
       );
     }
+    if (data.containsKey('sul_posto_il')) {
+      context.handle(
+        _sulPostoIlMeta,
+        sulPostoIl.isAcceptableOrUnknown(
+          data['sul_posto_il']!,
+          _sulPostoIlMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1727,6 +1748,10 @@ class $PartecipazioniTable extends Partecipazioni
         DriftSqlType.string,
         data['${effectivePrefix}modificato_il'],
       ),
+      sulPostoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sul_posto_il'],
+      ),
     );
   }
 
@@ -1756,6 +1781,10 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
   /// L'ultima volta che la partecipazione è cambiata: per chi è uscito, più o
   /// meno quando è uscito.
   final String? modificatoIl;
+
+  /// Quando il suo telefono l'ha trovato sul posto, mentre il viaggio era in
+  /// corso: una delle tre condizioni della verifica. Mai dove (fase 3.4).
+  final String? sulPostoIl;
   const Partecipazione({
     required this.id,
     required this.versione,
@@ -1767,6 +1796,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     required this.stato,
     this.creatoIl,
     this.modificatoIl,
+    this.sulPostoIl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1786,6 +1816,9 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     }
     if (!nullToAbsent || modificatoIl != null) {
       map['modificato_il'] = Variable<String>(modificatoIl);
+    }
+    if (!nullToAbsent || sulPostoIl != null) {
+      map['sul_posto_il'] = Variable<String>(sulPostoIl);
     }
     return map;
   }
@@ -1808,6 +1841,9 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       modificatoIl: modificatoIl == null && nullToAbsent
           ? const Value.absent()
           : Value(modificatoIl),
+      sulPostoIl: sulPostoIl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sulPostoIl),
     );
   }
 
@@ -1827,6 +1863,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       stato: serializer.fromJson<String>(json['stato']),
       creatoIl: serializer.fromJson<String?>(json['creatoIl']),
       modificatoIl: serializer.fromJson<String?>(json['modificatoIl']),
+      sulPostoIl: serializer.fromJson<String?>(json['sulPostoIl']),
     );
   }
   @override
@@ -1843,6 +1880,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       'stato': serializer.toJson<String>(stato),
       'creatoIl': serializer.toJson<String?>(creatoIl),
       'modificatoIl': serializer.toJson<String?>(modificatoIl),
+      'sulPostoIl': serializer.toJson<String?>(sulPostoIl),
     };
   }
 
@@ -1857,6 +1895,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     String? stato,
     Value<String?> creatoIl = const Value.absent(),
     Value<String?> modificatoIl = const Value.absent(),
+    Value<String?> sulPostoIl = const Value.absent(),
   }) => Partecipazione(
     id: id ?? this.id,
     versione: versione ?? this.versione,
@@ -1868,6 +1907,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     stato: stato ?? this.stato,
     creatoIl: creatoIl.present ? creatoIl.value : this.creatoIl,
     modificatoIl: modificatoIl.present ? modificatoIl.value : this.modificatoIl,
+    sulPostoIl: sulPostoIl.present ? sulPostoIl.value : this.sulPostoIl,
   );
   Partecipazione copyWithCompanion(PartecipazioniCompanion data) {
     return Partecipazione(
@@ -1887,6 +1927,9 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       modificatoIl: data.modificatoIl.present
           ? data.modificatoIl.value
           : this.modificatoIl,
+      sulPostoIl: data.sulPostoIl.present
+          ? data.sulPostoIl.value
+          : this.sulPostoIl,
     );
   }
 
@@ -1902,7 +1945,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
           ..write('ruolo: $ruolo, ')
           ..write('stato: $stato, ')
           ..write('creatoIl: $creatoIl, ')
-          ..write('modificatoIl: $modificatoIl')
+          ..write('modificatoIl: $modificatoIl, ')
+          ..write('sulPostoIl: $sulPostoIl')
           ..write(')'))
         .toString();
   }
@@ -1919,6 +1963,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     stato,
     creatoIl,
     modificatoIl,
+    sulPostoIl,
   );
   @override
   bool operator ==(Object other) =>
@@ -1933,7 +1978,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
           other.ruolo == this.ruolo &&
           other.stato == this.stato &&
           other.creatoIl == this.creatoIl &&
-          other.modificatoIl == this.modificatoIl);
+          other.modificatoIl == this.modificatoIl &&
+          other.sulPostoIl == this.sulPostoIl);
 }
 
 class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
@@ -1947,6 +1993,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
   final Value<String> stato;
   final Value<String?> creatoIl;
   final Value<String?> modificatoIl;
+  final Value<String?> sulPostoIl;
   final Value<int> rowid;
   const PartecipazioniCompanion({
     this.id = const Value.absent(),
@@ -1959,6 +2006,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     this.stato = const Value.absent(),
     this.creatoIl = const Value.absent(),
     this.modificatoIl = const Value.absent(),
+    this.sulPostoIl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PartecipazioniCompanion.insert({
@@ -1972,6 +2020,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     required String stato,
     this.creatoIl = const Value.absent(),
     this.modificatoIl = const Value.absent(),
+    this.sulPostoIl = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        versione = Value(versione),
@@ -1991,6 +2040,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     Expression<String>? stato,
     Expression<String>? creatoIl,
     Expression<String>? modificatoIl,
+    Expression<String>? sulPostoIl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2004,6 +2054,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
       if (stato != null) 'stato': stato,
       if (creatoIl != null) 'creato_il': creatoIl,
       if (modificatoIl != null) 'modificato_il': modificatoIl,
+      if (sulPostoIl != null) 'sul_posto_il': sulPostoIl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2019,6 +2070,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     Value<String>? stato,
     Value<String?>? creatoIl,
     Value<String?>? modificatoIl,
+    Value<String?>? sulPostoIl,
     Value<int>? rowid,
   }) {
     return PartecipazioniCompanion(
@@ -2032,6 +2084,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
       stato: stato ?? this.stato,
       creatoIl: creatoIl ?? this.creatoIl,
       modificatoIl: modificatoIl ?? this.modificatoIl,
+      sulPostoIl: sulPostoIl ?? this.sulPostoIl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2069,6 +2122,9 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     if (modificatoIl.present) {
       map['modificato_il'] = Variable<String>(modificatoIl.value);
     }
+    if (sulPostoIl.present) {
+      map['sul_posto_il'] = Variable<String>(sulPostoIl.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2088,6 +2144,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
           ..write('stato: $stato, ')
           ..write('creatoIl: $creatoIl, ')
           ..write('modificatoIl: $modificatoIl, ')
+          ..write('sulPostoIl: $sulPostoIl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9608,6 +9665,7 @@ typedef $$PartecipazioniTableCreateCompanionBuilder =
       required String stato,
       Value<String?> creatoIl,
       Value<String?> modificatoIl,
+      Value<String?> sulPostoIl,
       Value<int> rowid,
     });
 typedef $$PartecipazioniTableUpdateCompanionBuilder =
@@ -9622,6 +9680,7 @@ typedef $$PartecipazioniTableUpdateCompanionBuilder =
       Value<String> stato,
       Value<String?> creatoIl,
       Value<String?> modificatoIl,
+      Value<String?> sulPostoIl,
       Value<int> rowid,
     });
 
@@ -9681,6 +9740,11 @@ class $$PartecipazioniTableFilterComposer
 
   ColumnFilters<String> get modificatoIl => $composableBuilder(
     column: $table.modificatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sulPostoIl => $composableBuilder(
+    column: $table.sulPostoIl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9743,6 +9807,11 @@ class $$PartecipazioniTableOrderingComposer
     column: $table.modificatoIl,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get sulPostoIl => $composableBuilder(
+    column: $table.sulPostoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PartecipazioniTableAnnotationComposer
@@ -9787,6 +9856,11 @@ class $$PartecipazioniTableAnnotationComposer
 
   GeneratedColumn<String> get modificatoIl => $composableBuilder(
     column: $table.modificatoIl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sulPostoIl => $composableBuilder(
+    column: $table.sulPostoIl,
     builder: (column) => column,
   );
 }
@@ -9838,6 +9912,7 @@ class $$PartecipazioniTableTableManager
                 Value<String> stato = const Value.absent(),
                 Value<String?> creatoIl = const Value.absent(),
                 Value<String?> modificatoIl = const Value.absent(),
+                Value<String?> sulPostoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PartecipazioniCompanion(
                 id: id,
@@ -9850,6 +9925,7 @@ class $$PartecipazioniTableTableManager
                 stato: stato,
                 creatoIl: creatoIl,
                 modificatoIl: modificatoIl,
+                sulPostoIl: sulPostoIl,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9864,6 +9940,7 @@ class $$PartecipazioniTableTableManager
                 required String stato,
                 Value<String?> creatoIl = const Value.absent(),
                 Value<String?> modificatoIl = const Value.absent(),
+                Value<String?> sulPostoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PartecipazioniCompanion.insert(
                 id: id,
@@ -9876,6 +9953,7 @@ class $$PartecipazioniTableTableManager
                 stato: stato,
                 creatoIl: creatoIl,
                 modificatoIl: modificatoIl,
+                sulPostoIl: sulPostoIl,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

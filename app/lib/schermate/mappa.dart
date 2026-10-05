@@ -31,6 +31,7 @@ import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
 import 'impostazioni.dart';
 import 'nuovo_viaggio.dart';
+import 'permesso_posizione.dart';
 import 'tappa.dart';
 
 /// La mappa del viaggio (08-mappa.md; tela, 50–55): le tappe di un giorno
@@ -184,13 +185,28 @@ class _SchermataMappaState extends State<SchermataMappa> {
   }
 
   /// Il puntino della persona, mentre il viaggio è in corso. La prima volta
-  /// il permesso lo chiede iOS; dopo un no la mappa va avanti senza (08,
-  /// casi limite).
-  Future<void> _avviaPosizione() async {
+  /// si dice a cosa serve la posizione, e poi la chiede iOS; dopo un no la
+  /// mappa va avanti senza (08, casi limite).
+  Future<void> _avviaPosizione(Viaggio viaggio) async {
     _posizioneAvviata = true;
     final posizione = _servizi.posizione;
-    final permesso = await posizione.chiedi();
+    // Prima di chiederla si dice a cosa serve (tela, 58), e serve anche a
+    // verificare il viaggio: già che c'è, guarda se si è sul posto.
+    final permesso = await chiediLaPosizione(
+      context,
+      viaggio: viaggio,
+      daSolo: true,
+      orologio: widget.orologio,
+    );
     if (!mounted || permesso != PermessoPosizione.concesso) return;
+    unawaited(
+      guardaIlPosto(
+        context,
+        viaggio: viaggio,
+        chiedi: false,
+        orologio: widget.orologio,
+      ),
+    );
     _seguo = posizione.segui().listen((p) {
       if (mounted) setState(() => _qui = p);
     }, onError: (Object _) {});
@@ -263,7 +279,9 @@ class _SchermataMappaState extends State<SchermataMappa> {
     final stato = viaggio.statoA(adesso);
     if (stato == StatoViaggio.inCorso && !_posizioneAvviata) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_posizioneAvviata) unawaited(_avviaPosizione());
+        if (mounted && !_posizioneAvviata) {
+          unawaited(_avviaPosizione(viaggio));
+        }
       });
     }
     if (!_centroCercato) unawaited(_cercaCentro(viaggio, tappe));

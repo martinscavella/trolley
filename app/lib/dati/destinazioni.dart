@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../dominio/mappa.dart';
 import '../dominio/testo.dart';
 import 'paesi.dart';
 
@@ -215,6 +216,30 @@ class ElencoDestinazioni {
     }
     return null;
   }
+
+  /// Il paese in cui sta [qui], secondo l'elenco: quello della città più
+  /// vicina. Vicino a un confine può sbagliare, e va bene: serve a dire se il
+  /// telefono è nel paese di un viaggio (dominio/verifica.dart), non a
+  /// tracciare confini. `null` in mezzo al mare, lontano da ogni città.
+  String? paeseDi(Coordinate qui) {
+    String? paese;
+    var migliore = _lontanoDaTutto;
+    for (final d in _voci) {
+      if (d.tipo != TipoDestinazione.citta) continue;
+      final posto = coordinate(d.lat, d.lon);
+      if (posto == null) continue;
+      final distanza = distanzaInMetri(qui, posto);
+      if (distanza < migliore) {
+        migliore = distanza;
+        paese = d.paese;
+      }
+    }
+    return paese;
+  }
+
+  /// Oltre questa distanza dalla città più vicina non si dice in che paese si
+  /// è.
+  static const _lontanoDaTutto = 300000.0;
 
   /// 0 il nome intero, 1 l'inizio del nome, 2 ogni parola cercata è l'inizio
   /// di una parola del nome; `null` se non corrisponde.
