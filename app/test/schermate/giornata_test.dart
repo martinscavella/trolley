@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/aspetto/elementi.dart';
+import 'package:trolley/aspetto/pagina.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/errori.dart';
 import 'package:trolley/dominio/calendario.dart';
@@ -304,8 +305,15 @@ void main() {
     );
     await tester.pump();
 
-    // Sotto "Salva", e più in basso sotto "Togli la tappa".
-    expect(find.text(motivoSenzaRete), findsOneWidget);
+    // Sotto "Salva", e più in basso sotto "Togli la tappa" (dietro il
+    // foglio lo dice anche «Svuota la giornata»).
+    expect(
+      find.descendant(
+        of: find.byType(Foglio),
+        matching: find.text(motivoSenzaRete),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(pulsante('Salva'));
     await tester.pumpAndSettle();
     expect(find.text('La tappa'), findsOneWidget);
@@ -320,7 +328,13 @@ void main() {
           )
           .first,
     );
-    expect(find.text(motivoSenzaRete), findsNWidgets(2));
+    expect(
+      find.descendant(
+        of: find.byType(Foglio),
+        matching: find.text(motivoSenzaRete),
+      ),
+      findsNWidgets(2),
+    );
   });
 
   testWidgets('con la rete una tappa si cambia', (tester) async {

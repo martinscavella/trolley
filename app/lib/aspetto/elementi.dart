@@ -493,6 +493,7 @@ class CampoScelta extends StatelessWidget {
     required this.onTap,
     this.etichetta,
     this.onCancella,
+    this.righe,
   });
 
   final IconData simbolo;
@@ -503,6 +504,9 @@ class CampoScelta extends StatelessWidget {
 
   /// Toglie il valore, quando è facoltativo: un orario che si era messo.
   final VoidCallback? onCancella;
+
+  /// Al massimo quante righe, per un valore lungo come un indirizzo.
+  final int? righe;
 
   @override
   Widget build(BuildContext context) {
@@ -527,6 +531,8 @@ class CampoScelta extends StatelessWidget {
                 child: Text(
                   valore ?? segnaposto,
                   key: ValueKey(valore),
+                  maxLines: righe,
+                  overflow: righe == null ? null : TextOverflow.ellipsis,
                   style: Testi.campo.copyWith(
                     color: valore == null ? Colori.grafite : Colori.inchiostro,
                   ),

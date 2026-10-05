@@ -25,6 +25,7 @@ import '../dominio/tappe.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'gesti_itinerario.dart';
+import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
 
 /// Il nome del posto come lo legge l'assistente: `Porto, Portogallo`.
@@ -841,15 +842,30 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
     ],
   );
 
-  List<Set<int>> _sceltePrime(
+  /// Per giorno del viaggio, le proposte che ci sono già: non si scelgono.
+  List<Set<int>> _doppioni(
     ItinerarioAbbinato abbinato,
     List<Giorno> giorni,
     List<Tappa> tappe,
   ) => [
     for (final (i, g) in giorni.indexed)
+      giaNelGiorno(abbinato.perGiorno[i], [
+        for (final t in tappe)
+          if (t.giornoId == g.id) t.titolo,
+      ]),
+  ];
+
+  List<Set<int>> _sceltePrime(
+    ItinerarioAbbinato abbinato,
+    List<Giorno> giorni,
+    List<Tappa> tappe,
+    List<Set<int>> doppioni,
+  ) => [
+    for (final (i, g) in giorni.indexed)
       sceltePerCapienza(
         libero: _libero(g, tappe),
         durate: [for (final p in abbinato.perGiorno[i]) p.durata],
+        escluse: doppioni[i],
       ),
   ];
 
@@ -861,6 +877,11 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
     List<Set<int>> scelte,
   ) async {
     setState(() => _inCorso = true);
+    // Le coordinate dell'assistente sono una stima: valgono solo vicino al
+    // viaggio, se no la tappa entra senza posto e lo si cerca in «Dove?».
+    final centro = (await centroDelViaggio(viaggio, tappe))?.centro;
+    final doppioni = _doppioni(abbinato, giorni, tappe);
+    if (!mounted) return;
     final nuove = <NuovaTappa>[];
     for (final (i, g) in giorni.indexed) {
       var ordine = ordineInFondo([
@@ -868,7 +889,8 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
           if (t.giornoId == g.id) t.ordine,
       ]);
       for (final (j, p) in abbinato.perGiorno[i].indexed) {
-        if (!scelte[i].contains(j)) continue;
+        if (!scelte[i].contains(j) || doppioni[i].contains(j)) continue;
+        final posto = p.posto;
         nuove.add(
           NuovaTappa(
             id: const Uuid().v4(),
@@ -880,6 +902,9 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
             durata: p.durata,
             ora: p.ora,
             luogo: p.luogo,
+            posto: posto != null && postoPlausibile(posto, vicinoA: centro)
+                ? posto
+                : null,
           ),
         );
       }
@@ -903,8 +928,9 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
           final abbinato = abbinaAiGiorni(widget.letto, [
             for (final x in g) x.finestra.data,
           ]);
-          final scelte = _scelte ??= _sceltePrime(abbinato, g, t);
-          return _pagina(v, g, t, abbinato, scelte);
+          final doppioni = _doppioni(abbinato, g, t);
+          final scelte = _scelte ??= _sceltePrime(abbinato, g, t, doppioni);
+          return _pagina(v, g, t, abbinato, scelte, doppioni);
         },
       ),
     ),
@@ -916,9 +942,19 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
     List<Tappa> tappe,
     ItinerarioAbbinato abbinato,
     List<Set<int>> scelte,
+    List<Set<int>> doppioni,
   ) {
     final letto = widget.letto;
+    // Una proposta che intanto è entrata nel viaggio non resta scelta.
+    for (final (i, d) in doppioni.indexed) {
+      scelte[i].removeAll(d);
+    }
     final quanteScelte = scelte.fold(0, (n, s) => n + s.length);
+    final giaCi = doppioni.fold(0, (n, d) => n + d.length);
+    final conPosto = abbinato.perGiorno
+        .expand((p) => p)
+        .where((p) => p.posto != null)
+        .length;
     final giorniConProposte = abbinato.perGiorno
         .where((p) => p.isNotEmpty)
         .length;
@@ -932,6 +968,11 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
       if (abbinato.fuoriDalViaggio > 0)
         '${quanti(abbinato.fuoriDalViaggio, 'tappa', 'tappe')} di giorni che il '
             'viaggio non ha',
+      if (giaCi > 0)
+        giaCi == 1
+            ? '1 c\'è già, non si aggiunge di nuovo'
+            : '$giaCi ci sono già, non si aggiungono di nuovo',
+      if (conPosto > 0) '$conPosto con il posto sulla mappa',
     ].join(' · ');
     // Il primo giorno che sfora, per dirlo sotto il pulsante.
     String? sfora;
@@ -1023,6 +1064,7 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
                     ],
                     proposte: abbinato.perGiorno[i],
                     scelte: scelte[i],
+                    doppioni: doppioni[i],
                     libero: _libero(g, tappe),
                     onCambia: (j) => setState(
                       () => scelte[i].contains(j)
@@ -1047,6 +1089,7 @@ class _GiornoProposto extends StatelessWidget {
     required this.esistenti,
     required this.proposte,
     required this.scelte,
+    required this.doppioni,
     required this.libero,
     required this.onCambia,
   });
@@ -1055,6 +1098,9 @@ class _GiornoProposto extends StatelessWidget {
   final List<Tappa> esistenti;
   final List<TappaProposta> proposte;
   final Set<int> scelte;
+
+  /// Quelle che ci sono già: non si possono scegliere.
+  final Set<int> doppioni;
   final Duration libero;
   final ValueChanged<int> onCambia;
 
@@ -1117,11 +1163,15 @@ class _GiornoProposto extends StatelessWidget {
             _Proposta(
               proposta: p,
               scelta: scelte.contains(j),
+              giaCe: doppioni.contains(j),
               // Fuori, e senza posto: lo si dice prima che la si tocchi.
-              nonEntra: !scelte.contains(j) && p.durata > resta
+              nonEntra:
+                  !scelte.contains(j) &&
+                      !doppioni.contains(j) &&
+                      p.durata > resta
                   ? p.durata - (resta.isNegative ? Duration.zero : resta)
                   : null,
-              onTap: () => onCambia(j),
+              onTap: doppioni.contains(j) ? null : () => onCambia(j),
             ),
           Padding(
             padding: const EdgeInsets.only(top: 2, bottom: 6),
@@ -1147,14 +1197,18 @@ class _Proposta extends StatelessWidget {
     required this.scelta,
     required this.nonEntra,
     required this.onTap,
+    this.giaCe = false,
   });
 
   final TappaProposta proposta;
   final bool scelta;
 
+  /// C'è già nel giorno: si mostra, ma non si aggiunge di nuovo.
+  final bool giaCe;
+
   /// Quanto manca perché entri, se è fuori e non ci sta.
   final Duration? nonEntra;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1173,77 +1227,86 @@ class _Proposta extends StatelessWidget {
           ?(p.ora == null ? null : ora(p.ora!)),
           p.titolo,
           dettaglio,
-          scelta
+          giaCe
+              ? 'c\'è già in questo giorno'
+              : scelta
               ? 'scelta. Tocca per lasciarla fuori'
               : 'lasciata fuori. Tocca per sceglierla',
         ].join(', '),
         child: ExcludeSemantics(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                AnimatedContainer(
-                  duration: movimentoRidotto(context)
-                      ? Duration.zero
-                      : Ritmo.breve,
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: scelta ? Colori.cobalto : Colori.bianco,
-                    border: scelta
-                        ? null
-                        : Border.all(color: Colori.piombo, width: 2.5),
+          child: Opacity(
+            opacity: giaCe ? 0.5 : 1,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: movimentoRidotto(context)
+                        ? Duration.zero
+                        : Ritmo.breve,
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: scelta ? Colori.cobalto : Colori.bianco,
+                      border: scelta
+                          ? null
+                          : Border.all(color: Colori.piombo, width: 2.5),
+                    ),
+                    child: scelta
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 16,
+                            color: Colori.bianco,
+                          )
+                        : null,
                   ),
-                  child: scelta
-                      ? const Icon(
-                          Icons.check_rounded,
-                          size: 16,
-                          color: Colori.bianco,
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 48,
-                  child: Text(
-                    p.ora == null ? '' : ora(p.ora!),
-                    style: Testi.numero.copyWith(
-                      fontSize: 13,
-                      color: scelta ? Colori.inchiostro : Colori.piombo,
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 48,
+                    child: Text(
+                      p.ora == null ? '' : ora(p.ora!),
+                      style: Testi.numero.copyWith(
+                        fontSize: 13,
+                        color: scelta ? Colori.inchiostro : Colori.piombo,
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        p.titolo,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Testi.evidenza.copyWith(
-                          fontSize: 15,
-                          color: scelta ? Colori.inchiostro : Colori.grafite,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p.titolo,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Testi.evidenza.copyWith(
+                            fontSize: 15,
+                            color: scelta ? Colori.inchiostro : Colori.grafite,
+                          ),
                         ),
-                      ),
-                      Text(
-                        nonEntra == null
-                            ? dettaglio
-                            : 'Non entra: ne mancano ${durataBreve(nonEntra!)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Testi.didascalia.copyWith(
-                          color: nonEntra == null
-                              ? Colori.grafite
-                              : Colori.pericolo,
-                          fontWeight: nonEntra == null ? null : FontWeight.w600,
+                        Text(
+                          giaCe
+                              ? 'C\'è già in questo giorno'
+                              : nonEntra == null
+                              ? dettaglio
+                              : 'Non entra: ne mancano ${durataBreve(nonEntra!)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Testi.didascalia.copyWith(
+                            color: nonEntra == null
+                                ? Colori.grafite
+                                : Colori.pericolo,
+                            fontWeight: nonEntra == null
+                                ? null
+                                : FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

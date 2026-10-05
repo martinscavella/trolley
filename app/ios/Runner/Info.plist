@@ -43,6 +43,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Per scansionare biglietti e documenti. Restano solo su questo telefono.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Per mostrarti sulla mappa e portarti alle tappe, solo mentre usi l'app. La posizione non si salva da nessuna parte: va solo al servizio di mappe quando chiedi la strada.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Per scegliere dalle foto un biglietto o un documento. Resta solo su questo telefono.</string>
 	<key>UIApplicationSceneManifest</key>

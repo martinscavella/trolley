@@ -35,6 +35,7 @@ abstract final class Eventi {
   static const incollatoNonInterpretato = 'incollato_non_interpretato';
   static const conflittoMostrato = 'conflitto_mostrato';
   static const conflittoRisolto = 'conflitto_risolto';
+  static const consumoMappe = 'consumo_mappe';
 }
 
 class Misurazione {

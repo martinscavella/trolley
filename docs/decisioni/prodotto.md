@@ -324,6 +324,34 @@ Scelto con la fase 3.1 (tela, file 45–49).
 - **Senza rete** lo dice una volta, con l'età della copia, e conta i gesti fatti che aspettano di partire.
 - **Due viaggi in corso**: si sceglie quale aprire, e la scelta vale su quel telefono fino a sera; il giorno dopo si richiede. Toccare il biglietto di un viaggio in corso nell'elenco conta come sceglierlo.
 
+### La mappa: come funziona (fase 3.2)
+
+Scelto con la fase 3.2 (tela, file 50–56). Il fornitore e il tetto sono in [ADR-006](../tecnico/adr/006-mappe-e-percorsi.md).
+
+- **«Mappa» sta nella barra in basso** di «Viaggi», del viaggio e di «Adesso», e la giornata ha il suo pulsante. Dal viaggio e da «Adesso» si apre quel viaggio; dall'elenco quello in corso (fra due, quello scelto oggi; senza una scelta, quello cominciato prima), altrimenti il più vicino in programma, altrimenti l'ultimo concluso.
+- **La mappa dice sempre quale viaggio mostra** (tela, 57 e 58, deciso il 5 ottobre 2026): in alto il codice del biglietto, la meta, le date e lo stato; toccandolo si sceglie un altro viaggio fra quelli in corso, in programma e conclusi, ciascuno con quante tappe ha e quante sono sulla mappa. Le idee non ci sono: non hanno tappe da mettere sulla mappa, e i «posti» di un'idea non ci sono ancora (punti aperti).
+- **Si apre sul giorno di oggi** se il viaggio lo comprende, sul primo se deve ancora cominciare, sull'ultimo se è finito. La capsula del giorno («Sab 11 ott · 4 tappe · 1 senza posto») si tocca per cambiarlo.
+- **I numeri sono quelli della giornata**, anche per una tappa che sulla mappa non c'è: la mappa e l'itinerario sono due viste della stessa cosa (08, regola 5). Verdi le fatte, grigie le saltate, cobalto la prossima, d'inchiostro le altre; la linea fra una tappa e l'altra diventa verde dove si è già passati, come nella giornata. La prossima si indica solo mentre il viaggio è in corso e il giorno è oggi.
+- **La scheda in basso** è la prossima tappa, con «Portami», «Fatta» e «Salta» (09, regola 10). Toccare una tappa apre la sua: ora, durata, tipo, dove, gli stessi tre gesti e «Apri la tappa». Una tappa segnata si riporta da fare da lì.
+- **Tutto il viaggio** colora le tappe per giorno con una serie propria — cobalto, lampone, ottanio scuro, ocra, viola, muschio, poi da capo —, non con i colori dei tipi di tappa: il colore dice il giorno e basta (deciso il 4 ottobre 2026). Toccare un giorno torna a quel giorno.
+- **Le tappe senza un posto** si contano e si dicono, non spariscono (08, casi limite).
+- **La navigazione è a piedi.** Per i mezzi e l'auto, e quando la strada non si trova, c'è sempre «Apri in Mappe», che consegna la tappa alle Mappe del telefono con le indicazioni a piedi.
+- **La posizione si chiede** la prima volta che si apre la mappa di un viaggio in corso, o al primo «Portami»: mai prima della partenza. Dopo un no non si insiste: la mappa funziona senza puntino, e «Portami» consegna alle Mappe del telefono.
+- **L'arrivo** è entro 35 metri dalla tappa: «Sei qui» propone «Fatta», «Salta» o «Dopo». Fatta o saltata chiudono anche la navigazione. Si propone una volta sola, e solo per una tappa ancora da fare.
+- **Fuori strada** vuol dire a più di 50 metri dal percorso, per due posizioni di fila: allora si chiede una strada nuova, non più di una ogni 20 secondi e non più di otto per navigazione. Oltre, si dice che da lì portano meglio le Mappe del telefono.
+- **Senza rete, o senza fornitore**, la mappa non c'è: restano le tappe con i loro indirizzi, giorno per giorno, ciascuna da aprire nelle Mappe del telefono (08, regola 6). Lo stesso elenco si vede anche con la rete, dal pulsante in alto.
+- **«Dove?» nella tappa si cerca** (tela, 56), vicino alle altre tappe del viaggio o, se non ce ne sono, alla sua meta. Si cerca quando si smette di scrivere, da tre lettere in su: ogni ricerca si paga. Il posto trovato dà le coordinate; a una tappa senza titolo dà anche il nome, e allora come «Dove» basta l'indirizzo. Si può sempre usare il testo com'è: la tappa resta senza posto, e lo si cerca dopo — che è anche quello che succede senza rete, e alle tappe arrivate da un itinerario incollato.
+
+
+### Le tappe dopo un itinerario incollato: doppie, da svuotare, con il posto (5 ottobre 2026)
+
+Deciso provando la 3.2 sul telefono, dopo aver incollato due volte la stessa risposta (tela, 59–61).
+
+- **Una tappa doppia non entra.** Nell'anteprima di un itinerario incollato, una proposta con lo stesso nome di una tappa dello stesso giorno — maiuscole e accenti a parte —, o di una proposta che la precede, «c'è già»: si mostra spenta e non si può scegliere. Incollare due volte la stessa risposta non raddoppia la giornata. In giorni diversi lo stesso posto può tornare (08, casi limite).
+- **A mano lo si dice, senza impedirlo**: scrivendo una tappa con il nome di una che nel giorno c'è già, sotto il nome compare «C'è già … in questo giorno». Due pranzi nello stesso posto possono essere voluti.
+- **Si svuota un giorno o tutto il viaggio**: «Svuota la giornata» in fondo alla giornata, «Togli tutte le tappe del viaggio» sotto i giorni. La conferma dice quante tappe vanno via, e se fra queste ce ne sono di già segnate. Richiede la rete, come togliere una tappa; le tappe si marcano, non si cancellano, e vanno via per tutti.
+- **Il posto lo può dare l'assistente.** La richiesta chiede anche le coordinate di ogni tappa, e di lasciarle vuote se non è sicuro: meglio vuoto che sbagliato. Sono una stima: valgono solo entro 150 km dalle tappe del viaggio o dalla sua meta, se no la tappa entra senza posto e lo si cerca in «Dove?». Le coordinate dell'assistente non vengono da un fornitore, quindi si conservano senza vincoli ([ADR-010](../tecnico/adr/010-itinerario-incollato.md)).
+
 ---
 
 ## Ricordo e traguardi

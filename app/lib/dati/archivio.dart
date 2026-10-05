@@ -474,6 +474,23 @@ class Archivio {
             ]))
           .watch();
 
+  /// Per viaggio, quante tappe ha e quante hanno un posto sulla mappa: lo
+  /// dice la scelta del viaggio nella mappa (tela, 58).
+  Stream<Map<String, ({int tappe, int conPosto})>> osservaTappeDeiViaggi() =>
+      (_db.select(_db.tappe)..where((t) => t.eliminatoIl.isNull())).watch().map(
+        (righe) {
+          final conti = <String, ({int tappe, int conPosto})>{};
+          for (final t in righe) {
+            final c = conti[t.viaggioId] ?? (tappe: 0, conPosto: 0);
+            conti[t.viaggioId] = (
+              tappe: c.tappe + 1,
+              conPosto: c.conPosto + (t.lat != null && t.lon != null ? 1 : 0),
+            );
+          }
+          return conti;
+        },
+      );
+
   /// Le spese del viaggio, nell'ordine in cui sono state registrate.
   Stream<List<Spesa>> osservaSpese(String viaggioId) =>
       (_db.select(_db.spese)
@@ -1147,6 +1164,32 @@ class Archivio {
   Future<void> togliTappa(Tappa tappa) => modificaTappa(tappa, {
     'eliminato_il': DateTime.now().toUtc().toIso8601String(),
   });
+
+  /// Toglie più tappe del viaggio insieme: un giorno intero, tutto il
+  /// viaggio (tela, 59 e 60). Si marcano, non si cancellano, in una scrittura
+  /// sola. Senza versione: chi svuota ha deciso per tutte, anche per quelle
+  /// che intanto qualcuno ha segnato o cambiato — e prima di farlo l'ha
+  /// confermato vedendo quante sono. Prima parte la coda, così anche le tappe
+  /// aggiunte senza rete sono sul server. Restituisce quante ne sono uscite.
+  Future<int> togliTappe(String viaggioId, Iterable<String> ids) async {
+    final elenco = ids.toSet().toList();
+    if (elenco.isEmpty) return 0;
+    await coda.svuota();
+    final righe = await _alServer(
+      () => _server
+          .from('tappa')
+          .update({'eliminato_il': DateTime.now().toUtc().toIso8601String()})
+          .eq('viaggio_id', viaggioId)
+          .inFilter('id', elenco)
+          .select(),
+    );
+    await _db.transaction(() async {
+      for (final r in righe) {
+        await coda.nellaCopia(r);
+      }
+    });
+    return righe.length;
+  }
 
   /// Sposta una tappa in fondo a un altro giorno del viaggio.
   Future<void> spostaTappa(Tappa tappa, {required String giornoId}) =>

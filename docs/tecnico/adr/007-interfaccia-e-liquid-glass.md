@@ -59,3 +59,13 @@ Rivedendo la tela, l'utente l'ha trovata "troppo da app standard di iPhone": lis
 - **Restano componenti di sistema** i dialoghi, i fogli di azioni, i selettori di data e ora e gli interruttori: su iOS 26 e successivi hanno il Liquid Glass vero, ed è l'unico vetro dell'app.
 
 Il resto vale com'era: il movimento passa da `aspetto/movimento.dart` e rispetta "Riduci movimento"; i test girano sul percorso Material con le animazioni spente; l'aspetto si controlla sul telefono.
+
+## Revisione del 2026-10-05: il passaggio fra le pagine
+
+Provando la 3.2 sul telefono, l'utente ha trovato che passare da una schermata all'altra "sembra di sfogliare un libro", e ha chiesto il passaggio delle app che usa ogni giorno, come Instagram e WhatsApp. Quello di Flutter su iOS (`CupertinoPageRoute`) dura mezzo secondo, parte lento, accelera a metà e porta un'ombra sul bordo della pagina che entra.
+
+- **Il passaggio è dell'app, uguale su iOS e Android** (`RottaTrolley` in `aspetto/movimento.dart`, usata da `apri`): la pagina nuova entra da destra in 420 millisecondi (360 tornando), con una curva che parte subito e si posa piano; quella di prima scivola di un terzo a sinistra e si scurisce appena. Niente ombra sul bordo, solo una leggera a pagina in movimento.
+- **Su iOS si torna indietro trascinando dal bordo sinistro**, e la pagina segue il dito; lasciata prima di metà torna al suo posto. Su Android resta il gesto di sistema.
+- **La prima pagina dell'app**, che non è una `RottaTrolley`, scivola allo stesso modo: la nuova le passa il suo movimento (`delegatedTransition`).
+- **Con "Riduci movimento" la pagina compare sfumando**, senza scorrere.
+- **I fogli che salgono dal basso** e le pagine a tutto schermo (un documento) restano come erano.

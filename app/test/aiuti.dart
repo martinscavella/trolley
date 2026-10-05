@@ -26,7 +26,12 @@ import 'package:trolley/dati/destinazioni.dart';
 import 'package:trolley/dati/documenti.dart';
 import 'package:trolley/dati/errori.dart';
 import 'package:trolley/dati/file_del_telefono.dart';
+import 'package:trolley/dati/mappe.dart';
+import 'package:trolley/dati/mappe_del_telefono.dart';
+import 'package:trolley/dati/posizione.dart';
 import 'package:trolley/dati/rete.dart';
+import 'package:trolley/dominio/mappa.dart';
+import 'package:trolley/dominio/navigazione.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
 import 'package:trolley/servizi.dart';
@@ -135,15 +140,18 @@ Map<String, Object?> rigaDiTappa(
   String stato = 'da_fare',
   String creatoDa = idDiProva,
   int versione = 1,
+  String? luogo,
+  double? lat,
+  double? lon,
 }) => {
   'id': id,
   'viaggio_id': viaggio,
   'giorno_id': giorno,
   'ordine': ordine,
   'titolo': titolo,
-  'luogo_nome': null,
-  'lat': null,
-  'lon': null,
+  'luogo_nome': luogo,
+  'lat': lat,
+  'lon': lon,
   'durata_stimata_min': durata,
   'ora_inizio': ora,
   'stato': stato,
@@ -490,8 +498,18 @@ class ServerFinto {
       case 'PATCH /rest/v1/tappa':
         final trovate = _filtra(tappe, r.url.queryParameters);
         if (trovate.isEmpty) return risposta(const []);
-        final tappa = trovate.single;
         final valori = _corpo(r);
+        // Più tappe insieme, senza versione: svuotare un giorno o il viaggio.
+        if (trovate.length > 1 && !valori.containsKey('versione')) {
+          for (final t in trovate) {
+            t
+              ..addAll(valori)
+              ..['versione'] = (t['versione']! as int) + 1
+              ..['modificato_da'] = idDiProva;
+          }
+          return risposta(trovate);
+        }
+        final tappa = trovate.single;
         if (valori.containsKey('versione') &&
             valori['versione'] != tappa['versione']) {
           return _errore('TR409', 'versione superata');
@@ -1058,6 +1076,121 @@ class AcquisizioneFinta implements Acquisizione {
   Future<void> pulisci() async => pulizie++;
 }
 
+/// Un fornitore di mappe finto: nessuna rete, le risposte le dà il test.
+class MappeFinte implements Mappe {
+  @override
+  bool disponibili = true;
+
+  /// Quello che trova ogni ricerca.
+  final luoghi = <Luogo>[];
+
+  /// I testi cercati, in ordine.
+  final cercati = <String>[];
+
+  /// Vicino a dove si è cercato.
+  final vicino = <Coordinate?>[];
+
+  /// Il percorso che dà ogni richiesta; `null` per un fornitore che non
+  /// risponde.
+  Percorso? percorso;
+
+  /// I capi dei percorsi chiesti.
+  final chiesti = <({Coordinate da, Coordinate a})>[];
+
+  var _consumo = const ConsumoMappe();
+
+  @override
+  ConsumoMappe get consumo => _consumo;
+
+  /// Come se la mappa avesse scaricato [quanti] riquadri.
+  void scaricaRiquadri(int quanti) => _consumo = ConsumoMappe(
+    riquadri: _consumo.riquadri + quanti,
+    ricerche: _consumo.ricerche,
+    percorsi: _consumo.percorsi,
+  );
+
+  @override
+  Widget riquadri(BuildContext context) => const SizedBox.shrink();
+
+  @override
+  String get attribuzione => 'Mappe finte';
+
+  @override
+  Future<List<Luogo>> cerca(String testo, {Coordinate? vicinoA}) async {
+    cercati.add(testo);
+    vicino.add(vicinoA);
+    _consumo = ConsumoMappe(
+      riquadri: _consumo.riquadri,
+      ricerche: _consumo.ricerche + 1,
+      percorsi: _consumo.percorsi,
+    );
+    return [
+      for (final l in luoghi)
+        if (l.nome.toLowerCase().contains(testo.trim().toLowerCase())) l,
+    ];
+  }
+
+  @override
+  Future<Percorso> percorsoAPiedi(Coordinate da, Coordinate a) async {
+    chiesti.add((da: da, a: a));
+    _consumo = ConsumoMappe(
+      riquadri: _consumo.riquadri,
+      ricerche: _consumo.ricerche,
+      percorsi: _consumo.percorsi + 1,
+    );
+    final p = percorso;
+    if (p == null) throw const ErroreTrolley('La mappa non risponde.');
+    return p;
+  }
+}
+
+/// La posizione del telefono comandata dal test.
+class PosizioneFinta implements Posizione {
+  PosizioneFinta({this.stato = PermessoPosizione.concesso});
+
+  PermessoPosizione stato;
+
+  /// Che cosa risponde la persona quando glielo si chiede.
+  PermessoPosizione risposta = PermessoPosizione.concesso;
+  int richieste = 0;
+  final _posizioni = StreamController<Coordinate>.broadcast();
+
+  /// Il telefono si è spostato in [p].
+  void vai(Coordinate p) => _posizioni.add(p);
+
+  bool get seguita => _posizioni.hasListener;
+
+  @override
+  Future<PermessoPosizione> permesso() async => stato;
+
+  @override
+  Future<PermessoPosizione> chiedi() async {
+    if (stato != PermessoPosizione.daChiedere) return stato;
+    richieste++;
+    return stato = risposta;
+  }
+
+  @override
+  Stream<Coordinate> segui() => _posizioni.stream;
+
+  Future<void> chiudi() => _posizioni.close();
+}
+
+/// Le Mappe del telefono finte: si ricorda dove l'hanno mandata.
+class MappeDelTelefonoFinte implements MappeDelTelefono {
+  final aperte = <({String nome, Coordinate? posto, String? indirizzo})>[];
+
+  @override
+  Future<bool> portami({
+    required String nome,
+    Coordinate? posto,
+    String? indirizzo,
+  }) async {
+    aperte.add((nome: nome, posto: posto, indirizzo: indirizzo));
+    return true;
+  }
+}
+
 /// Tutto quello che serve a una schermata per funzionare in un test: il
 /// database in memoria, il server finto, la rete comandabile.
 class Ambiente {
@@ -1095,6 +1228,10 @@ class Ambiente {
     Directory('${cartella.path}/arrivi')..createSync(),
   );
 
+  final mappe = MappeFinte();
+  final posizione = PosizioneFinta();
+  final mappeDelTelefono = MappeDelTelefonoFinte();
+
   Widget servizi(Widget figlio) => Servizi(
     db: db,
     supabase: server.supabase,
@@ -1104,6 +1241,9 @@ class Ambiente {
     rete: rete,
     documenti: documenti,
     acquisizione: acquisizione,
+    mappe: mappe,
+    posizione: posizione,
+    mappeDelTelefono: mappeDelTelefono,
     child: figlio,
   );
 
@@ -1194,6 +1334,7 @@ class Ambiente {
 
   Future<void> chiudi() async {
     await rete.chiudi();
+    await posizione.chiudi();
     await ingresso.controllo.close();
     await db.close();
     if (cartella.existsSync()) cartella.deleteSync(recursive: true);

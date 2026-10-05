@@ -1,0 +1,206 @@
+{
+ "results": [
+  {
+   "name": "Lello & Irmao Bookstore",
+   "street": "Rua das Carmelitas",
+   "district": "Historic Zone of Porto",
+   "city": "Porto",
+   "county": "Porto",
+   "country": "Portugal",
+   "postcode": "4050-161",
+   "datasource": {
+    "sourcename": "openstreetmap",
+    "attribution": "\u00a9 OpenStreetMap contributors",
+    "license": "Open Database License",
+    "url": "https://www.openstreetmap.org/copyright"
+   },
+   "country_code": "pt",
+   "lon": -8.6148485,
+   "lat": 41.1468317,
+   "result_type": "amenity",
+   "other_names": {
+    "name": "Livraria Lello & Irma\u0303o",
+    "name:en": "Lello & Irmao Bookstore",
+    "name:es": "Librer\u00eda Lello & Irm\u00e3o",
+    "name:fr": "Librairie Lello & Irm\u00e3o",
+    "name:ko": "\ub810\ub8e8\uc11c\uc810 Lello & Irm\u00e3o",
+    "name:zh": "\u840a\u7f85\u66f8\u5e97"
+   },
+   "neighbourhood": "Baixa do Porto",
+   "suburb": "Zona Hist\u00f3rica do Porto",
+   "iso3166_2": "PT-13",
+   "state": "Oporto",
+   "state_code": "PO",
+   "distance": 829.9512386005784,
+   "formatted": "Lello & Irmao Bookstore, Rua das Carmelitas, 4050-161 Porto, Portugal",
+   "address_line1": "Lello & Irmao Bookstore",
+   "address_line2": "Rua das Carmelitas, 4050-161 Porto, Portugal",
+   "category": "commercial.books",
+   "timezone": {
+    "name": "Europe/Lisbon",
+    "offset_STD": "+00:00",
+    "offset_DST": "+01:00",
+    "offset_STD_seconds": 0,
+    "offset_DST_seconds": 3600,
+    "abbreviation_STD": "WET",
+    "abbreviation_DST": "WEST"
+   },
+   "plus_code": "8CHH49WP+P3",
+   "plus_code_short": "WP+P3 Porto, Portugal",
+   "rank": {
+    "importance": 0.3469896344052328,
+    "confidence": 1,
+    "match_type": "full_match"
+   },
+   "place_id": "5144fd2e6ccd3a21c0590fc29261cb924440f00103f901c1e4e5e902000000c002019203174c656c6c6f20262049726d616f20426f6f6b73746f7265e203246f70656e7374726565746d61703a76656e75653a6e6f64652f3132353134303932323235"
+  },
+  {
+   "country_code": "pt",
+   "name": "Livraria Lello",
+   "country": "Portogallo",
+   "datasource": {
+    "sourcename": "geonames",
+    "attribution": "GeoNames",
+    "license": "CC BY 4.0",
+    "url": "https://www.geonames.org/datasources/"
+   },
+   "state": "Oporto",
+   "state_code": "PO",
+   "district": "Historic Zone of Porto",
+   "city": "Porto",
+   "suburb": "Zona Hist\u00f3rica do Porto",
+   "lon": -8.61466,
+   "lat": 41.14723,
+   "result_type": "amenity",
+   "postcode": "4050-161",
+   "distance": 811.8029217997253,
+   "formatted": "Livraria Lello, 4050-161 Porto, Portogallo",
+   "address_line1": "Livraria Lello",
+   "address_line2": "4050-161 Porto, Portogallo",
+   "timezone": {
+    "name": "Europe/Lisbon",
+    "offset_STD": "+00:00",
+    "offset_DST": "+01:00",
+    "offset_STD_seconds": 0,
+    "offset_DST_seconds": 3600,
+    "abbreviation_STD": "WET",
+    "abbreviation_DST": "WEST"
+   },
+   "plus_code": "8CHH49WP+V4",
+   "plus_code_short": "WP+V4 Porto, Oporto, Portogallo",
+   "iso3166_2": "PT-PO",
+   "rank": {
+    "confidence": 1,
+    "match_type": "full_match"
+   },
+   "place_id": "5198512cb7b43a21c059bb7ec16ed8924440c0020192030e4c69767261726961204c656c6c6fe2031767656f6e616d65733a76656e75653a3131383232323936"
+  },
+  {
+   "housenumber": "144",
+   "name": "Livraria Lello e Irm\u00e3o",
+   "street": "Rua das Carmelitas",
+   "district": "Historic Zone of Porto",
+   "city": "Porto",
+   "county": "Porto",
+   "country": "Portugal",
+   "postcode": "4050-161",
+   "datasource": {
+    "sourcename": "openstreetmap",
+    "attribution": "\u00a9 OpenStreetMap contributors",
+    "license": "Open Database License",
+    "url": "https://www.openstreetmap.org/copyright"
+   },
+   "country_code": "pt",
+   "lon": -8.6147867,
+   "lat": 41.1468933,
+   "result_type": "amenity",
+   "neighbourhood": "Baixa do Porto",
+   "suburb": "Zona Hist\u00f3rica do Porto",
+   "iso3166_2": "PT-13",
+   "state": "Oporto",
+   "state_code": "PO",
+   "distance": 828.9852050614502,
+   "formatted": "Livraria Lello e Irm\u00e3o, Rua das Carmelitas 144, 4050-161 Porto, Portugal",
+   "address_line1": "Livraria Lello e Irm\u00e3o",
+   "address_line2": "Rua das Carmelitas 144, 4050-161 Porto, Portugal",
+   "category": "building",
+   "timezone": {
+    "name": "Europe/Lisbon",
+    "offset_STD": "+00:00",
+    "offset_DST": "+01:00",
+    "offset_STD_seconds": 0,
+    "offset_DST_seconds": 3600,
+    "abbreviation_STD": "WET",
+    "abbreviation_DST": "WEST"
+   },
+   "plus_code": "8CHH49WP+Q3",
+   "plus_code_short": "WP+Q3 Porto, Portugal",
+   "rank": {
+    "importance": 7.251926451509908e-05,
+    "confidence": 1,
+    "match_type": "full_match"
+   },
+   "place_id": "5112088552c53a21c05932c04f66cd924440f00102f9012565aa0d00000000c002019203174c69767261726961204c656c6c6f20652049726dc3a36fe203216f70656e7374726565746d61703a76656e75653a7761792f323239323730383231",
+   "bbox": {
+    "lon1": -8.6149128,
+    "lat1": 41.1467868,
+    "lon2": -8.6146663,
+    "lat2": 41.1469842
+   }
+  },
+  {
+   "name": "Edif\u00edcio da Livraria Lello e Irm\u00e3o (97)",
+   "street": "Rua das Carmelitas",
+   "district": "Historic Zone of Porto",
+   "city": "Porto",
+   "county": "Porto",
+   "country": "Portugal",
+   "postcode": "4050-161",
+   "datasource": {
+    "sourcename": "openstreetmap",
+    "attribution": "\u00a9 OpenStreetMap contributors",
+    "license": "Open Database License",
+    "url": "https://www.openstreetmap.org/copyright"
+   },
+   "country_code": "pt",
+   "lon": -8.6149114,
+   "lat": 41.146817,
+   "result_type": "amenity",
+   "ref": "97",
+   "other_names": {
+    "ref": "97"
+   },
+   "neighbourhood": "Baixa do Porto",
+   "suburb": "Zona Hist\u00f3rica do Porto",
+   "quarter": "Conjunto Urbano da Ribeira",
+   "iso3166_2": "PT-13",
+   "state": "Oporto",
+   "state_code": "PO",
+   "distance": 827.2974770309295,
+   "formatted": "Edif\u00edcio da Livraria Lello e Irm\u00e3o (97), Rua das Carmelitas, 4050-161 Porto, Portugal",
+   "address_line1": "Edif\u00edcio da Livraria Lello e Irm\u00e3o (97)",
+   "address_line2": "Rua das Carmelitas, 4050-161 Porto, Portugal",
+   "timezone": {
+    "name": "Europe/Lisbon",
+    "offset_STD": "+00:00",
+    "offset_DST": "+01:00",
+    "offset_STD_seconds": 0,
+    "offset_DST_seconds": 3600,
+    "abbreviation_STD": "WET",
+    "abbreviation_DST": "WEST"
+   },
+   "plus_code": "8CHH49WP+P2",
+   "plus_code_short": "WP+P2 Porto, Portugal",
+   "rank": {
+    "importance": 7.251926451509908e-05,
+    "confidence": 1,
+    "match_type": "full_match"
+   },
+   "place_id": "510ae0c1aad53a21c05998bf42e6ca924440f00103f901b5f8e18501000000c0020192032945646966c3ad63696f206461204c69767261726961204c656c6c6f20652049726dc3a36f2028393729e203236f70656e7374726565746d61703a76656e75653a6e6f64652f36353431313436323933"
+  }
+ ],
+ "query": {
+  "text": "lello",
+  "categories": []
+ }
+}

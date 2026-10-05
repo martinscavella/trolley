@@ -20,9 +20,14 @@ dependencies:
   flutter_animate: ^4.5.2
   flutter_localizations:
     sdk: flutter
+  flutter_map: ^8.3.2
+  geolocator: ^14.1.1
+  http: ^1.6.0
+  latlong2: ^0.10.1
   path_provider: ^2.1.6
   share_plus: ^13.3.0
   supabase_flutter: ^2.18.0
+  url_launcher: ^6.3.3
   uuid: ^4.6.0
 
 dev_dependencies:
@@ -31,7 +36,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev: ^2.35.0
   build_runner: ^2.16.1
-  http: ^1.6.0
 
 flutter:
   uses-material-design: true

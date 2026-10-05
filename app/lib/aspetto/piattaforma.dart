@@ -9,6 +9,7 @@ import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'movimento.dart';
 import 'pagina.dart';
 
 bool get suIOS => PlatformInfo.isIOS;
@@ -19,11 +20,9 @@ bool get conVetroNativo => PlatformInfo.isIOS26OrHigher();
 IconData icona({required IconData ios, required IconData android}) =>
     suIOS ? ios : android;
 
-/// Una pagina con la transizione della piattaforma: su iOS si torna indietro
-/// trascinando dal bordo.
-Route<T> rotta<T>(Widget pagina) => suIOS
-    ? CupertinoPageRoute<T>(builder: (_) => pagina)
-    : MaterialPageRoute<T>(builder: (_) => pagina);
+/// Una pagina con il passaggio dell'app ([RottaTrolley]): uguale su iOS e
+/// Android, e su iOS si torna indietro trascinando dal bordo.
+Route<T> rotta<T>(Widget pagina) => RottaTrolley<T>(builder: (_) => pagina);
 
 /// Apre [pagina]. [dalBasso] per i fogli che creano o cambiano qualcosa: salgono
 /// sopra la schermata di prima, come "Nuova idea" della tela ([Foglio]).
@@ -36,9 +35,11 @@ Future<T?> apri<T>(
     : Navigator.of(context).push<T>(rotta<T>(pagina));
 
 /// Apre [pagina] a tutto schermo, salendo dal basso: un documento da guardare.
-Future<T?> apriAPienoSchermo<T>(BuildContext context, Widget pagina) =>
-    Navigator.of(context).push<T>(
-      suIOS
-          ? CupertinoPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true)
-          : MaterialPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true),
-    );
+Future<T?> apriAPienoSchermo<T>(
+  BuildContext context,
+  Widget pagina,
+) => Navigator.of(context).push<T>(
+  suIOS
+      ? CupertinoPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true)
+      : MaterialPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true),
+);

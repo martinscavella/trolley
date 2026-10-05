@@ -28,9 +28,11 @@ import 'cose.dart';
 import 'date_viaggio.dart';
 import 'documenti.dart';
 import 'gesti_partecipanti.dart';
+import 'gesti_tappa.dart';
 import 'giornata.dart';
 import 'impostazioni.dart';
 import 'itinerario.dart';
+import 'mappa.dart';
 import 'note.dart';
 import 'nuovo_viaggio.dart';
 import 'partecipanti.dart';
@@ -125,6 +127,15 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                 etichetta: 'Viaggi',
                 attiva: true,
                 onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
+              ),
+              VoceBarra(
+                icona: icona(
+                  ios: CupertinoIcons.globe,
+                  android: Icons.public_rounded,
+                ),
+                etichetta: 'Mappa',
+                onTap: () =>
+                    apri<void>(context, SchermataMappa(viaggioId: viaggio.id)),
               ),
             ],
             dopo: [
@@ -587,6 +598,46 @@ class _GiorniState extends State<_Giorni> {
                       ),
                     ),
                 ],
+                // Tutte le tappe del viaggio in un colpo (tela, 60).
+                if (tutte.isNotEmpty)
+                  ConLaRete(
+                    builder: (context, rete) => Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          PulsantePiccolo(
+                            etichetta:
+                                'Togli tutte le tappe del viaggio '
+                                '(${tutte.length})',
+                            pericolo: true,
+                            onPressed: rete
+                                ? () => svuotaLeTappe(
+                                    context,
+                                    viaggioId: widget.viaggio.id,
+                                    tappe: tutte,
+                                    titolo: tutte.length == 1
+                                        ? 'Togliere l\'unica tappa del viaggio?'
+                                        : 'Togliere tutte le ${tutte.length} '
+                                              'tappe del viaggio?',
+                                  )
+                                : null,
+                          ),
+                          // Senza rete si dice prima perché non si può.
+                          if (!rete)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 4),
+                              child: Text(
+                                motivoSenzaRete,
+                                style: Testi.didascalia.copyWith(
+                                  color: Colori.grafite,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ProblemiDellaCoda(operazioni: coda.data ?? const []),
               ],
             );

@@ -31,6 +31,7 @@ import 'gesti_spesa.dart';
 import 'gesti_tappa.dart';
 import 'giornata.dart';
 import 'impostazioni.dart';
+import 'mappa.dart';
 import 'nuovo_viaggio.dart';
 import 'spese.dart';
 import 'tappa.dart';
@@ -259,6 +260,15 @@ class _SchermataAdessoState extends State<SchermataAdesso> {
             etichetta: 'Viaggi',
             attiva: true,
             onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
+          ),
+          VoceBarra(
+            icona: icona(
+              ios: CupertinoIcons.globe,
+              android: Icons.public_rounded,
+            ),
+            etichetta: 'Mappa',
+            onTap: () =>
+                apri<void>(context, SchermataMappa(viaggioId: viaggio.id)),
           ),
         ],
         dopo: [

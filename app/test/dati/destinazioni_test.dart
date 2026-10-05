@@ -83,6 +83,30 @@ void main() {
       expect(samone.map((d) => d.dettaglio).toSet(), {'TO', 'TN'});
     });
 
+    test('la meta di un viaggio si ritrova con le sue coordinate, per la '
+        'mappa', () {
+      final porto = elenco.trova(citta: 'Porto', paese: 'PT')!;
+      expect(porto.nome, 'Porto');
+      expect((porto.lat, porto.lon), (41.152, -8.622));
+      // La città con lo stesso nome in un altro paese non è lei.
+      expect(elenco.trova(citta: 'Porto', paese: 'BR')?.paese, 'BR');
+      expect(
+        elenco.trova(citta: 'Porto', paese: 'BR')?.tipo,
+        isNot(TipoDestinazione.citta),
+      );
+      // Scritta a mano: resta il paese.
+      final isola = elenco.trova(citta: 'Isola che non c\'è', paese: 'PT')!;
+      expect(isola.tipo, TipoDestinazione.paese);
+      expect(elenco.trova(citta: 'Isola che non c\'è'), isNull);
+      expect(elenco.trova(), isNull);
+      // Scritta a mano, in inglese e senza paese: la si riconosce lo stesso.
+      final copenaghen = elenco.trova(citta: 'Copenhagen')!;
+      expect((copenaghen.nome, copenaghen.paese), ('Copenaghen', 'DK'));
+      expect(elenco.trova(citta: 'københavn')?.nome, 'Copenaghen');
+      // Senza paese vince la più probabile.
+      expect(elenco.trova(citta: 'Londra')?.paese, 'GB');
+    });
+
     test('ogni codice di paese ha il suo nome', () {
       for (final d in elenco.cerca('a', quante: 100000)) {
         expect(nomeDelPaese(d.paese), isNotNull, reason: d.toString());

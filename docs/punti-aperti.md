@@ -160,6 +160,23 @@ La fase 3.1 (la schermata «Adesso»: la tappa di adesso con «Fatta» e «Salta
 | **«Adesso» si apre da solo solo all'avvio** | Chi lascia l'app aperta da ieri e la riprende la ritrova dov'era; il viaggio che comincia oggi si apre al prossimo avvio | Se la beta lo chiede |
 | **Rivedere sulla tela le schermate 45–49** | Disegnate prima, costruite il 4 ottobre 2026 | Prima di chiudere la 3.1 |
 
+### Rimasto fuori dalla 3.2
+
+La fase 3.2 (la mappa del giorno e del viaggio, la navigazione a piedi con l'arrivo da segnare, gli indirizzi senza rete, «Dove?» cercato) è costruita, con Geoapify ([ADR-006](tecnico/adr/006-mappe-e-percorsi.md)). Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Il tetto per persona e per viaggio** (ADR-006, regola 1) | Oggi il consumo si conta (`consumo_mappe`) e la navigazione non chiede più di otto strade nuove; manca il limite vero, che degrada alle Mappe del telefono. Si fissa guardando i numeri della fase interna | **Prerequisito per aprire fuori dal team** |
+| **La chiave di Geoapify sta nell'app** | Il repository è pubblico, e la chiave non è nel codice (`--dart-define-from-file=chiavi.json`); ma chi smonta l'app la trova. Il piano gratuito non ha carta: chi la abusasse consumerebbe i crediti, non dei soldi. Prima di aprire fuori dal team: una chiave per l'app con le restrizioni che Geoapify permette, o un passaggio dal nostro server | Prima di aprire fuori dal team |
+| **I posti di un'idea sulla mappa** (08, casi limite) | «La mappa mostra i posti dell'elenco idee»: l'elenco dei posti di un'idea (02, regola 2) non esiste ancora. Oggi «Mappa» non apre le idee | Con i posti delle idee |
+| **Le tappe incollate prima del 5 ottobre non hanno un posto** | Dal 5 ottobre la richiesta all'assistente chiede anche le coordinate; le tappe incollate prima (i viaggi di prova a Copenaghen e Londra) si cercano a mano in «Dove?», che parte già cercando, oppure si svuota il giorno e si incolla di nuovo. Cercarle tutte insieme costerebbe una ricerca per tappa | Se la beta lo chiede |
+| **Quanto sono giuste le coordinate dell'assistente** | Per i posti famosi di solito sì; per un ristorante piccolo possono essere a qualche centinaio di metri, o inventate. Si scartano solo quelle a più di 150 km dal viaggio. Da guardare sulle prime risposte vere: se sbagliano spesso, si passano dalla ricerca di Geoapify prima di salvarle | Alle prime risposte incollate |
+| **Lo schermo acceso durante la navigazione** | iOS lo spegne dopo il tempo impostato; tenerlo acceso chiede un pacchetto in più | Se la beta lo chiede |
+| **I mezzi e l'auto** | La navigazione è a piedi; per il resto c'è «Apri in Mappe» | Se la beta lo chiede |
+| **Rivedere sulla tela le schermate 57–61** | Disegnate il 5 ottobre 2026 dopo la prova sul telefono (la scelta del viaggio nella mappa, con il pulsante «Indietro»; svuotare un giorno e il viaggio; le tappe doppie nell'anteprima) e costruite lo stesso giorno | Prima di chiudere la 3.2 |
+| **Rivedere sulla tela le schermate 50–56** | Disegnate prima (la 56 il 4 ottobre 2026, insieme alla costruzione), costruite il 4 ottobre 2026 | Prima di chiudere la 3.2 |
+| **Provare la mappa sull'iPhone con la chiave vera** | Le risposte di Geoapify sono verificate dal vivo il 5 ottobre 2026 (ricerca, percorso, riquadri; due registrate in `app/test/dati/risposte/`); installata sull'iPhone il 5 ottobre 2026 (mappa e riquadri veri, centrata sulla meta); manca la prova camminando, con «Portami» fino a una tappa | Al primo giro a piedi |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.
@@ -229,5 +246,5 @@ La grafica viene dalla tela "Trolley — design dell'app", stile «Biglietti» (
 |---|---|---|
 | **Foto della destinazione sul biglietto** | La tela attacca una piccola foto, storta, sulla carta d'imbarco del viaggio in corso. Serve un fornitore di immagini (licenza, attribuzione, costo), dietro un'interfaccia come gli altri servizi esterni ([04](tecnico/04-integrazioni.md)). Intanto il biglietto vive senza: il codice di tre lettere basta a riconoscerlo | Da scegliere il fornitore |
 | **Tema scuro** | La tela è solo chiara, e l'app pure: col telefono in scuro resta chiara | Quando la tela disegna lo scuro |
-| **Le schermate delle fasi 2.2–6 sono disegnate, non ancora riviste** | Disegnate il 4 ottobre 2026 sulla tela (34–87, una fila per fase, più le notifiche) perché le correzioni arrivino prima di costruire. Ogni fila ha una nota arancione con le scelte e le domande aperte (per esempio: i rimborsi nei saldi, i colori dei giorni sulla mappa, quali traguardi, «cosa ti piace» nel profilo pubblico). Quando si costruisce una fase si rilegge la sua fila: l'utente può averla corretta | Prima di costruire ciascuna fase |
-| **Mappa e Community nella barra in basso** | La tela le ha; nell'app la barra mostra solo le sezioni che esistono (Viaggi, +, Profilo) | Con le fasi 3.2 e 5 |
+| **Le schermate delle fasi 2.2–6 sono disegnate, non ancora riviste** | Disegnate il 4 ottobre 2026 sulla tela (34–87, una fila per fase, più le notifiche) perché le correzioni arrivino prima di costruire. Ogni fila ha una nota arancione con le scelte e le domande aperte (per esempio: i rimborsi nei saldi, quali traguardi, «cosa ti piace» nel profilo pubblico). Quando si costruisce una fase si rilegge la sua fila: l'utente può averla corretta | Prima di costruire ciascuna fase |
+| **Community nella barra in basso** | La tela la ha; nell'app la barra mostra solo le sezioni che esistono (Viaggi, Mappa, +, Profilo). «Mappa» c'è dalla 3.2 | Con la fase 5 |

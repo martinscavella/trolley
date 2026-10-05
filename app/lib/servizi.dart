@@ -5,6 +5,9 @@ import 'dati/acquisizione.dart';
 import 'dati/archivio.dart';
 import 'dati/database.dart';
 import 'dati/documenti.dart';
+import 'dati/mappe.dart';
+import 'dati/mappe_del_telefono.dart';
+import 'dati/posizione.dart';
 import 'dati/rete.dart';
 import 'invito/ingresso_da_invito.dart';
 import 'misurazione/misurazione.dart';
@@ -21,6 +24,9 @@ class Servizi extends InheritedWidget {
     required this.rete,
     required this.documenti,
     required this.acquisizione,
+    required this.mappe,
+    required this.posizione,
+    required this.mappeDelTelefono,
     required super.child,
   });
 
@@ -36,6 +42,15 @@ class Servizi extends InheritedWidget {
 
   /// Da dove arriva un documento nuovo: scansione, foto, file.
   final Acquisizione acquisizione;
+
+  /// Il fornitore di mappe, percorsi e ricerca dei luoghi (ADR-006).
+  final Mappe mappe;
+
+  /// Dove si trova il telefono: solo per la mappa, mai fuori (08, regola 7).
+  final Posizione posizione;
+
+  /// Le Mappe del telefono, a cui si consegna una tappa.
+  final MappeDelTelefono mappeDelTelefono;
 
   static Servizi of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<Servizi>()!;

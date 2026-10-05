@@ -83,6 +83,9 @@ Map<String, Object?> ritrattoTappa(Map<String, Object?> r) => {
   'durata_stimata_min': r['durata_stimata_min'],
   'ora_inizio': _ora(r['ora_inizio']),
   'luogo_nome': _testo(r['luogo_nome']),
+  // Il posto va col suo nome: si cambiano insieme, e si sceglie insieme.
+  'lat': (r['lat'] as num?)?.toDouble(),
+  'lon': (r['lon'] as num?)?.toDouble(),
   'giorno_id': r['giorno_id'],
   campoEliminato: r['eliminato_il'] != null,
 };
@@ -155,6 +158,8 @@ Map<String, Object?> rigaDellaTappa(Tappa t) => {
   'durata_stimata_min': t.durataStimataMin,
   'ora_inizio': t.oraInizio,
   'luogo_nome': t.luogoNome,
+  'lat': t.lat,
+  'lon': t.lon,
   'giorno_id': t.giornoId,
   'eliminato_il': t.eliminatoIl,
 };

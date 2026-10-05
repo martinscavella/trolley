@@ -198,6 +198,72 @@ GIORNO 1
     );
   });
 
+  testWidgets('la stessa risposta incollata due volte non raddoppia la '
+      'giornata: le tappe che ci sono già si dicono e non si aggiungono', (
+    tester,
+  ) async {
+    appuntiFinti(tester);
+    await viaggio(tester);
+    Future<void> incolla() async {
+      await apriItinerario(tester);
+      appunti = risposta;
+      await tester.tap(pulsante('Ho la risposta'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Incolla'));
+      await aspetta(tester);
+      await tester.tap(pulsante('Leggi'));
+      await aspetta(tester);
+    }
+
+    await incolla();
+    await tester.tap(pulsante('Aggiungi 4 tappe'));
+    await aspetta(tester);
+    // Il messaggio «Aggiunte 4 tappe» se ne va da solo.
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pumpAndSettle();
+
+    await incolla();
+    expect(find.textContaining('4 ci sono già'), findsOneWidget);
+    expect(find.text('C\'è già in questo giorno'), findsNWidgets(4));
+    // Resta solo la crociera, che non entra: niente da aggiungere.
+    expect(find.text('Scegline almeno una'), findsOneWidget);
+    final tappe = (await tester.runAsync(
+      () => ambiente.archivio.osservaTappe('v').first,
+    ))!;
+    expect(tappe, hasLength(4));
+  });
+
+  testWidgets('le coordinate dell\'assistente entrano con la tappa, se sono '
+      'vicine al viaggio', (tester) async {
+    appuntiFinti(tester);
+    await viaggio(tester);
+    await apriItinerario(tester);
+    appunti = '''
+```
+TROLLEY ITINERARIO
+GIORNO 1
+10:30 | Livraria Lello | visita | 60 | Rua das Carmelitas 144 | 41.14686, -8.61479
+12:00 | Pranzo | pasto | 60 | Lisbona, per sbaglio | 38.72230, -9.13930
+```
+''';
+    await tester.tap(pulsante('Ho la risposta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Incolla'));
+    await aspetta(tester);
+    await tester.tap(pulsante('Leggi'));
+    await aspetta(tester);
+    expect(find.textContaining('2 con il posto sulla mappa'), findsOneWidget);
+    await tester.tap(pulsante('Aggiungi 2 tappe'));
+    await aspetta(tester);
+
+    final tappe = (await tester.runAsync(
+      () => ambiente.archivio.osservaTappe('v').first,
+    ))!;
+    expect((tappe[0].lat, tappe[0].lon), (41.14686, -8.61479));
+    // Lisbona è a trecento chilometri da Porto: niente posto.
+    expect(tappe[1].lat, isNull);
+  });
+
   testWidgets('una risposta senza tappe: il testo è salvo, e si dice cosa si '
       'cercava', (tester) async {
     appuntiFinti(tester);

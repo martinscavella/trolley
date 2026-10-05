@@ -25,6 +25,7 @@ import '../dominio/tappe.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'gesti_tappa.dart';
+import 'mappa.dart';
 import 'problemi_coda.dart';
 import 'tappa.dart';
 
@@ -175,7 +176,20 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
 
     final luogo = viaggio.destinazione?.nome ?? titoloViaggio(viaggio);
     return Pagina(
-      azioni: [_Luogo(luogo)],
+      azioni: [
+        _Luogo(luogo),
+        PulsanteTondo(
+          icona: icona(ios: CupertinoIcons.map, android: Icons.map_outlined),
+          etichetta: 'Mappa del giorno',
+          onPressed: () => apri<void>(
+            context,
+            SchermataMappa(
+              viaggioId: widget.viaggioId,
+              giornoId: widget.giornoId,
+            ),
+          ),
+        ),
+      ],
       corpo: Builder(
         builder: (context) => ListView(
           padding: EdgeInsets.fromLTRB(
@@ -318,6 +332,27 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
               icona: Icons.add_rounded,
               onPressed: () => apriTappa(),
             ).entra(context, ritardo: Ritmo.passo * 3),
+            // Tutte le tappe del giorno in un colpo (tela, 59).
+            if (delGiorno.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ConLaRete(
+                builder: (context, rete) => PulsanteGrande(
+                  etichetta: 'Svuota la giornata',
+                  icona: Icons.delete_outline_rounded,
+                  secondario: true,
+                  pericolo: true,
+                  motivo: rete ? null : motivoSenzaRete,
+                  onPressed: () => svuotaLeTappe(
+                    context,
+                    viaggioId: viaggio.id,
+                    tappe: delGiorno,
+                    titolo:
+                        'Togliere ${delGiorno.length == 1 ? 'la tappa' : 'le ${delGiorno.length} tappe'} '
+                        'di ${nomeDelGiorno(finestra.data).toLowerCase()}?',
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -66,6 +66,9 @@ void main() {
           io: () => null,
         ),
         acquisizione: AcquisizioneFinta(Directory.systemTemp),
+        mappe: MappeFinte(),
+        posizione: PosizioneFinta(),
+        mappeDelTelefono: MappeDelTelefonoFinte(),
         child: const TrolleyApp(),
       ),
     );

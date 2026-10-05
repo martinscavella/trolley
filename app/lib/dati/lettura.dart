@@ -7,6 +7,7 @@ import '../dominio/calendario.dart';
 import '../dominio/documenti.dart';
 import '../dominio/giornate.dart';
 import '../dominio/liste.dart';
+import '../dominio/mappa.dart';
 import '../dominio/periodo.dart';
 import '../dominio/spese.dart';
 import '../dominio/stato_viaggio.dart';
@@ -72,6 +73,10 @@ extension LetturaTappa on Tappa {
 
   /// L'ora a cui comincia, se la si è detta.
   Duration? get ora => leggiOra(oraInizio);
+
+  /// Dove sta; `null` se non ha un posto riconoscibile, e allora resta
+  /// nell'itinerario ma non sulla mappa (08, casi limite).
+  Coordinate? get posto => coordinate(lat, lon);
 }
 
 extension LetturaDocumento on Documento {

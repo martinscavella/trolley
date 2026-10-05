@@ -20,12 +20,14 @@ import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
 import '../dominio/codice_invito.dart';
+import '../dominio/mappa.dart';
 import '../dominio/stato_viaggio.dart';
 import '../servizi.dart';
 import 'adesso.dart';
 import 'archivio_idee.dart';
 import 'con_la_rete.dart';
 import 'impostazioni.dart';
+import 'mappa.dart';
 import 'nuovo_viaggio.dart';
 import 'partecipanti.dart';
 import 'viaggio.dart';
@@ -187,6 +189,34 @@ class _SchermataViaggiState extends State<SchermataViaggi>
     }
   }
 
+  /// «Mappa» dall'elenco: il viaggio in corso, o il prossimo, o l'ultimo
+  /// fatto. Le idee non hanno tappe da mettere sulla mappa.
+  Future<void> _mappa() async {
+    final archivio = Servizi.of(context).archivio;
+    final oggi = DateTime.now();
+    final (viaggi, scelto) = await (
+      archivio.osservaViaggiInElenco().first,
+      archivio.viaggioSceltoOggi(oggi),
+    ).wait;
+    final id = viaggioPerLaMappa(
+      viaggi: [for (final v in viaggi) v.viaggio],
+      idDi: (v) => v.id,
+      statoDi: (v) => v.statoA(oggi),
+      inizioDi: (v) => v.inizio,
+      sceltoOggi: scelto,
+    );
+    if (!mounted) return;
+    if (id == null) {
+      mostraMessaggio(
+        context,
+        'Sulla mappa vanno le tappe dei viaggi con le date: per ora non ce '
+        'ne sono.',
+      );
+      return;
+    }
+    await apri<void>(context, SchermataMappa(viaggioId: id));
+  }
+
   /// "Altro": l'archivio delle idee e le impostazioni.
   Future<void> _altro() async {
     final archivio = Servizi.of(context).archivio;
@@ -230,6 +260,14 @@ class _SchermataViaggiState extends State<SchermataViaggi>
                     curve: Ritmo.curva,
                   )
                 : null,
+          ),
+          VoceBarra(
+            icona: icona(
+              ios: CupertinoIcons.globe,
+              android: Icons.public_rounded,
+            ),
+            etichetta: 'Mappa',
+            onTap: _mappa,
           ),
         ],
         dopo: [

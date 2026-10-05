@@ -18,6 +18,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
+import '../dominio/mappa.dart';
 import '../dominio/tappe.dart';
 import '../dominio/valute.dart';
 import 'database.dart';
@@ -36,6 +37,7 @@ class NuovaTappa {
     required this.durata,
     this.ora,
     this.luogo,
+    this.posto,
   });
 
   /// Generato sul telefono: rimandarla non la aggiunge due volte.
@@ -48,6 +50,10 @@ class NuovaTappa {
   final Duration durata;
   final Duration? ora;
   final String? luogo;
+
+  /// Dove sta, se il luogo è stato cercato e trovato: senza, la tappa c'è
+  /// ma non compare sulla mappa (ADR-005).
+  final Coordinate? posto;
 
   /// La riga come la scrive il server.
   Map<String, Object?> get riga {
@@ -62,6 +68,8 @@ class NuovaTappa {
       'durata_stimata_min': durata.inMinutes,
       'ora_inizio': ora == null ? null : scriviOra(ora!),
       'luogo_nome': dove == null || dove.isEmpty ? null : dove,
+      'lat': posto?.lat,
+      'lon': posto?.lon,
     };
   }
 }
@@ -620,6 +628,9 @@ class Coda {
                 ordine: c['ordine']! as int,
                 titolo: c['titolo']! as String,
                 luogoNome: Value(c['luogo_nome'] as String?),
+                // Un gesto messo in coda prima della 3.2 non le ha.
+                lat: Value((c['lat'] as num?)?.toDouble()),
+                lon: Value((c['lon'] as num?)?.toDouble()),
                 durataStimataMin: c['durata_stimata_min']! as int,
                 oraInizio: Value(c['ora_inizio'] as String?),
                 stato: StatoTappa.daFare.codice,
@@ -787,10 +798,9 @@ class Coda {
       }
       if (op.gesto == GestoOffline.registraSpesa) {
         final spesa = spesaDi(op) ?? '';
-        final mai = await (_db.delete(_db.spese)..where(
-              (s) => s.id.equals(spesa) & s.versione.equals(0),
-            ))
-            .go();
+        final mai = await (_db.delete(
+          _db.spese,
+        )..where((s) => s.id.equals(spesa) & s.versione.equals(0))).go();
         if (mai > 0) {
           await (_db.delete(
             _db.speseQuote,

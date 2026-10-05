@@ -23,7 +23,7 @@ Trolley non chiama nessun modello ([04](../../prodotto/04-itinerario.md), regole
 
 ## Decisione
 
-**La richiesta** nasce sul telefono, in `dominio/itinerario.dart` (`scriviRichiesta`), da destinazione, giorni con la loro finestra, tappe già in programma, ritmo, interessi e una riga libera. Niente che dica chi è la persona. Chiede un blocco che comincia con `TROLLEY ITINERARIO`, poi `DESTINAZIONE: …`, poi per ogni giorno `GIORNO n · aaaa-mm-gg` e una riga per tappa: `ora | nome | tipo | minuti | zona`. I tipi sono quelli delle tappe (`visita`, `museo`, `pasto`, …).
+**La richiesta** nasce sul telefono, in `dominio/itinerario.dart` (`scriviRichiesta`), da destinazione, giorni con la loro finestra, tappe già in programma, ritmo, interessi e una riga libera. Niente che dica chi è la persona. Chiede un blocco che comincia con `TROLLEY ITINERARIO`, poi `DESTINAZIONE: …`, poi per ogni giorno `GIORNO n · aaaa-mm-gg` e una riga per tappa: `ora | nome | tipo | minuti | indirizzo | coordinate` (le coordinate dalla fase 3.2: `41.14686, -8.61479`, da lasciare vuote se l'assistente non è sicuro). I tipi sono quelli delle tappe (`visita`, `museo`, `pasto`, …).
 
 **La lettura** sta nello stesso file (`leggiItinerario`), perché richiesta e lettura sono le due facce dello stesso formato. Legge i blocchi di codice che sembrano un itinerario, o tutto il testo se non ce ne sono. Riconosce tabelle Markdown, elenchi, grassetti, campi in un altro ordine, tipi in inglese, durate come `90`, `1h30`, `2 ore`, `1,5 h`, e righe senza barre come `10:30 Livraria Lello (visita, 60 min)`. Senza tipo lo ricava dal nome quando non ci sono dubbi («Pranzo al mercato»); senza durata usa quella del tipo. Le righe che sembrano tappe ma non si leggono si contano e si dicono. I giorni si abbinano per data, e se la data non è del viaggio per numero.
 
@@ -39,3 +39,8 @@ Trolley non chiama nessun modello ([04](../../prodotto/04-itinerario.md), regole
 - Cambiare il formato vuol dire cambiare richiesta e lettura insieme, e le prove in `test/dominio/itinerario_test.dart` le tengono d'accordo, compresa quella che incollare la richiesta stessa non aggiunge tappe finte.
 - Le note sono la prima metà delle «note» di [02](../../prodotto/02-il-viaggio.md), regola 2: scriverle a mano è un'aggiunta, non un cambio di schema (`origine = 'scritta'`).
 - La tabella `configurazione` è il posto per la prossima cosa che deve cambiare senza un rilascio.
+
+## Revisione del 2026-10-05: le coordinate e le tappe doppie
+
+- **Le coordinate entrano nel formato**, in fondo alla riga, e la lettura le riconosce in un campo (`41.14686, -8.61479`, anche fra parentesi o con «°»), in due campi vicini, o fra le parentesi di una riga senza barre. Un numero è un grado solo con almeno tre decimali col punto: non si confonde con una durata o con un'ora. Sono una stima dell'assistente: prima di entrare nel viaggio si controlla che stiano entro 150 km dalle tappe o dalla meta (`postoPlausibile`), se no la tappa entra senza posto.
+- **Le tappe doppie non si aggiungono**: una proposta con il nome di una tappa dello stesso giorno, o di una proposta che la precede, si mostra spenta nell'anteprima e non si sceglie (`giaNelGiorno`). Una risposta incollata due volte non raddoppia la giornata.

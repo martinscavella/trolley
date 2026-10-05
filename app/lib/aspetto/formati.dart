@@ -306,3 +306,30 @@ String nomeCortoValuta(String codice) {
 
 /// Il simbolo con cui una valuta compare accanto a un importo: `€`, `MAD`.
 String simboloValuta(String codice) => codice == 'EUR' ? '€' : codice;
+
+/// Una distanza a piedi, arrotondata come la dice chi indica la strada:
+/// `35 m`, `120 m`, `1,2 km`, `12 km`.
+String distanza(double metri) {
+  if (metri < 100) return '${(metri / 5).round() * 5} m';
+  if (metri < 995) return '${(metri / 10).round() * 10} m';
+  if (metri < 9950) {
+    return '${(metri / 1000).toStringAsFixed(1).replaceAll('.', ',')} km';
+  }
+  return '${(metri / 1000).round()} km';
+}
+
+/// Quanto ci si mette a piedi: `1 min`, `6 min`, `1 h 05`.
+String tempoAPiedi(Duration d) {
+  final minuti = (d.inSeconds / 60).round();
+  return durataBreve(Duration(minutes: minuti < 1 ? 1 : minuti));
+}
+
+/// Un intervallo corto, per una riga stretta: `20–22 nov`, `30 nov – 2 dic`.
+String intervalloBreve(DateTime inizio, DateTime fine) {
+  if (inizio.year == fine.year && inizio.month == fine.month) {
+    return inizio.day == fine.day
+        ? dataBreve(inizio)
+        : '${inizio.day}–${fine.day} ${meseBreve(fine)}';
+  }
+  return '${dataBreve(inizio)} – ${dataBreve(fine)}';
+}

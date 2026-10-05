@@ -11,6 +11,9 @@ import 'dati/archivio.dart';
 import 'dati/database.dart';
 import 'dati/documenti.dart';
 import 'dati/file_del_telefono.dart';
+import 'dati/mappe.dart';
+import 'dati/mappe_del_telefono.dart';
+import 'dati/posizione.dart';
 import 'dati/rete.dart';
 import 'invito/ingresso_da_invito.dart';
 import 'misurazione/misurazione.dart';
@@ -48,6 +51,11 @@ Future<void> main() async {
       rete: rete,
       documenti: documenti,
       acquisizione: const AcquisizioneDelTelefono(),
+      mappe: geoapifyChiave.isEmpty
+          ? const MappeAssenti()
+          : MappeGeoapify(chiave: geoapifyChiave),
+      posizione: const PosizioneDelTelefono(),
+      mappeDelTelefono: const MappeDiSistema(),
       child: const TrolleyApp(),
     ),
   );

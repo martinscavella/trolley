@@ -14,6 +14,7 @@ library;
 
 import 'calendario.dart';
 import 'giornate.dart';
+import 'mappa.dart';
 import 'tappe.dart';
 import 'testo.dart';
 
@@ -135,14 +136,18 @@ String scriviRichiesta(Richiesta r) {
     intestazioneItinerario,
     'DESTINAZIONE: ${r.destinazione}',
     'GIORNO 1 · ${scriviData(esempio)}',
-    '10:30 | Nome della tappa | visita | 90 | Zona o indirizzo',
-    '13:00 | Nome del ristorante | pasto | 75 | Zona o indirizzo',
+    '10:30 | Nome della tappa | visita | 90 | Via e numero | 41.14686, -8.61479',
+    '13:00 | Nome del ristorante | pasto | 75 | Via e numero | 41.14522, -8.61131',
     '```',
     '',
     'Regole del formato:',
     '- una riga GIORNO per ogni giorno, con il numero e la data come sopra;',
-    '- una riga per tappa: ora di inizio, nome, tipo, durata in minuti, zona '
-        'o indirizzo, separati da «|»;',
+    '- una riga per tappa: ora di inizio, nome, tipo, durata in minuti, '
+        'indirizzo (o la zona), coordinate, separati da «|»;',
+    '- le coordinate sono quelle del posto, latitudine e longitudine in '
+        'gradi decimali con cinque decimali, separate da una virgola; se non '
+        'sei sicuro del punto esatto lascia il campo vuoto: meglio vuoto che '
+        'sbagliato;',
     '- il tipo è una di queste parole: '
         '${TipoTappa.values.map((t) => t.name).join(', ')};',
     '- nel blocco nient\'altro: consigli e spiegazioni, se vuoi, fuori dal '
@@ -178,6 +183,7 @@ class TappaProposta {
     this.tipo,
     this.ora,
     this.luogo,
+    this.posto,
   });
 
   final String titolo;
@@ -189,8 +195,13 @@ class TappaProposta {
   final Duration? ora;
   final String? luogo;
 
+  /// Dove sta, se l'assistente l'ha detto. È una stima: prima di entrare
+  /// nel viaggio si controlla che sia vicino alla meta ([postoPlausibile]).
+  final Coordinate? posto;
+
   @override
-  String toString() => 'TappaProposta($ora $titolo $tipo $durata $luogo)';
+  String toString() =>
+      'TappaProposta($ora $titolo $tipo $durata $luogo $posto)';
 }
 
 /// Un giorno della risposta, riconosciuto dal numero, dalla data o da tutti e
@@ -396,8 +407,27 @@ _Lettura _componi(Duration? ora, List<String> campi) {
   TipoTappa? tipo;
   Duration? durata;
   String? luogo;
-  for (final c in restanti) {
+  Coordinate? posto;
+  for (var i = 0; i < restanti.length; i++) {
+    final c = restanti[i];
     if (c.isEmpty) continue;
+    if (posto == null) {
+      // «41.14686, -8.61479» in un campo, o latitudine e longitudine in due.
+      final coppia = _leggiCoordinate(c);
+      if (coppia != null) {
+        posto = coppia;
+        continue;
+      }
+      final lat = _gradi(c);
+      final lon = i + 1 < restanti.length ? _gradi(restanti[i + 1]) : null;
+      if (lat != null && lon != null) {
+        posto = coordinate(lat, lon);
+        if (posto != null) {
+          i++;
+          continue;
+        }
+      }
+    }
     if (tipo == null) {
       final t = _leggiTipo(c);
       if (t != null) {
@@ -429,8 +459,27 @@ _Lettura _componi(Duration? ora, List<String> campi) {
       durata: durata ?? (tipo ?? TipoTappa.altro).durataProposta,
       ora: ora,
       luogo: luogo,
+      posto: posto,
     ),
   );
+}
+
+/// Un numero con almeno tre decimali, col punto: un grado, non una durata né
+/// un'ora.
+final _numeroGradi = RegExp(r'^-?\d{1,3}\.\d{3,}$');
+
+double? _gradi(String campo) {
+  final c = campo.trim().replaceAll('°', '');
+  return _numeroGradi.hasMatch(c) ? double.parse(c) : null;
+}
+
+/// «41.14686, -8.61479», anche fra parentesi o con «;».
+Coordinate? _leggiCoordinate(String campo) {
+  final m = RegExp(
+    r'^\(?\s*(-?\d{1,2}\.\d{3,})°?\s*[,;]\s*(-?\d{1,3}\.\d{3,})°?\s*\)?$',
+  ).firstMatch(campo.trim());
+  if (m == null) return null;
+  return coordinate(double.parse(m.group(1)!), double.parse(m.group(2)!));
 }
 
 /// I nomi finti dell'esempio nella richiesta.
@@ -597,10 +646,12 @@ ItinerarioAbbinato abbinaAiGiorni(
 Set<int> sceltePerCapienza({
   required Duration libero,
   required List<Duration> durate,
+  Set<int> escluse = const {},
 }) {
   var resta = libero;
   final scelte = <int>{};
   for (final (i, d) in durate.indexed) {
+    if (escluse.contains(i)) continue;
     if (d <= resta) {
       scelte.add(i);
       resta -= d;
@@ -621,3 +672,28 @@ bool altraDestinazione(String? letta, Iterable<String?> nomiDelViaggio) {
   if (l.isEmpty || nomi.isEmpty) return false;
   return !nomi.any((n) => l.contains(n) || n.contains(l));
 }
+
+/// Le proposte di un giorno che ci sono già: lo stesso nome di una tappa del
+/// giorno, o di una proposta che viene prima. Incollare due volte la stessa
+/// risposta non raddoppia la giornata. In giorni diversi lo stesso posto può
+/// tornare (08, casi limite).
+Set<int> giaNelGiorno(
+  List<TappaProposta> proposte,
+  Iterable<String> titoliDelGiorno,
+) {
+  final visti = {for (final t in titoliDelGiorno) normalizza(t)};
+  return {
+    for (final (i, p) in proposte.indexed)
+      if (!visti.add(normalizza(p.titolo))) i,
+  };
+}
+
+/// Quanto lontano dalla meta può stare un posto detto dall'assistente: una
+/// gita in giornata ci sta, un'altra città no.
+const raggioPlausibile = 150000.0;
+
+/// Se le coordinate dette dall'assistente sono credibili: vicine alla meta o
+/// alle tappe del viaggio. Senza un riferimento si prendono come sono.
+/// Quelle lontane si scartano, e la tappa entra senza posto.
+bool postoPlausibile(Coordinate posto, {Coordinate? vicinoA}) =>
+    vicinoA == null || distanzaInMetri(posto, vicinoA) <= raggioPlausibile;

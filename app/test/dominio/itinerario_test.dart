@@ -314,4 +314,124 @@ GIORNO 7
       expect(altraDestinazione('Lisbona', [null]), isFalse);
     });
   });
+
+  group('le coordinate dall\'assistente (fase 3.2)', () {
+    test(
+      'la richiesta le chiede, e dice di lasciarle vuote se non è sicuro',
+      () {
+        final r = scriviRichiesta(
+          Richiesta(
+            destinazione: 'Porto, Portogallo',
+            giorni: [
+              GiornoDaChiedere(
+                FinestraGiorno(
+                  data: DateTime.utc(2026, 10, 10),
+                  inizio: const Duration(hours: 10),
+                  fine: const Duration(hours: 18),
+                ),
+              ),
+            ],
+          ),
+        );
+        expect(r, contains('coordinate'));
+        expect(r, contains('cinque decimali'));
+        expect(r, contains('meglio vuoto che sbagliato'));
+        // L'esempio della richiesta, incollato per sbaglio, non è una tappa.
+        expect(leggiItinerario(r).vuoto, isTrue);
+      },
+    );
+
+    test('in un campo, dopo l\'indirizzo', () {
+      final t = leggiItinerario(
+        '10:30 | Livraria Lello | visita | 60 | Rua das Carmelitas 144 | '
+        '41.14686, -8.61479',
+      ).giorni.single.tappe.single;
+      expect(t.posto, (lat: 41.14686, lon: -8.61479));
+      expect(t.luogo, 'Rua das Carmelitas 144');
+      expect(t.durata, const Duration(minutes: 60));
+    });
+
+    test('in due campi, fra parentesi, con i gradi', () {
+      expect(
+        leggiItinerario(
+          '10:30 | Livraria Lello | visita | 60 | 41.14686 | -8.61479',
+        ).giorni.single.tappe.single.posto,
+        (lat: 41.14686, lon: -8.61479),
+      );
+      expect(
+        leggiItinerario(
+          '10:30 | Livraria Lello | visita | 60 | (41.14686°, -8.61479°)',
+        ).giorni.single.tappe.single.posto,
+        (lat: 41.14686, lon: -8.61479),
+      );
+      expect(
+        leggiItinerario(
+          '10:30 Livraria Lello (visita, 60 min, 41.14686, -8.61479)',
+        ).giorni.single.tappe.single.posto,
+        (lat: 41.14686, lon: -8.61479),
+      );
+    });
+
+    test('senza coordinate, o con numeri che non lo sono, niente posto', () {
+      for (final riga in [
+        '10:30 | Livraria Lello | visita | 60 | Rua das Carmelitas',
+        '10:30 | Livraria Lello | visita | 60 | 141.14686, -8.61479',
+        '10:30 | Livraria Lello | visita | 60 | 12.30',
+      ]) {
+        expect(
+          leggiItinerario(riga).giorni.single.tappe.single.posto,
+          isNull,
+          reason: riga,
+        );
+      }
+    });
+
+    test('valgono vicino al viaggio; un\'altra città no', () {
+      const porto = (lat: 41.152, lon: -8.622);
+      expect(
+        postoPlausibile((lat: 41.14686, lon: -8.61479), vicinoA: porto),
+        isTrue,
+      );
+      // Lisbona, a trecento chilometri: un errore dell'assistente.
+      expect(
+        postoPlausibile((lat: 38.7223, lon: -9.1393), vicinoA: porto),
+        isFalse,
+      );
+      expect(postoPlausibile((lat: 38.7223, lon: -9.1393)), isTrue);
+    });
+  });
+
+  group('le tappe che ci sono già', () {
+    TappaProposta p(String titolo) =>
+        TappaProposta(titolo: titolo, durata: const Duration(hours: 1));
+
+    test('lo stesso nome nello stesso giorno, maiuscole e accenti a parte', () {
+      expect(
+        giaNelGiorno(
+          [p('Livraria Lello'), p('Torre dos Clérigos'), p('Cena')],
+          ['livraria lello', 'Torre dos Clerigos'],
+        ),
+        {0, 1},
+      );
+    });
+
+    test('anche due volte nella stessa risposta: la seconda è un doppione', () {
+      expect(giaNelGiorno([p('Cena'), p('Pranzo'), p('cena')], []), {2});
+    });
+
+    test('le doppie non si scelgono, e non tolgono posto alle altre', () {
+      expect(
+        sceltePerCapienza(
+          libero: const Duration(hours: 2),
+          durate: const [
+            Duration(hours: 2),
+            Duration(hours: 1),
+            Duration(hours: 1),
+          ],
+          escluse: {0},
+        ),
+        {1, 2},
+      );
+    });
+  });
 }

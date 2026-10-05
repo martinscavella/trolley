@@ -96,6 +96,23 @@ class Tavolozza {
   Color get pericolo => Colori.pericolo;
 }
 
+/// I colori dei giorni sulla mappa del viaggio (tela, 54): una serie
+/// propria, non quella dei tipi di tappa, così il colore dice il giorno e
+/// basta. Scuri abbastanza da reggere il numero bianco, e diversi anche in
+/// luminosità. Dopo l'ultimo si ricomincia.
+const coloriDeiGiorni = [
+  Colori.cobalto,
+  Color(0xFFB4235F),
+  Color(0xFF0F7570),
+  Color(0xFF9A5B00),
+  Color(0xFF6B3FB8),
+  Color(0xFF3F6212),
+];
+
+/// Il colore del giorno in posizione [indice] nel viaggio, dallo 0.
+Color coloreGiorno(int indice) =>
+    coloriDeiGiorni[indice % coloriDeiGiorni.length];
+
 /// I colori delle iniziali delle persone: scuri, perché il bianco si legga.
 /// La stessa persona ha sempre lo stesso.
 const _coloriAvatar = [

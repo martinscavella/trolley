@@ -4,11 +4,14 @@ library;
 
 import 'dart:async';
 
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../aspetto/elementi.dart';
 import '../dati/coda.dart';
 import '../dati/database.dart';
+import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/tappe.dart';
 import '../misurazione/misurazione.dart';
@@ -106,5 +109,57 @@ Future<void> segnaLaTappa(
       'viaggio_id': viaggio.id,
       'durante_il_viaggio': durante,
     });
+  }
+}
+
+/// Svuota un giorno o tutto il viaggio (tela, 59 e 60): prima chiede, dicendo
+/// quante tappe vanno via, poi le toglie in una scrittura sola. Richiede la
+/// rete, come togliere una tappa: chi chiama lo dice prima, con il motivo.
+/// Non ha un evento, come togliere una tappa: nessuna soglia lo chiede (07).
+/// Restituisce quante ne sono uscite.
+Future<int> svuotaLeTappe(
+  BuildContext context, {
+  required String viaggioId,
+  required List<Tappa> tappe,
+  required String titolo,
+}) async {
+  if (tappe.isEmpty) return 0;
+  var conferma = false;
+  final quante = tappe.length;
+  await AdaptiveAlertDialog.show(
+    context: context,
+    title: titolo,
+    message:
+        'Spariscono per tutti quelli del viaggio. '
+        '${tappe.any((t) => t.statoTappa.segnata) ? 'Anche quelle già segnate. ' : ''}'
+        'Non si torna indietro.',
+    actions: [
+      AlertAction(
+        title: 'Annulla',
+        style: AlertActionStyle.cancel,
+        onPressed: () {},
+      ),
+      AlertAction(
+        title: quante == 1 ? 'Togli 1 tappa' : 'Togli $quante tappe',
+        style: AlertActionStyle.destructive,
+        onPressed: () => conferma = true,
+      ),
+    ],
+  );
+  if (!conferma || !context.mounted) return 0;
+  try {
+    final tolte = await Servizi.of(context).archivio
+        .togliTappe(viaggioId, [for (final t in tappe) t.id]);
+    HapticFeedback.mediumImpact();
+    if (context.mounted) {
+      mostraMessaggio(
+        context,
+        tolte == 1 ? 'Tolta 1 tappa.' : 'Tolte $tolte tappe.',
+      );
+    }
+    return tolte;
+  } on ErroreTrolley catch (e) {
+    if (context.mounted) mostraMessaggio(context, e.messaggio, errore: true);
+    return 0;
   }
 }

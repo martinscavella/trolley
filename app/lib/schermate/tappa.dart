@@ -20,11 +20,15 @@ import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
+import '../dominio/mappa.dart';
 import '../dominio/tappe.dart';
+import '../dominio/testo.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'due_versioni.dart';
+import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
+import 'luogo.dart';
 
 /// Una tappa: nuova, o da cambiare (04-itinerario.md, "Nuova tappa"; tela,
 /// 8 e 9). Cosa, che tipo — che propone la durata, sempre correggibile —,
@@ -69,7 +73,10 @@ class SchermataTappa extends StatefulWidget {
 
 class _SchermataTappaState extends State<SchermataTappa> {
   late final _titolo = TextEditingController(text: widget.tappa?.titolo);
-  late final _luogo = TextEditingController(text: widget.tappa?.luogoNome);
+  late String _luogo = widget.tappa?.luogoNome ?? '';
+
+  /// Dove sta, se il posto è stato cercato e trovato (tela, 56).
+  late Coordinate? _posto = widget.tappa?.posto;
   late TipoTappa? _tipo = widget.tappa == null
       ? TipoTappa.visita
       : widget.tappa!.tipoTappa;
@@ -91,7 +98,6 @@ class _SchermataTappaState extends State<SchermataTappa> {
   @override
   void dispose() {
     _titolo.dispose();
-    _luogo.dispose();
     super.dispose();
   }
 
@@ -122,18 +128,34 @@ class _SchermataTappaState extends State<SchermataTappa> {
     );
   }
 
+  /// Un'altra tappa del giorno scelto con lo stesso nome, se c'è: si
+  /// avvisa, non si blocca, perché due pranzi nello stesso posto possono
+  /// essere voluti.
+  Tappa? get _doppia {
+    final titolo = normalizza(_titolo.text);
+    final giorno = _giornoId;
+    if (titolo.isEmpty || giorno == null) return null;
+    return _altreNel(giorno)
+        .where((t) => normalizza(t.titolo) == titolo)
+        .firstOrNull;
+  }
+
   /// Cosa è cambiato, nei nomi del server. Vuoto per una tappa nuova.
   Map<String, Object?> get _cambiamenti {
     final t = widget.tappa;
     if (t == null) return const {};
-    final luogo = _luogo.text.trim();
+    final luogo = _luogo.trim();
     return {
       if (_titolo.text.trim() != t.titolo) 'titolo': _titolo.text.trim(),
       if (_tipo?.name != t.tipo) 'tipo': _tipo?.name,
       if (_durata != t.durata) 'durata_stimata_min': _durata.inMinutes,
       if (_ora != t.ora) 'ora_inizio': _ora == null ? null : scriviOra(_ora!),
-      if (luogo != (t.luogoNome ?? ''))
+      // Il posto va col suo nome: cambia l'uno, cambiano insieme.
+      if (luogo != (t.luogoNome ?? '') || _posto != t.posto) ...{
         'luogo_nome': luogo.isEmpty ? null : luogo,
+        'lat': _posto?.lat,
+        'lon': _posto?.lon,
+      },
     };
   }
 
@@ -186,6 +208,33 @@ class _SchermataTappaState extends State<SchermataTappa> {
     return libero.isNegative
         ? 'sfora di ${durataBreve(-libero)}'
         : 'restano ${durataBreve(libero)}';
+  }
+
+  /// «Dove?»: si cerca il posto (tela, 56), vicino alle tappe del viaggio o
+  /// alla sua meta. Senza rete si scrive soltanto.
+  Future<void> _scegliLuogo() async {
+    final vicino = await centroDelViaggio(widget.viaggio, widget.tappe);
+    if (!mounted) return;
+    final scelta = await apriFoglio<SceltaLuogo>(
+      context,
+      FoglioLuogo(
+        viaggioId: widget.viaggio.id,
+        iniziale: _luogo,
+        titolo: _titolo.text,
+        vicinoA: vicino?.centro,
+        dalleTappe: vicino?.dalleTappe ?? false,
+        cercaSubito: _posto == null,
+      ),
+    );
+    if (scelta == null || !mounted) return;
+    setState(() {
+      _luogo = scelta.testo;
+      _posto = scelta.posto;
+      // Un posto trovato dà il nome a una tappa che non ce l'ha ancora.
+      if (_titolo.text.trim().isEmpty && scelta.nome != null) {
+        _titolo.text = scelta.nome!;
+      }
+    });
   }
 
   Future<void> _scegliGiorno() => scegliAzione(context, [
@@ -246,7 +295,8 @@ class _SchermataTappaState extends State<SchermataTappa> {
           tipo: _tipo,
           durata: _durata,
           ora: _ora,
-          luogo: _luogo.text,
+          luogo: _luogo,
+          posto: _posto,
         ),
       ],
     );
@@ -325,6 +375,17 @@ class _SchermataTappaState extends State<SchermataTappa> {
             fuoco: _nuova,
             onCambia: (_) => setState(() {}),
           ),
+          if (_doppia case final doppia?)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+              child: Text(
+                'C\'è già «${doppia.titolo}» in questo giorno.',
+                style: Testi.didascalia.copyWith(
+                  color: Colori.pericolo,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           const SizedBox(height: 16),
           const _Etichetta('Che tipo?'),
           Wrap(
@@ -388,12 +449,20 @@ class _SchermataTappaState extends State<SchermataTappa> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Campo(
-                  controller: _luogo,
+                child: CampoScelta(
                   etichetta: 'Dove?',
+                  simbolo: icona(
+                    ios: CupertinoIcons.location,
+                    android: Icons.place_outlined,
+                  ),
                   segnaposto: 'Facoltativo',
-                  maiuscole: TextCapitalization.words,
-                  onCambia: (_) => setState(() {}),
+                  valore: _luogo.trim().isEmpty ? null : _luogo.trim(),
+                  righe: 2,
+                  onTap: _scegliLuogo,
+                  onCancella: () => setState(() {
+                    _luogo = '';
+                    _posto = null;
+                  }),
                 ),
               ),
               const SizedBox(width: 10),
@@ -412,6 +481,16 @@ class _SchermataTappaState extends State<SchermataTappa> {
               ),
             ],
           ),
+          if (_luogo.trim().isNotEmpty &&
+              _posto == null &&
+              Servizi.of(context).mappe.disponibili)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+              child: Text(
+                'Non è sulla mappa: tocca «Dove?» per cercare il posto.',
+                style: Testi.didascalia.copyWith(color: Colori.grafite),
+              ),
+            ),
           const SizedBox(height: 16),
           CampoScelta(
             etichetta: 'Giorno',

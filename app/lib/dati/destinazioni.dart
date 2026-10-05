@@ -187,6 +187,35 @@ class ElencoDestinazioni {
     return [for (final (_, i) in trovate.take(quante)) _voci[i]];
   }
 
+  /// La voce dell'elenco per la meta di un viaggio, che conserva solo il
+  /// nome della città e il paese (ADR-005): da qui le sue coordinate, per la
+  /// mappa. La città con quel nome — italiano, locale o inglese: una meta
+  /// scritta a mano può essere «Copenhagen» — in quel paese, o la più
+  /// probabile se il paese non c'è; altrimenti il paese intero. `null` se
+  /// l'elenco non la conosce.
+  Destinazione? trova({String? citta, String? paese}) {
+    final codice = paese?.toUpperCase();
+    final nome = citta == null ? '' : normalizza(citta);
+    if (nome.isNotEmpty) {
+      int? migliore;
+      for (var i = 0; i < _voci.length; i++) {
+        final d = _voci[i];
+        if (d.tipo != TipoDestinazione.citta) continue;
+        if (codice != null && d.paese != codice) continue;
+        if (!_nomi[i].any((n) => n.$1 == nome)) continue;
+        if (migliore == null || _rilevanza[i] > _rilevanza[migliore]) {
+          migliore = i;
+        }
+      }
+      if (migliore != null) return _voci[migliore];
+    }
+    if (codice == null) return null;
+    for (final d in _voci) {
+      if (d.tipo == TipoDestinazione.paese && d.paese == codice) return d;
+    }
+    return null;
+  }
+
   /// 0 il nome intero, 1 l'inizio del nome, 2 ogni parola cercata è l'inizio
   /// di una parola del nome; `null` se non corrisponde.
   static int? _corrispondenza(

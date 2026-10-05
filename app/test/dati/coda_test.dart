@@ -77,6 +77,43 @@ void main() {
     },
   );
 
+  test('con il posto trovato, le coordinate viaggiano con la tappa: nella '
+      'copia subito, sul server quando torna la rete (fase 3.2)', () async {
+    ambiente.rete.disponibile = false;
+    await coda.aggiungiTappa(
+      NuovaTappa(
+        id: 't1',
+        viaggioId: 'v',
+        giornoId: 'g1',
+        ordine: 1,
+        titolo: 'Livraria Lello',
+        tipo: TipoTappa.visita,
+        durata: const Duration(minutes: 60),
+        luogo: 'Rua das Carmelitas 144, Porto',
+        posto: (lat: 41.14686, lon: -8.61479),
+      ),
+    );
+    final locale = (await copia()).single;
+    expect((locale.lat, locale.lon), (41.14686, -8.61479));
+
+    ambiente.rete.disponibile = true;
+    await coda.svuota();
+    final arrivata = ambiente.server.tappe.single;
+    expect(arrivata['luogo_nome'], 'Rua das Carmelitas 144, Porto');
+    expect((arrivata['lat'], arrivata['lon']), (41.14686, -8.61479));
+    expect((await copia()).single.lat, 41.14686);
+  });
+
+  test('una tappa messa in coda prima della 3.2, senza coordinate, parte lo '
+      'stesso', () async {
+    ambiente.rete.disponibile = false;
+    await coda.aggiungiTappa(nuova('t1'));
+    expect((await copia()).single.lat, isNull);
+    ambiente.rete.disponibile = true;
+    await coda.svuota();
+    expect(ambiente.server.tappe.single['lat'], isNull);
+  });
+
   test('rimandata, non si aggiunge due volte', () async {
     ambiente.rete.disponibile = false;
     await coda.aggiungiTappa(nuova('t1'));
