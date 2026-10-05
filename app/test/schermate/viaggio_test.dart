@@ -187,4 +187,62 @@ void main() {
       containsPair('durata_prevista_giorni', 3),
     );
   });
+
+  testWidgets('un viaggio finito mai aperto su questo telefono, senza rete: '
+      'lo dice, e si conta che cosa mancava', (tester) async {
+    // All'apertura dell'app di un viaggio finito arriva solo il biglietto.
+    await sulServer(
+      tester,
+      rigaViaggio('f', stato: 'definito', inizio: fra(-40), fine: fra(-38)),
+      giorni: [rigaGiorno('f', fra(-40), '10:00:00', '24:00:00')],
+    );
+    ambiente.rete.disponibile = false;
+    await ambiente.monta(tester, const SchermataViaggio(viaggioId: 'f'));
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 5)),
+      );
+      await tester.pump();
+    }
+
+    expect(find.text('CONCLUSO'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'Le tappe, le spese e le liste di un viaggio finito '
+        'arrivano quando lo apri con la rete.',
+      ),
+      findsOneWidget,
+    );
+    final apertura = (await ambiente.eventi(tester))
+        .singleWhere((e) => e.nome == 'apertura_senza_rete');
+    expect(jsonDecode(apertura.proprieta), {
+      'schermata': 'viaggio',
+      'mancante': 'contenuto',
+    });
+  });
+
+  testWidgets('aperto con la rete, il viaggio finito arriva intero', (
+    tester,
+  ) async {
+    await sulServer(
+      tester,
+      rigaViaggio('f', stato: 'definito', inizio: fra(-40), fine: fra(-38)),
+      giorni: [rigaGiorno('f', fra(-40), '10:00:00', '24:00:00')],
+    );
+    await ambiente.monta(tester, const SchermataViaggio(viaggioId: 'f'));
+    for (var i = 0; i < 20; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 5)),
+      );
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+
+    expect(
+      await tester.runAsync(() => ambiente.archivio.copiaDelViaggio('f')),
+      isNotNull,
+    );
+    await tester.scrollUntilVisible(find.text('Giorni'), 300);
+    expect(find.text('Giorni'), findsOneWidget);
+  });
 }

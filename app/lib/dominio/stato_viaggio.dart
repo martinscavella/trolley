@@ -29,6 +29,11 @@ enum StatoViaggio {
 
   /// Si torna a idea solo da definito: in corso il viaggio sta già succedendo.
   bool get puoTornareIdea => this == definito;
+
+  /// La copia sul telefono lo tiene intero e lo riscarica a ogni apertura
+  /// dell'app (02 §1): tutto tranne i viaggi finiti, che si riscaricano quando
+  /// li si apre. Le idee e l'archivio pesano pochi byte.
+  bool get copiaSempreAggiornata => this != chiuso;
 }
 
 /// Lo stato di un viaggio a [oggi], dallo stato scritto sul server e dalle date.

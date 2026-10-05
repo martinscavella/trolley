@@ -20,6 +20,7 @@ import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
+import '../dominio/partenza.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
 import '../servizi.dart';
@@ -36,6 +37,7 @@ import 'mappa.dart';
 import 'note.dart';
 import 'nuovo_viaggio.dart';
 import 'partecipanti.dart';
+import 'prima_di_partire.dart';
 import 'problemi_coda.dart';
 import 'scelta_periodo.dart';
 import 'spese.dart';
@@ -61,21 +63,25 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
   @override
   void initState() {
     super.initState();
-    // Aprire il viaggio aggiorna la copia (02 §1). Senza rete resta quella che
-    // c'è, e va bene così.
+    // Aprire il viaggio aggiorna la sua copia (02 §1), anche se è finito.
+    // Senza rete resta quella che c'è, e va bene così.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      final archivio = Servizi.of(context).archivio;
-      unawaited(archivio.aggiornaCopia().catchError((_) {}));
-      // Senza rete, si conta l'apertura e se il viaggio mancava (07, H4).
+      final servizi = Servizi.of(context);
+      final archivio = servizi.archivio;
+      unawaited(
+        archivio.aggiornaCopia(viaggioId: widget.viaggioId).catchError((_) {}),
+      );
+      // Senza rete, si conta l'apertura e se mancava il viaggio, o quello
+      // che c'è dentro: un viaggio finito mai aperto su questo telefono (07,
+      // H4). Con la rete non si conta niente.
+      if (servizi.rete.disponibile) return;
       final c = context;
-      final presente = await archivio.osservaViaggio(widget.viaggioId).first;
+      final mancante = await archivio
+          .mancaDelViaggio(widget.viaggioId, DateTime.now())
+          .catchError((_) => null);
       if (c.mounted) {
-        await segnaAperturaSenzaRete(
-          c,
-          'viaggio',
-          mancante: presente == null ? 'viaggio' : null,
-        );
+        await segnaAperturaSenzaRete(c, 'viaggio', mancante: mancante);
       }
     });
   }
@@ -165,6 +171,16 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
               ),
               children: [
                 _Testata(viaggio: viaggio, stato: stato).entra(context),
+                if (stato == StatoViaggio.chiuso)
+                  _CopiaDelViaggioFinito(viaggioId: viaggio.id),
+                if (giorniAllaPartenza(
+                      stato: stato,
+                      inizio: viaggio.inizio,
+                      oggi: DateTime.now(),
+                    ) !=
+                    null)
+                  IngressoPrimaDiPartire(viaggioId: viaggio.id)
+                      .entra(context, ritardo: Ritmo.passo),
                 if (stato == StatoViaggio.idea) _Sollecito(viaggio: viaggio),
                 // Il primo minuto di chi è appena entrato da un invito (03,
                 // regola 9; tela, 29), e chi c'è.
@@ -388,6 +404,56 @@ class _Testata extends StatelessWidget {
       },
     );
   }
+}
+
+/// Un viaggio finito non si riscarica a ogni apertura dell'app, ma quando lo
+/// si apre (02 §1). Senza rete lo si dice: quello che si vede è la copia
+/// dell'ultima volta, oppure — se su questo telefono non lo si è mai aperto —
+/// non c'è ancora.
+class _CopiaDelViaggioFinito extends StatelessWidget {
+  const _CopiaDelViaggioFinito({required this.viaggioId});
+
+  final String viaggioId;
+
+  @override
+  Widget build(BuildContext context) => ConLaRete(
+    builder: (context, rete) {
+      if (rete) return const SizedBox.shrink();
+      final archivio = Servizi.of(context).archivio;
+      return StreamBuilder<DateTime?>(
+        stream: archivio.osservaCopiaDelViaggio(viaggioId),
+        builder: (context, copia) => StreamBuilder<List<Giorno>>(
+          stream: archivio.osservaGiorni(viaggioId),
+          builder: (context, giorni) {
+            if (!copia.hasData && !giorni.hasData) {
+              return const SizedBox.shrink();
+            }
+            final il = copia.data;
+            final vuoto = il == null && (giorni.data?.isEmpty ?? true);
+            return Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Avviso(
+                icona: icona(
+                  ios: CupertinoIcons.wifi_slash,
+                  android: Icons.wifi_off_rounded,
+                ),
+                inizio: 'Sei offline.',
+                testo: vuoto
+                    ? 'Le tappe, le spese e le liste di un viaggio finito '
+                          'arrivano quando lo apri con la rete.'
+                    : il == null
+                    ? 'Stai vedendo la copia sul telefono: un viaggio finito '
+                          'si aggiorna quando lo apri con la rete.'
+                    : 'Stai vedendo la copia sul telefono, aggiornata '
+                          '${quantoFa(il, DateTime.now())}: un viaggio finito '
+                          'si aggiorna quando lo apri con la rete.',
+              ),
+            );
+          },
+        ),
+      );
+    },
+  );
 }
 
 /// Un viaggio tornato idea con dei documenti: restano sul telefono, fuori

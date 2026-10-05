@@ -843,7 +843,9 @@ class _GiornataSenzaTappe extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: finita ? Colori.verde.withValues(alpha: 0.12) : _crema,
+                color: finita
+                    ? Colori.verde.withValues(alpha: 0.12)
+                    : Colori.crema,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -854,7 +856,7 @@ class _GiornataSenzaTappe extends StatelessWidget {
                         android: Icons.wb_sunny_outlined,
                       ),
                 size: 22,
-                color: finita ? Colori.verde : _ocra,
+                color: finita ? Colori.verde : Colori.ocra,
               ),
             ),
             const SizedBox(width: 12),
@@ -888,10 +890,6 @@ class _GiornataSenzaTappe extends StatelessWidget {
       ],
     ),
   );
-
-  /// Il sole della giornata libera (tela, 47).
-  static const _crema = Color(0xFFFFF4D1);
-  static const _ocra = Color(0xFF8A6A00);
 }
 
 /// L'etichetta piccola sopra una riga: «DOPO · TRA 25 MINUTI».

@@ -63,6 +63,16 @@ abstract final class Colori {
   /// Il fondo di un avviso d'errore.
   static const rosa = Color(0xFFFDEDEB);
 
+  /// Il fondo di una cosa a posto, dietro la spunta verde (tela, 56 e 90).
+  static const menta = Color(0xFFE3F0EA);
+
+  /// Il fondo di una cosa ancora da fare, che non è un errore: la giornata
+  /// libera, la valigia a metà (tela, 47 e 56).
+  static const crema = Color(0xFFFFF4D1);
+
+  /// L'icona sul fondo crema.
+  static const ocra = Color(0xFF8A6A00);
+
   static const bianco = Color(0xFFFFFFFF);
 }
 

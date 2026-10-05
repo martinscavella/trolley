@@ -10,12 +10,15 @@ Serve a **leggere senza rete**. È una copia: si può cancellare e riscaricare s
 
 | Cosa | Quando si aggiorna |
 |---|---|
-| Viaggi attivi, partecipanti, giorni e tappe | All'apertura dell'app e all'apertura del viaggio |
-| Spese e liste del viaggio attivo | Idem |
-| Ultimo tasso di cambio per le valute in uso | Una volta al giorno |
-| **Tutto il viaggio corrente, per intero** | Su richiesta esplicita: "prepara per l'uso senza rete", nella schermata di preparazione alla partenza |
+| L'elenco dei viaggi, con chi partecipa | All'apertura dell'app e all'apertura di un viaggio |
+| I viaggi non ancora finiti, per intero: giorni, tappe, spese, liste, note | All'apertura dell'app; un viaggio solo quando lo si apre |
+| Un viaggio finito, per intero | Quando lo si apre. Fra un'apertura e l'altra resta com'era, con la sua età |
+| Ultimo tasso di cambio per le valute in uso | Al massimo ogni sei ore |
+| **Tutto il viaggio, adesso** | Su richiesta esplicita: "Preparalo per l'uso senza rete", in «Prima di partire». Riscarica il viaggio e i tassi anche se sono freschi |
 
-**Cosa non entra nella copia**: viaggi passati, parte pubblica, ricerca. Si aprono con la rete.
+**Cosa non entra nella copia**: parte pubblica, ricerca. Si aprono con la rete. Un viaggio finito che su quel telefono non si è mai aperto ha solo il biglietto: senza rete lo dice.
+
+**Perché i viaggi non finiti stanno interi, e non solo oggi e domani.** La prima stesura teneva delle tappe solo oggi e domani, e il resto su richiesta. Ma le schermate leggono sempre dalla copia, e un viaggio pesa pochi byte: tagliarla avrebbe reso l'app peggiore senza rete per non risparmiare niente. La selezione sta in che cosa si riscarica e quando, che è quello che cresce con gli anni di viaggi (fase 3.3, [decisioni](../decisioni/prodotto.md)). L'ultimo scaricamento di ogni viaggio lo segna il telefono.
 
 **La preparazione si chiede prima della partenza, non quando la rete manca già.** È il momento in cui la persona sta già controllando di non dimenticare niente, e una riga in più in quella lista costa zero attenzione.
 

@@ -583,6 +583,7 @@ class PulsanteGrande extends StatelessWidget {
     this.motivo,
     this.pericolo = false,
     this.icona,
+    this.colore,
   });
 
   final String etichetta;
@@ -600,10 +601,14 @@ class PulsanteGrande extends StatelessWidget {
   final bool pericolo;
   final IconData? icona;
 
+  /// Il colore al posto dell'inchiostro: il cobalto di un'azione del viaggio
+  /// che sta dentro una scheda (tela, 56).
+  final Color? colore;
+
   @override
   Widget build(BuildContext context) {
     final attivo = !inCorso && motivo == null && onPressed != null;
-    final tinta = pericolo ? Colori.pericolo : Colori.inchiostro;
+    final tinta = pericolo ? Colori.pericolo : colore ?? Colori.inchiostro;
     final testo = secondario ? tinta : Colori.bianco;
     final pulsante = Semantics(
       enabled: attivo,

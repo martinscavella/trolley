@@ -222,6 +222,21 @@ String quantoFa(DateTime quando, DateTime adesso) {
   return giorni <= 1 ? 'ieri' : '$giorni giorni fa';
 }
 
+/// Quando è stata aggiornata la copia, per chi deve fidarsene: `oggi alle
+/// 22:10`, `ieri alle 09:05`, `il 3 ottobre alle 22:10`, `l'8 ottobre alle
+/// 07:30`.
+String quandoAggiornato(DateTime quando, DateTime adesso) {
+  final locale = quando.toLocal();
+  final giorni = soloData(adesso.toLocal()).difference(soloData(locale)).inDays;
+  final alle =
+      'alle ${ora(Duration(hours: locale.hour, minutes: locale.minute))}';
+  if (giorni <= 0) return 'oggi $alle';
+  if (giorni == 1) return 'ieri $alle';
+  final apostrofo = locale.day == 1 || locale.day == 8 || locale.day == 11;
+  return '${apostrofo ? 'l\'' : 'il '}${locale.day} '
+      '${nomiDeiMesi[locale.month - 1]} $alle';
+}
+
 /// Che cos'è un documento, in breve: `PDF · 2 pagine`, `Scansione`, `Foto`.
 String dettaglioDocumento({
   required FormatoDocumento formato,

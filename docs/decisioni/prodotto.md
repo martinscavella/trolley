@@ -352,6 +352,16 @@ Deciso provando la 3.2 sul telefono, dopo aver incollato due volte la stessa ris
 - **Si svuota un giorno o tutto il viaggio**: «Svuota la giornata» in fondo alla giornata, «Togli tutte le tappe del viaggio» sotto i giorni. La conferma dice quante tappe vanno via, e se fra queste ce ne sono di già segnate. Richiede la rete, come togliere una tappa; le tappe si marcano, non si cancellano, e vanno via per tutti.
 - **Il posto lo può dare l'assistente.** La richiesta chiede anche le coordinate di ogni tappa, e di lasciarle vuote se non è sicuro: meglio vuoto che sbagliato. Sono una stima: valgono solo entro 150 km dalle tappe del viaggio o dalla sua meta, se no la tappa entra senza posto e lo si cerca in «Dove?». Le coordinate dell'assistente non vengono da un fornitore, quindi si conservano senza vincoli ([ADR-010](../tecnico/adr/010-itinerario-incollato.md)).
 
+### Prima di partire, e che cosa tiene il telefono (fase 3.3)
+
+Scelto con la fase 3.3 (tela, 56, 57, 90–92), il 5 ottobre 2026.
+
+- **La copia tiene interi i viaggi non ancora finiti**: idee, archivio, in programma, in corso, con tutti i loro giorni e non solo oggi e domani come diceva [01](../tecnico/01-modello-dati.md). Pesano pochi byte, le schermate leggono sempre dalla copia, e tagliarla avrebbe reso l'app peggiore senza rete senza risparmiare niente. Quello che è selettivo è **che cosa si riscarica e quando**: all'apertura dell'app i viaggi non finiti; aprendo un viaggio, quello solo; un viaggio finito non si riscarica a ogni apertura, ma quando lo si apre, e senza rete dice di quando è la sua copia — o che non c'è ancora, se su quel telefono non lo si è mai aperto.
+- **«Prima di partire»** compare nel viaggio, sotto il biglietto, da due giorni prima fino al giorno della partenza compreso: quel giorno il viaggio è già in corso, ma la valigia spesso si chiude la mattina. Dice quante cose chiedono ancora uno sguardo, o che è tutto a posto.
+- **Il giro di controllo** ha quattro righe: i **documenti** sul telefono (nessuno è un suggerimento, un file sparito è un problema); la **valigia** — la propria lista e le voci della lista del viaggio che porti tu, più quante voci del viaggio non porta nessuno —; le **tappe senza un posto**, che non si vedranno sulla mappa; e se il viaggio è **pronto senza rete**. «Sistemale» apre l'elenco delle tappe senza posto: ognuna si cerca in «Dove?» e si salva subito, e il foglio resta aperto per la prossima. Una tappa senza posto va bene lo stesso.
+- **«Preparalo per l'uso senza rete»** scarica l'ultima versione di tutto il viaggio e i tassi di cambio, anche se quelli sul telefono sono di poche ore fa, e lo ricorda su quel telefono. Richiede la rete e senza lo dice prima. Fatto, dice che cosa c'è sul telefono, di quando è, e che mappa e navigazione restano dalla rete (08, regola 6). Le mappe scaricabili restano fuori.
+- **La notifica prima della partenza** con quello che manca è dell'insieme delle notifiche ([14](../prodotto/14-notifiche.md)).
+
 ---
 
 ## Ricordo e traguardi

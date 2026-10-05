@@ -158,15 +158,22 @@ class Archivio {
 
   // ─── Copia di lettura ───────────────────────────────────────────────────
 
-  /// Riscarica la copia dei viaggi, con i loro giorni, le tappe, le spese, le
-  /// cose da portare, le note e chi partecipa. Prima manda quello che è in coda, così la copia lo comprende;
-  /// quello che non è partito ci si rimette sopra. Le idee archiviate ci sono
-  /// anche loro: pesano pochi byte, e così l'archivio si legge anche senza
-  /// rete. Se qualcosa va storto la copia resta quella di prima: meglio vecchia
-  /// e dichiarata tale che vuota.
-  Future<void> aggiornaCopia() async {
+  /// Riscarica la copia (02 §1). Prima manda quello che è in coda, così la
+  /// copia lo comprende; quello che non è partito ci si rimette sopra. Se
+  /// qualcosa va storto la copia resta quella di prima: meglio vecchia e
+  /// dichiarata tale che vuota.
+  ///
+  /// I viaggi e chi partecipa arrivano sempre tutti: sono l'elenco. Quello che
+  /// c'è dentro — giorni, tappe, spese, cose da portare, note — è selettivo:
+  /// senza [viaggioId], dei viaggi non ancora finiti (le idee archiviate
+  /// comprese: pesano pochi byte, e così l'archivio si legge anche senza
+  /// rete); con [viaggioId], di quel viaggio solo, com'è quando lo si apre. Un
+  /// viaggio finito tiene la copia dell'ultima volta che lo si è aperto, e la
+  /// dice con la sua età ([copiaDelViaggio]).
+  Future<void> aggiornaCopia({String? viaggioId}) async {
     await coda.svuota();
     final io = _io;
+    final oggi = DateTime.now();
     final (
       viaggi,
       lasciati,
@@ -178,6 +185,7 @@ class Archivio {
       quote,
       voci,
       note,
+      interi,
     ) = await _alServer(() async {
       // I viaggi da cui si è usciti o si è stati tolti: il viaggio non si
       // legge più, la propria partecipazione sì, e dice perché.
@@ -195,63 +203,49 @@ class Archivio {
               .inFilter('stato', ['uscito', 'rimosso']),
       ]);
       final ids = [for (final v in viaggi) v['id'] as String];
-      if (ids.isEmpty) {
-        return (
-          viaggi,
-          lasciati,
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-          <Map<String, dynamic>>[],
-        );
-      }
+      final interi = [
+        for (final v in viaggi)
+          if (viaggioId == null
+              ? _statoDellaRiga(v, oggi).copiaSempreAggiornata
+              : v['id'] == viaggioId)
+            v['id'] as String,
+      ];
+      const nessuna = <Map<String, dynamic>>[];
       // Anche le tappe dei giorni usciti dalle date: sono da ricollocare.
       // Delle liste arrivano quelle del viaggio e le proprie personali: le
       // personali degli altri il server non le manda (05, regola 3).
+      Future<List<Map<String, dynamic>>> dentro(String tabella) =>
+          interi.isEmpty
+          ? Future.value(nessuna)
+          : _server
+                .from(tabella)
+                .select()
+                .inFilter('viaggio_id', interi)
+                .isFilter('eliminato_il', null);
       final (partecipazioni, giorni, tappe, spese, quote, voci, note) = await (
-        _server.from('partecipazione').select().inFilter('viaggio_id', ids),
-        _server
-            .from('giorno')
-            .select()
-            .inFilter('viaggio_id', ids)
-            .isFilter('eliminato_il', null),
-        _server
-            .from('tappa')
-            .select()
-            .inFilter('viaggio_id', ids)
-            .isFilter('eliminato_il', null),
-        _server
-            .from('spesa')
-            .select()
-            .inFilter('viaggio_id', ids)
-            .isFilter('eliminato_il', null),
-        _server
-            .from('spesa_quota')
-            .select()
-            .inFilter('viaggio_id', ids)
-            .isFilter('eliminato_il', null),
-        _server
-            .from('voce_lista')
-            .select()
-            .inFilter('viaggio_id', ids)
-            .isFilter('eliminato_il', null),
-        _server
-            .from('nota')
-            .select()
-            .inFilter('viaggio_id', ids)
-            .isFilter('eliminato_il', null),
+        ids.isEmpty
+            ? Future.value(nessuna)
+            : _server
+                  .from('partecipazione')
+                  .select()
+                  .inFilter('viaggio_id', ids),
+        dentro('giorno'),
+        dentro('tappa'),
+        dentro('spesa'),
+        dentro('spesa_quota'),
+        dentro('voce_lista'),
+        dentro('nota'),
       ).wait;
-      final utenti = await _server
-          .from('utente')
-          .select('id, nome, versione, eliminato_il')
-          .inFilter(
-            'id',
-            {for (final p in partecipazioni) p['utente_id'] as String}.toList(),
-          );
+      final utenti = partecipazioni.isEmpty
+          ? nessuna
+          : await _server
+                .from('utente')
+                .select('id, nome, versione, eliminato_il')
+                .inFilter(
+                  'id',
+                  {for (final p in partecipazioni) p['utente_id'] as String}
+                      .toList(),
+                );
       return (
         viaggi,
         lasciati,
@@ -263,13 +257,15 @@ class Archivio {
         quote,
         voci,
         note,
+        interi.toSet(),
       );
     });
 
     final adesso = DateTime.now().toUtc();
+    final visibili = {for (final v in viaggi) v['id'] as String};
     await _db.transaction(() async {
       await _segnaLasciati(
-        visibili: {for (final v in viaggi) v['id'] as String},
+        visibili: visibili,
         lasciati: {
           for (final p in lasciati)
             p['viaggio_id'] as String: p['stato'] as String,
@@ -277,12 +273,31 @@ class Archivio {
       );
       await _db.delete(_db.viaggi).go();
       await _db.delete(_db.partecipazioni).go();
-      await _db.delete(_db.giorni).go();
-      await _db.delete(_db.tappe).go();
-      await _db.delete(_db.spese).go();
-      await _db.delete(_db.speseQuote).go();
-      await _db.delete(_db.vociLista).go();
-      await _db.delete(_db.note).go();
+      // Di quello che c'è dentro si rifà solo quello che è arrivato, e si
+      // butta quello dei viaggi che non ci sono più. Il resto resta com'era.
+      Expression<bool> daRifare(GeneratedColumn<String> viaggio) =>
+          viaggio.isIn(interi) | viaggio.isNotIn(visibili);
+      await (_db.delete(_db.giorni)..where((r) => daRifare(r.viaggioId))).go();
+      await (_db.delete(_db.tappe)..where((r) => daRifare(r.viaggioId))).go();
+      await (_db.delete(_db.spese)..where((r) => daRifare(r.viaggioId))).go();
+      await (_db.delete(
+        _db.speseQuote,
+      )..where((r) => daRifare(r.viaggioId))).go();
+      await (_db.delete(
+        _db.vociLista,
+      )..where((r) => daRifare(r.viaggioId))).go();
+      await (_db.delete(_db.note)..where((r) => daRifare(r.viaggioId))).go();
+      await (_db.delete(_db.impostazioni)..where(
+            (i) =>
+                (i.chiave.like('$_copia%') | i.chiave.like('$_preparato%')) &
+                i.chiave.isIn([
+                  for (final id in visibili) ...[
+                    '$_copia$id',
+                    '$_preparato$id',
+                  ],
+                ]).not(),
+          ))
+          .go();
       // Il proprio profilo completo non si butta: dagli altri arriva solo il nome.
       await (_db.delete(
         _db.utenti,
@@ -305,12 +320,97 @@ class Archivio {
           for (final r in utenti)
             if (r['id'] != io) _utente(r, adesso),
         ]);
+        b.insertAllOnConflictUpdate(_db.impostazioni, [
+          for (final id in interi)
+            ImpostazioniCompanion.insert(
+              chiave: '$_copia$id',
+              valore: adesso.toIso8601String(),
+            ),
+        ]);
       });
       await coda.riapplica();
     });
     await aggiornaTassi().catchError((_) {});
     await aggiornaConfigurazione().catchError((_) {});
   }
+
+  static const _copia = 'copia:';
+
+  /// Lo stato di un viaggio dalla sua riga del server, per decidere se la
+  /// copia lo tiene intero.
+  static StatoViaggio _statoDellaRiga(Map<String, dynamic> r, DateTime oggi) =>
+      statoDelViaggio(
+        registrato: r['stato'] as String,
+        inizio: leggiData(r['data_inizio'] as String?),
+        fine: leggiData(r['data_fine'] as String?),
+        oggi: oggi,
+      );
+
+  /// Quando questo telefono ha scaricato l'ultima volta quello che c'è dentro
+  /// il viaggio: giorni, tappe, spese, liste, note. `null` se non l'ha mai
+  /// fatto — un viaggio finito che su questo telefono non si è mai aperto.
+  Stream<DateTime?> osservaCopiaDelViaggio(String viaggioId) =>
+      (_db.select(_db.impostazioni)
+            ..where((i) => i.chiave.equals('$_copia$viaggioId')))
+          .watchSingleOrNull()
+          .map((r) => r == null ? null : DateTime.tryParse(r.valore));
+
+  /// Come [osservaCopiaDelViaggio], una volta.
+  Future<DateTime?> copiaDelViaggio(String viaggioId) async {
+    final riga = await (_db.select(
+      _db.impostazioni,
+    )..where((i) => i.chiave.equals('$_copia$viaggioId'))).getSingleOrNull();
+    return riga == null ? null : DateTime.tryParse(riga.valore);
+  }
+
+  /// Che cosa manca sul telefono di un viaggio aperto senza rete (07:
+  /// `apertura_senza_rete`, H4): `viaggio` se non c'è; `contenuto` se è un
+  /// viaggio finito di cui non si è mai scaricato quello che c'è dentro;
+  /// `null` se c'è tutto.
+  Future<String?> mancaDelViaggio(String viaggioId, DateTime oggi) async {
+    final viaggio = await (_db.select(
+      _db.viaggi,
+    )..where((v) => v.id.equals(viaggioId))).getSingleOrNull();
+    if (viaggio == null) return 'viaggio';
+    if (viaggio.statoA(oggi).copiaSempreAggiornata) return null;
+    if (await copiaDelViaggio(viaggioId) != null) return null;
+    final giorni =
+        await (_db.select(_db.giorni)
+              ..where((g) => g.viaggioId.equals(viaggioId))
+              ..limit(1))
+            .get();
+    return giorni.isEmpty ? 'contenuto' : null;
+  }
+
+  // ─── Prima di partire ───────────────────────────────────────────────────
+
+  static const _preparato = 'preparato:';
+
+  /// «Preparalo per l'uso senza rete» (09, regola 6; 02 §1): l'ultima versione
+  /// di tutto il viaggio, e i tassi di cambio di adesso anche se quelli sul
+  /// telefono sono di poche ore fa. Richiede la rete: senza, lo dice con un
+  /// [ErroreTrolley] e il viaggio resta com'era. I tassi sono un di più: se
+  /// non arrivano, restano gli ultimi, con la loro data.
+  Future<void> preparaViaggio(String viaggioId) async {
+    await aggiornaCopia(viaggioId: viaggioId);
+    await aggiornaTassi(forza: true).catchError((_) {});
+    await _db
+        .into(_db.impostazioni)
+        .insertOnConflictUpdate(
+          ImpostazioniCompanion.insert(
+            chiave: '$_preparato$viaggioId',
+            valore: DateTime.now().toUtc().toIso8601String(),
+          ),
+        );
+  }
+
+  /// Quando la persona ha preparato il viaggio su questo telefono, se l'ha
+  /// fatto.
+  Stream<DateTime?> osservaPreparato(String viaggioId) =>
+      (_db.select(_db.impostazioni)
+            ..where((i) => i.chiave.equals('$_preparato$viaggioId')))
+          .watchSingleOrNull()
+          .map((r) => r == null ? null : DateTime.tryParse(r.valore));
 
   /// Riscarica la configurazione: poche righe, e cambiano senza un rilascio.
   /// Senza rete resta l'ultima.
@@ -339,15 +439,17 @@ class Archivio {
   static const durataTassi = Duration(hours: 6);
 
   /// Riscarica i tassi di cambio, se quelli sul telefono hanno più di
-  /// [durataTassi]. Senza rete restano gli ultimi: si usano dicendo di quando
-  /// sono (06, regola 6).
-  Future<void> aggiornaTassi({DateTime? adesso}) async {
+  /// [durataTassi] o se si [forza]. Senza rete restano gli ultimi: si usano
+  /// dicendo di quando sono (06, regola 6).
+  Future<void> aggiornaTassi({DateTime? adesso, bool forza = false}) async {
     final ora = (adesso ?? DateTime.now()).toUtc();
     final ultimo = await (_db.selectOnly(
       _db.tassiCambio,
     )..addColumns([_db.tassiCambio.scaricatoIl.max()])).getSingle();
     final il = ultimo.read(_db.tassiCambio.scaricatoIl.max());
-    if (il != null && ora.difference(il.toUtc()) < durataTassi) return;
+    if (!forza && il != null && ora.difference(il.toUtc()) < durataTassi) {
+      return;
+    }
     final righe = await _alServer(
       () => _server.from('tasso_cambio').select('valuta, per_euro, del'),
     );
@@ -859,13 +961,16 @@ class Archivio {
   });
 
   /// I segni di questo telefono legati a un viaggio: il benvenuto, il
-  /// sollecito dell'idea, le voci tornate libere già viste.
+  /// sollecito dell'idea, le voci tornate libere già viste, quando lo si è
+  /// scaricato e preparato.
   Future<void> _dimenticaSegni(String viaggioId) =>
       (_db.delete(_db.impostazioni)..where(
             (i) => i.chiave.isIn([
               '$_benvenuto$viaggioId',
               '$_vociLasciate$viaggioId',
               _chiaveSollecito(viaggioId),
+              '$_copia$viaggioId',
+              '$_preparato$viaggioId',
             ]),
           ))
           .go();
@@ -981,7 +1086,7 @@ class Archivio {
           .select(),
     );
     if (righe.isEmpty) {
-      await aggiornaCopia().catchError((_) {});
+      await aggiornaCopia(viaggioId: viaggio.id).catchError((_) {});
       throw const ErroreTrolley(
         'Questo viaggio è cambiato nel frattempo. Ora vedi com\'è adesso.',
       );
@@ -1033,7 +1138,7 @@ class Archivio {
                 ))
                 .getSingleOrNull() !=
             null;
-    await aggiornaCopia();
+    await aggiornaCopia(viaggioId: viaggioId);
     return (viaggioId: viaggioId, giaDentro: giaDentro);
   }
 
@@ -1489,7 +1594,7 @@ class Archivio {
           .select(),
     );
     if (righe.isEmpty) {
-      await aggiornaCopia().catchError((_) {});
+      await aggiornaCopia(viaggioId: nota.viaggioId).catchError((_) {});
       return;
     }
     await _nellaCopiaNota(righe.single);
@@ -1595,9 +1700,26 @@ class Archivio {
   }
 
   Future<Never> _nonCePiu(_Versionata cosa) async {
-    await aggiornaCopia().catchError((_) {});
+    // Anche se il viaggio è finito, e la copia non lo riscarica da sola.
+    final viaggioId = await _viaggioDi(cosa.cosa, cosa.id);
+    await aggiornaCopia(viaggioId: viaggioId).catchError((_) {});
     throw ErroreTrolley(cosa.nonCePiu);
   }
+
+  /// Il viaggio di una cosa che sta nella copia.
+  Future<String?> _viaggioDi(CosaInConflitto cosa, String id) async =>
+      switch (cosa) {
+        CosaInConflitto.viaggio => id,
+        CosaInConflitto.tappa => (await (_db.select(
+          _db.tappe,
+        )..where((t) => t.id.equals(id))).getSingleOrNull())?.viaggioId,
+        CosaInConflitto.spesa => (await (_db.select(
+          _db.spese,
+        )..where((t) => t.id.equals(id))).getSingleOrNull())?.viaggioId,
+        CosaInConflitto.voce => (await (_db.select(
+          _db.vociLista,
+        )..where((t) => t.id.equals(id))).getSingleOrNull())?.viaggioId,
+      };
 
   _Versionata _versionata(CosaInConflitto cosa, String id) => switch (cosa) {
     CosaInConflitto.viaggio => _viaggioVersionato(id),
@@ -1738,8 +1860,8 @@ class Archivio {
     id: id,
     ritratto: ritrattoViaggio,
     rileggi: _rileggi('viaggio', id),
-    // Le date cambiate si portano dietro i giorni: si riscarica tutto.
-    nellaCopia: (_) => aggiornaCopia().catchError((_) {}),
+    // Le date cambiate si portano dietro i giorni: si riscarica il viaggio.
+    nellaCopia: (_) => aggiornaCopia(viaggioId: id).catchError((_) {}),
     scrivi: (mia, rif, versione) async {
       final inizio = leggiData(mia['data_inizio'] as String?);
       final fine = leggiData(mia['data_fine'] as String?);

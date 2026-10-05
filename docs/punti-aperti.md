@@ -45,7 +45,7 @@ La fase 1.2 (tappe: durata, ordine, stato, la coda per aggiungerle e segnarle se
 | Voce | Perché aspetta | Quando |
 |---|---|---|
 | **Promemoria di fine giornata** sulle tappe non segnate (04, regola 18) | È una notifica, e il permesso si chiede quando serve davvero ([14](prodotto/14-notifiche.md)) | Con le notifiche |
-| **Copia delle tappe solo di oggi e domani** (01, "Dove vive ogni entità") | Oggi la copia prende tutte le tappe dei viaggi: pesano pochi byte. La copia selettiva e la preparazione prima della partenza sono la 3.3 | Fase 3.3 |
+| ~~**Copia delle tappe solo di oggi e domani**~~ (01, "Dove vive ogni entità") | Deciso nella 3.3: i viaggi non finiti stanno interi, perché pesano pochi byte e le schermate leggono dalla copia; è selettivo che cosa si riscarica e quando ([02](tecnico/02-sincronizzazione-e-offline.md), [decisioni](decisioni/prodotto.md)) | ✅ Fase 3.3 |
 | **Togliere il segno di eccedente** da una tappa | Il segno resta sulla riga; la giornata lo mostra solo finché sfora davvero, quindi sistemata la giornata sparisce dalla vista | Se servirà a qualcosa |
 | **Spostare una tappa trascinandola in un altro giorno** | Oggi si sposta dal foglio della tappa, scegliendo il giorno; trascinare vale dentro la giornata | Se la beta lo chiede |
 | **La capienza di una giornata intera è di 24 ore** | È la regola scritta (01): in mezzo, giornata intera. Ma con 24 ore il "non entra" capita quasi solo il primo e l'ultimo giorno. Se si vuole che il tetto morda, serve una finestra di veglia (per esempio 8–22) | Da decidere |
@@ -176,6 +176,19 @@ La fase 3.2 (la mappa del giorno e del viaggio, la navigazione a piedi con l'arr
 | **Rivedere sulla tela le schermate 57–61** | Disegnate il 5 ottobre 2026 dopo la prova sul telefono (la scelta del viaggio nella mappa, con il pulsante «Indietro»; svuotare un giorno e il viaggio; le tappe doppie nell'anteprima) e costruite lo stesso giorno | Prima di chiudere la 3.2 |
 | **Rivedere sulla tela le schermate 50–56** | Disegnate prima (la 56 il 4 ottobre 2026, insieme alla costruzione), costruite il 4 ottobre 2026 | Prima di chiudere la 3.2 |
 | **Provare la mappa sull'iPhone con la chiave vera** | Le risposte di Geoapify sono verificate dal vivo il 5 ottobre 2026 (ricerca, percorso, riquadri; due registrate in `app/test/dati/risposte/`); installata sull'iPhone il 5 ottobre 2026 (mappa e riquadri veri, centrata sulla meta); manca la prova camminando, con «Portami» fino a una tappa | Al primo giro a piedi |
+
+### Rimasto fuori dalla 3.3
+
+La fase 3.3 (la copia che riscarica solo quello che serve, «Prima di partire» con il giro di controllo, «Preparalo per l'uso senza rete», le tappe senza posto da sistemare) è costruita, senza migrazioni. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **La notifica poco prima della partenza** con quello che manca (14-notifiche) | Il giro di controllo si vede aprendo il viaggio; ricordarlo a chi non lo apre è una notifica | Con le notifiche |
+| **«Prima di partire» solo da due giorni prima** | Chi parte per un posto senza rete fra una settimana prepara il viaggio comunque: la copia è già intera, e aprendolo si aggiorna. Il giro di controllo prima non si vede | Se la beta lo chiede |
+| **Le mappe scaricabili** | La preparazione scarica i dati, non i riquadri: senza rete la mappa non c'è, restano gli indirizzi da aprire nelle Mappe del telefono (08, regola 6; ADR-006) | Se H4 lo chiede |
+| **I viaggi finiti fra un'apertura e l'altra** | Non si riscaricano all'apertura dell'app: un rimborso registrato da un altro dopo il ritorno si vede aprendo il viaggio, o le spese da lì | Se dà fastidio |
+| **Rivedere sulla tela le schermate 56, 57 e 90–92** | Disegnate (56 e 57 il 4 ottobre, 90–92 il 5 ottobre 2026) e costruite il 5 ottobre 2026 | Prima di chiudere la 3.3 |
+| **Provare la preparazione sull'iPhone** | Le prove girano sul server finto; manca il giro vero, due giorni prima di un viaggio, con la rete e poi in modalità aereo | Al primo viaggio vero |
 
 ### Impianto di sicurezza del matching — stima
 

@@ -192,8 +192,8 @@ Il server è l'autorità. In locale c'è una **copia di lettura**, una **coda** 
 | Entità | Copia locale | Scrivibile offline |
 |---|---|---|
 | `utente`, `partecipazione` | ✅ | ❌ |
-| `viaggio`, `giorno` | ✅ viaggi attivi | ❌ |
-| `tappa` | ✅ oggi e domani; tutto su richiesta | ✅ **aggiungere** e **marcare**. Modificare no |
+| `viaggio`, `giorno` | ✅ tutti i viaggi; i giorni di quelli non finiti, e dei finiti una volta aperti | ❌ |
+| `tappa` | ✅ tutto il viaggio, come i giorni (fase 3.3: [02](02-sincronizzazione-e-offline.md)) | ✅ **aggiungere** e **marcare**. Modificare no |
 | `spesa` | ✅ | ✅ **registrare**. Modificare no |
 | `spesa_quota` | ✅ | ❌ |
 | `voce_lista` tipo `viaggio` | ✅ | ✅ **spuntare**. Modificare il testo no |
