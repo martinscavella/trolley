@@ -73,6 +73,12 @@ abstract final class Colori {
   /// L'icona sul fondo crema.
   static const ocra = Color(0xFF8A6A00);
 
+  /// Le terre non ancora grattate, sul mappamondo (tela, 66).
+  static const terra = Color(0xFFCDD2DE);
+
+  /// La patina sopra un paese nuovo, da grattare col dito (tela, 95).
+  static const argento = Color(0xFFB4BBC9);
+
   static const bianco = Color(0xFFFFFFFF);
 }
 

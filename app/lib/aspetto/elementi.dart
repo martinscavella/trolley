@@ -258,6 +258,117 @@ class Pillola extends StatelessWidget {
   }
 }
 
+/// L'etichetta maiuscola sopra un gruppo: «2026», «Da prendere»,
+/// «Impostazioni».
+class EtichettaSezione extends StatelessWidget {
+  const EtichettaSezione(this.testo, {super.key, this.colore = Colori.grafite});
+
+  final String testo;
+  final Color colore;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
+    child: Semantics(
+      header: true,
+      child: Text(
+        testo.toUpperCase(),
+        style: Testi.sezione.copyWith(color: colore),
+      ),
+    ),
+  );
+}
+
+/// Una riga bianca che porta altrove (tela, 64): l'icona in un quadrato, il
+/// nome, a destra quanto c'è. Senza [onTap] è spenta, e chi la usa dice
+/// perché.
+class RigaScheda extends StatelessWidget {
+  const RigaScheda({
+    super.key,
+    required this.simbolo,
+    required this.titolo,
+    required this.onTap,
+    this.valore,
+    this.sottotitolo,
+  });
+
+  final IconData simbolo;
+  final String titolo;
+  final VoidCallback? onTap;
+
+  /// A destra: «9 viaggi», «Euro».
+  final String? valore;
+
+  /// Sotto il nome, piccolo.
+  final String? sottotitolo;
+
+  @override
+  Widget build(BuildContext context) => Premibile(
+    onTap: onTap,
+    scala: 0.98,
+    etichetta: [titolo, ?valore, ?sottotitolo].join(', '),
+    child: ExcludeSemantics(
+      child: AnimatedOpacity(
+        opacity: onTap == null ? 0.5 : 1,
+        duration: Ritmo.breve,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            color: Colori.bianco,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colori.foschia,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(simbolo, size: 22, color: Colori.inchiostro),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titolo,
+                      style: Testi.evidenza.copyWith(color: Colori.inchiostro),
+                    ),
+                    if (sottotitolo != null)
+                      Text(
+                        sottotitolo!,
+                        style: Testi.didascalia.copyWith(color: Colori.grafite),
+                      ),
+                  ],
+                ),
+              ),
+              if (valore != null) ...[
+                const SizedBox(width: 8),
+                Text(
+                  valore!,
+                  style: Testi.secondario.copyWith(color: Colori.grafite),
+                ),
+              ],
+              const SizedBox(width: 6),
+              Icon(
+                icona(
+                  ios: CupertinoIcons.chevron_forward,
+                  android: Icons.chevron_right_rounded,
+                ),
+                size: 16,
+                color: Colori.grafite,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /// L'icona che apre una riga: cobalto, a tratto, senza fondo.
 class IconaTonda extends StatelessWidget {
   const IconaTonda(this.icona, {super.key, this.colore, this.dimensione = 24});

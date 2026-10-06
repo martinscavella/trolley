@@ -62,3 +62,47 @@ class Timbro extends StatelessWidget {
     ),
   );
 }
+
+/// Un timbro scritto, rettangolare e un po' storto: «VERIFICATO» sul
+/// biglietto di un viaggio, grande nel riepilogo (tela, 60) e piccolo nel
+/// passaporto (65).
+class TimbroScritto extends StatelessWidget {
+  const TimbroScritto(
+    this.testo, {
+    super.key,
+    this.grande = false,
+    this.colore = Colori.bianco,
+  });
+
+  final String testo;
+  final bool grande;
+  final Color colore;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: testo[0] + testo.substring(1).toLowerCase(),
+    child: ExcludeSemantics(
+      child: Transform.rotate(
+        angle: (grande ? -12 : -8) * pi / 180,
+        child: Container(
+          padding: grande
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 6)
+              : const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            border: Border.all(color: colore, width: grande ? 3 : 2),
+            borderRadius: BorderRadius.circular(grande ? 10 : 8),
+          ),
+          child: Text(
+            testo,
+            style: Testi.titoli(
+              grande ? 16 : 10,
+              spaziatura: grande ? 0.08 : 0.06,
+              altezza: 1,
+              peso: grande ? 800 : 700,
+            ).copyWith(color: colore),
+          ),
+        ),
+      ),
+    ),
+  );
+}

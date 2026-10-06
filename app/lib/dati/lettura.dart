@@ -9,6 +9,7 @@ import '../dominio/giornate.dart';
 import '../dominio/liste.dart';
 import '../dominio/mappa.dart';
 import '../dominio/periodo.dart';
+import '../dominio/ricordo.dart';
 import '../dominio/spese.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
@@ -57,6 +58,37 @@ extension LetturaViaggio on Viaggio {
     return null;
   }
 }
+
+/// I viaggi del passaporto (10, regola 4), dal più recente: chiusi, propri,
+/// verificati o no.
+List<(Partecipazione, Viaggio)> delPassaporto(
+  Iterable<(Partecipazione, Viaggio)> miei,
+  DateTime oggi,
+) =>
+    [
+      for (final (p, v) in miei)
+        if (nelPassaporto(
+          stato: v.statoA(oggi),
+          partecipazione: p.stato,
+          eliminato: v.eliminatoIl != null,
+        ))
+          (p, v),
+    ]..sort(
+      (a, b) =>
+          (b.$2.inizio ?? b.$2.creato).compareTo(a.$2.inizio ?? a.$2.creato),
+    );
+
+/// Le mete dei viaggi, per il mappamondo.
+List<Meta> meteDi(Iterable<(Partecipazione, Viaggio)> viaggi) => [
+  for (final (_, v) in viaggi)
+    (citta: v.destinazioneCitta, paese: v.destinazionePaese),
+];
+
+/// Quando i viaggi sono finiti, per i paesi da grattare.
+List<Visita> visiteDi(Iterable<(Partecipazione, Viaggio)> viaggi) => [
+  for (final (_, v) in viaggi)
+    (paese: v.destinazionePaese, fine: v.fine ?? v.creato),
+];
 
 extension LetturaGiorno on Giorno {
   FinestraGiorno get finestra => FinestraGiorno(

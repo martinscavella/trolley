@@ -5,6 +5,7 @@ import 'package:trolley/aspetto/elementi.dart';
 import 'package:trolley/dominio/calendario.dart';
 import 'package:trolley/schermate/giornata.dart';
 import 'package:trolley/schermate/impostazioni.dart';
+import 'package:trolley/schermate/passaporto.dart';
 import 'package:trolley/schermate/traguardi.dart';
 import 'package:trolley/schermate/viaggi.dart';
 import 'package:trolley/schermate/viaggio.dart';
@@ -100,10 +101,19 @@ void main() {
     expect(find.text('SPESO IN TUTTO'), findsOneWidget);
     expect(find.textContaining('40,00'), findsWidgets);
     expect(find.text('Portogallo'), findsOneWidget); // di nuovo
+    // Il primo viaggio in Portogallo: il paese è da grattare (tela, 95).
+    expect(find.text('Portogallo: grattalo sul mappamondo'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Traguardi presi'), 200);
     expect(find.text('Primo viaggio verificato'), findsOneWidget);
     expect(find.text('In compagnia'), findsOneWidget);
     expect(find.text('Organizzare'), findsOneWidget);
+
+    // Dal riepilogo al passaporto (tela, 60), dove il viaggio c'è già.
+    await tester.scrollUntilVisible(pulsante('Guarda il passaporto'), 200);
+    await tester.tap(pulsante('Guarda il passaporto'));
+    await aspetta(tester);
+    expect(find.byType(SchermataPassaporto), findsOneWidget);
+    expect(find.textContaining('1 viaggio, dal più recente'), findsOneWidget);
 
     final eventi = [
       for (final e in await ambiente.eventi(tester))
@@ -139,7 +149,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('posto'), findsNothing);
-    expect(pulsante('Fatto'), findsOneWidget);
+    await tester.scrollUntilVisible(pulsante('Guarda il passaporto'), 200);
+    expect(pulsante('Guarda il passaporto'), findsOneWidget);
   });
 
   testWidgets('prima della fine chi è responsabile chiude a mano, dopo una '

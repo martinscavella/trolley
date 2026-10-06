@@ -7,6 +7,7 @@
 library;
 
 import 'calendario.dart';
+import 'ricordo.dart';
 
 /// I traguardi, con il nome con cui il server li conserva. Gli ultimi tre si
 /// contano su tutti i viaggi verificati; gli altri li dà un viaggio solo.
@@ -93,18 +94,19 @@ bool _weekendLungo(ViaggioVerificato v) {
 }
 
 /// Per quelli che si contano: a che punto si è, su tutti i viaggi
-/// verificati.
+/// verificati. Paesi e città si contano come sul mappamondo.
 int contati(Traguardo t, Iterable<ViaggioVerificato> verificati) => switch (t) {
-  Traguardo.trePaesi => {for (final v in verificati) ?v.paese}.length,
-  Traguardo.dieciCitta => {
-    for (final v in verificati)
-      if (v.citta != null) '${v.citta!.toLowerCase()}|${v.paese}',
-  }.length,
+  Traguardo.trePaesi => paesiGrattati(_mete(verificati)).length,
+  Traguardo.dieciCitta => cittaGrattate(_mete(verificati)).length,
   Traguardo.quattroStagioni => {
     for (final v in verificati) stagione(v.inizio),
   }.length,
   _ => 0,
 };
+
+Iterable<Meta> _mete(Iterable<ViaggioVerificato> viaggi) => [
+  for (final v in viaggi) (citta: v.citta, paese: v.paese),
+];
 
 /// I traguardi che la chiusura di [questo] fa prendere, dati quelli già
 /// presi: quelli che dà lui, e quelli che si contano e arrivano alla soglia

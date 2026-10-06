@@ -384,6 +384,18 @@ Scelto con la fase 4.1 (tela, 60–63, 93 e 94), il 6 ottobre 2026.
 - **I traguardi, per ora**: primo viaggio verificato, in compagnia (almeno due), weekend lungo (tre o quattro giorni con sabato e domenica), una settimana, ogni giorno una tappa fatta (non solo segnata: saltare non vale), organizzare (responsabile di un viaggio con altri), e su tutti i viaggi verificati tre paesi, dieci città, quattro stagioni. Uno per tipo, con il viaggio che l'ha dato; quelli da prendere dicono quanto manca. Erano gli esempi della tela: sono la prima serie, da rivedere.
 - **«Guarda il passaporto»** arriva con la 4.2: fino ad allora il riepilogo verificato porta ai traguardi, l'altro si chiude con «Fatto». I traguardi si aprono dal profilo.
 
+### Il passaporto e il mappamondo (fase 4.2)
+
+Scelto con la fase 4.2 (tela, 64–66), il 6 ottobre 2026.
+
+- **Il profilo** si apre con i numeri del ricordo — viaggi chiusi, paesi, città — e porta al passaporto, al mappamondo e ai traguardi; sotto, le impostazioni. La parte pubblica e le notifiche della tela (64) arrivano con le loro fasi.
+- **Il passaporto** è ogni viaggio chiuso, verificato o no, per anno e dal più recente, come un biglietto d'inchiostro. Il timbro «verificato» è quello di chi guarda: la verifica è di ciascuno. Un biglietto apre il viaggio concluso. I viaggi da cui si è usciti non ci sono. Il riepilogo, verificato o no, si chiude con «Guarda il passaporto».
+- **Il mappamondo è un globo vero**: i confini di Natural Earth incorporati nell'app (ADR-005), che si gira col dito. I paesi grattati sono in cobalto; quelli troppo piccoli per il globo (il Vaticano, Monaco) sono un punto. Guarda il paese del viaggio più recente, e toccando un paese nell'elenco ci si gira; senza viaggi chiusi, l'Europa.
+- **I territori d'oltremare sono paesi a sé**, come nell'elenco delle destinazioni: chi va a Parigi non gratta la Guyana, chi va in Martinica gratta la Martinica.
+- **Le città sono le mete con un paese**, contate una volta, senza badare a maiuscole e accenti. Una meta scritta a mano senza paese non compare, come promette la scelta della destinazione. La stessa regola conta «Tre paesi» e «Dieci città»: prima la seconda contava anche le mete senza paese.
+- **Un paese nuovo si gratta col dito** (tela, 95–97; deciso dall'utente il 6 ottobre 2026). Arriva con il primo viaggio in quel paese: aprendo il mappamondo il globo ci gira e si avvicina finché il paese occupa metà del disco, sotto una patina d'argento. Dove passa il dito compare il cobalto; scoperto per tre quinti, il paese si colora tutto, il telefono vibra e si dice «il tuo 7° paese». Ci si arriva anche dal riepilogo («Portogallo: grattalo sul mappamondo») e dal profilo («1 da grattare»). «Scopri» fa lo stesso senza grattare, per chi usa VoiceOver o non vuole. I paesi troppo piccoli anche da vicino (il Vaticano, Malta) sono un gettone.
+- **Resta da grattare per un mese** dalla fine del viaggio che l'ha portato, come il riepilogo che si apre da solo; dopo è sul mappamondo e basta. Così chi reinstalla l'app, o la riapre dopo mesi, non trova una fila di paesi da grattare. Tornare in un paese già visto non lo rimette sotto la patina. Che cosa si è grattato si ricorda su questo telefono, come il riepilogo visto.
+
 ---
 
 ## Ricordo e traguardi

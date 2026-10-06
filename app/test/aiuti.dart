@@ -21,6 +21,7 @@ import 'package:trolley/aspetto/tema.dart';
 import 'package:trolley/configurazione.dart';
 import 'package:trolley/dati/acquisizione.dart';
 import 'package:trolley/dati/archivio.dart';
+import 'package:trolley/dati/confini.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/destinazioni.dart';
 import 'package:trolley/dati/documenti.dart';
@@ -1359,6 +1360,11 @@ class Ambiente {
     File('assets/destinazioni.tsv').readAsStringSync(),
   );
 
+  /// I confini veri dei paesi, letti dal file.
+  static final confini = Confini.daByte(
+    ByteData.sublistView(File('assets/confini.bin').readAsBytesSync()),
+  );
+
   /// Monta [schermata] come la mostrerebbe l'app, con "Riduci movimento":
   /// senza animazioni infinite, e con la prova che si legge anche così.
   Future<void> monta(WidgetTester tester, Widget schermata) async {
@@ -1373,6 +1379,7 @@ class Ambiente {
     // assesterebbe mai.
     EditableText.debugDeterministicCursor = true;
     ElencoDestinazioni.usa(elenco);
+    Confini.usa(confini);
     addTearDown(() => EditableText.debugDeterministicCursor = false);
     await tester.pumpWidget(
       servizi(

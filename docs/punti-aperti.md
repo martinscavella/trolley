@@ -211,11 +211,25 @@ La fase 4.1 (la chiusura da sola e a mano, la verifica scritta per ciascuno, il 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
 | ~~**Applicare la migrazione `chiusura`**~~ | Applicata dall'editor SQL e provata il 6 ottobre 2026 (`supabase/tests/chiusura.sql`, tutte «ok»). La versione `20261006120000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
-| **«Guarda il passaporto»** nel riepilogo (tela, 60 e 61) | Il passaporto è la 4.2 | Fase 4.2 |
+| ~~**«Guarda il passaporto»** nel riepilogo (tela, 60 e 61)~~ | Costruito con la 4.2 | ✅ |
 | **Il promemoria a un anno** («un anno fa eri a Lisbona», 10, regola 9) | È una notifica | Con le notifiche |
 | **Quali traguardi** | La prima serie è quella della tela (decisioni). Si rivede con i numeri: se quasi nessuno li prende, la leva è aiutare a segnare le tappe | Dopo la fase interna |
 | **Un viaggio chiuso per sbaglio** | Non si riapre: chi è responsabile lo chiude solo dopo una conferma che dice cosa succede | Se capita |
 | **Rivedere sulla tela le schermate 60–63, 93 e 94** | 60–63 disegnate il 4 ottobre, 93 e 94 il 6 ottobre 2026, costruite il 6 ottobre | Prima di chiudere la 4.1 |
+
+### Rimasto fuori dalla 4.2
+
+La fase 4.2 (il profilo con i suoi numeri, il passaporto, il mappamondo con i confini veri) è costruita, senza migrazioni. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| ~~**Il gesto del grattare** (tela, 66, nota)~~ | Deciso dall'utente e costruito il 6 ottobre 2026: un paese nuovo si gratta col dito (tela, 95–97; decisioni) | ✅ |
+| **Grattare su due telefoni** | Che cosa si è grattato si ricorda sul telefono: chi ha due telefoni gratta lo stesso paese su entrambi, nel mese in cui resta da grattare | Se capita |
+| **Avvicinare il globo**, e le città come punti | Il globo è grande quanto lo schermo e i confini sono semplificati per quella grandezza (ADR-005): avvicinandolo servirebbero confini più fini | Se la beta lo chiede |
+| **«Aggiungi un viaggio passato»** nel passaporto (tela, 65 e 67) | I viaggi importati sono la 4.3 | Fase 4.3 |
+| **La parte pubblica e le notifiche nel profilo** (tela, 64) | Arrivano con le loro fasi | Fase 5.3, notifiche |
+| **Una città con due nomi** | Il mappamondo conta le città per nome: «Cracovia» e «Kraków» scritte a mano sarebbero due. Dall'elenco si sceglie sempre lo stesso nome | Se capita |
+| **Rivedere sulla tela le schermate 64–66 e 95–97** | 64–66 disegnate il 4 ottobre, 95–97 il 6 ottobre, costruite il 6 ottobre 2026 | Prima di chiudere la 4.2 |
 
 ### Impianto di sicurezza del matching — stima
 

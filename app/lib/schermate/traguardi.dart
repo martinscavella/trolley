@@ -226,7 +226,7 @@ class _SchermataTraguardiState extends State<SchermataTraguardi> {
                         'e non dipendono dal piano.',
                   ).entra(context),
                   if (presiPerTipo.isNotEmpty) ...[
-                    _Etichetta(
+                    EtichettaSezione(
                       'Presi · ${presiPerTipo.length}',
                       colore: Colori.cobalto,
                     ),
@@ -244,7 +244,7 @@ class _SchermataTraguardiState extends State<SchermataTraguardi> {
                     const SizedBox(height: 8),
                   ],
                   if (daPrendere.isNotEmpty) ...[
-                    _Etichetta('Da prendere', colore: Colori.grafite),
+                    const EtichettaSezione('Da prendere'),
                     GrigliaMedaglie(
                       medaglie: [
                         for (final t in daPrendere)
@@ -268,22 +268,6 @@ class _SchermataTraguardiState extends State<SchermataTraguardi> {
   }
 }
 
-class _Etichetta extends StatelessWidget {
-  const _Etichetta(this.testo, {required this.colore});
-
-  final String testo;
-  final Color colore;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
-    child: Text(
-      testo.toUpperCase(),
-      style: Testi.sezione.copyWith(color: colore),
-    ),
-  );
-}
-
 /// La riga «Traguardi · 3 presi» del profilo (tela, 64).
 class RigaTraguardi extends StatelessWidget {
   const RigaTraguardi({super.key});
@@ -293,61 +277,15 @@ class RigaTraguardi extends StatelessWidget {
     stream: Servizi.of(context).archivio.osservaTraguardi(),
     builder: (context, presi) {
       final n = presi.data?.length ?? 0;
-      final quanti = n == 0
-          ? 'nessuno'
-          : n == 1
-          ? '1 preso'
-          : '$n presi';
-      return Premibile(
+      return RigaScheda(
+        simbolo: iconaTraguardo(Traguardo.primoViaggioVerificato),
+        titolo: 'Traguardi',
+        valore: n == 0
+            ? 'nessuno'
+            : n == 1
+            ? '1 preso'
+            : '$n presi',
         onTap: () => apri<void>(context, const SchermataTraguardi()),
-        scala: 0.98,
-        etichetta: 'Traguardi, $quanti',
-        child: ExcludeSemantics(
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            decoration: BoxDecoration(
-              color: Colori.bianco,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colori.foschia,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Icon(
-                    iconaTraguardo(Traguardo.primoViaggioVerificato),
-                    size: 22,
-                    color: Colori.inchiostro,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    'Traguardi',
-                    style: Testi.evidenza.copyWith(color: Colori.inchiostro),
-                  ),
-                ),
-                Text(
-                  quanti,
-                  style: Testi.secondario.copyWith(color: Colori.grafite),
-                ),
-                const SizedBox(width: 6),
-                Icon(
-                  icona(
-                    ios: CupertinoIcons.chevron_forward,
-                    android: Icons.chevron_right_rounded,
-                  ),
-                  size: 16,
-                  color: Colori.grafite,
-                ),
-              ],
-            ),
-          ),
-        ),
       );
     },
   );

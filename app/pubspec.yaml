@@ -43,6 +43,9 @@ flutter:
     # Paesi e città per scegliere la destinazione, anche senza rete (ADR-005).
     # Si rigenera con tool/genera_destinazioni.dart.
     - assets/destinazioni.tsv
+    # I confini dei paesi per il mappamondo (ADR-005). Si rigenerano con
+    # tool/genera_confini.dart.
+    - assets/confini.bin
 
   # I caratteri della tela di Claude Design (CLAUDE.md, regola 9), dentro l'app
   # perché valgano anche senza rete. Licenza SIL OFL 1.1, accanto ai file.

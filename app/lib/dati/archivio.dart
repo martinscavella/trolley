@@ -533,19 +533,31 @@ class Archivio {
   /// Le proprie partecipazioni, con il loro viaggio: per i traguardi, che si
   /// contano su tutti i viaggi verificati.
   Future<List<(Partecipazione, Viaggio)>> mieiViaggi() async {
+    final query = _mieiViaggi();
+    if (query == null) return const [];
+    return _leggiMiei(await query.get());
+  }
+
+  /// Le stesse, osservate: il passaporto e il mappamondo cambiano quando un
+  /// viaggio si chiude.
+  Stream<List<(Partecipazione, Viaggio)>> osservaMieiViaggi() =>
+      _mieiViaggi()?.watch().map(_leggiMiei) ?? Stream.value(const []);
+
+  JoinedSelectStatement<HasResultSet, dynamic>? _mieiViaggi() {
     final io = _io;
-    if (io == null) return const [];
-    final righe = await (_db.select(_db.partecipazioni).join([
+    if (io == null) return null;
+    return _db.select(_db.partecipazioni).join([
       innerJoin(
         _db.viaggi,
         _db.viaggi.id.equalsExp(_db.partecipazioni.viaggioId),
       ),
-    ])..where(_db.partecipazioni.utenteId.equals(io))).get();
-    return [
-      for (final r in righe)
-        (r.readTable(_db.partecipazioni), r.readTable(_db.viaggi)),
-    ];
+    ])..where(_db.partecipazioni.utenteId.equals(io));
   }
+
+  List<(Partecipazione, Viaggio)> _leggiMiei(List<TypedResult> righe) => [
+    for (final r in righe)
+      (r.readTable(_db.partecipazioni), r.readTable(_db.viaggi)),
+  ];
 
   /// Chiude il viaggio (10, regola 1; 02, regola 4): da solo dopo la fine,
   /// o prima a mano da chi ne è responsabile. Richiede la rete.
@@ -645,6 +657,30 @@ class Archivio {
       .insertOnConflictUpdate(
         ImpostazioniCompanion.insert(
           chiave: '$_riepilogoVisto$viaggioId',
+          valore: '1',
+        ),
+      );
+
+  // ─── Il mappamondo ──────────────────────────────────────────────────────
+
+  static const _scoperto = 'scoperto:';
+
+  /// I paesi già grattati col dito (tela, 95–97), da chi ha il telefono in
+  /// mano: si ricordano su questo telefono, come il riepilogo visto.
+  Stream<Set<String>> osservaPaesiScoperti() {
+    final prefisso = '$_scoperto$_io:';
+    return (_db.select(
+      _db.impostazioni,
+    )..where((i) => i.chiave.like('$prefisso%'))).watch().map(
+      (righe) => {for (final r in righe) r.chiave.substring(prefisso.length)},
+    );
+  }
+
+  Future<void> segnaPaeseScoperto(String paese) => _db
+      .into(_db.impostazioni)
+      .insertOnConflictUpdate(
+        ImpostazioniCompanion.insert(
+          chiave: '$_scoperto$_io:$paese',
           valore: '1',
         ),
       );

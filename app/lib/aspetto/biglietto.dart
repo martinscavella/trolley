@@ -229,16 +229,19 @@ class _Casella extends StatelessWidget {
   }
 }
 
-/// Un'idea nell'elenco: un biglietto giallo basso, con il codice nella
-/// matrice a sinistra.
-class BigliettoIdea extends StatelessWidget {
-  const BigliettoIdea({
+/// Un biglietto basso, in un elenco, con il codice nella matrice a sinistra:
+/// giallo per un'idea; d'inchiostro per un viaggio del passaporto (tela,
+/// 65), con il suo timbro a destra.
+class BigliettoBasso extends StatelessWidget {
+  const BigliettoBasso({
     super.key,
     required this.codice,
     required this.titolo,
     required this.sottotitolo,
     required this.onTap,
+    this.colore = Colori.sole,
     this.fondo = Colori.nebbia,
+    this.timbro,
     this.etichetta,
   });
 
@@ -246,19 +249,25 @@ class BigliettoIdea extends StatelessWidget {
   final String titolo;
   final String sottotitolo;
   final VoidCallback? onTap;
+  final Color colore;
   final Color fondo;
+
+  /// A destra: «VERIFICATO».
+  final Widget? timbro;
   final String? etichetta;
 
   static const _matrice = 78.0;
 
   @override
   Widget build(BuildContext context) {
+    final scuro = colore.computeLuminance() < 0.2;
+    final testo = scuro ? Colori.bianco : Colori.inchiostro;
     final biglietto = SizedBox(
       height: 72,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
         child: ColoredBox(
-          color: Colori.sole,
+          color: colore,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -268,13 +277,13 @@ class BigliettoIdea extends StatelessWidget {
                   child: Text(
                     codice,
                     style: Testi.codice(codice == '?' ? 22 : 17)
-                        .copyWith(color: Colori.inchiostro),
+                        .copyWith(color: testo),
                   ),
                 ),
               ),
               _Perforazione(
                 fondo: fondo,
-                tratto: Colori.inchiostro.withValues(alpha: 0.3),
+                tratto: testo.withValues(alpha: scuro ? 0.4 : 0.3),
                 verticale: true,
               ),
               Expanded(
@@ -288,9 +297,7 @@ class BigliettoIdea extends StatelessWidget {
                         titolo,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Testi.evidenza.copyWith(
-                          color: Colori.inchiostro,
-                        ),
+                        style: Testi.evidenza.copyWith(color: testo),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -298,7 +305,9 @@ class BigliettoIdea extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Testi.didascalia.copyWith(
-                          color: Colori.senape,
+                          color: scuro
+                              ? Colori.bianco.withValues(alpha: 0.85)
+                              : Colori.senape,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -306,6 +315,11 @@ class BigliettoIdea extends StatelessWidget {
                   ),
                 ),
               ),
+              if (timbro != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: Center(child: timbro),
+                ),
             ],
           ),
         ),

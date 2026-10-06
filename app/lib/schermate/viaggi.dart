@@ -549,7 +549,7 @@ class SchedaViaggio extends StatelessWidget {
       final periodo = v.periodo == null
           ? 'senza date'
           : etichettaPeriodo(v.periodo!, oggi).toLowerCase();
-      return BigliettoIdea(
+      return BigliettoBasso(
         codice: codiceViaggio(v),
         titolo: titoloViaggio(v),
         sottotitolo: sollecito

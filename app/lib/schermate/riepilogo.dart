@@ -11,6 +11,7 @@ import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
+import '../aspetto/timbro.dart';
 import '../dati/database.dart';
 import '../dati/lettura.dart';
 import '../dominio/chiusura.dart';
@@ -19,6 +20,8 @@ import '../dominio/tappe.dart';
 import '../dominio/traguardi.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
+import 'mappamondo.dart';
+import 'passaporto.dart';
 import 'spese.dart';
 import 'traguardi.dart';
 
@@ -185,7 +188,7 @@ class _SchermataRiepilogoState extends State<SchermataRiepilogo> {
                     const Positioned(
                       right: 18,
                       top: 38,
-                      child: _TimbroVerificato(),
+                      child: TimbroScritto('VERIFICATO', grande: true),
                     ),
                 ],
               ).entra(context),
@@ -194,6 +197,9 @@ class _SchermataRiepilogoState extends State<SchermataRiepilogo> {
                 viaggioId: v.id,
                 builder: (context, conto) =>
                     _Conti(viaggio: v, conto: conto, novita: d.novita),
+              ).entra(context, ritardo: Ritmo.passo),
+              RigaDaGrattare(
+                paese: d.novita.paeseNuovo ? v.destinazionePaese : null,
               ).entra(context, ritardo: Ritmo.passo),
               if (d.verificato && d.presi.isNotEmpty) ...[
                 const SizedBox(height: 22),
@@ -218,13 +224,13 @@ class _SchermataRiepilogoState extends State<SchermataRiepilogo> {
               ],
               const SizedBox(height: 18),
               PulsanteGrande(
-                etichetta: d.verificato ? 'Guarda i traguardi' : 'Fatto',
-                icona: d.verificato
-                    ? iconaTraguardo(Traguardo.primoViaggioVerificato)
-                    : null,
-                onPressed: d.verificato
-                    ? () => apri<void>(context, const SchermataTraguardi())
-                    : () => Navigator.of(context).maybePop(),
+                etichetta: 'Guarda il passaporto',
+                icona: icona(
+                  ios: CupertinoIcons.tickets,
+                  android: Icons.confirmation_number_outlined,
+                ),
+                onPressed: () =>
+                    apri<void>(context, const SchermataPassaporto()),
               ).entra(context, ritardo: Ritmo.passo * 3),
             ],
           ),
@@ -345,35 +351,6 @@ class _Cifra extends StatelessWidget {
         if (sotto != null)
           Text(sotto!, style: Testi.didascalia.copyWith(color: Colori.grafite)),
       ],
-    ),
-  );
-}
-
-/// Il timbro «VERIFICATO» sul biglietto (tela, 60).
-class _TimbroVerificato extends StatelessWidget {
-  const _TimbroVerificato();
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    label: 'Verificato',
-    child: Transform.rotate(
-      angle: -0.21,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colori.bianco, width: 3),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          'VERIFICATO',
-          style: Testi.titoli(
-            16,
-            spaziatura: 0.08,
-            altezza: 1,
-            peso: 800,
-          ).copyWith(color: Colori.bianco),
-        ),
-      ),
     ),
   );
 }

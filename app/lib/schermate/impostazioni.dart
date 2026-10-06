@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../aspetto/elementi.dart';
+import '../aspetto/formati.dart';
 import '../aspetto/movimento.dart';
 import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
@@ -11,9 +12,13 @@ import '../aspetto/testi.dart';
 import '../configurazione.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
+import '../dati/lettura.dart';
+import '../dominio/ricordo.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'mappamondo.dart';
+import 'passaporto.dart';
 import 'scelta_valuta.dart';
 import 'traguardi.dart';
 
@@ -107,9 +112,9 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
       corpo: Builder(
         builder: (context) => ListView(
           padding: EdgeInsets.fromLTRB(
-            16,
+            20,
             MediaQuery.paddingOf(context).top + 4,
-            16,
+            20,
             MediaQuery.paddingOf(context).bottom + 24,
           ),
           children: [
@@ -117,51 +122,63 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
               stream: servizi.archivio.osservaProfilo(),
               builder: (context, snapshot) {
                 final nome = snapshot.data?.nome ?? '';
-                return Column(
+                return Row(
                   children: [
-                    Avatar(nome: nome, dimensione: 76).sboccia(context),
-                    const SizedBox(height: 14),
-                    Text(
-                      nome,
-                      style: Testi.titoloSezione.copyWith(color: t.testo),
-                    ),
-                    if (email != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        email,
-                        style: Testi.secondario.copyWith(
-                          color: t.testoSecondario,
-                        ),
+                    Avatar(nome: nome, dimensione: 68).sboccia(context),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Semantics(
+                            header: true,
+                            child: Text(
+                              nome,
+                              style: Testi.titoloFoglio.copyWith(
+                                color: t.testo,
+                              ),
+                            ),
+                          ),
+                          if (email != null)
+                            Text(
+                              email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Testi.secondario.copyWith(
+                                color: t.testoSecondario,
+                              ),
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
                   ],
                 ).entra(context, da: 8);
               },
             ),
-            const SizedBox(height: 24),
-            // Passaporto e mappamondo arrivano con la 4.2 (tela, 64).
-            const RigaTraguardi().entra(context, ritardo: Ritmo.passo),
-            const SizedBox(height: 28),
-            const TitoloSezione('Spese').entra(context, ritardo: Ritmo.passo),
+            const SizedBox(height: 18),
+            const _Ricordo(),
+            const SizedBox(height: 8),
+            const RigaTraguardi().entra(context, ritardo: Ritmo.passo * 3),
+            const SizedBox(height: 18),
+            const EtichettaSezione('Impostazioni'),
             StreamBuilder<Utente?>(
               stream: servizi.archivio.osservaProfilo(),
               builder: (context, profilo) {
                 final codice =
                     profilo.data?.valutaPredefinita ?? valutaIniziale;
                 return ConLaRete(
-                  builder: (context, rete) => CampoScelta(
-                    etichetta: 'La tua valuta',
+                  builder: (context, rete) => RigaScheda(
                     simbolo: icona(
                       ios: CupertinoIcons.money_euro_circle,
                       android: Icons.payments_outlined,
                     ),
-                    segnaposto: 'Scegli la valuta',
-                    valore: '${valutaDi(codice).nome} · $codice',
+                    titolo: 'La tua valuta',
+                    valore: nomeCortoValuta(codice),
                     onTap: rete ? () => _cambiaValuta(codice) : null,
                   ),
                 );
               },
-            ).entra(context, ritardo: Ritmo.passo),
+            ).entra(context, ritardo: Ritmo.passo * 4),
             ConLaRete(
               builder: (context, rete) => Padding(
                 padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
@@ -174,10 +191,11 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
                 ),
               ),
             ),
-            const SizedBox(height: 28),
-            const TitoloSezione('Privacy').entra(context, ritardo: Ritmo.passo),
+            const SizedBox(height: 18),
+            const EtichettaSezione('Privacy'),
             Pannello(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              raggio: 18,
               child: Row(
                 children: [
                   Expanded(
@@ -193,7 +211,7 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
                     ),
                 ],
               ),
-            ).entra(context, ritardo: Ritmo.passo),
+            ).entra(context, ritardo: Ritmo.passo * 5),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
               child: Text(
@@ -203,14 +221,14 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
                 'spegni non perdi nessuna funzione.',
                 style: Testi.didascalia.copyWith(color: t.testoSecondario),
               ),
-            ).entra(context, ritardo: Ritmo.passo),
+            ).entra(context, ritardo: Ritmo.passo * 5),
             const SizedBox(height: 28),
             PulsanteGrande(
               etichetta: 'Esci',
               secondario: true,
               pericolo: true,
               onPressed: _esci,
-            ).entra(context, ritardo: Ritmo.passo * 2),
+            ).entra(context, ritardo: Ritmo.passo * 6),
             const SizedBox(height: 20),
             Text(
               'Trolley $versioneApp · prova privata',
@@ -222,4 +240,115 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
       ),
     );
   }
+}
+
+/// I numeri del ricordo e le due righe che ci portano (tela, 64): quanti
+/// viaggi, paesi e città, il passaporto e il mappamondo. Dalla copia.
+class _Ricordo extends StatelessWidget {
+  const _Ricordo();
+
+  @override
+  Widget build(BuildContext context) {
+    final archivio = Servizi.of(context).archivio;
+    return StreamBuilder<Set<String>>(
+      stream: archivio.osservaPaesiScoperti(),
+      builder: (context, scoperti) =>
+          StreamBuilder<List<(Partecipazione, Viaggio)>>(
+            stream: archivio.osservaMieiViaggi(),
+            builder: (context, letti) {
+              final viaggi = delPassaporto(
+                letti.data ?? const [],
+                DateTime.now(),
+              );
+              final mete = meteDi(viaggi);
+              final paesi = paesiGrattati(mete).length;
+              final citta = cittaGrattate(mete).length;
+              final daScoprire = scoperti.hasData
+                  ? daGrattare(
+                      visiteDi(viaggi),
+                      scoperti: scoperti.data!,
+                      oggi: DateTime.now(),
+                    ).length
+                  : 0;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      for (final (i, (etichetta, n)) in [
+                        ('Viaggi', viaggi.length),
+                        ('Paesi', paesi),
+                        ('Città', citta),
+                      ].indexed) ...[
+                        if (i > 0) const SizedBox(width: 10),
+                        Expanded(child: _Numero(etichetta, n)),
+                      ],
+                    ],
+                  ).entra(context, ritardo: Ritmo.passo),
+                  const SizedBox(height: 14),
+                  RigaScheda(
+                    simbolo: icona(
+                      ios: CupertinoIcons.tickets,
+                      android: Icons.confirmation_number_outlined,
+                    ),
+                    titolo: 'Passaporto',
+                    valore: quanti(viaggi.length, 'viaggio', 'viaggi'),
+                    onTap: () =>
+                        apri<void>(context, const SchermataPassaporto()),
+                  ).entra(context, ritardo: Ritmo.passo * 2),
+                  const SizedBox(height: 8),
+                  RigaScheda(
+                    simbolo: icona(
+                      ios: CupertinoIcons.globe,
+                      android: Icons.public_rounded,
+                    ),
+                    titolo: 'Mappamondo',
+                    valore: daScoprire > 0
+                        ? '$daScoprire da grattare'
+                        : quanti(paesi, 'paese', 'paesi'),
+                    onTap: () =>
+                        apri<void>(context, const SchermataMappamondo()),
+                  ).entra(context, ritardo: Ritmo.passo * 2),
+                ],
+              );
+            },
+          ),
+    );
+  }
+}
+
+class _Numero extends StatelessWidget {
+  const _Numero(this.etichetta, this.n);
+
+  final String etichetta;
+  final int n;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    label: '$etichetta: $n',
+    child: ExcludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: Colori.bianco,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              etichetta.toUpperCase(),
+              style: Testi.sezione.copyWith(color: Colori.grafite),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$n',
+              style: Testi.titoli(20).copyWith(color: Colori.inchiostro),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
