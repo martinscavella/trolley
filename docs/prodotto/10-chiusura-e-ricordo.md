@@ -37,6 +37,8 @@ Far sì che un viaggio lasci qualcosa invece di svanire. È la fase su cui poggi
 | Quasi nessuna chiusura fallisce la verifica | Non è un problema dell'utente, è la regola che è troppo generosa. Si stringe, ed è una metrica sorvegliata |
 | Quasi nessuna chiusura **supera** la verifica | È il rischio opposto, e con questa regola è il più probabile: se i traguardi non li prende nessuno, l'economia dei premi muore prima di nascere. Va sorvegliato dal primo giorno, e la leva è aiutare a marcare le tappe, non ammorbidire la regola |
 | Un viaggio importato si sovrappone a uno vero | Convivono. Il mappamondo non conta due volte la stessa città |
+| Un viaggio importato aggiunto per sbaglio | Lo si cambia o lo si toglie: l'ha aggiunto a mano chi guarda. Un viaggio vero chiuso invece resta (regola 8) |
+| Un viaggio importato in un paese mai visto con l'app | Il paese è sul mappamondo, già colorato: non si gratta. Grattare è il premio di un viaggio fatto |
 | Il viaggio è durato un giorno | Si chiude e vale 1,0 punti viaggio. È esattamente il comportamento che si vuole incoraggiare |
 
 ---

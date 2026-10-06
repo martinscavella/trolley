@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../aspetto/biglietto.dart';
@@ -18,11 +19,14 @@ import '../dominio/ricordo.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'viaggio.dart';
+import 'viaggio_passato.dart';
 
 /// Il passaporto (10-chiusura-e-ricordo.md; tela, 65): tutti i viaggi chiusi,
 /// verificati o no, per anno e dal più recente, come biglietti d'inchiostro.
 /// Quelli verificati per chi guarda hanno il timbro. Un biglietto apre il
-/// viaggio concluso. Si legge dalla copia, anche senza rete.
+/// viaggio concluso. In fondo, «Prima di Trolley», i viaggi passati aggiunti
+/// a mano: bianchi, tratteggiati, con il timbro «importato» (regola 6), e il
+/// «+» in alto per aggiungerne. Si legge dalla copia, anche senza rete.
 class SchermataPassaporto extends StatefulWidget {
   const SchermataPassaporto({super.key});
 
@@ -49,9 +53,24 @@ class _SchermataPassaportoState extends State<SchermataPassaporto> {
         stream: _miei,
         builder: (context, letti) {
           final viaggi = delPassaporto(letti.data ?? const [], DateTime.now());
-          final pagine = perAnno(viaggi, (pv) => pv.$2.inizio ?? pv.$2.creato);
+          final pagine = perAnno([
+            for (final pv in viaggi)
+              if (!pv.$2.importato) pv,
+          ], (pv) => pv.$2.inizio ?? pv.$2.creato);
+          final passati = [
+            for (final (_, v) in viaggi)
+              if (v.importato) v,
+          ];
           var n = 0;
           return Pagina(
+            azioni: [
+              PulsanteTondo(
+                icona: icona(ios: CupertinoIcons.add, android: Icons.add),
+                etichetta: 'Aggiungi un viaggio passato',
+                onPressed: () =>
+                    apriFoglio<void>(context, const FoglioViaggioPassato()),
+              ),
+            ],
             corpo: Builder(
               builder: (context) => ListView(
                 padding: EdgeInsets.fromLTRB(
@@ -65,8 +84,8 @@ class _SchermataPassaportoState extends State<SchermataPassaporto> {
                     'Passaporto',
                     sottotitolo: viaggi.isEmpty
                         ? 'Qui finisce ogni viaggio chiuso, verificato o no. '
-                              'Il primo arriva il giorno dopo la fine del '
-                              'primo viaggio.'
+                              'Quelli fatti prima di Trolley li aggiungi tu, '
+                              'con il +.'
                         : '${quanti(viaggi.length, 'viaggio', 'viaggi')}, '
                               'dal più recente. Ogni viaggio chiuso finisce '
                               'qui, verificato o no.',
@@ -80,6 +99,14 @@ class _SchermataPassaportoState extends State<SchermataPassaporto> {
                           viaggio: v,
                           verificato: p.verificato == true,
                         ),
+                      ).entra(context, ritardo: Ritmo.passo * min(++n, 8)),
+                  ],
+                  if (passati.isNotEmpty) ...[
+                    const EtichettaSezione('Prima di Trolley'),
+                    for (final v in passati)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _Passato(viaggio: v),
                       ).entra(context, ritardo: Ritmo.passo * min(++n, 8)),
                   ],
                 ],
@@ -118,6 +145,29 @@ class _Pagina extends StatelessWidget {
         if (verificato) 'verificato',
       ].join(', '),
       onTap: () => apri<void>(context, SchermataViaggio(viaggioId: v.id)),
+    );
+  }
+}
+
+/// Un viaggio passato, aggiunto a mano (tela, 65 e 98): bianco, tratteggiato,
+/// con il timbro «importato». Toccandolo, lo si cambia o lo si toglie.
+class _Passato extends StatelessWidget {
+  const _Passato({required this.viaggio});
+
+  final Viaggio viaggio;
+
+  @override
+  Widget build(BuildContext context) {
+    final v = viaggio;
+    final sotto = sottotitoloViaggioPassato(v);
+    return BigliettoBasso(
+      codice: codiceViaggio(v),
+      titolo: titoloViaggio(v),
+      sottotitolo: sotto,
+      tratteggiato: true,
+      timbro: const TimbroScritto('IMPORTATO', colore: Colori.inchiostro),
+      etichetta: '${titoloViaggio(v)}, $sotto, importato',
+      onTap: () => gestiViaggioPassato(context, v),
     );
   }
 }

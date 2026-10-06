@@ -94,8 +94,10 @@ class _SchermataRiepilogoState extends State<SchermataRiepilogo> {
         if (t.viaggioId == widget.viaggioId) ?Traguardo.leggi(t.tipo),
     ];
     final oggi = DateTime.now();
+    // Anche i viaggi passati: chi ricorda di essere stato in Portogallo nel
+    // 2019 non ci arriva per la prima volta.
     MetaChiusa? meta(Viaggio v) {
-      final inizio = v.inizio;
+      final inizio = v.inizioRicordo;
       if (inizio == null) return null;
       return (
         id: v.id,
@@ -108,7 +110,8 @@ class _SchermataRiepilogoState extends State<SchermataRiepilogo> {
     final questo = meta(viaggio);
     final chiusi = [
       for (final (_, v) in await archivio.mieiViaggi())
-        if (v.statoA(oggi) == StatoViaggio.chiuso) ?meta(v),
+        if (v.statoA(oggi) == StatoViaggio.chiuso && v.eliminatoIl == null)
+          ?meta(v),
     ];
     return _Dati(
       viaggio: viaggio,

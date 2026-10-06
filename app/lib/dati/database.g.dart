@@ -671,6 +671,17 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
       'CHECK ("verificato" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _giorniRicordatiMeta = const VerificationMeta(
+    'giorniRicordati',
+  );
+  @override
+  late final GeneratedColumn<int> giorniRicordati = GeneratedColumn<int>(
+    'giorni_ricordati',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _verificaPerDerogaMeta = const VerificationMeta(
     'verificaPerDeroga',
   );
@@ -714,6 +725,7 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
     creatoreId,
     importato,
     verificato,
+    giorniRicordati,
     verificaPerDeroga,
     creatoIl,
   ];
@@ -848,6 +860,15 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
     } else if (isInserting) {
       context.missing(_verificatoMeta);
     }
+    if (data.containsKey('giorni_ricordati')) {
+      context.handle(
+        _giorniRicordatiMeta,
+        giorniRicordati.isAcceptableOrUnknown(
+          data['giorni_ricordati']!,
+          _giorniRicordatiMeta,
+        ),
+      );
+    }
     if (data.containsKey('verifica_per_deroga')) {
       context.handle(
         _verificaPerDerogaMeta,
@@ -934,6 +955,10 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
         DriftSqlType.bool,
         data['${effectivePrefix}verificato'],
       )!,
+      giorniRicordati: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}giorni_ricordati'],
+      ),
       verificaPerDeroga: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}verifica_per_deroga'],
@@ -971,6 +996,10 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
   final bool importato;
   final bool verificato;
 
+  /// Quanti giorni è durato un viaggio importato, se la persona se lo
+  /// ricorda: date e orari non li sa (fase 4.3).
+  final int? giorniRicordati;
+
   /// La deroga amministrativa sulla verifica: vale come sul posto, e toglie
   /// il viaggio da ogni metrica (02, regola 8). La scrive solo chi gestisce
   /// il progetto.
@@ -992,6 +1021,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     required this.creatoreId,
     required this.importato,
     required this.verificato,
+    this.giorniRicordati,
     required this.verificaPerDeroga,
     required this.creatoIl,
   });
@@ -1029,6 +1059,9 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     map['creatore_id'] = Variable<String>(creatoreId);
     map['importato'] = Variable<bool>(importato);
     map['verificato'] = Variable<bool>(verificato);
+    if (!nullToAbsent || giorniRicordati != null) {
+      map['giorni_ricordati'] = Variable<int>(giorniRicordati);
+    }
     map['verifica_per_deroga'] = Variable<bool>(verificaPerDeroga);
     map['creato_il'] = Variable<String>(creatoIl);
     return map;
@@ -1067,6 +1100,9 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       creatoreId: Value(creatoreId),
       importato: Value(importato),
       verificato: Value(verificato),
+      giorniRicordati: giorniRicordati == null && nullToAbsent
+          ? const Value.absent()
+          : Value(giorniRicordati),
       verificaPerDeroga: Value(verificaPerDeroga),
       creatoIl: Value(creatoIl),
     );
@@ -1099,6 +1135,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       creatoreId: serializer.fromJson<String>(json['creatoreId']),
       importato: serializer.fromJson<bool>(json['importato']),
       verificato: serializer.fromJson<bool>(json['verificato']),
+      giorniRicordati: serializer.fromJson<int?>(json['giorniRicordati']),
       verificaPerDeroga: serializer.fromJson<bool>(json['verificaPerDeroga']),
       creatoIl: serializer.fromJson<String>(json['creatoIl']),
     );
@@ -1124,6 +1161,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       'creatoreId': serializer.toJson<String>(creatoreId),
       'importato': serializer.toJson<bool>(importato),
       'verificato': serializer.toJson<bool>(verificato),
+      'giorniRicordati': serializer.toJson<int?>(giorniRicordati),
       'verificaPerDeroga': serializer.toJson<bool>(verificaPerDeroga),
       'creatoIl': serializer.toJson<String>(creatoIl),
     };
@@ -1145,6 +1183,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     String? creatoreId,
     bool? importato,
     bool? verificato,
+    Value<int?> giorniRicordati = const Value.absent(),
     bool? verificaPerDeroga,
     String? creatoIl,
   }) => Viaggio(
@@ -1169,6 +1208,9 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     creatoreId: creatoreId ?? this.creatoreId,
     importato: importato ?? this.importato,
     verificato: verificato ?? this.verificato,
+    giorniRicordati: giorniRicordati.present
+        ? giorniRicordati.value
+        : this.giorniRicordati,
     verificaPerDeroga: verificaPerDeroga ?? this.verificaPerDeroga,
     creatoIl: creatoIl ?? this.creatoIl,
   );
@@ -1207,6 +1249,9 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       verificato: data.verificato.present
           ? data.verificato.value
           : this.verificato,
+      giorniRicordati: data.giorniRicordati.present
+          ? data.giorniRicordati.value
+          : this.giorniRicordati,
       verificaPerDeroga: data.verificaPerDeroga.present
           ? data.verificaPerDeroga.value
           : this.verificaPerDeroga,
@@ -1232,6 +1277,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
           ..write('creatoreId: $creatoreId, ')
           ..write('importato: $importato, ')
           ..write('verificato: $verificato, ')
+          ..write('giorniRicordati: $giorniRicordati, ')
           ..write('verificaPerDeroga: $verificaPerDeroga, ')
           ..write('creatoIl: $creatoIl')
           ..write(')'))
@@ -1255,6 +1301,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     creatoreId,
     importato,
     verificato,
+    giorniRicordati,
     verificaPerDeroga,
     creatoIl,
   );
@@ -1277,6 +1324,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
           other.creatoreId == this.creatoreId &&
           other.importato == this.importato &&
           other.verificato == this.verificato &&
+          other.giorniRicordati == this.giorniRicordati &&
           other.verificaPerDeroga == this.verificaPerDeroga &&
           other.creatoIl == this.creatoIl);
 }
@@ -1297,6 +1345,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
   final Value<String> creatoreId;
   final Value<bool> importato;
   final Value<bool> verificato;
+  final Value<int?> giorniRicordati;
   final Value<bool> verificaPerDeroga;
   final Value<String> creatoIl;
   final Value<int> rowid;
@@ -1316,6 +1365,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     this.creatoreId = const Value.absent(),
     this.importato = const Value.absent(),
     this.verificato = const Value.absent(),
+    this.giorniRicordati = const Value.absent(),
     this.verificaPerDeroga = const Value.absent(),
     this.creatoIl = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1336,6 +1386,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     required String creatoreId,
     required bool importato,
     required bool verificato,
+    this.giorniRicordati = const Value.absent(),
     this.verificaPerDeroga = const Value.absent(),
     required String creatoIl,
     this.rowid = const Value.absent(),
@@ -1363,6 +1414,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     Expression<String>? creatoreId,
     Expression<bool>? importato,
     Expression<bool>? verificato,
+    Expression<int>? giorniRicordati,
     Expression<bool>? verificaPerDeroga,
     Expression<String>? creatoIl,
     Expression<int>? rowid,
@@ -1384,6 +1436,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
       if (creatoreId != null) 'creatore_id': creatoreId,
       if (importato != null) 'importato': importato,
       if (verificato != null) 'verificato': verificato,
+      if (giorniRicordati != null) 'giorni_ricordati': giorniRicordati,
       if (verificaPerDeroga != null) 'verifica_per_deroga': verificaPerDeroga,
       if (creatoIl != null) 'creato_il': creatoIl,
       if (rowid != null) 'rowid': rowid,
@@ -1406,6 +1459,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     Value<String>? creatoreId,
     Value<bool>? importato,
     Value<bool>? verificato,
+    Value<int?>? giorniRicordati,
     Value<bool>? verificaPerDeroga,
     Value<String>? creatoIl,
     Value<int>? rowid,
@@ -1427,6 +1481,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
       creatoreId: creatoreId ?? this.creatoreId,
       importato: importato ?? this.importato,
       verificato: verificato ?? this.verificato,
+      giorniRicordati: giorniRicordati ?? this.giorniRicordati,
       verificaPerDeroga: verificaPerDeroga ?? this.verificaPerDeroga,
       creatoIl: creatoIl ?? this.creatoIl,
       rowid: rowid ?? this.rowid,
@@ -1483,6 +1538,9 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     if (verificato.present) {
       map['verificato'] = Variable<bool>(verificato.value);
     }
+    if (giorniRicordati.present) {
+      map['giorni_ricordati'] = Variable<int>(giorniRicordati.value);
+    }
     if (verificaPerDeroga.present) {
       map['verifica_per_deroga'] = Variable<bool>(verificaPerDeroga.value);
     }
@@ -1513,6 +1571,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
           ..write('creatoreId: $creatoreId, ')
           ..write('importato: $importato, ')
           ..write('verificato: $verificato, ')
+          ..write('giorniRicordati: $giorniRicordati, ')
           ..write('verificaPerDeroga: $verificaPerDeroga, ')
           ..write('creatoIl: $creatoIl, ')
           ..write('rowid: $rowid')
@@ -9723,6 +9782,7 @@ typedef $$ViaggiTableCreateCompanionBuilder = ViaggiCompanion Function({
   required String creatoreId,
   required bool importato,
   required bool verificato,
+  Value<int?> giorniRicordati,
   Value<bool> verificaPerDeroga,
   required String creatoIl,
   Value<int> rowid,
@@ -9743,6 +9803,7 @@ typedef $$ViaggiTableUpdateCompanionBuilder = ViaggiCompanion Function({
   Value<String> creatoreId,
   Value<bool> importato,
   Value<bool> verificato,
+  Value<int?> giorniRicordati,
   Value<bool> verificaPerDeroga,
   Value<String> creatoIl,
   Value<int> rowid,
@@ -9829,6 +9890,11 @@ class $$ViaggiTableFilterComposer
 
   ColumnFilters<bool> get verificato => $composableBuilder(
     column: $table.verificato,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get giorniRicordati => $composableBuilder(
+    column: $table.giorniRicordati,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9927,6 +9993,11 @@ class $$ViaggiTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get giorniRicordati => $composableBuilder(
+    column: $table.giorniRicordati,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get verificaPerDeroga => $composableBuilder(
     column: $table.verificaPerDeroga,
     builder: (column) => ColumnOrderings(column),
@@ -10010,6 +10081,11 @@ class $$ViaggiTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get giorniRicordati => $composableBuilder(
+    column: $table.giorniRicordati,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get verificaPerDeroga => $composableBuilder(
     column: $table.verificaPerDeroga,
     builder: (column) => column,
@@ -10062,6 +10138,7 @@ class $$ViaggiTableTableManager
                 Value<String> creatoreId = const Value.absent(),
                 Value<bool> importato = const Value.absent(),
                 Value<bool> verificato = const Value.absent(),
+                Value<int?> giorniRicordati = const Value.absent(),
                 Value<bool> verificaPerDeroga = const Value.absent(),
                 Value<String> creatoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -10081,6 +10158,7 @@ class $$ViaggiTableTableManager
                 creatoreId: creatoreId,
                 importato: importato,
                 verificato: verificato,
+                giorniRicordati: giorniRicordati,
                 verificaPerDeroga: verificaPerDeroga,
                 creatoIl: creatoIl,
                 rowid: rowid,
@@ -10102,6 +10180,7 @@ class $$ViaggiTableTableManager
                 required String creatoreId,
                 required bool importato,
                 required bool verificato,
+                Value<int?> giorniRicordati = const Value.absent(),
                 Value<bool> verificaPerDeroga = const Value.absent(),
                 required String creatoIl,
                 Value<int> rowid = const Value.absent(),
@@ -10121,6 +10200,7 @@ class $$ViaggiTableTableManager
                 creatoreId: creatoreId,
                 importato: importato,
                 verificato: verificato,
+                giorniRicordati: giorniRicordati,
                 verificaPerDeroga: verificaPerDeroga,
                 creatoIl: creatoIl,
                 rowid: rowid,

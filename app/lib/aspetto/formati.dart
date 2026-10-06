@@ -101,6 +101,22 @@ String quandoViaggio(Viaggio v) {
   return periodo == null ? 'Date da decidere' : conMaiuscola(periodo);
 }
 
+/// Quando è stato un viaggio passato, come si legge: `agosto 2019`.
+String quandoViaggioPassato(Viaggio v) =>
+    v.periodo?.testo ??
+    switch (v.inizio) {
+      final inizio? => '${nomiDeiMesi[inizio.month - 1]} ${inizio.year}',
+      null => 'quando non si sa',
+    };
+
+/// Sotto il nome, sul biglietto: `agosto 2019 · 5 giorni`, o
+/// `agosto 2019 · aggiunto a mano` se i giorni non si ricordano.
+String sottotitoloViaggioPassato(Viaggio v) {
+  final giorni = v.giorniRicordati;
+  return '${quandoViaggioPassato(v)} · '
+      '${giorni == null ? 'aggiunto a mano' : quanti(giorni, 'giorno', 'giorni')}';
+}
+
 /// Un periodo detto nel modo più corto che non lascia dubbi rispetto a
 /// [oggi]: `Novembre`, `Gennaio 2027`, `Autunno`, `Inverno 2026–27`.
 String etichettaPeriodo(Periodo periodo, DateTime oggi) {

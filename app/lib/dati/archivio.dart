@@ -827,8 +827,11 @@ class Archivio {
               _db.utenti.id.equalsExp(_db.partecipazioni.utenteId),
             ),
           ])
+          // I viaggi passati stanno nel passaporto: non sono viaggi da fare,
+          // né da mettere sulla mappa.
           ..where(
             _db.viaggi.eliminatoIl.isNull() &
+                _db.viaggi.importato.equals(false) &
                 (archiviati
                     ? _db.viaggi.stato.equals('archiviato')
                     : _db.viaggi.stato.equals('archiviato').not()),
@@ -1307,6 +1310,58 @@ class Archivio {
     );
     await _nellaCopia(righe);
     return id;
+  }
+
+  /// Un viaggio passato, inserito come ricordo (10, regole 5–6): nasce
+  /// chiuso e importato, con il mese in cui è cominciato e i giorni se ci si
+  /// ricorda. Non è un viaggio creato: non conta fra quelli (07, regola 4).
+  Future<String> aggiungiViaggioPassato({
+    required Destinazione destinazione,
+    required Periodo quando,
+    int? giorni,
+  }) async {
+    final id = const Uuid().v4();
+    final righe = await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'aggiungi_viaggio_passato',
+        params: {
+          'p_id': id,
+          'p_destinazione_citta': destinazione.citta,
+          'p_destinazione_paese': destinazione.paese,
+          'p_periodo': quando.testo,
+          'p_giorni': giorni,
+        },
+      ),
+    );
+    await _nellaCopia(righe);
+    return id;
+  }
+
+  /// Cambia dove, quando e quanti giorni di un viaggio passato, sulla
+  /// versione che la persona ha visto.
+  Future<void> cambiaViaggioPassato(
+    Viaggio viaggio, {
+    required Destinazione destinazione,
+    required Periodo quando,
+    int? giorni,
+  }) {
+    assert(viaggio.importato, 'solo un viaggio passato si cambia così');
+    return _aggiornaViaggio(viaggio, {
+      'destinazione_citta': destinazione.citta,
+      'destinazione_paese': destinazione.paese,
+      'periodo_approssimativo': quando.testo,
+      'giorni_ricordati': giorni,
+    }, statoAtteso: 'chiuso');
+  }
+
+  /// Toglie un viaggio passato dal passaporto: lo si è aggiunto a mano, lo si
+  /// toglie a mano. Si marca, come ogni cosa; un viaggio vero chiuso invece
+  /// resta per sempre (10, regola 8).
+  Future<void> togliViaggioPassato(Viaggio viaggio) {
+    assert(viaggio.importato, 'solo un viaggio passato si toglie');
+    return _aggiornaViaggio(viaggio, {
+      'eliminato_il': DateTime.now().toUtc().toIso8601String(),
+    }, statoAtteso: 'chiuso');
   }
 
   /// Fissa o sposta le date. Un'idea diventa definita; i giorni che escono si
@@ -2363,6 +2418,7 @@ class Archivio {
         creatoreId: r['creatore_id'] as String,
         importato: r['importato'] as bool,
         verificato: r['verificato'] as bool,
+        giorniRicordati: Value(r['giorni_ricordati'] as int?),
         verificaPerDeroga: Value((r['verifica_per_deroga'] as bool?) ?? false),
         creatoIl: r['creato_il'] as String,
       );

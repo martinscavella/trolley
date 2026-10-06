@@ -396,6 +396,19 @@ Scelto con la fase 4.2 (tela, 64–66), il 6 ottobre 2026.
 - **Un paese nuovo si gratta col dito** (tela, 95–97; deciso dall'utente il 6 ottobre 2026). Arriva con il primo viaggio in quel paese: aprendo il mappamondo il globo ci gira e si avvicina finché il paese occupa metà del disco, sotto una patina d'argento. Dove passa il dito compare il cobalto; scoperto per tre quinti, il paese si colora tutto, il telefono vibra e si dice «il tuo 7° paese». Ci si arriva anche dal riepilogo («Portogallo: grattalo sul mappamondo») e dal profilo («1 da grattare»). «Scopri» fa lo stesso senza grattare, per chi usa VoiceOver o non vuole. I paesi troppo piccoli anche da vicino (il Vaticano, Malta) sono un gettone.
 - **Resta da grattare per un mese** dalla fine del viaggio che l'ha portato, come il riepilogo che si apre da solo; dopo è sul mappamondo e basta. Così chi reinstalla l'app, o la riapre dopo mesi, non trova una fila di paesi da grattare. Tornare in un paese già visto non lo rimette sotto la patina. Che cosa si è grattato si ricorda su questo telefono, come il riepilogo visto.
 
+### I viaggi passati (fase 4.3)
+
+Scelto con la fase 4.3 (tela, 65, 67 e 98), il 6 ottobre 2026.
+
+- **Si aggiungono dal passaporto**, con il «+» in alto: dove, il mese e l'anno in cui sono cominciati (il selettore di sistema, fino al mese in corso), e quanti giorni se ci si ricorda. Il foglio dice prima che il viaggio sarà segnato come importato e non darà traguardi. Date e orari non si chiedono e non si inventano: il viaggio dice quando con il periodo, nella forma delle idee («agosto 2019»).
+- **Sono bianchi, tratteggiati, con il timbro «importato»**, in fondo al passaporto sotto «Prima di Trolley», dal più recente: non si mescolano agli anni dei viaggi fatti con l'app (10, regola 6). Sotto il nome, quando e quanti giorni; senza giorni, «aggiunto a mano».
+- **Si cambiano e si tolgono**: toccandone uno, il menu di sistema offre «Cambia» (lo stesso foglio, con «Salva») e «Togli dal passaporto». L'ha aggiunto a mano chi guarda, e a mano lo toglie; un viaggio vero chiuso invece resta per sempre (10, regola 8). Senza rete si guardano soltanto: aggiungere, cambiare e togliere richiedono la rete.
+- **Sono di chi li aggiunge**: in un viaggio passato non si invita nessuno. Chi era insieme aggiunge il suo.
+- **Contano nel ricordo, non nel merito.** Colorano il mappamondo e contano nei numeri del profilo — viaggi, paesi, città — come diceva la tela (64): danno forma al profilo fin dal primo giorno. Non si verificano e non danno traguardi. Il riepilogo di un viaggio vero li conosce: chi aggiunge Porto nel 2019 e ci torna non ci arriva «di nuovo».
+- **Un paese portato da un viaggio passato non si gratta**: è già cobalto. Grattare è il premio di un viaggio fatto con l'app, e chi riempie il passaporto il primo giorno non deve trovarsi una fila di patine. E un viaggio vero in un paese dove si è già stati, anche solo dichiarandolo, non lo rimette sotto la patina.
+- **Non stanno nell'elenco dei viaggi né sulla mappa**: non hanno date, tappe né spese. Stanno nel passaporto e sul mappamondo.
+- **Non sono viaggi creati**: non contano in `viaggio_creato` né nella North Star. Aggiungerne uno è `passaporto_compilato`, curiosità e non adozione (07).
+
 ---
 
 ## Ricordo e traguardi

@@ -1,11 +1,14 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trolley/aspetto/elementi.dart';
 import 'package:trolley/aspetto/mappamondo.dart';
 import 'package:trolley/dominio/calendario.dart';
 import 'package:trolley/schermate/impostazioni.dart';
 import 'package:trolley/schermate/mappamondo.dart';
 import 'package:trolley/schermate/passaporto.dart';
+import 'package:trolley/schermate/viaggi.dart';
 import 'package:trolley/schermate/viaggio.dart';
 
 import '../aiuti.dart';
@@ -176,7 +179,7 @@ void main() {
     await ambiente.accedi(tester: tester);
     await ambiente.monta(tester, const SchermataPassaporto());
     await aspetta(tester);
-    expect(find.textContaining('Il primo arriva il giorno dopo'), findsOne);
+    expect(find.textContaining('li aggiungi tu, con il +'), findsOne);
 
     await ambiente.monta(tester, const SchermataMappamondo());
     await aspetta(tester);
@@ -307,6 +310,233 @@ void main() {
       await tester.runAsync(() => ambiente.archivio.segnaPaeseScoperto('JP'));
       await aspetta(tester);
       expect(find.text('2 paesi'), findsOneWidget);
+    });
+  });
+
+  group('i viaggi passati (fase 4.3)', () {
+    /// Ai viaggi di sempre si aggiungono Barcellona nell'agosto del 2019,
+    /// cinque giorni, e Atene nell'estate del 2015, senza giorni.
+    Future<void> passati(WidgetTester tester) async {
+      ambiente.server
+        ..viaggi.addAll([
+          rigaViaggio(
+            'barcellona',
+            stato: 'chiuso',
+            citta: 'Barcellona',
+            paese: 'ES',
+            periodo: 'agosto 2019',
+            importato: true,
+            giorni: 5,
+          ),
+          rigaViaggio(
+            'atene-2015',
+            stato: 'chiuso',
+            citta: 'Atene',
+            paese: 'GR',
+            periodo: 'estate 2015',
+            importato: true,
+          ),
+        ])
+        ..partecipazioni.addAll([
+          rigaPartecipazione('barcellona'),
+          rigaPartecipazione('atene-2015'),
+        ]);
+      await viaggi(tester);
+    }
+
+    Finder pulsante(String testo) => find.descendant(
+      of: find.byType(PulsanteGrande),
+      matching: find.text(testo),
+    );
+
+    testWidgets('stanno in fondo al passaporto, sotto «Prima di Trolley», '
+        'con il timbro «importato»; contano nel profilo', (tester) async {
+      await passati(tester);
+      await ambiente.monta(tester, const SchermataPassaporto());
+      await aspetta(tester);
+
+      expect(find.textContaining('5 viaggi, dal più recente'), findsOneWidget);
+      expect(find.text('PRIMA DI TROLLEY'), findsOneWidget);
+      expect(find.text('agosto 2019 · 5 giorni'), findsOneWidget);
+      expect(find.text('estate 2015 · aggiunto a mano'), findsOneWidget);
+      expect(find.text('IMPORTATO'), findsNWidgets(2));
+      expect(find.text('VERIFICATO'), findsOneWidget);
+      expect(find.text('2019'), findsNothing);
+      final y = [
+        for (final t in ['Kyoto', 'PRIMA DI TROLLEY', 'Barcellona', 'Atene'])
+          tester.getTopLeft(find.text(t)).dy,
+      ];
+      expect(y, [...y]..sort());
+
+      await ambiente.monta(tester, const SchermataImpostazioni());
+      await aspetta(tester);
+      expect(find.bySemanticsLabel('Viaggi: 5'), findsOneWidget);
+      expect(find.bySemanticsLabel('Paesi: 4'), findsOneWidget);
+      expect(find.bySemanticsLabel('Città: 5'), findsOneWidget);
+    });
+
+    testWidgets('se ne aggiunge uno: dove, mese e anno, i giorni se ci si '
+        'ricorda; si conta come passaporto compilato, non come viaggio '
+        'creato', (tester) async {
+      await viaggi(tester);
+      await ambiente.monta(tester, const SchermataPassaporto());
+      await aspetta(tester);
+
+      await tester.tap(find.byTooltip('Aggiungi un viaggio passato'));
+      await aspetta(tester);
+      expect(find.text('Un viaggio passato'), findsOneWidget);
+      expect(find.textContaining('non dà traguardi'), findsOneWidget);
+      expect(find.text('Scegli dove'), findsOneWidget);
+
+      await tester.tap(find.text('Una città o un paese'));
+      await aspetta(tester);
+      await tester.enterText(find.byType(TextField), 'barcel');
+      await aspetta(tester);
+      await tester.tap(find.text('Barcellona'));
+      await aspetta(tester);
+      expect(find.text('Barcellona, Spagna'), findsOneWidget);
+      expect(find.text('Scegli quando'), findsOneWidget);
+
+      // Il mese e l'anno, scritti nel selettore Material: i test non girano
+      // come iOS.
+      await tester.tap(find.text('Mese'));
+      await aspetta(tester);
+      final testi = MaterialLocalizations.of(
+        tester.element(find.byType(DatePickerDialog)),
+      );
+      await tester.tap(find.byTooltip(testi.inputDateModeButtonLabel));
+      await aspetta(tester);
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(DatePickerDialog),
+          matching: find.byType(TextField),
+        ),
+        testi.formatCompactDate(DateTime(2019, 8, 10)),
+      );
+      await tester.tap(find.text(testi.okButtonLabel));
+      await aspetta(tester);
+      expect(find.text('Agosto'), findsOneWidget);
+      expect(find.text('2019'), findsOneWidget);
+      expect(find.text('Scegli quando'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), '0');
+      await aspetta(tester);
+      expect(
+        find.text('I giorni vanno da 1 a 365, o lascia vuoto'),
+        findsOneWidget,
+      );
+      await tester.enterText(find.byType(TextField), '5');
+      await aspetta(tester);
+
+      ambiente.rete.disponibile = false;
+      await aspetta(tester);
+      expect(find.text('Serve la connessione'), findsOneWidget);
+      ambiente.rete.disponibile = true;
+      await aspetta(tester);
+
+      await tester.tap(pulsante('Aggiungi'));
+      await aspetta(tester);
+
+      final chiamata = ambiente.server
+          .chiamate('POST', '/rest/v1/rpc/aggiungi_viaggio_passato')
+          .single;
+      expect(
+        corpoDi(chiamata),
+        containsPair('p_destinazione_citta', 'Barcellona'),
+      );
+      expect(corpoDi(chiamata), containsPair('p_destinazione_paese', 'ES'));
+      expect(corpoDi(chiamata), containsPair('p_periodo', 'agosto 2019'));
+      expect(corpoDi(chiamata), containsPair('p_giorni', 5));
+
+      expect(find.text('Un viaggio passato'), findsNothing);
+      expect(find.text('PRIMA DI TROLLEY'), findsOneWidget);
+      expect(find.text('agosto 2019 · 5 giorni'), findsOneWidget);
+      expect(find.text('IMPORTATO'), findsOneWidget);
+
+      final nomi = [for (final e in await ambiente.eventi(tester)) e.nome];
+      expect(nomi, ['passaporto_compilato']);
+    });
+
+    testWidgets('toccandolo lo si cambia o lo si toglie; senza rete si '
+        'può solo guardare', (tester) async {
+      await passati(tester);
+      await ambiente.monta(tester, const SchermataPassaporto());
+      await aspetta(tester);
+
+      await tester.tap(find.text('Barcellona'));
+      await aspetta(tester);
+      expect(find.text('Barcellona · agosto 2019'), findsOneWidget);
+      await tester.tap(find.text('Cambia'));
+      await aspetta(tester);
+      expect(find.text('Barcellona, Spagna'), findsOneWidget);
+      expect(find.text('Agosto'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), '6');
+      await aspetta(tester);
+      await tester.tap(pulsante('Salva'));
+      await aspetta(tester);
+
+      final cambio = ambiente.server
+          .chiamate('PATCH', '/rest/v1/viaggio')
+          .single;
+      expect(corpoDi(cambio), containsPair('giorni_ricordati', 6));
+      expect(
+        corpoDi(cambio),
+        containsPair('periodo_approssimativo', 'agosto 2019'),
+      );
+      expect(corpoDi(cambio), containsPair('versione', 1));
+      expect(find.text('agosto 2019 · 6 giorni'), findsOneWidget);
+
+      ambiente.rete.disponibile = false;
+      await tester.tap(find.text('Barcellona'));
+      await aspetta(tester);
+      expect(find.textContaining('serve la connessione'), findsOneWidget);
+      expect(find.text('Togli dal passaporto'), findsNothing);
+      await tester.tapAt(const Offset(20, 20));
+      await aspetta(tester);
+      ambiente.rete.disponibile = true;
+
+      await tester.tap(find.text('Barcellona'));
+      await aspetta(tester);
+      await tester.tap(find.text('Togli dal passaporto'));
+      await aspetta(tester);
+      expect(
+        corpoDi(ambiente.server.chiamate('PATCH', '/rest/v1/viaggio').last),
+        contains('eliminato_il'),
+      );
+      expect(find.text('Barcellona'), findsNothing);
+      expect(find.text('Barcellona non è più nel passaporto.'), findsOneWidget);
+      expect(find.text('Atene'), findsOneWidget);
+      expect(await ambiente.eventi(tester), isEmpty);
+    });
+
+    testWidgets('colorano il mappamondo ma non si grattano, e non stanno '
+        'nell\'elenco dei viaggi', (tester) async {
+      // Un viaggio passato di questo mese, in un paese nuovo.
+      ambiente.server
+        ..viaggi.add(
+          rigaViaggio(
+            'oslo',
+            stato: 'chiuso',
+            citta: 'Oslo',
+            paese: 'NO',
+            periodo: '${nomiDeiMesi[oggi.month - 1]} ${oggi.year}',
+            importato: true,
+            giorni: 3,
+          ),
+        )
+        ..partecipazioni.add(rigaPartecipazione('oslo'));
+      await viaggi(tester);
+
+      await ambiente.monta(tester, const SchermataMappamondo());
+      await aspetta(tester);
+      final globo = tester.widget<Mappamondo>(find.byType(Mappamondo));
+      expect(globo.grattati, containsAll(['NO', 'PT', 'JP']));
+      expect(globo.daGrattare, isNull);
+
+      await ambiente.monta(tester, SchermataViaggi(onCodice: (_) {}));
+      await aspetta(tester);
+      expect(find.text('Porto'), findsOneWidget);
+      expect(find.text('Oslo'), findsNothing);
     });
   });
 }

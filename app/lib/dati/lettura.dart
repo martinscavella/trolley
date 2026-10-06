@@ -41,6 +41,18 @@ extension LetturaViaggio on Viaggio {
     return Programma(inizio: i, fine: f, arrivo: a, partenza: p);
   }
 
+  /// Da quando conta nel ricordo: il primo giorno; per un viaggio passato,
+  /// che le date non le ha, il primo del mese in cui è cominciato (fase 4.3).
+  DateTime? get inizioRicordo => inizio ?? periodo?.primoGiorno;
+
+  /// Quando è finito, per il ricordo: l'ultimo giorno; per un viaggio
+  /// passato, i giorni che si ricordano dopo l'inizio, o l'inizio stesso.
+  DateTime? get fineRicordo {
+    if (fine case final f?) return f;
+    final i = inizioRicordo;
+    return i?.add(Duration(days: (giorniRicordati ?? 1) - 1));
+  }
+
   /// L'ultimo giorno in cui l'idea è viva (02-il-viaggio.md, regola 5).
   DateTime get scadenza => scadenzaIdea(periodo: periodo, creataIl: creato);
 
@@ -60,7 +72,7 @@ extension LetturaViaggio on Viaggio {
 }
 
 /// I viaggi del passaporto (10, regola 4), dal più recente: chiusi, propri,
-/// verificati o no.
+/// verificati o no, e quelli passati aggiunti a mano.
 List<(Partecipazione, Viaggio)> delPassaporto(
   Iterable<(Partecipazione, Viaggio)> miei,
   DateTime oggi,
@@ -74,8 +86,9 @@ List<(Partecipazione, Viaggio)> delPassaporto(
         ))
           (p, v),
     ]..sort(
-      (a, b) =>
-          (b.$2.inizio ?? b.$2.creato).compareTo(a.$2.inizio ?? a.$2.creato),
+      (a, b) => (b.$2.inizioRicordo ?? b.$2.creato).compareTo(
+        a.$2.inizioRicordo ?? a.$2.creato,
+      ),
     );
 
 /// Le mete dei viaggi, per il mappamondo.
@@ -87,7 +100,11 @@ List<Meta> meteDi(Iterable<(Partecipazione, Viaggio)> viaggi) => [
 /// Quando i viaggi sono finiti, per i paesi da grattare.
 List<Visita> visiteDi(Iterable<(Partecipazione, Viaggio)> viaggi) => [
   for (final (_, v) in viaggi)
-    (paese: v.destinazionePaese, fine: v.fine ?? v.creato),
+    (
+      paese: v.destinazionePaese,
+      fine: v.fineRicordo ?? v.creato,
+      importato: v.importato,
+    ),
 ];
 
 extension LetturaGiorno on Giorno {

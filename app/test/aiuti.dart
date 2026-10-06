@@ -87,6 +87,8 @@ Map<String, Object?> rigaViaggio(
   String? arrivo,
   String? partenza,
   String creatoIl = _istante,
+  bool importato = false,
+  int? giorni,
 }) => {
   'id': id,
   'stato': stato,
@@ -98,7 +100,8 @@ Map<String, Object?> rigaViaggio(
   'ora_arrivo': arrivo ?? (inizio == null ? null : '10:00:00'),
   'ora_partenza': partenza ?? (inizio == null ? null : '18:00:00'),
   'creatore_id': idDiProva,
-  'importato': false,
+  'importato': importato,
+  'giorni_ricordati': giorni,
   'verificato': false,
   'verifica_per_deroga': false,
   'creato_da': idDiProva,
@@ -878,6 +881,23 @@ class ServerFinto {
         );
         partecipazioni.add(rigaPartecipazione(id));
         _applicaGiorni(id, c['p_giorni'] as List);
+        return risposta(_righe(id));
+      case 'POST /rest/v1/rpc/aggiungi_viaggio_passato':
+        final c = _corpo(r);
+        final id = c['p_id'] as String;
+        viaggi.add(
+          rigaViaggio(
+            id,
+            stato: 'chiuso',
+            citta: c['p_destinazione_citta'] as String?,
+            paese: c['p_destinazione_paese'] as String?,
+            periodo: c['p_periodo'] as String?,
+            importato: true,
+            giorni: c['p_giorni'] as int?,
+            creatoIl: DateTime.now().toUtc().toIso8601String(),
+          ),
+        );
+        partecipazioni.add(rigaPartecipazione(id));
         return risposta(_righe(id));
       case 'POST /rest/v1/rpc/programma_viaggio':
         final c = _corpo(r);

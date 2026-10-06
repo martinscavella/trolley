@@ -36,19 +36,21 @@ Le cose che possono trovarsi in due versioni — viaggio, tappa, spesa, voce di 
 |---|---|
 | `stato` | `idea` · `definito` · `in_corso` · `chiuso` · `archiviato`. *In corso* e *chiuso* li ricava l'app dalle date finché la chiusura (4.1) non li scrive: vedi [decisioni](../decisioni/prodotto.md) |
 | `destinazione_citta`, `destinazione_paese` | Servono al mappamondo e alla verifica |
-| `periodo_approssimativo` | Solo allo stato idea. Testo nella forma in cui si legge — `agosto 2027`, `estate 2027`, `inverno 2027–28` — scelto fra mesi e stagioni, perché l'app deve sapere quando passa. Un testo che non riconosce vale come nessun periodo |
+| `periodo_approssimativo` | Solo allo stato idea, e nei viaggi importati, dove dice quando è cominciato. Testo nella forma in cui si legge — `agosto 2027`, `estate 2027`, `inverno 2027–28` — scelto fra mesi e stagioni, perché l'app deve sapere quando passa. Un testo che non riconosce vale come nessun periodo |
 | `data_inizio`, `data_fine` | Obbligatorie dallo stato definito in poi |
 | `ora_arrivo`, `ora_partenza` | Definiscono la finestra del primo e dell'ultimo giorno |
 | `creatore_id` | Uno solo, sempre presente |
-| `importato` | Viaggio passato inserito come ricordo |
+| `importato` | Viaggio passato inserito come ricordo (fase 4.3). Nasce con `aggiungi_viaggio_passato` e non cambia più |
+| `giorni_ricordati` | Solo per un viaggio importato: quanti giorni è durato, da 1 a 365, se la persona se lo ricorda |
 | `verificato`, `verifica_per_deroga` | `verificato`: verificato per almeno uno di chi partecipa, lo scrive solo `segna_verifica` (fase 4.1). `verifica_per_deroga` la scrive solo chi gestisce il progetto. Mai dichiarati dall'app |
 
 **Invarianti**
 1. `idea` ⇒ nessun giorno, nessuna tappa, nessuna spesa, nessun documento.
-2. `definito` e oltre ⇒ `data_inizio`, `data_fine`, `ora_arrivo`, `ora_partenza` tutte presenti.
+2. `definito` e oltre ⇒ `data_inizio`, `data_fine`, `ora_arrivo`, `ora_partenza` tutte presenti; per un viaggio importato no, ma deve dire quando, con il periodo o con le date.
 3. Esiste sempre esattamente **un** creatore attivo. Se il creatore esce, deve prima passare il ruolo.
 4. `importato` ⇒ `stato = chiuso` e `verificato = falso`, sempre.
 5. `verifica_per_deroga` vero ⇒ escluso da ogni metrica.
+6. Un viaggio nasce `idea` o `definito`; nasce `chiuso` solo se è importato. Gli altri stati si diventano dopo.
 
 ### `giorno`
 
@@ -101,6 +103,7 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 **Invarianti**
 - Rimuovere qualcuno ritira tutti gli inviti ancora validi del viaggio.
 - Chi è `rimosso` rientra solo con un invito valido creato dal creatore attuale: per quanto detto sopra, è per forza uno creato dopo la rimozione. Chi è `uscito` rientra con qualunque invito valido.
+- In un viaggio importato non si invita nessuno: è di chi l'ha aggiunto.
 
 ---
 

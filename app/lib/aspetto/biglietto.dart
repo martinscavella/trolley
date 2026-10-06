@@ -3,6 +3,8 @@
 /// bianche, senza dentelli.
 library;
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import 'movimento.dart';
@@ -243,6 +245,7 @@ class BigliettoBasso extends StatelessWidget {
     this.fondo = Colori.nebbia,
     this.timbro,
     this.etichetta,
+    this.tratteggiato = false,
   });
 
   final String codice;
@@ -252,6 +255,10 @@ class BigliettoBasso extends StatelessWidget {
   final Color colore;
   final Color fondo;
 
+  /// Bianco, con il bordo tratteggiato: un viaggio passato aggiunto a mano,
+  /// che non deve somigliare a uno fatto con l'app (tela, 65; 10, regola 6).
+  final bool tratteggiato;
+
   /// A destra: «VERIFICATO».
   final Widget? timbro;
   final String? etichetta;
@@ -260,6 +267,7 @@ class BigliettoBasso extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colore = tratteggiato ? Colori.bianco : this.colore;
     final scuro = colore.computeLuminance() < 0.2;
     final testo = scuro ? Colori.bianco : Colori.inchiostro;
     final biglietto = SizedBox(
@@ -268,59 +276,67 @@ class BigliettoBasso extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: ColoredBox(
           color: colore,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                width: _matrice,
-                child: Center(
-                  child: Text(
-                    codice,
-                    style: Testi.codice(codice == '?' ? 22 : 17)
-                        .copyWith(color: testo),
+          // Il bordo sotto, i dentelli sopra: lo interrompono come nella tela.
+          child: CustomPaint(
+            painter: tratteggiato
+                ? const _BordoTratteggiato(Colori.piombo, raggio: 18)
+                : null,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: _matrice,
+                  child: Center(
+                    child: Text(
+                      codice,
+                      style: Testi.codice(codice == '?' ? 22 : 17)
+                          .copyWith(color: testo),
+                    ),
                   ),
                 ),
-              ),
-              _Perforazione(
-                fondo: fondo,
-                tratto: testo.withValues(alpha: scuro ? 0.4 : 0.3),
-                verticale: true,
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        titolo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Testi.evidenza.copyWith(color: testo),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        sottotitolo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Testi.didascalia.copyWith(
-                          color: scuro
-                              ? Colori.bianco.withValues(alpha: 0.85)
-                              : Colori.senape,
-                          fontWeight: FontWeight.w500,
+                _Perforazione(
+                  fondo: fondo,
+                  tratto: testo.withValues(alpha: scuro ? 0.4 : 0.3),
+                  verticale: true,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          titolo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Testi.evidenza.copyWith(color: testo),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          sottotitolo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Testi.didascalia.copyWith(
+                            color: scuro
+                                ? Colori.bianco.withValues(alpha: 0.85)
+                                : tratteggiato
+                                ? Colori.grafite
+                                : Colori.senape,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (timbro != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 14),
-                  child: Center(child: timbro),
-                ),
-            ],
+                if (timbro != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 14),
+                    child: Center(child: timbro),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -383,6 +399,41 @@ class _Perforazione extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Il bordo tratteggiato di un biglietto bianco, lungo gli angoli tondi.
+class _BordoTratteggiato extends CustomPainter {
+  const _BordoTratteggiato(this.colore, {required this.raggio});
+
+  final Color colore;
+  final double raggio;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final pennello = Paint()
+      ..color = colore
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    final bordo = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          (Offset.zero & size).deflate(1),
+          Radius.circular(raggio - 1),
+        ),
+      );
+    for (final tratto in bordo.computeMetrics()) {
+      for (var d = 0.0; d < tratto.length; d += 10) {
+        canvas.drawPath(
+          tratto.extractPath(d, min(d + 6, tratto.length)),
+          pennello,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BordoTratteggiato vecchio) =>
+      vecchio.colore != colore || vecchio.raggio != raggio;
 }
 
 class _Tratteggio extends CustomPainter {

@@ -63,6 +63,10 @@ class Viaggi extends Table with RigaCopiata {
   BoolColumn get importato => boolean()();
   BoolColumn get verificato => boolean()();
 
+  /// Quanti giorni è durato un viaggio importato, se la persona se lo
+  /// ricorda: date e orari non li sa (fase 4.3).
+  IntColumn get giorniRicordati => integer().nullable()();
+
   /// La deroga amministrativa sulla verifica: vale come sul posto, e toglie
   /// il viaggio da ogni metrica (02, regola 8). La scrive solo chi gestisce
   /// il progetto.
@@ -417,8 +421,9 @@ class DatabaseLocale extends _$DatabaseLocale {
   /// 8 (fase 2.4): le voci sanno chi le portava prima di lasciare il viaggio.
   /// 9 (fase 3.4): le partecipazioni sanno chi è stato sul posto.
   /// 10 (fase 4.1): la verifica di ciascuno, la deroga, i traguardi.
+  /// 11 (fase 4.3): i giorni che si ricordano di un viaggio passato.
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [
@@ -484,6 +489,9 @@ class DatabaseLocale extends _$DatabaseLocale {
         await _aggiungiSeManca(m, partecipazioni, partecipazioni.verificato);
         await _aggiungiSeManca(m, viaggi, viaggi.verificaPerDeroga);
         await m.createTable(traguardi);
+      }
+      if (da >= 2 && da < 11) {
+        await _aggiungiSeManca(m, viaggi, viaggi.giorniRicordati);
       }
     },
   );

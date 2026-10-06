@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trolley/dominio/periodo.dart';
 import 'package:trolley/dominio/ricordo.dart';
 import 'package:trolley/dominio/stato_viaggio.dart';
 import 'package:trolley/dominio/traguardi.dart';
@@ -137,10 +138,10 @@ void main() {
     test('un paese è da grattare se è arrivato con un viaggio finito '
         'nell\'ultimo mese, e non è ancora scoperto', () {
       final visite = [
-        (paese: 'PT', fine: DateTime(2025, 5, 17)),
-        (paese: 'JP', fine: DateTime(2026, 10, 2)),
-        (paese: 'GR', fine: DateTime(2026, 9, 10)),
-        (paese: null, fine: DateTime(2026, 10, 1)),
+        (paese: 'PT', fine: DateTime(2025, 5, 17), importato: false),
+        (paese: 'JP', fine: DateTime(2026, 10, 2), importato: false),
+        (paese: 'GR', fine: DateTime(2026, 9, 10), importato: false),
+        (paese: null, fine: DateTime(2026, 10, 1), importato: false),
       ];
       expect(daGrattare(visite, scoperti: {}, oggi: oggi), ['GR', 'JP']);
       expect(daGrattare(visite, scoperti: {'GR'}, oggi: oggi), ['JP']);
@@ -148,29 +149,95 @@ void main() {
 
     test('tornare in un paese già visto non lo rimette sotto la patina', () {
       final visite = [
-        (paese: 'PT', fine: DateTime(2025, 5, 17)),
-        (paese: 'PT', fine: DateTime(2026, 10, 2)),
+        (paese: 'PT', fine: DateTime(2025, 5, 17), importato: false),
+        (paese: 'PT', fine: DateTime(2026, 10, 2), importato: false),
       ];
       expect(daGrattare(visite, scoperti: {}, oggi: oggi), isEmpty);
     });
 
     test('dopo un mese il paese è sul mappamondo e basta: chi reinstalla non '
         'trova una fila di paesi da grattare', () {
-      final visite = [(paese: 'JP', fine: DateTime(2026, 9, 5))];
+      final visite = [
+        (paese: 'JP', fine: DateTime(2026, 9, 5), importato: false),
+      ];
       expect(daGrattare(visite, scoperti: {}, oggi: oggi), isEmpty);
       expect(daGrattare(visite, scoperti: {}, oggi: DateTime(2026, 10, 5)), [
         'JP',
       ]);
     });
 
+    test('un paese portato da un viaggio passato non si gratta, nemmeno se '
+        'il viaggio è di questo mese, e non lo fa grattare un viaggio vero '
+        'che viene dopo', () {
+      final visite = [
+        (paese: 'ES', fine: DateTime(2026, 10, 1), importato: true),
+        (paese: 'ES', fine: DateTime(2026, 10, 4), importato: false),
+        (paese: 'FR', fine: DateTime(2026, 10, 3), importato: false),
+        (paese: 'FR', fine: DateTime(2019, 8, 1), importato: true),
+        (paese: 'JP', fine: DateTime(2026, 10, 2), importato: false),
+      ];
+      expect(daGrattare(visite, scoperti: {}, oggi: oggi), ['JP']);
+      // Contano comunque nell'ordine: la Francia è arrivata nel 2019.
+      expect(paesiInOrdine(visite), ['FR', 'ES', 'JP']);
+    });
+
     test('i paesi nell\'ordine in cui sono arrivati: «il tuo 2° paese»', () {
       final visite = [
-        (paese: 'JP', fine: DateTime(2026, 10, 2)),
-        (paese: 'PT', fine: DateTime(2025, 5, 17)),
-        (paese: 'JP', fine: DateTime(2024, 1, 1)),
-        (paese: 'GR', fine: DateTime(2026, 9, 10)),
+        (paese: 'JP', fine: DateTime(2026, 10, 2), importato: false),
+        (paese: 'PT', fine: DateTime(2025, 5, 17), importato: false),
+        (paese: 'JP', fine: DateTime(2024, 1, 1), importato: false),
+        (paese: 'GR', fine: DateTime(2026, 9, 10), importato: false),
       ];
       expect(paesiInOrdine(visite), ['JP', 'PT', 'GR']);
+    });
+  });
+
+  group('un viaggio passato', () {
+    final oggi = DateTime(2026, 10, 6);
+    final agosto2019 = Periodo.leggi('agosto 2019');
+
+    test('servono dove e quando; i giorni sono facoltativi', () {
+      String? problema({
+        bool dove = true,
+        Periodo? quando,
+        String giorni = '',
+      }) => problemaViaggioPassato(
+        dove: dove,
+        quando: quando,
+        giorni: giorni,
+        oggi: oggi,
+      );
+      expect(problema(dove: false, quando: agosto2019), 'Scegli dove');
+      expect(problema(), 'Scegli quando');
+      expect(problema(quando: agosto2019), isNull);
+      expect(problema(quando: agosto2019, giorni: ' 5 '), isNull);
+      expect(problema(quando: agosto2019, giorni: '365'), isNull);
+      for (final sbagliati in ['0', '366', 'cinque', '-2']) {
+        expect(
+          problema(quando: agosto2019, giorni: sbagliati),
+          'I giorni vanno da 1 a 365, o lascia vuoto',
+        );
+      }
+    });
+
+    test('è cominciato in un mese già venuto: questo sì, il prossimo no', () {
+      String? quando(String periodo) => problemaViaggioPassato(
+        dove: true,
+        quando: Periodo.leggi(periodo),
+        giorni: '',
+        oggi: oggi,
+      );
+      expect(quando('ottobre 2026'), isNull);
+      expect(
+        quando('novembre 2026'),
+        'Un viaggio passato è cominciato in un mese già venuto',
+      );
+    });
+
+    test('i giorni scritti a mano', () {
+      expect(leggiGiorni(' 12 '), 12);
+      expect(leggiGiorni(''), isNull);
+      expect(leggiGiorni('dodici'), isNull);
     });
   });
 }

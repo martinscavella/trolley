@@ -135,6 +135,27 @@ void main() {
     );
   });
 
+  testWidgets('un viaggio passato nello stesso posto conta: Porto non è '
+      'nuova, e il Portogallo non si gratta', (tester) async {
+    ambiente.server
+      ..viaggi.add(
+        rigaViaggio(
+          'porto-2019',
+          stato: 'chiuso',
+          periodo: 'maggio 2019',
+          importato: true,
+        ),
+      )
+      ..partecipazioni.add(rigaPartecipazione('porto-2019'));
+    await viaggio(tester);
+    await ambiente.monta(tester, SchermataViaggi(onCodice: (_) {}));
+    await aspetta(tester);
+
+    expect(find.text('CONCLUSO'), findsOneWidget);
+    expect(find.text('per la 2ª volta'), findsOneWidget);
+    expect(find.text('Portogallo: grattalo sul mappamondo'), findsNothing);
+  });
+
   testWidgets('non verificato: lo stesso riepilogo, senza timbro né '
       'traguardi, e senza dire che cosa è mancato', (tester) async {
     await viaggio(tester, sulPosto: false);

@@ -134,8 +134,9 @@ class _SchermataMappamondoState extends State<SchermataMappamondo> {
                     child: TitoloPagina(
                       'Mappamondo',
                       sottotitolo: paesi.isEmpty
-                          ? 'Si colora con i viaggi chiusi, verificati o no: '
-                                'il primo paese arriva con il primo viaggio.'
+                          ? 'Si colora con i viaggi chiusi, verificati o no, '
+                                'e con quelli fatti prima di Trolley che '
+                                'aggiungi al passaporto.'
                           : ora != null
                           ? '${_quanti(paesi.length, citta.length)}. Un '
                                 'paese nuovo: grattalo col dito.'

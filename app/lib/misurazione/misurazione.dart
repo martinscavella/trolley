@@ -39,6 +39,7 @@ abstract final class Eventi {
   static const viaggioPreparato = 'viaggio_preparato';
   static const permessoPosizione = 'permesso_posizione';
   static const viaggioChiuso = 'viaggio_chiuso';
+  static const passaportoCompilato = 'passaporto_compilato';
 }
 
 class Misurazione {

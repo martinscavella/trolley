@@ -226,10 +226,22 @@ La fase 4.2 (il profilo con i suoi numeri, il passaporto, il mappamondo con i co
 | ~~**Il gesto del grattare** (tela, 66, nota)~~ | Deciso dall'utente e costruito il 6 ottobre 2026: un paese nuovo si gratta col dito (tela, 95–97; decisioni) | ✅ |
 | **Grattare su due telefoni** | Che cosa si è grattato si ricorda sul telefono: chi ha due telefoni gratta lo stesso paese su entrambi, nel mese in cui resta da grattare | Se capita |
 | **Avvicinare il globo**, e le città come punti | Il globo è grande quanto lo schermo e i confini sono semplificati per quella grandezza (ADR-005): avvicinandolo servirebbero confini più fini | Se la beta lo chiede |
-| **«Aggiungi un viaggio passato»** nel passaporto (tela, 65 e 67) | I viaggi importati sono la 4.3 | Fase 4.3 |
+| ~~**«Aggiungi un viaggio passato»** nel passaporto (tela, 65 e 67)~~ | Costruito con la 4.3 | ✅ |
 | **La parte pubblica e le notifiche nel profilo** (tela, 64) | Arrivano con le loro fasi | Fase 5.3, notifiche |
 | **Una città con due nomi** | Il mappamondo conta le città per nome: «Cracovia» e «Kraków» scritte a mano sarebbero due. Dall'elenco si sceglie sempre lo stesso nome | Se capita |
 | **Rivedere sulla tela le schermate 64–66 e 95–97** | 64–66 disegnate il 4 ottobre, 95–97 il 6 ottobre, costruite il 6 ottobre 2026 | Prima di chiudere la 4.2 |
+
+### Rimasto fuori dalla 4.3
+
+La fase 4.3 (i viaggi passati: aggiungerli, cambiarli, toglierli; il biglietto tratteggiato con il timbro «importato») è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Applicare la migrazione `viaggi_passati`** | `supabase/migrations/20261006150000_viaggi_passati.sql`: i giorni ricordati, un viaggio nasce chiuso solo se è importato, `aggiungi_viaggio_passato`, nessun invito in un viaggio passato. Si applica dall'editor SQL e si prova con `supabase/tests/viaggi_passati.sql`; la versione non finirà in `schema_migrations`, come le altre applicate a mano | Prima di provare la 4.3 sul telefono |
+| **Un viaggio passato fatto insieme** | È di chi lo aggiunge: ognuno aggiunge il suo, e non ci si invita nessuno | Se la beta lo chiede |
+| **I numeri del profilo pubblico** | Nel profilo personale «Viaggi» conta anche i viaggi passati (tela, 64). Quando il profilo diventa pubblico (5.3), un numero che si mostra agli altri deve dire quanti sono verificati e quanti dichiarati: un traguardo verificato e uno dichiarato non devono somigliarsi | Fase 5.3 |
+| **Rimettere dentro un archivio scaricato** | È la reimportazione, premium (modello di business): un'altra cosa rispetto ad aggiungere un viaggio a mano | Fase 6 |
+| **Rivedere sulla tela le schermate 67 e 98** | 67 disegnata il 4 ottobre, 98 il 6 ottobre, costruite il 6 ottobre 2026 | Prima di chiudere la 4.3 |
 
 ### Impianto di sicurezza del matching — stima
 
