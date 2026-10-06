@@ -333,6 +333,7 @@ class Archivio {
     });
     await aggiornaTassi().catchError((_) {});
     await aggiornaConfigurazione().catchError((_) {});
+    await aggiornaTraguardi().catchError((_) {});
   }
 
   static const _copia = 'copia:';
@@ -486,6 +487,166 @@ class Archivio {
       .into(_db.impostazioni)
       .insertOnConflictUpdate(
         ImpostazioniCompanion.insert(chiave: _negataDetta, valore: '1'),
+      );
+
+  // ─── La chiusura ────────────────────────────────────────────────────────
+
+  /// I giorni del viaggio, una volta, in ordine.
+  Future<List<Giorno>> leggiGiorni(String viaggioId) =>
+      (_db.select(_db.giorni)
+            ..where(
+              (g) => g.viaggioId.equals(viaggioId) & g.eliminatoIl.isNull(),
+            )
+            ..orderBy([(g) => OrderingTerm.asc(g.data)]))
+          .get();
+
+  /// Le tappe del viaggio, una volta.
+  Future<List<Tappa>> leggiTappe(String viaggioId) =>
+      (_db.select(_db.tappe)..where(
+            (t) => t.viaggioId.equals(viaggioId) & t.eliminatoIl.isNull(),
+          ))
+          .get();
+
+  /// Chi è nel viaggio adesso, una volta.
+  Future<List<Partecipazione>> leggiPresenti(String viaggioId) =>
+      (_db.select(_db.partecipazioni)..where(
+            (p) =>
+                p.viaggioId.equals(viaggioId) &
+                p.stato.equals('attivo') &
+                p.eliminatoIl.isNull(),
+          ))
+          .get();
+
+  /// I propri traguardi, una volta.
+  Future<List<TraguardoPreso>> leggiTraguardi() =>
+      _db.select(_db.traguardi).get();
+
+  /// La propria partecipazione a un viaggio, dalla copia.
+  Future<Partecipazione?> miaPartecipazione(String viaggioId) async {
+    final io = _io;
+    if (io == null) return null;
+    return (_db.select(_db.partecipazioni)
+          ..where((p) => p.viaggioId.equals(viaggioId) & p.utenteId.equals(io)))
+        .getSingleOrNull();
+  }
+
+  /// Le proprie partecipazioni, con il loro viaggio: per i traguardi, che si
+  /// contano su tutti i viaggi verificati.
+  Future<List<(Partecipazione, Viaggio)>> mieiViaggi() async {
+    final io = _io;
+    if (io == null) return const [];
+    final righe = await (_db.select(_db.partecipazioni).join([
+      innerJoin(
+        _db.viaggi,
+        _db.viaggi.id.equalsExp(_db.partecipazioni.viaggioId),
+      ),
+    ])..where(_db.partecipazioni.utenteId.equals(io))).get();
+    return [
+      for (final r in righe)
+        (r.readTable(_db.partecipazioni), r.readTable(_db.viaggi)),
+    ];
+  }
+
+  /// Chiude il viaggio (10, regola 1; 02, regola 4): da solo dopo la fine,
+  /// o prima a mano da chi ne è responsabile. Richiede la rete.
+  Future<void> chiudiViaggio(String viaggioId) async {
+    final riga = await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'chiudi_viaggio',
+        params: {'p_viaggio': viaggioId},
+      ),
+      messaggi: {
+        CodiciServer.nonPermesso:
+            'Solo chi è responsabile del viaggio lo chiude prima della fine.',
+      },
+    );
+    await _db
+        .into(_db.viaggi)
+        .insertOnConflictUpdate(_viaggio(riga, DateTime.now().toUtc()));
+  }
+
+  /// Scrive la propria verifica del viaggio chiuso, una volta. Richiede la
+  /// rete.
+  Future<void> segnaVerifica(
+    String viaggioId, {
+    required bool verificato,
+  }) async {
+    final riga = await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'segna_verifica',
+        params: {'p_viaggio': viaggioId, 'p_verificato': verificato},
+      ),
+    );
+    await _db
+        .into(_db.partecipazioni)
+        .insertOnConflictUpdate(_partecipazione(riga, DateTime.now().toUtc()));
+  }
+
+  /// Prende i traguardi [tipi] con il viaggio verificato, e mette nella
+  /// copia tutti i propri. Richiede la rete.
+  Future<void> prendiTraguardi(String viaggioId, Iterable<String> tipi) async {
+    final righe = await _alServer(
+      () => _server.rpc<List<dynamic>>(
+        'prendi_traguardi',
+        params: {'p_viaggio': viaggioId, 'p_tipi': tipi.toList()},
+      ),
+    );
+    await _traguardiNellaCopia(righe.cast<Map<String, dynamic>>());
+  }
+
+  /// Riscarica i propri traguardi. Senza rete restano quelli di prima.
+  Future<void> aggiornaTraguardi() async {
+    if (_io == null) return;
+    final righe = await _alServer(
+      () => _server.from('traguardo').select('id, tipo, viaggio_id, preso_il'),
+    );
+    await _traguardiNellaCopia(righe);
+  }
+
+  Future<void> _traguardiNellaCopia(List<Map<String, dynamic>> righe) {
+    final adesso = DateTime.now().toUtc();
+    return _db.transaction(() async {
+      await _db.delete(_db.traguardi).go();
+      await _db.batch(
+        (b) => b.insertAll(_db.traguardi, [
+          for (final r in righe)
+            TraguardiCompanion.insert(
+              id: r['id'] as String,
+              tipo: r['tipo'] as String,
+              viaggioId: r['viaggio_id'] as String,
+              presoIl: r['preso_il'] as String,
+              scaricatoIl: adesso,
+            ),
+        ]),
+      );
+    });
+  }
+
+  /// I propri traguardi, nell'ordine in cui si sono presi.
+  Stream<List<TraguardoPreso>> osservaTraguardi() =>
+      (_db.select(_db.traguardi)..orderBy([
+            (t) => OrderingTerm.asc(t.presoIl),
+            (t) => OrderingTerm.asc(t.tipo),
+          ]))
+          .watch();
+
+  static const _riepilogoVisto = 'riepilogo_visto:';
+
+  /// Il riepilogo di chiusura si apre da solo una volta per viaggio, su
+  /// questo telefono.
+  Future<bool> riepilogoVisto(String viaggioId) async =>
+      await (_db.select(_db.impostazioni)
+            ..where((i) => i.chiave.equals('$_riepilogoVisto$viaggioId')))
+          .getSingleOrNull() !=
+      null;
+
+  Future<void> segnaRiepilogoVisto(String viaggioId) => _db
+      .into(_db.impostazioni)
+      .insertOnConflictUpdate(
+        ImpostazioniCompanion.insert(
+          chiave: '$_riepilogoVisto$viaggioId',
+          valore: '1',
+        ),
       );
 
   // ─── Prima di partire ───────────────────────────────────────────────────
@@ -1078,6 +1239,7 @@ class Archivio {
               '$_copia$viaggioId',
               '$_preparato$viaggioId',
               '$_sulPosto$viaggioId',
+              '$_riepilogoVisto$viaggioId',
             ]),
           ))
           .go();
@@ -2165,6 +2327,7 @@ class Archivio {
         creatoreId: r['creatore_id'] as String,
         importato: r['importato'] as bool,
         verificato: r['verificato'] as bool,
+        verificaPerDeroga: Value((r['verifica_per_deroga'] as bool?) ?? false),
         creatoIl: r['creato_il'] as String,
       );
 
@@ -2183,6 +2346,7 @@ class Archivio {
     creatoIl: Value(r['creato_il'] as String?),
     modificatoIl: Value(r['modificato_il'] as String?),
     sulPostoIl: Value(r['sul_posto_il'] as String?),
+    verificato: Value(r['verificato'] as bool?),
   );
 
   NoteCompanion _nota(Map<String, dynamic> r, DateTime adesso) =>

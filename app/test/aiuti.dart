@@ -288,6 +288,7 @@ Map<String, Object?> rigaPartecipazione(
 }) => {
   'id': utente == idDiProva ? 'p-$viaggio' : 'p-$viaggio-$utente',
   'sul_posto_il': null,
+  'verificato': null,
   'viaggio_id': viaggio,
   'utente_id': utente,
   'ruolo': ruolo,
@@ -321,6 +322,9 @@ class ServerFinto {
   final voci = <Map<String, Object?>>[];
   final note = <Map<String, Object?>>[];
   final tassi = <Map<String, Object?>>[];
+
+  /// I traguardi presi, come li restituisce il server: solo i propri.
+  final traguardi = <Map<String, Object?>>[];
 
   /// I link d'invito: `token`, `viaggio_id`, `creato_da`, `creato_il`,
   /// `eliminato_il`.
@@ -423,6 +427,65 @@ class ServerFinto {
           mia['stato'] = 'attivo';
         }
         return risposta(viaggio);
+      case 'GET /rest/v1/traguardo':
+        return risposta(traguardi);
+      case 'POST /rest/v1/rpc/chiudi_viaggio':
+        final id = _corpo(r)['p_viaggio'] as String;
+        final mia = _partecipazione(id, idDiProva);
+        final v = _viaggio(id);
+        if (mia == null || mia['stato'] != 'attivo' || v == null) {
+          return _errore('TR404', 'non partecipi');
+        }
+        if (v['stato'] == 'chiuso') return risposta(v);
+        final oggi = DateTime.now().toUtc();
+        final giorno = DateTime.utc(oggi.year, oggi.month, oggi.day);
+        final inizio = DateTime.parse('${v['data_inizio']}');
+        final fine = DateTime.parse('${v['data_fine']}');
+        if (inizio.isAfter(giorno.add(const Duration(days: 1)))) {
+          return _errore('TR422', 'il viaggio non è cominciato');
+        }
+        if (giorno.isBefore(fine) && mia['ruolo'] != 'creatore') {
+          return _errore('TR403', 'solo chi è responsabile');
+        }
+        v
+          ..['stato'] = 'chiuso'
+          ..['versione'] = (v['versione']! as int) + 1;
+        return risposta(v);
+      case 'POST /rest/v1/rpc/segna_verifica':
+        final id = _corpo(r)['p_viaggio'] as String;
+        final mia = _partecipazione(id, idDiProva);
+        final v = _viaggio(id);
+        if (mia == null || mia['stato'] != 'attivo' || v == null) {
+          return _errore('TR404', 'non partecipi');
+        }
+        if (v['stato'] != 'chiuso') return _errore('TR422', 'non è chiuso');
+        if (mia['verificato'] != null) return risposta(mia);
+        final verificato = _corpo(r)['p_verificato'] as bool;
+        if (verificato &&
+            (v['importato'] == true ||
+                (mia['sul_posto_il'] == null &&
+                    v['verifica_per_deroga'] != true))) {
+          return _errore('TR403', 'non sul posto');
+        }
+        mia['verificato'] = verificato;
+        if (verificato) v['verificato'] = true;
+        return risposta(mia);
+      case 'POST /rest/v1/rpc/prendi_traguardi':
+        final id = _corpo(r)['p_viaggio'] as String;
+        final mia = _partecipazione(id, idDiProva);
+        if (mia == null || mia['verificato'] != true) {
+          return _errore('TR403', 'non verificato');
+        }
+        for (final tipo in (_corpo(r)['p_tipi'] as List).cast<String>()) {
+          if (traguardi.any((t) => t['tipo'] == tipo)) continue;
+          traguardi.add({
+            'id': 'tr-$tipo',
+            'tipo': tipo,
+            'viaggio_id': id,
+            'preso_il': DateTime.now().toUtc().toIso8601String(),
+          });
+        }
+        return risposta(traguardi);
       case 'POST /rest/v1/rpc/segna_sul_posto':
         final id = _corpo(r)['p_viaggio'];
         final mia = _partecipazione(id, idDiProva);

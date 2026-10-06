@@ -28,6 +28,7 @@ import 'con_la_rete.dart';
 import 'cose.dart';
 import 'date_viaggio.dart';
 import 'documenti.dart';
+import 'gesti_chiusura.dart';
 import 'gesti_partecipanti.dart';
 import 'gesti_tappa.dart';
 import 'giornata.dart';
@@ -171,8 +172,11 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
               ),
               children: [
                 _Testata(viaggio: viaggio, stato: stato).entra(context),
-                if (stato == StatoViaggio.chiuso)
+                if (stato == StatoViaggio.chiuso) ...[
                   _CopiaDelViaggioFinito(viaggioId: viaggio.id),
+                  IngressoRiepilogo(viaggio: viaggio)
+                      .entra(context, ritardo: Ritmo.passo),
+                ],
                 if (giorniAllaPartenza(
                       stato: stato,
                       inizio: viaggio.inizio,
@@ -236,6 +240,7 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                     onPressed: _invita,
                   ),
                 ).entra(context, ritardo: Ritmo.passo * 4),
+                PulsanteChiudiViaggio(viaggio: viaggio),
               ],
             ),
           ),

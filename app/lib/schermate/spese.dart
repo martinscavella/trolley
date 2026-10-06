@@ -519,7 +519,7 @@ class _SchermataSpeseState extends State<SchermataSpese> {
             if (conto.diviso &&
                 (conto.spese.isNotEmpty || conto.rimborsi.isNotEmpty)) ...[
               const SizedBox(height: 10),
-              _RigaSaldi(
+              RigaSaldi(
                 conto: conto,
                 viaggio: viaggio,
               ).entra(context, ritardo: Ritmo.passo),
@@ -695,11 +695,19 @@ class _Cifra extends StatelessWidget {
 
 /// La riga dei saldi sotto il totale (tela, 37): quanto ti devono o devi, e
 /// un tocco porta al giro più corto per pareggiare.
-class _RigaSaldi extends StatelessWidget {
-  const _RigaSaldi({required this.conto, required this.viaggio});
+class RigaSaldi extends StatelessWidget {
+  const RigaSaldi({
+    super.key,
+    required this.conto,
+    required this.viaggio,
+    this.sotto = 'Saldi: il giro più corto per pareggiare',
+  });
 
   final ContoViaggio conto;
   final Viaggio viaggio;
+
+  /// La riga sotto: nel riepilogo di chiusura, che i saldi restano aperti.
+  final String sotto;
 
   @override
   Widget build(BuildContext context) {
@@ -719,7 +727,7 @@ class _RigaSaldi extends StatelessWidget {
     return Premibile(
       onTap: () => apri<void>(context, SchermataSaldi(viaggioId: viaggio.id)),
       scala: 0.98,
-      etichetta: '$titolo. Saldi: il giro più corto per pareggiare',
+      etichetta: '$titolo. $sotto',
       child: ExcludeSemantics(
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -745,7 +753,7 @@ class _RigaSaldi extends StatelessWidget {
                       style: Testi.evidenza.copyWith(color: Colori.inchiostro),
                     ),
                     Text(
-                      'Saldi: il giro più corto per pareggiare',
+                      sotto,
                       style: Testi.didascalia.copyWith(color: Colori.grafite),
                     ),
                   ],

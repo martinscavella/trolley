@@ -19,6 +19,7 @@ import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
+import '../dominio/chiusura.dart';
 import '../dominio/giornate.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
@@ -327,11 +328,21 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
                       ),
               ),
             const SizedBox(height: 16),
-            PulsanteGrande(
-              etichetta: 'Aggiungi una tappa',
-              icona: Icons.add_rounded,
-              onPressed: () => apriTappa(),
-            ).entra(context, ritardo: Ritmo.passo * 3),
+            // Concluso, il programma è finito: le tappe restano com'erano
+            // (tela, 93).
+            if (tappeAggiungibili(statoViaggio))
+              PulsanteGrande(
+                etichetta: 'Aggiungi una tappa',
+                icona: Icons.add_rounded,
+                onPressed: () => apriTappa(),
+              ).entra(context, ritardo: Ritmo.passo * 3)
+            else
+              Text(
+                'Il viaggio è concluso: le tappe restano com\'erano, e non se '
+                'ne aggiungono.',
+                textAlign: TextAlign.center,
+                style: Testi.didascalia.copyWith(color: Colori.grafite),
+              ),
             // Tutte le tappe del giorno in un colpo (tela, 59).
             if (delGiorno.isNotEmpty) ...[
               const SizedBox(height: 10),

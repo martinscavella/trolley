@@ -196,13 +196,26 @@ La fase 3.4 (le regole della verifica, «sul posto» confrontato sul telefono e 
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Applicare la migrazione `sul_posto`** | `supabase/migrations/20261006090000_sul_posto.sql`, con le prove in `supabase/tests/sul_posto.sql`. Finché non c'è, l'app ricorda il sì sul telefono e riprova a ogni apertura | Prima di provare la 3.4 sul telefono |
+| ~~**Applicare la migrazione `sul_posto`**~~ | Applicata dall'editor SQL e provata il 6 ottobre 2026 (`supabase/tests/sul_posto.sql`, tutte «ok»). La versione `20261006090000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
 | **Scrivere `viaggio.verificato`, e i traguardi** | La verifica si calcola alla chiusura: è la 4.1, con il riepilogo e l'evento `viaggio_chiuso` | Fase 4.1 |
 | **La deroga nella copia locale** | `verifica_per_deroga` sta sul server; l'app la leggerà quando chiude il viaggio | Fase 4.1 |
 | **Vicino a un confine il paese può sbagliare** | Il paese di un punto è quello della città più vicina dell'elenco: a Ginevra si può risultare in Francia. Per le mete-città conta la distanza, non il paese | Se la beta lo mostra |
 | **50 km dal centro** | Abbastanza per la periferia e l'aeroporto; poco per un parco nazionale scritto come città | Se la beta lo mostra |
 | **Rivedere sulla tela le schermate 58 e 59** | Disegnate il 4 ottobre 2026, costruite il 6 ottobre: la domanda «quando chiederla» è decisa (decisioni) | Prima di chiudere la 3.4 |
 | **Provare sul telefono, in viaggio** | Le prove girano sul server e sulla posizione finti | Al primo viaggio vero |
+
+### Rimasto fuori dalla 4.1
+
+La fase 4.1 (la chiusura da sola e a mano, la verifica scritta per ciascuno, il riepilogo, i traguardi) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| ~~**Applicare la migrazione `chiusura`**~~ | Applicata dall'editor SQL e provata il 6 ottobre 2026 (`supabase/tests/chiusura.sql`, tutte «ok»). La versione `20261006120000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
+| **«Guarda il passaporto»** nel riepilogo (tela, 60 e 61) | Il passaporto è la 4.2 | Fase 4.2 |
+| **Il promemoria a un anno** («un anno fa eri a Lisbona», 10, regola 9) | È una notifica | Con le notifiche |
+| **Quali traguardi** | La prima serie è quella della tela (decisioni). Si rivede con i numeri: se quasi nessuno li prende, la leva è aiutare a segnare le tappe | Dopo la fase interna |
+| **Un viaggio chiuso per sbaglio** | Non si riapre: chi è responsabile lo chiude solo dopo una conferma che dice cosa succede | Se capita |
+| **Rivedere sulla tela le schermate 60–63, 93 e 94** | 60–63 disegnate il 4 ottobre, 93 e 94 il 6 ottobre 2026, costruite il 6 ottobre | Prima di chiudere la 4.1 |
 
 ### Impianto di sicurezza del matching — stima
 

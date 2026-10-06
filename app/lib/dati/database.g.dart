@@ -671,6 +671,21 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
       'CHECK ("verificato" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _verificaPerDerogaMeta = const VerificationMeta(
+    'verificaPerDeroga',
+  );
+  @override
+  late final GeneratedColumn<bool> verificaPerDeroga = GeneratedColumn<bool>(
+    'verifica_per_deroga',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("verifica_per_deroga" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _creatoIlMeta = const VerificationMeta(
     'creatoIl',
   );
@@ -699,6 +714,7 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
     creatoreId,
     importato,
     verificato,
+    verificaPerDeroga,
     creatoIl,
   ];
   @override
@@ -832,6 +848,15 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
     } else if (isInserting) {
       context.missing(_verificatoMeta);
     }
+    if (data.containsKey('verifica_per_deroga')) {
+      context.handle(
+        _verificaPerDerogaMeta,
+        verificaPerDeroga.isAcceptableOrUnknown(
+          data['verifica_per_deroga']!,
+          _verificaPerDerogaMeta,
+        ),
+      );
+    }
     if (data.containsKey('creato_il')) {
       context.handle(
         _creatoIlMeta,
@@ -909,6 +934,10 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
         DriftSqlType.bool,
         data['${effectivePrefix}verificato'],
       )!,
+      verificaPerDeroga: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}verifica_per_deroga'],
+      )!,
       creatoIl: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}creato_il'],
@@ -941,6 +970,11 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
   final String creatoreId;
   final bool importato;
   final bool verificato;
+
+  /// La deroga amministrativa sulla verifica: vale come sul posto, e toglie
+  /// il viaggio da ogni metrica (02, regola 8). La scrive solo chi gestisce
+  /// il progetto.
+  final bool verificaPerDeroga;
   final String creatoIl;
   const Viaggio({
     required this.id,
@@ -958,6 +992,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     required this.creatoreId,
     required this.importato,
     required this.verificato,
+    required this.verificaPerDeroga,
     required this.creatoIl,
   });
   @override
@@ -994,6 +1029,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     map['creatore_id'] = Variable<String>(creatoreId);
     map['importato'] = Variable<bool>(importato);
     map['verificato'] = Variable<bool>(verificato);
+    map['verifica_per_deroga'] = Variable<bool>(verificaPerDeroga);
     map['creato_il'] = Variable<String>(creatoIl);
     return map;
   }
@@ -1031,6 +1067,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       creatoreId: Value(creatoreId),
       importato: Value(importato),
       verificato: Value(verificato),
+      verificaPerDeroga: Value(verificaPerDeroga),
       creatoIl: Value(creatoIl),
     );
   }
@@ -1062,6 +1099,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       creatoreId: serializer.fromJson<String>(json['creatoreId']),
       importato: serializer.fromJson<bool>(json['importato']),
       verificato: serializer.fromJson<bool>(json['verificato']),
+      verificaPerDeroga: serializer.fromJson<bool>(json['verificaPerDeroga']),
       creatoIl: serializer.fromJson<String>(json['creatoIl']),
     );
   }
@@ -1086,6 +1124,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       'creatoreId': serializer.toJson<String>(creatoreId),
       'importato': serializer.toJson<bool>(importato),
       'verificato': serializer.toJson<bool>(verificato),
+      'verificaPerDeroga': serializer.toJson<bool>(verificaPerDeroga),
       'creatoIl': serializer.toJson<String>(creatoIl),
     };
   }
@@ -1106,6 +1145,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     String? creatoreId,
     bool? importato,
     bool? verificato,
+    bool? verificaPerDeroga,
     String? creatoIl,
   }) => Viaggio(
     id: id ?? this.id,
@@ -1129,6 +1169,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     creatoreId: creatoreId ?? this.creatoreId,
     importato: importato ?? this.importato,
     verificato: verificato ?? this.verificato,
+    verificaPerDeroga: verificaPerDeroga ?? this.verificaPerDeroga,
     creatoIl: creatoIl ?? this.creatoIl,
   );
   Viaggio copyWithCompanion(ViaggiCompanion data) {
@@ -1166,6 +1207,9 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       verificato: data.verificato.present
           ? data.verificato.value
           : this.verificato,
+      verificaPerDeroga: data.verificaPerDeroga.present
+          ? data.verificaPerDeroga.value
+          : this.verificaPerDeroga,
       creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
     );
   }
@@ -1188,6 +1232,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
           ..write('creatoreId: $creatoreId, ')
           ..write('importato: $importato, ')
           ..write('verificato: $verificato, ')
+          ..write('verificaPerDeroga: $verificaPerDeroga, ')
           ..write('creatoIl: $creatoIl')
           ..write(')'))
         .toString();
@@ -1210,6 +1255,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     creatoreId,
     importato,
     verificato,
+    verificaPerDeroga,
     creatoIl,
   );
   @override
@@ -1231,6 +1277,7 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
           other.creatoreId == this.creatoreId &&
           other.importato == this.importato &&
           other.verificato == this.verificato &&
+          other.verificaPerDeroga == this.verificaPerDeroga &&
           other.creatoIl == this.creatoIl);
 }
 
@@ -1250,6 +1297,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
   final Value<String> creatoreId;
   final Value<bool> importato;
   final Value<bool> verificato;
+  final Value<bool> verificaPerDeroga;
   final Value<String> creatoIl;
   final Value<int> rowid;
   const ViaggiCompanion({
@@ -1268,6 +1316,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     this.creatoreId = const Value.absent(),
     this.importato = const Value.absent(),
     this.verificato = const Value.absent(),
+    this.verificaPerDeroga = const Value.absent(),
     this.creatoIl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1287,6 +1336,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     required String creatoreId,
     required bool importato,
     required bool verificato,
+    this.verificaPerDeroga = const Value.absent(),
     required String creatoIl,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1313,6 +1363,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     Expression<String>? creatoreId,
     Expression<bool>? importato,
     Expression<bool>? verificato,
+    Expression<bool>? verificaPerDeroga,
     Expression<String>? creatoIl,
     Expression<int>? rowid,
   }) {
@@ -1333,6 +1384,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
       if (creatoreId != null) 'creatore_id': creatoreId,
       if (importato != null) 'importato': importato,
       if (verificato != null) 'verificato': verificato,
+      if (verificaPerDeroga != null) 'verifica_per_deroga': verificaPerDeroga,
       if (creatoIl != null) 'creato_il': creatoIl,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1354,6 +1406,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     Value<String>? creatoreId,
     Value<bool>? importato,
     Value<bool>? verificato,
+    Value<bool>? verificaPerDeroga,
     Value<String>? creatoIl,
     Value<int>? rowid,
   }) {
@@ -1374,6 +1427,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
       creatoreId: creatoreId ?? this.creatoreId,
       importato: importato ?? this.importato,
       verificato: verificato ?? this.verificato,
+      verificaPerDeroga: verificaPerDeroga ?? this.verificaPerDeroga,
       creatoIl: creatoIl ?? this.creatoIl,
       rowid: rowid ?? this.rowid,
     );
@@ -1429,6 +1483,9 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     if (verificato.present) {
       map['verificato'] = Variable<bool>(verificato.value);
     }
+    if (verificaPerDeroga.present) {
+      map['verifica_per_deroga'] = Variable<bool>(verificaPerDeroga.value);
+    }
     if (creatoIl.present) {
       map['creato_il'] = Variable<String>(creatoIl.value);
     }
@@ -1456,6 +1513,7 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
           ..write('creatoreId: $creatoreId, ')
           ..write('importato: $importato, ')
           ..write('verificato: $verificato, ')
+          ..write('verificaPerDeroga: $verificaPerDeroga, ')
           ..write('creatoIl: $creatoIl, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1584,6 +1642,20 @@ class $PartecipazioniTable extends Partecipazioni
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _verificatoMeta = const VerificationMeta(
+    'verificato',
+  );
+  @override
+  late final GeneratedColumn<bool> verificato = GeneratedColumn<bool>(
+    'verificato',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("verificato" IN (0, 1))',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1597,6 +1669,7 @@ class $PartecipazioniTable extends Partecipazioni
     creatoIl,
     modificatoIl,
     sulPostoIl,
+    verificato,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1699,6 +1772,12 @@ class $PartecipazioniTable extends Partecipazioni
         ),
       );
     }
+    if (data.containsKey('verificato')) {
+      context.handle(
+        _verificatoMeta,
+        verificato.isAcceptableOrUnknown(data['verificato']!, _verificatoMeta),
+      );
+    }
     return context;
   }
 
@@ -1752,6 +1831,10 @@ class $PartecipazioniTable extends Partecipazioni
         DriftSqlType.string,
         data['${effectivePrefix}sul_posto_il'],
       ),
+      verificato: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}verificato'],
+      ),
     );
   }
 
@@ -1785,6 +1868,10 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
   /// Quando il suo telefono l'ha trovato sul posto, mentre il viaggio era in
   /// corso: una delle tre condizioni della verifica. Mai dove (fase 3.4).
   final String? sulPostoIl;
+
+  /// Se il viaggio, chiuso, è verificato per questa persona; `null` finché
+  /// non si è chiuso per lei (fase 4.1).
+  final bool? verificato;
   const Partecipazione({
     required this.id,
     required this.versione,
@@ -1797,6 +1884,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     this.creatoIl,
     this.modificatoIl,
     this.sulPostoIl,
+    this.verificato,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1819,6 +1907,9 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     }
     if (!nullToAbsent || sulPostoIl != null) {
       map['sul_posto_il'] = Variable<String>(sulPostoIl);
+    }
+    if (!nullToAbsent || verificato != null) {
+      map['verificato'] = Variable<bool>(verificato);
     }
     return map;
   }
@@ -1844,6 +1935,9 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       sulPostoIl: sulPostoIl == null && nullToAbsent
           ? const Value.absent()
           : Value(sulPostoIl),
+      verificato: verificato == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verificato),
     );
   }
 
@@ -1864,6 +1958,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       creatoIl: serializer.fromJson<String?>(json['creatoIl']),
       modificatoIl: serializer.fromJson<String?>(json['modificatoIl']),
       sulPostoIl: serializer.fromJson<String?>(json['sulPostoIl']),
+      verificato: serializer.fromJson<bool?>(json['verificato']),
     );
   }
   @override
@@ -1881,6 +1976,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       'creatoIl': serializer.toJson<String?>(creatoIl),
       'modificatoIl': serializer.toJson<String?>(modificatoIl),
       'sulPostoIl': serializer.toJson<String?>(sulPostoIl),
+      'verificato': serializer.toJson<bool?>(verificato),
     };
   }
 
@@ -1896,6 +1992,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     Value<String?> creatoIl = const Value.absent(),
     Value<String?> modificatoIl = const Value.absent(),
     Value<String?> sulPostoIl = const Value.absent(),
+    Value<bool?> verificato = const Value.absent(),
   }) => Partecipazione(
     id: id ?? this.id,
     versione: versione ?? this.versione,
@@ -1908,6 +2005,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     creatoIl: creatoIl.present ? creatoIl.value : this.creatoIl,
     modificatoIl: modificatoIl.present ? modificatoIl.value : this.modificatoIl,
     sulPostoIl: sulPostoIl.present ? sulPostoIl.value : this.sulPostoIl,
+    verificato: verificato.present ? verificato.value : this.verificato,
   );
   Partecipazione copyWithCompanion(PartecipazioniCompanion data) {
     return Partecipazione(
@@ -1930,6 +2028,9 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
       sulPostoIl: data.sulPostoIl.present
           ? data.sulPostoIl.value
           : this.sulPostoIl,
+      verificato: data.verificato.present
+          ? data.verificato.value
+          : this.verificato,
     );
   }
 
@@ -1946,7 +2047,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
           ..write('stato: $stato, ')
           ..write('creatoIl: $creatoIl, ')
           ..write('modificatoIl: $modificatoIl, ')
-          ..write('sulPostoIl: $sulPostoIl')
+          ..write('sulPostoIl: $sulPostoIl, ')
+          ..write('verificato: $verificato')
           ..write(')'))
         .toString();
   }
@@ -1964,6 +2066,7 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
     creatoIl,
     modificatoIl,
     sulPostoIl,
+    verificato,
   );
   @override
   bool operator ==(Object other) =>
@@ -1979,7 +2082,8 @@ class Partecipazione extends DataClass implements Insertable<Partecipazione> {
           other.stato == this.stato &&
           other.creatoIl == this.creatoIl &&
           other.modificatoIl == this.modificatoIl &&
-          other.sulPostoIl == this.sulPostoIl);
+          other.sulPostoIl == this.sulPostoIl &&
+          other.verificato == this.verificato);
 }
 
 class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
@@ -1994,6 +2098,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
   final Value<String?> creatoIl;
   final Value<String?> modificatoIl;
   final Value<String?> sulPostoIl;
+  final Value<bool?> verificato;
   final Value<int> rowid;
   const PartecipazioniCompanion({
     this.id = const Value.absent(),
@@ -2007,6 +2112,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     this.creatoIl = const Value.absent(),
     this.modificatoIl = const Value.absent(),
     this.sulPostoIl = const Value.absent(),
+    this.verificato = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PartecipazioniCompanion.insert({
@@ -2021,6 +2127,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     this.creatoIl = const Value.absent(),
     this.modificatoIl = const Value.absent(),
     this.sulPostoIl = const Value.absent(),
+    this.verificato = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        versione = Value(versione),
@@ -2041,6 +2148,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     Expression<String>? creatoIl,
     Expression<String>? modificatoIl,
     Expression<String>? sulPostoIl,
+    Expression<bool>? verificato,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2055,6 +2163,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
       if (creatoIl != null) 'creato_il': creatoIl,
       if (modificatoIl != null) 'modificato_il': modificatoIl,
       if (sulPostoIl != null) 'sul_posto_il': sulPostoIl,
+      if (verificato != null) 'verificato': verificato,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2071,6 +2180,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     Value<String?>? creatoIl,
     Value<String?>? modificatoIl,
     Value<String?>? sulPostoIl,
+    Value<bool?>? verificato,
     Value<int>? rowid,
   }) {
     return PartecipazioniCompanion(
@@ -2085,6 +2195,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
       creatoIl: creatoIl ?? this.creatoIl,
       modificatoIl: modificatoIl ?? this.modificatoIl,
       sulPostoIl: sulPostoIl ?? this.sulPostoIl,
+      verificato: verificato ?? this.verificato,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2125,6 +2236,9 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
     if (sulPostoIl.present) {
       map['sul_posto_il'] = Variable<String>(sulPostoIl.value);
     }
+    if (verificato.present) {
+      map['verificato'] = Variable<bool>(verificato.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2145,6 +2259,7 @@ class PartecipazioniCompanion extends UpdateCompanion<Partecipazione> {
           ..write('creatoIl: $creatoIl, ')
           ..write('modificatoIl: $modificatoIl, ')
           ..write('sulPostoIl: $sulPostoIl, ')
+          ..write('verificato: $verificato, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7205,6 +7320,371 @@ class ConfigurazioniCompanion extends UpdateCompanion<Configurazione> {
   }
 }
 
+class $TraguardiTable extends Traguardi
+    with TableInfo<$TraguardiTable, TraguardoPreso> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TraguardiTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _viaggioIdMeta = const VerificationMeta(
+    'viaggioId',
+  );
+  @override
+  late final GeneratedColumn<String> viaggioId = GeneratedColumn<String>(
+    'viaggio_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _presoIlMeta = const VerificationMeta(
+    'presoIl',
+  );
+  @override
+  late final GeneratedColumn<String> presoIl = GeneratedColumn<String>(
+    'preso_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scaricatoIlMeta = const VerificationMeta(
+    'scaricatoIl',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scaricatoIl = GeneratedColumn<DateTime>(
+    'scaricato_il',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tipo,
+    viaggioId,
+    presoIl,
+    scaricatoIl,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'traguardo';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TraguardoPreso> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tipoMeta);
+    }
+    if (data.containsKey('viaggio_id')) {
+      context.handle(
+        _viaggioIdMeta,
+        viaggioId.isAcceptableOrUnknown(data['viaggio_id']!, _viaggioIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_viaggioIdMeta);
+    }
+    if (data.containsKey('preso_il')) {
+      context.handle(
+        _presoIlMeta,
+        presoIl.isAcceptableOrUnknown(data['preso_il']!, _presoIlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_presoIlMeta);
+    }
+    if (data.containsKey('scaricato_il')) {
+      context.handle(
+        _scaricatoIlMeta,
+        scaricatoIl.isAcceptableOrUnknown(
+          data['scaricato_il']!,
+          _scaricatoIlMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scaricatoIlMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TraguardoPreso map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TraguardoPreso(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
+      viaggioId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}viaggio_id'],
+      )!,
+      presoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preso_il'],
+      )!,
+      scaricatoIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scaricato_il'],
+      )!,
+    );
+  }
+
+  @override
+  $TraguardiTable createAlias(String alias) {
+    return $TraguardiTable(attachedDatabase, alias);
+  }
+}
+
+class TraguardoPreso extends DataClass implements Insertable<TraguardoPreso> {
+  final String id;
+  final String tipo;
+  final String viaggioId;
+  final String presoIl;
+  final DateTime scaricatoIl;
+  const TraguardoPreso({
+    required this.id,
+    required this.tipo,
+    required this.viaggioId,
+    required this.presoIl,
+    required this.scaricatoIl,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['tipo'] = Variable<String>(tipo);
+    map['viaggio_id'] = Variable<String>(viaggioId);
+    map['preso_il'] = Variable<String>(presoIl);
+    map['scaricato_il'] = Variable<DateTime>(scaricatoIl);
+    return map;
+  }
+
+  TraguardiCompanion toCompanion(bool nullToAbsent) {
+    return TraguardiCompanion(
+      id: Value(id),
+      tipo: Value(tipo),
+      viaggioId: Value(viaggioId),
+      presoIl: Value(presoIl),
+      scaricatoIl: Value(scaricatoIl),
+    );
+  }
+
+  factory TraguardoPreso.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TraguardoPreso(
+      id: serializer.fromJson<String>(json['id']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      viaggioId: serializer.fromJson<String>(json['viaggioId']),
+      presoIl: serializer.fromJson<String>(json['presoIl']),
+      scaricatoIl: serializer.fromJson<DateTime>(json['scaricatoIl']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'tipo': serializer.toJson<String>(tipo),
+      'viaggioId': serializer.toJson<String>(viaggioId),
+      'presoIl': serializer.toJson<String>(presoIl),
+      'scaricatoIl': serializer.toJson<DateTime>(scaricatoIl),
+    };
+  }
+
+  TraguardoPreso copyWith({
+    String? id,
+    String? tipo,
+    String? viaggioId,
+    String? presoIl,
+    DateTime? scaricatoIl,
+  }) => TraguardoPreso(
+    id: id ?? this.id,
+    tipo: tipo ?? this.tipo,
+    viaggioId: viaggioId ?? this.viaggioId,
+    presoIl: presoIl ?? this.presoIl,
+    scaricatoIl: scaricatoIl ?? this.scaricatoIl,
+  );
+  TraguardoPreso copyWithCompanion(TraguardiCompanion data) {
+    return TraguardoPreso(
+      id: data.id.present ? data.id.value : this.id,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      viaggioId: data.viaggioId.present ? data.viaggioId.value : this.viaggioId,
+      presoIl: data.presoIl.present ? data.presoIl.value : this.presoIl,
+      scaricatoIl: data.scaricatoIl.present
+          ? data.scaricatoIl.value
+          : this.scaricatoIl,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TraguardoPreso(')
+          ..write('id: $id, ')
+          ..write('tipo: $tipo, ')
+          ..write('viaggioId: $viaggioId, ')
+          ..write('presoIl: $presoIl, ')
+          ..write('scaricatoIl: $scaricatoIl')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, tipo, viaggioId, presoIl, scaricatoIl);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TraguardoPreso &&
+          other.id == this.id &&
+          other.tipo == this.tipo &&
+          other.viaggioId == this.viaggioId &&
+          other.presoIl == this.presoIl &&
+          other.scaricatoIl == this.scaricatoIl);
+}
+
+class TraguardiCompanion extends UpdateCompanion<TraguardoPreso> {
+  final Value<String> id;
+  final Value<String> tipo;
+  final Value<String> viaggioId;
+  final Value<String> presoIl;
+  final Value<DateTime> scaricatoIl;
+  final Value<int> rowid;
+  const TraguardiCompanion({
+    this.id = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.viaggioId = const Value.absent(),
+    this.presoIl = const Value.absent(),
+    this.scaricatoIl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TraguardiCompanion.insert({
+    required String id,
+    required String tipo,
+    required String viaggioId,
+    required String presoIl,
+    required DateTime scaricatoIl,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       tipo = Value(tipo),
+       viaggioId = Value(viaggioId),
+       presoIl = Value(presoIl),
+       scaricatoIl = Value(scaricatoIl);
+  static Insertable<TraguardoPreso> custom({
+    Expression<String>? id,
+    Expression<String>? tipo,
+    Expression<String>? viaggioId,
+    Expression<String>? presoIl,
+    Expression<DateTime>? scaricatoIl,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tipo != null) 'tipo': tipo,
+      if (viaggioId != null) 'viaggio_id': viaggioId,
+      if (presoIl != null) 'preso_il': presoIl,
+      if (scaricatoIl != null) 'scaricato_il': scaricatoIl,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TraguardiCompanion copyWith({
+    Value<String>? id,
+    Value<String>? tipo,
+    Value<String>? viaggioId,
+    Value<String>? presoIl,
+    Value<DateTime>? scaricatoIl,
+    Value<int>? rowid,
+  }) {
+    return TraguardiCompanion(
+      id: id ?? this.id,
+      tipo: tipo ?? this.tipo,
+      viaggioId: viaggioId ?? this.viaggioId,
+      presoIl: presoIl ?? this.presoIl,
+      scaricatoIl: scaricatoIl ?? this.scaricatoIl,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (viaggioId.present) {
+      map['viaggio_id'] = Variable<String>(viaggioId.value);
+    }
+    if (presoIl.present) {
+      map['preso_il'] = Variable<String>(presoIl.value);
+    }
+    if (scaricatoIl.present) {
+      map['scaricato_il'] = Variable<DateTime>(scaricatoIl.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TraguardiCompanion(')
+          ..write('id: $id, ')
+          ..write('tipo: $tipo, ')
+          ..write('viaggioId: $viaggioId, ')
+          ..write('presoIl: $presoIl, ')
+          ..write('scaricatoIl: $scaricatoIl, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $CodaScritturaTable extends CodaScrittura
     with TableInfo<$CodaScritturaTable, OperazioneInCoda> {
   @override
@@ -8948,6 +9428,7 @@ abstract class _$DatabaseLocale extends GeneratedDatabase {
   late final $NoteTable note = $NoteTable(this);
   late final $TassiCambioTable tassiCambio = $TassiCambioTable(this);
   late final $ConfigurazioniTable configurazioni = $ConfigurazioniTable(this);
+  late final $TraguardiTable traguardi = $TraguardiTable(this);
   late final $CodaScritturaTable codaScrittura = $CodaScritturaTable(this);
   late final $DocumentiTable documenti = $DocumentiTable(this);
   late final $EventiInAttesaTable eventiInAttesa = $EventiInAttesaTable(this);
@@ -8968,6 +9449,7 @@ abstract class _$DatabaseLocale extends GeneratedDatabase {
     note,
     tassiCambio,
     configurazioni,
+    traguardi,
     codaScrittura,
     documenti,
     eventiInAttesa,
@@ -9241,6 +9723,7 @@ typedef $$ViaggiTableCreateCompanionBuilder = ViaggiCompanion Function({
   required String creatoreId,
   required bool importato,
   required bool verificato,
+  Value<bool> verificaPerDeroga,
   required String creatoIl,
   Value<int> rowid,
 });
@@ -9260,6 +9743,7 @@ typedef $$ViaggiTableUpdateCompanionBuilder = ViaggiCompanion Function({
   Value<String> creatoreId,
   Value<bool> importato,
   Value<bool> verificato,
+  Value<bool> verificaPerDeroga,
   Value<String> creatoIl,
   Value<int> rowid,
 });
@@ -9345,6 +9829,11 @@ class $$ViaggiTableFilterComposer
 
   ColumnFilters<bool> get verificato => $composableBuilder(
     column: $table.verificato,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get verificaPerDeroga => $composableBuilder(
+    column: $table.verificaPerDeroga,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9438,6 +9927,11 @@ class $$ViaggiTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get verificaPerDeroga => $composableBuilder(
+    column: $table.verificaPerDeroga,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get creatoIl => $composableBuilder(
     column: $table.creatoIl,
     builder: (column) => ColumnOrderings(column),
@@ -9516,6 +10010,11 @@ class $$ViaggiTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get verificaPerDeroga => $composableBuilder(
+    column: $table.verificaPerDeroga,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get creatoIl =>
       $composableBuilder(column: $table.creatoIl, builder: (column) => column);
 }
@@ -9563,6 +10062,7 @@ class $$ViaggiTableTableManager
                 Value<String> creatoreId = const Value.absent(),
                 Value<bool> importato = const Value.absent(),
                 Value<bool> verificato = const Value.absent(),
+                Value<bool> verificaPerDeroga = const Value.absent(),
                 Value<String> creatoIl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ViaggiCompanion(
@@ -9581,6 +10081,7 @@ class $$ViaggiTableTableManager
                 creatoreId: creatoreId,
                 importato: importato,
                 verificato: verificato,
+                verificaPerDeroga: verificaPerDeroga,
                 creatoIl: creatoIl,
                 rowid: rowid,
               ),
@@ -9601,6 +10102,7 @@ class $$ViaggiTableTableManager
                 required String creatoreId,
                 required bool importato,
                 required bool verificato,
+                Value<bool> verificaPerDeroga = const Value.absent(),
                 required String creatoIl,
                 Value<int> rowid = const Value.absent(),
               }) => ViaggiCompanion.insert(
@@ -9619,6 +10121,7 @@ class $$ViaggiTableTableManager
                 creatoreId: creatoreId,
                 importato: importato,
                 verificato: verificato,
+                verificaPerDeroga: verificaPerDeroga,
                 creatoIl: creatoIl,
                 rowid: rowid,
               ),
@@ -9666,6 +10169,7 @@ typedef $$PartecipazioniTableCreateCompanionBuilder =
       Value<String?> creatoIl,
       Value<String?> modificatoIl,
       Value<String?> sulPostoIl,
+      Value<bool?> verificato,
       Value<int> rowid,
     });
 typedef $$PartecipazioniTableUpdateCompanionBuilder =
@@ -9681,6 +10185,7 @@ typedef $$PartecipazioniTableUpdateCompanionBuilder =
       Value<String?> creatoIl,
       Value<String?> modificatoIl,
       Value<String?> sulPostoIl,
+      Value<bool?> verificato,
       Value<int> rowid,
     });
 
@@ -9745,6 +10250,11 @@ class $$PartecipazioniTableFilterComposer
 
   ColumnFilters<String> get sulPostoIl => $composableBuilder(
     column: $table.sulPostoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get verificato => $composableBuilder(
+    column: $table.verificato,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9812,6 +10322,11 @@ class $$PartecipazioniTableOrderingComposer
     column: $table.sulPostoIl,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get verificato => $composableBuilder(
+    column: $table.verificato,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PartecipazioniTableAnnotationComposer
@@ -9861,6 +10376,11 @@ class $$PartecipazioniTableAnnotationComposer
 
   GeneratedColumn<String> get sulPostoIl => $composableBuilder(
     column: $table.sulPostoIl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get verificato => $composableBuilder(
+    column: $table.verificato,
     builder: (column) => column,
   );
 }
@@ -9913,6 +10433,7 @@ class $$PartecipazioniTableTableManager
                 Value<String?> creatoIl = const Value.absent(),
                 Value<String?> modificatoIl = const Value.absent(),
                 Value<String?> sulPostoIl = const Value.absent(),
+                Value<bool?> verificato = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PartecipazioniCompanion(
                 id: id,
@@ -9926,6 +10447,7 @@ class $$PartecipazioniTableTableManager
                 creatoIl: creatoIl,
                 modificatoIl: modificatoIl,
                 sulPostoIl: sulPostoIl,
+                verificato: verificato,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9941,6 +10463,7 @@ class $$PartecipazioniTableTableManager
                 Value<String?> creatoIl = const Value.absent(),
                 Value<String?> modificatoIl = const Value.absent(),
                 Value<String?> sulPostoIl = const Value.absent(),
+                Value<bool?> verificato = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PartecipazioniCompanion.insert(
                 id: id,
@@ -9954,6 +10477,7 @@ class $$PartecipazioniTableTableManager
                 creatoIl: creatoIl,
                 modificatoIl: modificatoIl,
                 sulPostoIl: sulPostoIl,
+                verificato: verificato,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -12453,6 +12977,215 @@ typedef $$ConfigurazioniTableProcessedTableManager =
       Configurazione,
       PrefetchHooks Function()
     >;
+typedef $$TraguardiTableCreateCompanionBuilder = TraguardiCompanion Function({
+  required String id,
+  required String tipo,
+  required String viaggioId,
+  required String presoIl,
+  required DateTime scaricatoIl,
+  Value<int> rowid,
+});
+typedef $$TraguardiTableUpdateCompanionBuilder = TraguardiCompanion Function({
+  Value<String> id,
+  Value<String> tipo,
+  Value<String> viaggioId,
+  Value<String> presoIl,
+  Value<DateTime> scaricatoIl,
+  Value<int> rowid,
+});
+
+class $$TraguardiTableFilterComposer
+    extends Composer<_$DatabaseLocale, $TraguardiTable> {
+  $$TraguardiTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get viaggioId => $composableBuilder(
+    column: $table.viaggioId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get presoIl => $composableBuilder(
+    column: $table.presoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TraguardiTableOrderingComposer
+    extends Composer<_$DatabaseLocale, $TraguardiTable> {
+  $$TraguardiTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get viaggioId => $composableBuilder(
+    column: $table.viaggioId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get presoIl => $composableBuilder(
+    column: $table.presoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TraguardiTableAnnotationComposer
+    extends Composer<_$DatabaseLocale, $TraguardiTable> {
+  $$TraguardiTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get viaggioId =>
+      $composableBuilder(column: $table.viaggioId, builder: (column) => column);
+
+  GeneratedColumn<String> get presoIl =>
+      $composableBuilder(column: $table.presoIl, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scaricatoIl => $composableBuilder(
+    column: $table.scaricatoIl,
+    builder: (column) => column,
+  );
+}
+
+class $$TraguardiTableTableManager
+    extends
+        RootTableManager<
+          _$DatabaseLocale,
+          $TraguardiTable,
+          TraguardoPreso,
+          $$TraguardiTableFilterComposer,
+          $$TraguardiTableOrderingComposer,
+          $$TraguardiTableAnnotationComposer,
+          $$TraguardiTableCreateCompanionBuilder,
+          $$TraguardiTableUpdateCompanionBuilder,
+          (
+            TraguardoPreso,
+            BaseReferences<_$DatabaseLocale, $TraguardiTable, TraguardoPreso>,
+          ),
+          TraguardoPreso,
+          PrefetchHooks Function()
+        > {
+  $$TraguardiTableTableManager(_$DatabaseLocale db, $TraguardiTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TraguardiTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TraguardiTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TraguardiTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String> viaggioId = const Value.absent(),
+                Value<String> presoIl = const Value.absent(),
+                Value<DateTime> scaricatoIl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TraguardiCompanion(
+                id: id,
+                tipo: tipo,
+                viaggioId: viaggioId,
+                presoIl: presoIl,
+                scaricatoIl: scaricatoIl,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String tipo,
+                required String viaggioId,
+                required String presoIl,
+                required DateTime scaricatoIl,
+                Value<int> rowid = const Value.absent(),
+              }) => TraguardiCompanion.insert(
+                id: id,
+                tipo: tipo,
+                viaggioId: viaggioId,
+                presoIl: presoIl,
+                scaricatoIl: scaricatoIl,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TraguardiTable, TraguardoPreso>(table),
+                  BaseReferences<
+                    _$DatabaseLocale,
+                    $TraguardiTable,
+                    TraguardoPreso
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TraguardiTableProcessedTableManager =
+    ProcessedTableManager<
+      _$DatabaseLocale,
+      $TraguardiTable,
+      TraguardoPreso,
+      $$TraguardiTableFilterComposer,
+      $$TraguardiTableOrderingComposer,
+      $$TraguardiTableAnnotationComposer,
+      $$TraguardiTableCreateCompanionBuilder,
+      $$TraguardiTableUpdateCompanionBuilder,
+      (
+        TraguardoPreso,
+        BaseReferences<_$DatabaseLocale, $TraguardiTable, TraguardoPreso>,
+      ),
+      TraguardoPreso,
+      PrefetchHooks Function()
+    >;
 typedef $$CodaScritturaTableCreateCompanionBuilder =
     CodaScritturaCompanion Function({
       required String id,
@@ -13427,6 +14160,8 @@ class $DatabaseLocaleManager {
       $$TassiCambioTableTableManager(_db, _db.tassiCambio);
   $$ConfigurazioniTableTableManager get configurazioni =>
       $$ConfigurazioniTableTableManager(_db, _db.configurazioni);
+  $$TraguardiTableTableManager get traguardi =>
+      $$TraguardiTableTableManager(_db, _db.traguardi);
   $$CodaScritturaTableTableManager get codaScrittura =>
       $$CodaScritturaTableTableManager(_db, _db.codaScrittura);
   $$DocumentiTableTableManager get documenti =>

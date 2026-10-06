@@ -26,6 +26,7 @@ import '../servizi.dart';
 import 'adesso.dart';
 import 'archivio_idee.dart';
 import 'con_la_rete.dart';
+import 'gesti_chiusura.dart';
 import 'impostazioni.dart';
 import 'mappa.dart';
 import 'nuovo_viaggio.dart';
@@ -116,6 +117,8 @@ class _SchermataViaggiState extends State<SchermataViaggi>
                     'periodo è passato. Le ritrovi in fondo all\'elenco.',
         );
       }
+      // I viaggi finiti si chiudono, e il riepilogo si apre (10, regola 1).
+      if (mounted) await chiudiViaggiFiniti(context);
     } on ErroreTrolley {
       // Senza rete si resta con la copia, e l'elenco lo dice.
     } finally {

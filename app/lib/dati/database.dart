@@ -62,6 +62,12 @@ class Viaggi extends Table with RigaCopiata {
   TextColumn get creatoreId => text()();
   BoolColumn get importato => boolean()();
   BoolColumn get verificato => boolean()();
+
+  /// La deroga amministrativa sulla verifica: vale come sul posto, e toglie
+  /// il viaggio da ogni metrica (02, regola 8). La scrive solo chi gestisce
+  /// il progetto.
+  BoolColumn get verificaPerDeroga =>
+      boolean().withDefault(const Constant(false))();
   TextColumn get creatoIl => text()();
 }
 
@@ -86,6 +92,10 @@ class Partecipazioni extends Table with RigaCopiata {
   /// Quando il suo telefono l'ha trovato sul posto, mentre il viaggio era in
   /// corso: una delle tre condizioni della verifica. Mai dove (fase 3.4).
   TextColumn get sulPostoIl => text().nullable()();
+
+  /// Se il viaggio, chiuso, è verificato per questa persona; `null` finché
+  /// non si è chiuso per lei (fase 4.1).
+  BoolColumn get verificato => boolean().nullable()();
 }
 
 @DataClassName('Giorno')
@@ -208,6 +218,24 @@ class Note extends Table with RigaCopiata {
   TextColumn get origine => text()();
   TextColumn get creatoDa => text()();
   TextColumn get creatoIl => text()();
+}
+
+/// I propri traguardi (10-chiusura-e-ricordo.md; dominio/traguardi.dart):
+/// uno per tipo, con il viaggio che l'ha dato. Una copia come le altre: si
+/// guardano anche senza rete.
+@DataClassName('TraguardoPreso')
+class Traguardi extends Table {
+  @override
+  String get tableName => 'traguardo';
+
+  TextColumn get id => text()();
+  TextColumn get tipo => text()();
+  TextColumn get viaggioId => text()();
+  TextColumn get presoIl => text()();
+  DateTimeColumn get scaricatoIl => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 /// Quello che si cambia dal server senza un rilascio: i modelli da consigliare
@@ -367,6 +395,7 @@ class Impostazioni extends Table {
     Note,
     TassiCambio,
     Configurazioni,
+    Traguardi,
     CodaScrittura,
     Documenti,
     EventiInAttesa,
@@ -387,8 +416,9 @@ class DatabaseLocale extends _$DatabaseLocale {
   /// quando sono nate e quando sono cambiate.
   /// 8 (fase 2.4): le voci sanno chi le portava prima di lasciare il viaggio.
   /// 9 (fase 3.4): le partecipazioni sanno chi è stato sul posto.
+  /// 10 (fase 4.1): la verifica di ciascuno, la deroga, i traguardi.
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [
@@ -403,6 +433,7 @@ class DatabaseLocale extends _$DatabaseLocale {
     note,
     tassiCambio,
     configurazioni,
+    traguardi,
   ];
 
   @override
@@ -448,6 +479,11 @@ class DatabaseLocale extends _$DatabaseLocale {
       }
       if (da >= 2 && da < 9) {
         await _aggiungiSeManca(m, partecipazioni, partecipazioni.sulPostoIl);
+      }
+      if (da >= 2 && da < 10) {
+        await _aggiungiSeManca(m, partecipazioni, partecipazioni.verificato);
+        await _aggiungiSeManca(m, viaggi, viaggi.verificaPerDeroga);
+        await m.createTable(traguardi);
       }
     },
   );

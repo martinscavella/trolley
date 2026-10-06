@@ -15,6 +15,7 @@ import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'scelta_valuta.dart';
+import 'traguardi.dart';
 
 /// Il profilo, la misurazione, l'uscita.
 class SchermataImpostazioni extends StatefulWidget {
@@ -137,6 +138,9 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
                 ).entra(context, da: 8);
               },
             ),
+            const SizedBox(height: 24),
+            // Passaporto e mappamondo arrivano con la 4.2 (tela, 64).
+            const RigaTraguardi().entra(context, ritardo: Ritmo.passo),
             const SizedBox(height: 28),
             const TitoloSezione('Spese').entra(context, ritardo: Ritmo.passo),
             StreamBuilder<Utente?>(

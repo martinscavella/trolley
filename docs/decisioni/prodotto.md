@@ -373,6 +373,17 @@ Scelto con la fase 3.4 (tela, 58 e 59), il 6 ottobre 2026. Le regole sono in `do
 - **Il no si dice una volta**, con la 59, subito dopo — o la prima volta che si apre «Adesso» o la mappa, per chi l'aveva negato prima della 3.4. «Apri Impostazioni» porta dove si cambia idea.
 - **La deroga** resta `viaggio.verifica_per_deroga`, che scrive solo chi gestisce il progetto: vale come «sul posto» e toglie il viaggio da ogni metrica.
 
+### La chiusura e i traguardi (fase 4.1)
+
+Scelto con la fase 4.1 (tela, 60–63, 93 e 94), il 6 ottobre 2026.
+
+- **Si chiude da solo il giorno dopo la fine**, quando il primo telefono di chi partecipa lo vede con la rete; prima, a mano, solo chi ne è responsabile, mentre è in corso, con «Chiudi il viaggio» in fondo al viaggio e una conferma. Un viaggio chiuso non si riapre.
+- **Dopo la chiusura non si aggiungono tappe; le spese sì** — quelle pagate al ritorno stanno già «Dopo il viaggio» — e i saldi restano finché non si chiudono. La tela (63) diceva «né spese»: corretta.
+- **La verifica è di ciascuno**, come «sul posto»: ogni telefono la calcola per sé e la scrive una volta. `viaggio.verificato` vuol dire «verificato per almeno uno».
+- **Il riepilogo si apre da solo una volta**, per i viaggi finiti nell'ultimo mese; chi riapre l'app dopo mesi non trova una fila di riepiloghi. Poi si ritrova nel viaggio concluso. Dice: giorni, tappe fatte, persone, quanto si è speso e la propria parte, che cosa c'è di nuovo — il paese, la città — o quante volte ci si è tornati, i saldi aperti. Verificato: il timbro e i traguardi presi; non verificato: niente timbro, niente rimproveri, niente spiegazioni (10, casi limite).
+- **I traguardi, per ora**: primo viaggio verificato, in compagnia (almeno due), weekend lungo (tre o quattro giorni con sabato e domenica), una settimana, ogni giorno una tappa fatta (non solo segnata: saltare non vale), organizzare (responsabile di un viaggio con altri), e su tutti i viaggi verificati tre paesi, dieci città, quattro stagioni. Uno per tipo, con il viaggio che l'ha dato; quelli da prendere dicono quanto manca. Erano gli esempi della tela: sono la prima serie, da rivedere.
+- **«Guarda il passaporto»** arriva con la 4.2: fino ad allora il riepilogo verificato porta ai traguardi, l'altro si chiude con «Fatto». I traguardi si aprono dal profilo.
+
 ---
 
 ## Ricordo e traguardi
