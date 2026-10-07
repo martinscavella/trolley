@@ -268,6 +268,7 @@ void main() {
         'riquadri': 24,
         'ricerche': 0,
         'percorsi': 0,
+        'fermati': 0,
       });
     });
   });
@@ -554,6 +555,50 @@ void main() {
       expect(find.text('Niente strada'), findsOneWidget);
       expect(find.text('Apri in Mappe'), findsOneWidget);
     });
+
+    testWidgets('al tetto di oggi la strada non si calcola: lo dice, e '
+        'restano le Mappe (U.2)', (tester) async {
+      await portami(tester);
+      ambiente.mappe.tetto = true;
+      ambiente.posizione.vai(partenza);
+      await aspetta(tester);
+
+      expect(ambiente.mappe.viaggi, ['v']);
+      expect(find.text('Niente strada'), findsOneWidget);
+      expect(
+        find.textContaining('le strade calcolate sono finite'),
+        findsOneWidget,
+      );
+      expect(find.text('Apri in Mappe'), findsOneWidget);
+
+      await tester.tap(find.text('Fine'));
+      await aspetta(tester);
+      expect((await evento(tester, 'consumo_mappe'))['fermati'], 1);
+    });
+
+    testWidgets('se il tetto arriva a metà strada, la strada di prima resta '
+        'e da lì portano le Mappe', (tester) async {
+      await portami(tester);
+      ambiente.posizione.vai(partenza);
+      await aspetta(tester);
+      expect(
+        find.text('Svolta a destra su Rua das Carmelitas.'),
+        findsOneWidget,
+      );
+
+      ambiente.mappe.tetto = true;
+      const persi = (lat: 41.1490, lon: -8.6160);
+      ambiente.posizione.vai(persi);
+      await aspetta(tester);
+      ambiente.posizione.vai(persi);
+      await aspetta(tester);
+
+      expect(
+        find.text('Da qui ti portano meglio le Mappe del telefono.'),
+        findsOneWidget,
+      );
+      expect(find.text('Apri in Mappe'), findsOneWidget);
+    });
   });
 
   group('«Dove?»: il posto di una tappa', () {
@@ -616,6 +661,22 @@ void main() {
       expect(arrivata['luogo_nome'], 'Rua de Santa Catarina 112, Porto');
       expect((arrivata['lat'], arrivata['lon']), (41.1468, -8.6067));
       expect((await evento(tester, 'consumo_mappe'))['ricerche'], 1);
+    });
+
+    testWidgets('al tetto di oggi la ricerca lo dice, e il posto si scrive '
+        'com\'è (U.2)', (tester) async {
+      ambiente.mappe.tetto = true;
+      await nuovaTappa(tester);
+
+      await tester.tap(find.text('Facoltativo'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'Majestic');
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      expect(ambiente.mappe.viaggi, ['v']);
+      expect(find.textContaining('le ricerche sono finite'), findsOneWidget);
+      expect(find.text('Usa «Majestic» com\'è'), findsOneWidget);
     });
 
     testWidgets('senza rete il posto si scrive com\'è: la tappa c\'è, senza '

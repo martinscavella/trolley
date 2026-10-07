@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -260,43 +262,62 @@ void main() {
     });
   });
 
-  group('le chiamate', () {
+  group('le chiamate, dal nostro server', () {
     late List<http.Request> chieste;
     late http.Response Function(http.Request) risponde;
+    String? gettone = 'gettone-di-giulia';
+
+    const indirizzo = 'https://progetto.supabase.co/functions/v1/mappe';
 
     MappeGeoapify mappe() => MappeGeoapify(
-      chiave: 'chiave-di-prova',
+      indirizzo: indirizzo,
+      chiavePubblica: 'sb_publishable_prova',
+      accesso: () => gettone,
       client: MockClient((r) async {
         chieste.add(r);
         return risponde(r);
       }),
     );
 
+    Map<String, dynamic> corpo(http.Request r) =>
+        jsonDecode(r.body) as Map<String, dynamic>;
+    Map<String, dynamic> parametri(http.Request r) =>
+        corpo(r)['parametri'] as Map<String, dynamic>;
+
     setUp(() {
       chieste = [];
+      gettone = 'gettone-di-giulia';
       risponde = (r) => http.Response(
-        jsonEncode(r.url.path.contains('routing') ? strada : ricerca),
+        jsonEncode(r.url.path.endsWith('/percorso') ? strada : ricerca),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
       );
     });
 
-    test('la ricerca in italiano, vicino alla meta, con la chiave', () async {
+    test('la ricerca va al server, per il viaggio, con l\'accesso e senza '
+        'chiave del fornitore', () async {
       final m = mappe();
       final trovati = await m.cerca(
         ' lello ',
+        viaggioId: 'porto',
         vicinoA: (lat: 41.152, lon: -8.622),
       );
       expect(trovati.first.nome, 'Livraria Lello');
-      final q = chieste.single.url;
-      expect(q.host, 'api.geoapify.com');
-      expect(q.path, '/v1/geocode/autocomplete');
-      expect(q.queryParameters['text'], 'lello');
-      expect(q.queryParameters['lang'], 'it');
-      expect(q.queryParameters['bias'], 'proximity:-8.622,41.152');
+      final r = chieste.single;
+      expect(r.method, 'POST');
+      expect(r.url.toString(), '$indirizzo/cerca');
+      // Il testo cercato sta nel corpo: nell'indirizzo finirebbe nei registri.
+      expect(r.url.query, isEmpty);
+      expect(r.headers['authorization'], 'Bearer gettone-di-giulia');
+      expect(r.headers['apikey'], 'sb_publishable_prova');
+      expect(corpo(r)['viaggio'], 'porto');
+      final q = parametri(r);
+      expect(q['text'], 'lello');
+      expect(q['lang'], 'it');
+      expect(q['bias'], 'proximity:-8.622,41.152');
       // Nella zona del viaggio: la vicinanza da sola pesa poco.
-      expect(q.queryParameters['filter'], 'circle:-8.622,41.152,40000');
-      expect(q.queryParameters['apiKey'], 'chiave-di-prova');
+      expect(q['filter'], 'circle:-8.622,41.152,40000');
+      expect(r.body, isNot(contains('apiKey')));
       expect(m.consumo.ricerche, 1);
     });
 
@@ -304,30 +325,32 @@ void main() {
         'più', () async {
       risponde = (r) => http.Response(
         jsonEncode(
-          r.url.queryParameters.containsKey('filter')
-              ? {'results': []}
-              : ricerca,
+          parametri(r).containsKey('filter') ? {'results': []} : ricerca,
         ),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
       );
       final m = mappe();
-      final trovati = await m.cerca('lello', vicinoA: (lat: 45.4, lon: 9.2));
+      final trovati = await m.cerca(
+        'lello',
+        viaggioId: 'porto',
+        vicinoA: (lat: 45.4, lon: 9.2),
+      );
       expect(trovati, isNotEmpty);
       expect(chieste, hasLength(2));
-      expect(chieste.last.url.queryParameters.containsKey('filter'), isFalse);
+      expect(parametri(chieste.last).containsKey('filter'), isFalse);
       expect(m.consumo.ricerche, 2);
     });
 
     test('senza una zona, ovunque e una volta sola', () async {
       final m = mappe();
-      await m.cerca('lello');
-      expect(chieste.single.url.queryParameters.containsKey('bias'), isFalse);
+      await m.cerca('lello', viaggioId: 'porto');
+      expect(parametri(chieste.single).containsKey('bias'), isFalse);
     });
 
     test('un testo vuoto non si cerca, e non si paga', () async {
       final m = mappe();
-      expect(await m.cerca('   '), isEmpty);
+      expect(await m.cerca('   ', viaggioId: 'porto'), isEmpty);
       expect(chieste, isEmpty);
       expect(m.consumo.nullo, isTrue);
     });
@@ -337,40 +360,82 @@ void main() {
       final p = await m.percorsoAPiedi(
         (lat: 41.147, lon: -8.616),
         (lat: 41.1459, lon: -8.6148),
+        viaggioId: 'porto',
       );
       expect(p.metri, 450);
-      final q = chieste.single.url;
-      expect(q.path, '/v1/routing');
-      expect(q.queryParameters['waypoints'], '41.147,-8.616|41.1459,-8.6148');
-      expect(q.queryParameters['mode'], 'walk');
+      final r = chieste.single;
+      expect(r.url.toString(), '$indirizzo/percorso');
+      expect(corpo(r)['viaggio'], 'porto');
+      final q = parametri(r);
+      expect(q['waypoints'], '41.147,-8.616|41.1459,-8.6148');
+      expect(q['mode'], 'walk');
       // Senza i dettagli le indicazioni non hanno il tipo di svolta.
-      expect(q.queryParameters['details'], 'instruction_details');
-      expect(q.queryParameters['lang'], 'it');
+      expect(q['details'], 'instruction_details');
+      expect(q['lang'], 'it');
       expect(m.consumo.percorsi, 1);
     });
 
-    test('un rifiuto del fornitore si dice, senza inventare', () async {
-      risponde = (_) => http.Response('{"error":"Unauthorized"}', 401);
+    test('al tetto di oggi lo dice, e conta la chiamata fra le fermate, non '
+        'fra quelle pagate', () async {
+      risponde = (_) => http.Response('{"codice":"tetto"}', 429);
       final m = mappe();
       await expectLater(
-        m.cerca('lello'),
+        m.cerca('lello', viaggioId: 'porto'),
+        throwsA(
+          isA<ErroreTrolley>()
+              .having((e) => e.codice, 'codice', CodiciServer.tettoMappe)
+              .having((e) => e.messaggio, 'messaggio', contains('a mano')),
+        ),
+      );
+      await expectLater(
+        m.percorsoAPiedi(
+          (lat: 41, lon: -8),
+          (lat: 41.1, lon: -8.1),
+          viaggioId: 'porto',
+        ),
         throwsA(
           isA<ErroreTrolley>().having(
-            (e) => e.serveLaRete,
-            'serveLaRete',
-            isFalse,
+            (e) => e.codice,
+            'codice',
+            CodiciServer.tettoMappe,
           ),
         ),
       );
+      expect(m.consumo.fermati, 2);
+      expect(m.consumo.ricerche, 0);
+      expect(m.consumo.percorsi, 0);
     });
+
+    test(
+      'un rifiuto del server o del fornitore si dice, senza inventare',
+      () async {
+        for (final stato in [401, 403, 502]) {
+          risponde = (_) => http.Response('{"codice":"x"}', stato);
+          await expectLater(
+            mappe().cerca('lello', viaggioId: 'porto'),
+            throwsA(
+              isA<ErroreTrolley>()
+                  .having((e) => e.serveLaRete, 'serveLaRete', isFalse)
+                  .having((e) => e.codice, 'codice', isNull),
+            ),
+          );
+        }
+      },
+    );
 
     test('senza rete lo dice, e propone le Mappe del telefono', () async {
       final m = MappeGeoapify(
-        chiave: 'k',
+        indirizzo: indirizzo,
+        chiavePubblica: 'k',
+        accesso: () => 'g',
         client: MockClient((_) => throw const SocketException('nessuna rete')),
       );
       await expectLater(
-        m.percorsoAPiedi((lat: 41, lon: -8), (lat: 41.1, lon: -8.1)),
+        m.percorsoAPiedi(
+          (lat: 41, lon: -8),
+          (lat: 41.1, lon: -8.1),
+          viaggioId: 'porto',
+        ),
         throwsA(
           isA<ErroreTrolley>()
               .having((e) => e.serveLaRete, 'serveLaRete', isTrue)
@@ -379,8 +444,72 @@ void main() {
       );
     });
 
-    test('senza chiave il fornitore non c\'è', () {
-      expect(MappeGeoapify(chiave: '').disponibili, isFalse);
+    test('senza accesso non si manda un gettone', () async {
+      gettone = null;
+      await mappe().cerca('lello', viaggioId: 'porto');
+      expect(chieste.single.headers.containsKey('authorization'), isFalse);
+    });
+
+    testWidgets('i riquadri dal server: un indirizzo senza chiave, che non '
+        'dice il viaggio, e il viaggio nell\'intestazione', (tester) async {
+      final m = mappe();
+      late Widget porto;
+      late Widget berlino;
+      await tester.pumpWidget(
+        Builder(
+          builder: (context) {
+            porto = m.riquadri(context, viaggioId: 'porto');
+            berlino = m.riquadri(context, viaggioId: 'berlino');
+            return const SizedBox();
+          },
+        ),
+      );
+      final p = porto as TileLayer;
+      final b = berlino as TileLayer;
+      expect(p.urlTemplate, '$indirizzo/riquadro/{z}/{x}/{y}{r}.png');
+      expect(b.urlTemplate, p.urlTemplate);
+      expect(p.tileProvider.headers['x-viaggio'], 'porto');
+      expect(b.tileProvider.headers['x-viaggio'], 'berlino');
+      // Lo stesso viaggio riusa il suo fornitore.
+      late Widget ancora;
+      await tester.pumpWidget(
+        Builder(
+          builder: (context) {
+            ancora = m.riquadri(context, viaggioId: 'porto');
+            return const SizedBox();
+          },
+        ),
+      );
+      expect((ancora as TileLayer).tileProvider, same(p.tileProvider));
+    });
+
+    test('ogni riquadro porta l\'accesso, e si conta: pagato, o fermato '
+        'dal tetto', () async {
+      var stato = 200;
+      risponde = (_) => http.Response('png', stato);
+      final m = mappe();
+      final client = m.clientDeiRiquadri;
+      await client.get(Uri.parse('$indirizzo/riquadro/15/1/2@2x.png'));
+      expect(
+        chieste.single.headers['authorization'],
+        'Bearer gettone-di-giulia',
+      );
+      expect(chieste.single.headers['apikey'], 'sb_publishable_prova');
+      stato = 429;
+      await client.get(Uri.parse('$indirizzo/riquadro/15/1/3@2x.png'));
+      expect(m.consumo.riquadri, 1);
+      expect(m.consumo.fermati, 1);
+    });
+
+    test('senza indirizzo il fornitore non c\'è', () {
+      expect(
+        MappeGeoapify(
+          indirizzo: '',
+          chiavePubblica: 'k',
+          accesso: () => null,
+        ).disponibili,
+        isFalse,
+      );
       expect(const MappeAssenti().disponibili, isFalse);
     });
   });
@@ -389,7 +518,12 @@ void main() {
     const prima = ConsumoMappe(riquadri: 10, ricerche: 1);
     const dopo = ConsumoMappe(riquadri: 34, ricerche: 1, percorsi: 2);
     final fatto = dopo - prima;
-    expect(fatto.proprieta, {'riquadri': 24, 'ricerche': 0, 'percorsi': 2});
+    expect(fatto.proprieta, {
+      'riquadri': 24,
+      'ricerche': 0,
+      'percorsi': 2,
+      'fermati': 0,
+    });
     expect((prima - prima).nullo, isTrue);
   });
 

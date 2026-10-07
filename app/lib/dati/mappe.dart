@@ -2,15 +2,19 @@
 /// fornitore solo — Geoapify, con i dati di OpenStreetMap — dietro questa
 /// interfaccia. Nessuna schermata parla con lui: sostituirlo è questo file.
 ///
+/// Al fornitore non si parla dal telefono: tutto passa dalla funzione `mappe`
+/// del nostro server (supabase/functions/mappe), che tiene la chiave e fa
+/// rispettare il tetto per persona, per viaggio e per giorno (U.2). Per
+/// questo ogni chiamata dice di quale viaggio è.
+///
 /// Cosa vede il fornitore: le zone di mappa che si guardano, il testo che si
 /// cerca, e i due capi di un percorso — la posizione della persona solo
 /// quando chiede di essere portata a una tappa (08, regola 7). Non sa chi è
-/// né per quale viaggio.
+/// né per quale viaggio, e non vede il telefono: vede il server.
 ///
 /// Ogni chiamata si paga in crediti: i riquadri, le ricerche e i percorsi si
-/// contano qui ([consumo]), e le schermate li registrano (07,
-/// `consumo_mappe`), perché il tetto per persona e per viaggio di ADR-006
-/// abbia dei numeri su cui poggiare.
+/// contano qui ([consumo]), con quelle che il tetto ha fermato, e le schermate
+/// li registrano (07, `consumo_mappe`).
 library;
 
 import 'dart:async';
@@ -58,20 +62,29 @@ class Luogo {
 enum TipoLuogo { posto, indirizzo, zona }
 
 /// Quanto si è chiesto al fornitore: i riquadri scaricati davvero (quelli
-/// già in memoria non si pagano), le ricerche, i percorsi.
+/// già in memoria non si pagano), le ricerche, i percorsi. E quante chiamate
+/// il tetto ha fermato prima che arrivassero al fornitore.
 class ConsumoMappe {
-  const ConsumoMappe({this.riquadri = 0, this.ricerche = 0, this.percorsi = 0});
+  const ConsumoMappe({
+    this.riquadri = 0,
+    this.ricerche = 0,
+    this.percorsi = 0,
+    this.fermati = 0,
+  });
 
   final int riquadri;
   final int ricerche;
   final int percorsi;
+  final int fermati;
 
-  bool get nullo => riquadri == 0 && ricerche == 0 && percorsi == 0;
+  bool get nullo =>
+      riquadri == 0 && ricerche == 0 && percorsi == 0 && fermati == 0;
 
   ConsumoMappe operator -(ConsumoMappe prima) => ConsumoMappe(
     riquadri: riquadri - prima.riquadri,
     ricerche: ricerche - prima.ricerche,
     percorsi: percorsi - prima.percorsi,
+    fermati: fermati - prima.fermati,
   );
 
   /// Le proprietà dell'evento `consumo_mappe` (07): solo quante.
@@ -79,28 +92,39 @@ class ConsumoMappe {
     'riquadri': riquadri,
     'ricerche': ricerche,
     'percorsi': percorsi,
+    'fermati': fermati,
   };
 }
 
+/// Ogni chiamata è per un viaggio, [viaggioId]: il tetto è per persona, per
+/// viaggio e per giorno, e lo conta il server.
 abstract interface class Mappe {
-  /// Se il fornitore si può usare: senza la sua chiave la mappa degrada come
-  /// senza rete, agli indirizzi da aprire nelle Mappe del telefono.
+  /// Se il fornitore si può usare: senza la mappa degrada come senza rete,
+  /// agli indirizzi da aprire nelle Mappe del telefono.
   bool get disponibili;
 
   /// Quanto si è chiesto da quando l'app è aperta.
   ConsumoMappe get consumo;
 
   /// I riquadri della mappa, da mettere sotto le tappe.
-  Widget riquadri(BuildContext context);
+  Widget riquadri(BuildContext context, {required String viaggioId});
 
   /// Chi ringraziare sotto la mappa: lo chiedono il fornitore e i dati.
   String get attribuzione;
 
   /// I posti che corrispondono a [testo], i più vicini a [vicinoA] prima.
-  Future<List<Luogo>> cerca(String testo, {Coordinate? vicinoA});
+  Future<List<Luogo>> cerca(
+    String testo, {
+    required String viaggioId,
+    Coordinate? vicinoA,
+  });
 
   /// Il percorso a piedi da [da] ad [a], con le indicazioni in italiano.
-  Future<Percorso> percorsoAPiedi(Coordinate da, Coordinate a);
+  Future<Percorso> percorsoAPiedi(
+    Coordinate da,
+    Coordinate a, {
+    required String viaggioId,
+  });
 }
 
 /// Il fornitore senza chiave: niente mappa, niente ricerca.
@@ -114,18 +138,25 @@ class MappeAssenti implements Mappe {
   ConsumoMappe get consumo => const ConsumoMappe();
 
   @override
-  Widget riquadri(BuildContext context) => const SizedBox.shrink();
+  Widget riquadri(BuildContext context, {required String viaggioId}) =>
+      const SizedBox.shrink();
 
   @override
   String get attribuzione => '';
 
   @override
-  Future<List<Luogo>> cerca(String testo, {Coordinate? vicinoA}) =>
-      Future.error(const ErroreTrolley(_nonDisponibili));
+  Future<List<Luogo>> cerca(
+    String testo, {
+    required String viaggioId,
+    Coordinate? vicinoA,
+  }) => Future.error(const ErroreTrolley(_nonDisponibili));
 
   @override
-  Future<Percorso> percorsoAPiedi(Coordinate da, Coordinate a) =>
-      Future.error(const ErroreTrolley(_nonDisponibili));
+  Future<Percorso> percorsoAPiedi(
+    Coordinate da,
+    Coordinate a, {
+    required String viaggioId,
+  }) => Future.error(const ErroreTrolley(_nonDisponibili));
 }
 
 const _nonDisponibili = 'La mappa non è disponibile in questa versione.';
@@ -135,88 +166,138 @@ const _senzaRete = ErroreTrolley(
   serveLaRete: true,
 );
 
-/// Geoapify: riquadri, ricerca e percorsi dallo stesso posto.
+/// Il tetto di oggi, per questo viaggio, è raggiunto (U.2): domani si
+/// ricomincia, e intanto restano il nome scritto a mano e le Mappe del
+/// telefono.
+const _tettoRicerche = ErroreTrolley(
+  'Per oggi, in questo viaggio, le ricerche sono finite: scrivi il posto a '
+  'mano, o riprova domani.',
+  codice: CodiciServer.tettoMappe,
+);
+const _tettoPercorsi = ErroreTrolley(
+  'Per oggi, in questo viaggio, le strade calcolate sono finite.',
+  codice: CodiciServer.tettoMappe,
+);
+
+/// Geoapify, attraverso la funzione `mappe` del nostro server: riquadri,
+/// ricerca e percorsi dallo stesso posto. Le risposte sono quelle di
+/// Geoapify, e si leggono qui.
 class MappeGeoapify implements Mappe {
   MappeGeoapify({
-    required this._chiave,
+    required this.indirizzo,
+    required this.chiavePubblica,
+    required this.accesso,
     http.Client? client,
-    this.stile = 'positron',
     this._memoria,
   }) : _client = client ?? http.Client();
 
-  final String _chiave;
+  /// Dove risponde la funzione: `https://<progetto>.supabase.co/functions/v1/mappe`.
+  final String indirizzo;
+
+  /// La chiave pubblicabile del progetto, che il server chiede a ogni
+  /// richiesta.
+  final String chiavePubblica;
+
+  /// Il gettone d'accesso di chi è dentro, letto a ogni richiesta: scade e si
+  /// rinnova.
+  final String? Function() accesso;
+
   final http.Client _client;
   final MapCachingProvider? _memoria;
-
-  /// Lo stile dei riquadri: grigio chiaro con le strade bianche, come la
-  /// carta della tela.
-  final String stile;
-
-  static const _api = 'api.geoapify.com';
 
   var _riquadri = 0;
   var _ricerche = 0;
   var _percorsi = 0;
+  var _fermati = 0;
 
   @override
-  bool get disponibili => _chiave.isNotEmpty;
+  bool get disponibili => indirizzo.isNotEmpty;
 
   @override
   ConsumoMappe get consumo => ConsumoMappe(
     riquadri: _riquadri,
     ricerche: _ricerche,
     percorsi: _percorsi,
+    fermati: _fermati,
   );
 
-  /// Uno solo per tutta l'app: tiene la connessione e la memoria dei
-  /// riquadri già visti, che non si scaricano (e non si pagano) due volte.
-  late final _fornitoreRiquadri = NetworkTileProvider(
-    httpClient: _Contatore(RetryClient(http.Client()), () => _riquadri++),
-    cachingProvider:
-        _memoria ??
-        BuiltInMapCachingProvider.getOrCreateInstance(
-          maxCacheSize: 200 * 1000 * 1000,
-          // La chiave non dice niente del riquadro: fuori dal nome in memoria.
-          tileKeyGenerator: (url) =>
-              BuiltInMapCachingProvider.uuidTileKeyGenerator(
-                url.replaceAll(RegExp(r'apiKey=[^&]*'), ''),
-              ),
-        ),
+  Map<String, String> _intestazioni() => {
+    'apikey': chiavePubblica,
+    if (accesso() case final gettone?) 'authorization': 'Bearer $gettone',
+  };
+
+  /// Uno solo per tutta l'app: tiene la connessione, conta, e mette
+  /// l'accesso a ogni riquadro.
+  late final _clientRiquadri = _AlServer(
+    RetryClient(_client),
+    _intestazioni,
+    (stato) => stato == 429 ? _fermati++ : _riquadri++,
   );
+
+  /// Il client con cui partono i riquadri, per le prove.
+  @visibleForTesting
+  http.Client get clientDeiRiquadri => _clientRiquadri;
+
+  /// La memoria dei riquadri già visti, che non si scaricano (e non si
+  /// pagano) due volte: una per tutti i viaggi, perché l'indirizzo di un
+  /// riquadro non dice di quale viaggio è.
+  late final _memoriaRiquadri =
+      _memoria ??
+      BuiltInMapCachingProvider.getOrCreateInstance(
+        maxCacheSize: 200 * 1000 * 1000,
+      );
+
+  /// Un fornitore di riquadri per viaggio, che dice al server di quale.
+  final _fornitori = <String, NetworkTileProvider>{};
 
   @override
-  Widget riquadri(BuildContext context) => TileLayer(
-    urlTemplate:
-        'https://maps.geoapify.com/v1/tile/$stile/{z}/{x}/{y}{r}.png'
-        '?apiKey=$_chiave',
-    retinaMode: RetinaMode.isHighDensity(context),
-    maxNativeZoom: 20,
-    userAgentPackageName: 'com.aionlabs.trolley',
-    tileProvider: _fornitoreRiquadri,
-  );
+  Widget riquadri(BuildContext context, {required String viaggioId}) =>
+      TileLayer(
+        urlTemplate: '$indirizzo/riquadro/{z}/{x}/{y}{r}.png',
+        retinaMode: RetinaMode.isHighDensity(context),
+        maxNativeZoom: 20,
+        userAgentPackageName: 'com.aionlabs.trolley',
+        tileProvider: _fornitori.putIfAbsent(
+          viaggioId,
+          () => NetworkTileProvider(
+            httpClient: _clientRiquadri,
+            headers: {'x-viaggio': viaggioId},
+            cachingProvider: _memoriaRiquadri,
+          ),
+        ),
+      );
 
   @override
   String get attribuzione =>
       'Powered by Geoapify · © OpenMapTiles · © OpenStreetMap';
 
   @override
-  Future<List<Luogo>> cerca(String testo, {Coordinate? vicinoA}) async {
+  Future<List<Luogo>> cerca(
+    String testo, {
+    required String viaggioId,
+    Coordinate? vicinoA,
+  }) async {
     final cercato = testo.trim();
     if (cercato.isEmpty) return const [];
     Future<List<Luogo>> chiedi({required bool soloQui}) async {
-      _ricerche++;
-      final json = await _chiedi('/v1/geocode/autocomplete', {
-        'text': cercato,
-        'lang': 'it',
-        'limit': '8',
-        'format': 'json',
-        if (vicinoA != null) ...{
-          'bias': 'proximity:${vicinoA.lon},${vicinoA.lat}',
-          if (soloQui)
-            'filter':
-                'circle:${vicinoA.lon},${vicinoA.lat},${raggioDiRicerca.round()}',
+      final json = await _chiedi(
+        'cerca',
+        viaggioId,
+        {
+          'text': cercato,
+          'lang': 'it',
+          'limit': '8',
+          'format': 'json',
+          if (vicinoA != null) ...{
+            'bias': 'proximity:${vicinoA.lon},${vicinoA.lat}',
+            if (soloQui)
+              'filter':
+                  'circle:${vicinoA.lon},${vicinoA.lat},${raggioDiRicerca.round()}',
+          },
         },
-      });
+        conta: () => _ricerche++,
+        tetto: _tettoRicerche,
+      );
       return luoghiDaGeoapify(json);
     }
 
@@ -233,32 +314,47 @@ class MappeGeoapify implements Mappe {
   static const raggioDiRicerca = 40000.0;
 
   @override
-  Future<Percorso> percorsoAPiedi(Coordinate da, Coordinate a) async {
-    _percorsi++;
-    final json = await _chiedi('/v1/routing', {
-      'waypoints': '${da.lat},${da.lon}|${a.lat},${a.lon}',
-      'mode': 'walk',
-      'lang': 'it',
-      // Senza, le indicazioni hanno il testo ma non il tipo di svolta.
-      'details': 'instruction_details',
-    });
+  Future<Percorso> percorsoAPiedi(
+    Coordinate da,
+    Coordinate a, {
+    required String viaggioId,
+  }) async {
+    final json = await _chiedi(
+      'percorso',
+      viaggioId,
+      {
+        'waypoints': '${da.lat},${da.lon}|${a.lat},${a.lon}',
+        'mode': 'walk',
+        'lang': 'it',
+        // Senza, le indicazioni hanno il testo ma non il tipo di svolta.
+        'details': 'instruction_details',
+      },
+      conta: () => _percorsi++,
+      tetto: _tettoPercorsi,
+    );
     final percorso = percorsoDaGeoapify(json);
     if (percorso == null) throw const ErroreTrolley(_nonRisponde);
     return percorso;
   }
 
+  /// Chiede alla funzione [cosa] — `cerca` o `percorso` — per il viaggio. I
+  /// parametri vanno nel corpo, non nell'indirizzo: il testo cercato e i
+  /// capi di un percorso non finiscono nei registri del server.
   Future<Map<String, dynamic>> _chiedi(
-    String percorso,
-    Map<String, String> parametri,
-  ) async {
-    final indirizzo = Uri.https(_api, percorso, {
-      ...parametri,
-      'apiKey': _chiave,
-    });
+    String cosa,
+    String viaggioId,
+    Map<String, String> parametri, {
+    required void Function() conta,
+    required ErroreTrolley tetto,
+  }) async {
     final http.Response risposta;
     try {
       risposta = await _client
-          .get(indirizzo)
+          .post(
+            Uri.parse('$indirizzo/$cosa'),
+            headers: {..._intestazioni(), 'content-type': 'application/json'},
+            body: jsonEncode({'viaggio': viaggioId, 'parametri': parametri}),
+          )
           .timeout(const Duration(seconds: 10));
     } on SocketException {
       throw _senzaRete;
@@ -267,6 +363,11 @@ class MappeGeoapify implements Mappe {
     } on http.ClientException {
       throw _senzaRete;
     }
+    if (risposta.statusCode == 429) {
+      _fermati++;
+      throw tetto;
+    }
+    conta();
     if (risposta.statusCode != 200) throw const ErroreTrolley(_nonRisponde);
     final corpo = jsonDecode(utf8.decode(risposta.bodyBytes));
     if (corpo is! Map<String, dynamic>) {
@@ -276,17 +377,21 @@ class MappeGeoapify implements Mappe {
   }
 }
 
-/// Conta le richieste che partono davvero verso il fornitore.
-class _Contatore extends http.BaseClient {
-  _Contatore(this._dentro, this._conta);
+/// Il client dei riquadri: mette l'accesso a ogni richiesta, e conta quelle
+/// che tornano — fermate dal tetto (429) o arrivate al fornitore.
+class _AlServer extends http.BaseClient {
+  _AlServer(this._dentro, this._intestazioni, this._conta);
 
   final http.Client _dentro;
-  final void Function() _conta;
+  final Map<String, String> Function() _intestazioni;
+  final void Function(int stato) _conta;
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    _conta();
-    return _dentro.send(request);
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    request.headers.addAll(_intestazioni());
+    final risposta = await _dentro.send(request);
+    _conta(risposta.statusCode);
+    return risposta;
   }
 
   @override

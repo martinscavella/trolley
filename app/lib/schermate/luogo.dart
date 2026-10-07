@@ -144,6 +144,7 @@ class _FoglioLuogoState extends State<FoglioLuogo> {
     try {
       final trovati = await _servizi.mappe.cerca(
         cercato,
+        viaggioId: widget.viaggioId,
         vicinoA: widget.vicinoA,
       );
       if (!mounted || questa != _ultima) return;

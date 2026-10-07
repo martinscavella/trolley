@@ -167,8 +167,8 @@ La fase 3.2 (la mappa del giorno e del viaggio, la navigazione a piedi con l'arr
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Il tetto per persona e per viaggio** (ADR-006, regola 1) | Oggi il consumo si conta (`consumo_mappe`) e la navigazione non chiede più di otto strade nuove; manca il limite vero, che degrada alle Mappe del telefono. Si fissa guardando i numeri della fase interna | **Prerequisito per aprire fuori dal team** |
-| **La chiave di Geoapify sta nell'app** | Il repository è pubblico, e la chiave non è nel codice (`--dart-define-from-file=chiavi.json`); ma chi smonta l'app la trova. Il piano gratuito non ha carta: chi la abusasse consumerebbe i crediti, non dei soldi. Prima di aprire fuori dal team: una chiave per l'app con le restrizioni che Geoapify permette, o un passaggio dal nostro server | Prima di aprire fuori dal team |
+| ~~**Il tetto per persona e per viaggio** (ADR-006, regola 1)~~ | Costruito con U.2: sul server, per persona, viaggio e giorno | ✅ |
+| ~~**La chiave di Geoapify sta nell'app**~~ | Con U.2 sta solo sul server: le restrizioni di Geoapify (IP, referrer, origin) su un telefono non proteggono niente | ✅ |
 | **I posti di un'idea sulla mappa** (08, casi limite) | «La mappa mostra i posti dell'elenco idee»: l'elenco dei posti di un'idea (02, regola 2) non esiste ancora. Oggi «Mappa» non apre le idee | Con i posti delle idee |
 | **Le tappe incollate prima del 5 ottobre non hanno un posto** | Dal 5 ottobre la richiesta all'assistente chiede anche le coordinate; le tappe incollate prima (i viaggi di prova a Copenaghen e Londra) si cercano a mano in «Dove?», che parte già cercando, oppure si svuota il giorno e si incolla di nuovo. Cercarle tutte insieme costerebbe una ricerca per tappa | Se la beta lo chiede |
 | **Quanto sono giuste le coordinate dell'assistente** | Per i posti famosi di solito sì; per un ristorante piccolo possono essere a qualche centinaio di metri, o inventate. Si scartano solo quelle a più di 150 km dal viaggio. Da guardare sulle prime risposte vere: se sbagliano spesso, si passano dalla ricerca di Geoapify prima di salvarle | Alle prime risposte incollate |
@@ -176,7 +176,7 @@ La fase 3.2 (la mappa del giorno e del viaggio, la navigazione a piedi con l'arr
 | **I mezzi e l'auto** | La navigazione è a piedi; per il resto c'è «Apri in Mappe» | Se la beta lo chiede |
 | **Rivedere sulla tela le schermate 57–61** | Disegnate il 5 ottobre 2026 dopo la prova sul telefono (la scelta del viaggio nella mappa, con il pulsante «Indietro»; svuotare un giorno e il viaggio; le tappe doppie nell'anteprima) e costruite lo stesso giorno | Prima di chiudere la 3.2 |
 | **Rivedere sulla tela le schermate 50–56** | Disegnate prima (la 56 il 4 ottobre 2026, insieme alla costruzione), costruite il 4 ottobre 2026 | Prima di chiudere la 3.2 |
-| **Provare la mappa sull'iPhone con la chiave vera** | Le risposte di Geoapify sono verificate dal vivo il 5 ottobre 2026 (ricerca, percorso, riquadri; due registrate in `app/test/dati/risposte/`); installata sull'iPhone il 5 ottobre 2026 (mappa e riquadri veri, centrata sulla meta); manca la prova camminando, con «Portami» fino a una tappa | Al primo giro a piedi |
+| **Provare la mappa sull'iPhone con la chiave vera** | Le risposte di Geoapify sono verificate dal vivo il 5 ottobre 2026 (ricerca, percorso, riquadri; due registrate in `app/test/dati/risposte/`); installata sull'iPhone il 5 ottobre 2026 (mappa e riquadri veri, centrata sulla meta); manca la prova camminando, con «Portami» fino a una tappa. L'8 ottobre 2026 «Portami» restava a cercare dove si era, finché un'altra app non accendeva il GPS: iOS metteva in pausa la posizione a telefono fermo prima della prima lettura (`pauseLocationUpdatesAutomatically`). Ora non va mai in pausa, e si parte dalla posizione che il telefono sa già se è di meno di un minuto. Lo stesso giorno: con una tappa sola la mappa nasceva a zoom 13 e saltava sulla tappa appena pronta, e restava grigia finché non la si muoveva; ora nasce già inquadrata. Tutte e due provate sull'iPhone l'8 ottobre 2026 | Al primo giro a piedi |
 
 ### Rimasto fuori dalla 3.3
 
@@ -256,6 +256,21 @@ U.1 (i tuoi dati e chiudere l'account: scaricarli in un file JSON, chiudere l'ac
 | **Rimettere dentro i dati scaricati** | È la reimportazione, premium (modello di business) | Fase 6 |
 | **La lapide nella parte pubblica** | Un profilo chiuso non deve comparire in ricerca, collegamenti e messaggi: oggi la parte pubblica non c'è | Fase 5.3 |
 | **Rivedere sulla tela le schermate 99–102** | Disegnate il 6 ottobre, costruite e allineate al codice il 7 ottobre 2026 (versione 39) | Prima di chiudere U.1 |
+
+### Rimasto fuori da U.2
+
+U.2 (la chiave di Geoapify sul server, nella funzione `mappe`, e il tetto per persona, viaggio e giorno, con la navigazione che degrada alle Mappe del telefono) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Applicare la migrazione `tetto_mappe`** | `supabase/migrations/20261008090000_tetto_mappe.sql`: il conto, `consuma_mappe`, i numeri in `configurazione`, la pulizia settimanale. Si applica dall'editor SQL e si prova con `supabase/tests/tetto_mappe.sql`; la versione non finirà in `schema_migrations` | Prima di pubblicare la funzione |
+| **Una chiave nuova di Geoapify, sul server** | La chiave di prima è stata in ogni app compilata: se ne crea una nuova per il server (segreto `GEOAPIFY_CHIAVE` delle funzioni di Supabase) e la vecchia si cancella da Geoapify, con `app/chiavi.json` | Prima di pubblicare la funzione |
+| **Pubblicare la funzione `mappe`** | `supabase functions deploy mappe --project-ref nhdgxlynnudwkmxrrokp --no-verify-jwt`: l'accesso lo controlla `consuma_mappe`, non il gateway. Senza la funzione l'app nuova non ha mappa | Prima di installare l'app nuova |
+| **I numeri del tetto** | 2000 riquadri, 150 ricerche, 60 percorsi per persona, viaggio e giorno sono stimati: si correggono in `configurazione` guardando `consumo_mappe` (e i suoi `fermati`) della fase interna | Dopo la fase interna |
+| **Il limite di tutta l'app** | Il piano gratuito di Geoapify dà 3000 crediti al giorno per tutti; una persona al tetto ne usa 710. Quando i viaggiatori di uno stesso giorno lo avvicinano serve un piano a pagamento | Quando la beta lo avvicina |
+| **Account moltiplicati** | Il tetto è per persona: chi crea molti account e molti viaggi ne ha molti. Non costa soldi (il piano è senza carta), ma consuma i crediti di tutti. Se capita, un tetto per tutta l'app nella stessa funzione | Se capita |
+| **Quanto è più lenta la mappa** | Ogni riquadro nuovo passa dal server: circa 370 ms l'uno contro pochi centesimi prima (registri dell'8 ottobre 2026). Da guardare camminando | Al primo giro a piedi |
+| **La prova del tetto sul server** | `supabase/tests/tetto_mappe.sql` non è ancora stata lanciata: tocca `configurazione` dentro un blocco che si annulla. Si lancia dall'editor SQL | Prima di chiudere U.2 |
 
 ### Impianto di sicurezza del matching — stima
 

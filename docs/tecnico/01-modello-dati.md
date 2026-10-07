@@ -172,7 +172,11 @@ La risposta di un assistente incollata nell'app si salva qui **prima** di provar
 
 ### `configurazione`
 
-`chiave`, `valore` (JSON), `aggiornata_il`. Quello che deve cambiare senza un rilascio: per ora `modelli_suggeriti`, l'elenco dei modelli da consigliare per l'itinerario. La legge chi ha un accesso, la scrive solo chi gestisce il progetto ([ADR-010](adr/010-itinerario-incollato.md)).
+`chiave`, `valore` (JSON), `aggiornata_il`. Quello che deve cambiare senza un rilascio: `modelli_suggeriti`, l'elenco dei modelli da consigliare per l'itinerario ([ADR-010](adr/010-itinerario-incollato.md)), e `tetto_mappe`, quante chiamate di ogni tipo per persona, viaggio e giorno ([ADR-006](adr/006-mappe-e-percorsi.md)). La legge chi ha un accesso, la scrive solo chi gestisce il progetto.
+
+### `consumo_mappe` — solo sul server, nello schema privato
+
+`utente_id`, `viaggio_id`, `giorno`, `riquadri`, `ricerche`, `percorsi`. Il conto del tetto delle mappe (U.2): lo scrive solo `consuma_mappe`, il client non lo legge. Si toglie dopo una settimana, e con il viaggio. Non ha copia sul telefono.
 
 ---
 

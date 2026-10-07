@@ -66,15 +66,35 @@ class PosizioneDelTelefono implements Posizione {
   }
 
   @override
-  Stream<Coordinate> segui() => Geolocator.getPositionStream(
-    locationSettings: AppleSettings(
-      accuracy: LocationAccuracy.best,
-      // Chi cammina: iOS sa che non si va in auto.
-      activityType: ActivityType.fitness,
-      distanceFilter: 4,
-      pauseLocationUpdatesAutomatically: true,
-    ),
-  ).map((p) => (lat: p.latitude, lon: p.longitude));
+  Stream<Coordinate> segui() async* {
+    // Quella che il telefono sa già, se è di adesso: la strada parte subito,
+    // senza aspettare il primo segnale.
+    try {
+      final ultima = await Geolocator.getLastKnownPosition();
+      if (ultima != null &&
+          DateTime.now().difference(ultima.timestamp) < _fresca &&
+          ultima.accuracy <= 100) {
+        yield (lat: ultima.latitude, lon: ultima.longitude);
+      }
+    } on Object {
+      // Non la sa: si aspetta il segnale.
+    }
+    yield* Geolocator.getPositionStream(
+      locationSettings: AppleSettings(
+        accuracy: LocationAccuracy.best,
+        // Chi cammina: iOS sa che non si va in auto.
+        activityType: ActivityType.fitness,
+        distanceFilter: 4,
+        // Mai in pausa: a telefono fermo iOS la metterebbe prima ancora della
+        // prima posizione, e non la riprende da solo. «Portami» restava a
+        // cercare dove si è, finché un'altra app non accendeva il GPS.
+        pauseLocationUpdatesAutomatically: false,
+      ),
+    ).map((p) => (lat: p.latitude, lon: p.longitude));
+  }
+
+  /// Quanto vecchia può essere una posizione già nota per partire da lì.
+  static const _fresca = Duration(minutes: 1);
 
   @override
   Future<Coordinate?> qui() async {

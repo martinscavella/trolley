@@ -168,7 +168,11 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
     }
     _chiedendo = true;
     try {
-      final percorso = await _servizi.mappe.percorsoAPiedi(da, _posto);
+      final percorso = await _servizi.mappe.percorsoAPiedi(
+        da,
+        _posto,
+        viaggioId: widget.viaggio.id,
+      );
       if (!mounted) return;
       setState(() {
         _percorso = percorso;
@@ -178,8 +182,14 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
         _errore = null;
       });
     } on ErroreTrolley catch (e) {
-      // Un ricalcolo che non riesce lascia la strada di prima.
-      if (mounted && _percorso == null) setState(() => _errore = e.messaggio);
+      // Un ricalcolo che non riesce lascia la strada di prima; al tetto di
+      // oggi la si lascia, e da lì portano le Mappe del telefono.
+      if (!mounted) return;
+      if (_percorso == null) {
+        setState(() => _errore = e.messaggio);
+      } else if (e.codice == CodiciServer.tettoMappe) {
+        setState(() => _basta = true);
+      }
     } finally {
       _chiedendo = false;
     }
@@ -242,7 +252,7 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
                 },
               ),
               children: [
-                _servizi.mappe.riquadri(context),
+                _servizi.mappe.riquadri(context, viaggioId: widget.viaggio.id),
                 if (percorso != null)
                   PolylineLayer(
                     polylines: [

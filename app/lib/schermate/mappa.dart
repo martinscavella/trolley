@@ -355,7 +355,11 @@ class _SchermataMappaState extends State<SchermataMappa> {
         initialCenter: _ll(
           punti.firstOrNull ?? iniziale ?? (lat: 41.9, lon: 12.5),
         ),
-        initialZoom: punti.isNotEmpty || iniziale != null ? 13 : 4,
+        initialZoom: switch (punti.length) {
+          0 => iniziale != null ? 13 : 4,
+          1 => 15.5,
+          _ => 13,
+        },
         initialCameraFit: punti.length >= 2
             ? CameraFit.coordinates(
                 coordinates: [for (final p in punti) _ll(p)],
@@ -375,7 +379,10 @@ class _SchermataMappaState extends State<SchermataMappa> {
         ),
         onMapReady: () {
           _pronta = true;
-          if (punti.length >= 2) _inquadrata = chiave;
+          // La mappa nasce già inquadrata: un salto nell'istante in cui è
+          // pronta lasciava i riquadri nuovi fuori dal disegno, grigi finché
+          // non la si muoveva.
+          if (punti.isNotEmpty || iniziale != null) _inquadrata = chiave;
           _inquadra(chiave, punti);
         },
         onTap: (_, _) {
@@ -383,7 +390,7 @@ class _SchermataMappaState extends State<SchermataMappa> {
         },
       ),
       children: [
-        _servizi.mappe.riquadri(context),
+        _servizi.mappe.riquadri(context, viaggioId: _viaggioId),
         if (!vista.tutto)
           PolylineLayer(
             polylines: [

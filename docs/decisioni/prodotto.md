@@ -422,6 +422,15 @@ Scelto prima dell'ondata 1 (tela, 99–102), il 6 e il 7 ottobre 2026. Sono i di
 - **Gli eventi di misurazione restano, ma non portano più a lei**: cambiano tutti insieme con un id nuovo, così le soglie che seguono una persona nel tempo restano calcolabili. Si aggiunge `account_chiuso`, se la misurazione era accesa. Gli eventi di un account interno si cancellano: non contano comunque.
 - **Scaricare e chiudere richiedono la rete**: senza, il pulsante si spegne e lo dice. Chiudendo, prima partono i gesti in coda, perché arrivino nei viaggi degli altri.
 
+### Il tetto delle mappe (U.2)
+
+Scelto l'8 ottobre 2026, prima dell'ondata 1. La parte tecnica è in [ADR-006](../tecnico/adr/006-mappe-e-percorsi.md), «La chiave e il tetto sul server».
+
+- **La chiave sta sul server, e il tetto lo fa rispettare lui** (scelto dall'utente fra questo e un tetto applicato dall'app con la chiave dentro): chi smonta l'app non trova niente da usare, e chi aggira l'app non aggira il tetto. Il prezzo è una mappa un po' più lenta a caricare.
+- **Il tetto è per persona, per viaggio e per giorno**: chi viaggia due settimane non lo esaurisce a metà, e il giorno dopo ricomincia.
+- **Al tetto non si resta mai senza indicazioni** (ADR-006, regola 2): la strada la danno le Mappe del telefono, come dopo troppi ricalcoli; il posto di una tappa si scrive a mano, come senza rete. La persona lo legge con parole sue — «per oggi, in questo viaggio, le ricerche sono finite» — e non vede numeri né crediti.
+- **Nessuna schermata nuova**: il tetto parla nei posti dove già si dice che la strada non c'è o che la ricerca non risponde.
+
 ---
 
 ## Ricordo e traguardi

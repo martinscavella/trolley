@@ -1236,6 +1236,12 @@ class MappeFinte implements Mappe {
   /// I capi dei percorsi chiesti.
   final chiesti = <({Coordinate da, Coordinate a})>[];
 
+  /// Per quali viaggi si è chiesto, in ordine.
+  final viaggi = <String>[];
+
+  /// Il tetto di oggi è raggiunto: ricerche e percorsi si fermano.
+  bool tetto = false;
+
   var _consumo = const ConsumoMappe();
 
   @override
@@ -1246,22 +1252,43 @@ class MappeFinte implements Mappe {
     riquadri: _consumo.riquadri + quanti,
     ricerche: _consumo.ricerche,
     percorsi: _consumo.percorsi,
+    fermati: _consumo.fermati,
   );
 
   @override
-  Widget riquadri(BuildContext context) => const SizedBox.shrink();
+  Widget riquadri(BuildContext context, {required String viaggioId}) =>
+      const SizedBox.shrink();
 
   @override
   String get attribuzione => 'Mappe finte';
 
+  ErroreTrolley _fermato(String messaggio) {
+    _consumo = ConsumoMappe(
+      riquadri: _consumo.riquadri,
+      ricerche: _consumo.ricerche,
+      percorsi: _consumo.percorsi,
+      fermati: _consumo.fermati + 1,
+    );
+    return ErroreTrolley(messaggio, codice: CodiciServer.tettoMappe);
+  }
+
   @override
-  Future<List<Luogo>> cerca(String testo, {Coordinate? vicinoA}) async {
+  Future<List<Luogo>> cerca(
+    String testo, {
+    required String viaggioId,
+    Coordinate? vicinoA,
+  }) async {
+    viaggi.add(viaggioId);
+    if (tetto) {
+      throw _fermato('Per oggi, in questo viaggio, le ricerche sono finite.');
+    }
     cercati.add(testo);
     vicino.add(vicinoA);
     _consumo = ConsumoMappe(
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche + 1,
       percorsi: _consumo.percorsi,
+      fermati: _consumo.fermati,
     );
     return [
       for (final l in luoghi)
@@ -1270,12 +1297,23 @@ class MappeFinte implements Mappe {
   }
 
   @override
-  Future<Percorso> percorsoAPiedi(Coordinate da, Coordinate a) async {
+  Future<Percorso> percorsoAPiedi(
+    Coordinate da,
+    Coordinate a, {
+    required String viaggioId,
+  }) async {
+    viaggi.add(viaggioId);
+    if (tetto) {
+      throw _fermato(
+        'Per oggi, in questo viaggio, le strade calcolate sono finite.',
+      );
+    }
     chiesti.add((da: da, a: a));
     _consumo = ConsumoMappe(
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
       percorsi: _consumo.percorsi + 1,
+      fermati: _consumo.fermati,
     );
     final p = percorso;
     if (p == null) throw const ErroreTrolley('La mappa non risponde.');

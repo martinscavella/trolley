@@ -41,6 +41,7 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 | Presenza in città | Fino alla fine del viaggio, poi cancellata |
 | Segnalazioni e contenuti segnalati | Il tempo necessario a gestirle, più il periodo utile a difendersi da una contestazione |
 | Eventi di misurazione | Aggregati oltre un orizzonte breve: non servono a lungo nel dettaglio |
+| Conto delle mappe per il tetto | Una settimana: serve solo a sapere se oggi si è sotto il tetto ([ADR-006](adr/006-mappe-e-percorsi.md)). Quante chiamate, mai dove né cosa |
 | Account chiuso | Dati personali cancellati, e l'accesso con loro; i viaggi in cui si era da soli cancellati; i contributi nei viaggi altrui restano, attribuiti a un partecipante non più presente («Account chiuso»). Gli eventi di misurazione restano sotto un id nuovo che non porta alla persona; quelli di un account interno si cancellano |
 
 L'ultima riga va spiegata alla persona **prima** che chiuda l'account: le spese che ha pagato non si cancellano dai saldi altrui, perché sparire non estingue un debito.
@@ -69,5 +70,7 @@ Vanno fatte **prima** della seconda ondata, non dopo.
 ## Fornitori
 
 Ogni servizio esterno è un responsabile del trattamento e va nell'informativa: mappe e percorsi, invio SMS, tassi di cambio, e — se scelto — il servizio per il deep link differito.
+
+Le mappe passano dal nostro server (U.2): il fornitore riceve le zone guardate, il testo cercato e i capi di un percorso, ma non l'indirizzo del telefono né chi chiede. Ricerche e percorsi viaggiano nel corpo delle richieste, fuori dai registri del server; le zone di mappa sono nell'indirizzo di ogni riquadro, e i registri delle funzioni di Supabase le tengono per il loro breve periodo.
 
 Il fornitore dei modelli per la generazione dell'itinerario **non è nostro fornitore**: è la persona che porta il prompt sul proprio assistente, con il proprio account. È una delle ragioni per cui l'MVP funziona così.

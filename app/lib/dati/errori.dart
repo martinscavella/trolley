@@ -35,6 +35,10 @@ abstract final class CodiciServer {
 
   /// Il viaggio non è in corso: sul posto si è solo mentre si viaggia.
   static const nonInCorso = 'TR422';
+
+  /// Il tetto delle mappe di oggi, per persona e per viaggio, è raggiunto: lo
+  /// dice la funzione `mappe` con 429 (U.2).
+  static const tettoMappe = 'TR429';
 }
 
 /// Il motivo scritto sotto un controllo spento perché manca la rete.

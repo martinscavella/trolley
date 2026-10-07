@@ -51,9 +51,11 @@ Future<void> main() async {
       rete: rete,
       documenti: documenti,
       acquisizione: const AcquisizioneDelTelefono(),
-      mappe: geoapifyChiave.isEmpty
-          ? const MappeAssenti()
-          : MappeGeoapify(chiave: geoapifyChiave),
+      mappe: MappeGeoapify(
+        indirizzo: indirizzoMappe,
+        chiavePubblica: supabaseChiave,
+        accesso: () => supabase.auth.currentSession?.accessToken,
+      ),
       posizione: const PosizioneDelTelefono(),
       mappeDelTelefono: const MappeDiSistema(),
       child: const TrolleyApp(),

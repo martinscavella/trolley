@@ -18,12 +18,9 @@ const supabaseChiave = String.fromEnvironment(
   defaultValue: 'sb_publishable_zdDxpJcG9bv4I76I8zGZiw_ev1IEIEO',
 );
 
-/// La chiave di Geoapify, il fornitore di mappe (ADR-006). Non sta nel
-/// codice: il repository è pubblico, e una chiave in chiaro la userebbe
-/// chiunque, consumando i crediti di tutti. Si passa alla compilazione con
-/// `--dart-define-from-file=chiavi.json` (il file è fuori da git). Senza, la
-/// mappa degrada come senza rete.
-const geoapifyChiave = String.fromEnvironment('GEOAPIFY_CHIAVE');
+/// Dove rispondono le mappe (ADR-006, U.2): la funzione `mappe` del server,
+/// che tiene la chiave di Geoapify e il tetto. Nell'app la chiave non c'è.
+const indirizzoMappe = '$supabaseUrl/functions/v1/mappe';
 
 /// Dove torna la persona dopo aver confermato l'email. Va tra gli URL di
 /// reindirizzamento consentiti in Supabase (Authentication → URL Configuration).
