@@ -36,7 +36,7 @@ Entrare nell'app, esistere come persona dentro un viaggio, e — se si vuole —
 |---|---|
 | Il numero di telefono è già associato a un altro account | Si rifiuta la verifica e si spiega che un numero vale per un account solo. Non si rivela di quale account si tratti |
 | La persona spegne il profilo pubblico | I collegamenti restano ma diventano inattivi, e il profilo sparisce dalla ricerca. Riaccendendolo tornano come prima |
-| La persona chiude l'account ed era in viaggi condivisi | I suoi contributi restano nel viaggio, attribuiti a un partecipante rimosso. Le spese non si ricalcolano da sole: sparire non cancella un debito |
+| La persona chiude l'account ed era in viaggi condivisi | Ne esce: i suoi contributi restano nel viaggio, con «Account chiuso» al posto del nome. Le spese non si ricalcolano da sole: sparire non cancella un debito. Se era responsabile, il ruolo passa a chi è entrato per primo fra quelli che restano. I viaggi in cui era da sola si cancellano. Glielo si dice prima, con i numeri veri ([decisioni](../decisioni/prodotto.md), «I tuoi dati e chiudere l'account») |
 | Dichiara un'età falsa | Non è verificabile, e non si prova a verificarla. La dichiarazione è la misura proporzionata |
 
 ---

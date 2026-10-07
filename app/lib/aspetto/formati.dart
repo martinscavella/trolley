@@ -54,6 +54,14 @@ String? bandiera(String? paese) {
 String quanti(int n, String singolare, String plurale) =>
     '$n ${n == 1 ? singolare : plurale}';
 
+/// Più nomi in una frase: `Porto`, `Porto e Berlino`, `Porto, Lisbona e
+/// Berlino`.
+String insieme(List<String> nomi) => switch (nomi) {
+  [] => '',
+  [final uno] => uno,
+  _ => '${nomi.sublist(0, nomi.length - 1).join(', ')} e ${nomi.last}',
+};
+
 /// Il titolo di un viaggio: la città, oppure il paese se si va in un paese
 /// intero.
 String titoloViaggio(Viaggio v) =>

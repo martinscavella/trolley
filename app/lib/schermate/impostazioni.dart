@@ -17,6 +17,7 @@ import '../dominio/ricordo.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'i_tuoi_dati.dart';
 import 'mappamondo.dart';
 import 'passaporto.dart';
 import 'scelta_valuta.dart';
@@ -222,7 +223,17 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
                 style: Testi.didascalia.copyWith(color: t.testoSecondario),
               ),
             ).entra(context, ritardo: Ritmo.passo * 5),
-            const SizedBox(height: 28),
+            const SizedBox(height: 14),
+            RigaScheda(
+              simbolo: icona(
+                ios: CupertinoIcons.arrow_down_doc,
+                android: Icons.download_rounded,
+              ),
+              titolo: 'I tuoi dati',
+              sottotitolo: "Scaricarli, o chiudere l'account",
+              onTap: () => apri<void>(context, const SchermataITuoiDati()),
+            ).entra(context, ritardo: Ritmo.passo * 5),
+            const SizedBox(height: 20),
             PulsanteGrande(
               etichetta: 'Esci',
               secondario: true,

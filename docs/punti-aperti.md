@@ -28,6 +28,7 @@ Cose fuori dal codice senza le quali la [Fase 0](piano-di-costruzione.md) non si
 | **Data dell'ondata 1** | "Sei mesi alla beta" va ancorato a una data scritta, altrimenti non si vede quando slitta | Da fissare |
 | **Protezione dalle password compromesse** (Supabase Auth) | Con l'accesso via email è la difesa più economica contro le password già rubate altrove. La segnala il controllo di sicurezza di Supabase | Da attivare (Authentication → Policies) |
 | **Funzione `public.rls_auto_enable()`** | Non viene dalle nostre migrazioni: l'ha creata Supabase, ed è eseguibile anche senza accesso. Il controllo di sicurezza la segnala | Da capire se serve; se no, togliere l'esecuzione ad `anon` |
+| **Revisione legale** ([06](tecnico/06-privacy-e-conformita.md)) | Le scelte su dati, età, conservazione e chiusura dell'account sono ragionate, non certificate: vanno confermate prima di aprire fuori dal team. Con l'informativa in bozza (U.3) | Prima dell'ondata 1 |
 
 ### Rimasto fuori dalla 1.1
 
@@ -237,11 +238,24 @@ La fase 4.3 (i viaggi passati: aggiungerli, cambiarli, toglierli; il biglietto t
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Applicare la migrazione `viaggi_passati`** | `supabase/migrations/20261006150000_viaggi_passati.sql`: i giorni ricordati, un viaggio nasce chiuso solo se è importato, `aggiungi_viaggio_passato`, nessun invito in un viaggio passato. Si applica dall'editor SQL e si prova con `supabase/tests/viaggi_passati.sql`; la versione non finirà in `schema_migrations`, come le altre applicate a mano | Prima di provare la 4.3 sul telefono |
+| ~~**Applicare la migrazione `viaggi_passati`**~~ | Applicata dall'editor SQL e provata l'8 ottobre 2026 (`supabase/tests/viaggi_passati.sql`, tutte «ok»). La versione `20261006150000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
 | **Un viaggio passato fatto insieme** | È di chi lo aggiunge: ognuno aggiunge il suo, e non ci si invita nessuno | Se la beta lo chiede |
 | **I numeri del profilo pubblico** | Nel profilo personale «Viaggi» conta anche i viaggi passati (tela, 64). Quando il profilo diventa pubblico (5.3), un numero che si mostra agli altri deve dire quanti sono verificati e quanti dichiarati: un traguardo verificato e uno dichiarato non devono somigliarsi | Fase 5.3 |
 | **Rimettere dentro un archivio scaricato** | È la reimportazione, premium (modello di business): un'altra cosa rispetto ad aggiungere un viaggio a mano | Fase 6 |
 | **Rivedere sulla tela le schermate 67 e 98** | 67 disegnata il 4 ottobre, 98 il 6 ottobre, costruite il 6 ottobre 2026 | Prima di chiudere la 4.3 |
+
+### Rimasto fuori da U.1
+
+U.1 (i tuoi dati e chiudere l'account: scaricarli in un file JSON, chiudere l'account dall'app con la lapide, il ruolo che passa e gli eventi che cambiano id) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| ~~**Applicare la migrazione `chiusura_account`**~~ | Applicata dall'editor SQL e provata l'8 ottobre 2026 (`supabase/tests/chiusura_account.sql`, tutte «ok»). La versione `20261006180000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
+| **Revocare il token di Apple chiudendo l'account** | Lo store lo chiede a chi offre l'accesso con Apple: chiudendo, il server revoca il token con l'API di Apple, che vuole una chiave privata e quindi una funzione sul server, non l'app. Oggi l'accesso con Apple non c'è ancora | Con l'accesso con Apple (prerequisiti) |
+| **Un secondo telefono con lo stesso account** | La chiusura svuota il telefono da cui si chiude. Un altro telefono perde l'accesso al primo rinnovo della sessione, ma la sua copia e i suoi documenti restano finché non si esce | Se capita |
+| **Rimettere dentro i dati scaricati** | È la reimportazione, premium (modello di business) | Fase 6 |
+| **La lapide nella parte pubblica** | Un profilo chiuso non deve comparire in ricerca, collegamenti e messaggi: oggi la parte pubblica non c'è | Fase 5.3 |
+| **Rivedere sulla tela le schermate 99–102** | Disegnate il 6 ottobre, costruite e allineate al codice il 7 ottobre 2026 (versione 39) | Prima di chiudere U.1 |
 
 ### Impianto di sicurezza del matching — stima
 

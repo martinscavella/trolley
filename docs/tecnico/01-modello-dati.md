@@ -25,6 +25,8 @@ Le cose che possono trovarsi in due versioni — viaggio, tappa, spesa, voce di 
 - Sotto i 16 anni non esiste un utente.
 - Sotto i 18 anni `profilo_pubblico_attivo` non può essere vero, e i collegamenti non esistono.
 - `profilo_pubblico_attivo` vero richiede `telefono_verificato` vero.
+- Chi chiude l'account (U.1) lascia una **lapide**: la riga resta, con `eliminato_il` e senza `nome` né `data_nascita`, perché partecipazioni, spese e tappe nei viaggi altrui puntano a lei. L'accesso invece si cancella: la riga non dipende più da `auth.users`. `eliminato_il` lo scrive solo `chiudi_account`.
+- Gli eventi di misurazione non dipendono dalla riga: chiudendo l'account cambiano `utente_id`, tutti con lo stesso id nuovo.
 
 ---
 

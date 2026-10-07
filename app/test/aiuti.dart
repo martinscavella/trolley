@@ -350,6 +350,9 @@ class ServerFinto {
 
   /// Gli altri: degli altri il server manda solo il nome.
   final utenti = <Map<String, Object?>>[];
+
+  /// Se l'account è stato chiuso, con quale scelta sulla misurazione.
+  bool? chiusoConMisurazione;
   final richieste = <http.Request>[];
 
   /// Percorsi con una risposta data dal test, che vince sulle altre.
@@ -970,6 +973,35 @@ class ServerFinto {
         return risposta({'token': token}, 201);
       case 'POST /rest/v1/evento':
         return http.Response('', 201);
+      case 'POST /rest/v1/rpc/i_miei_dati':
+        // Come il vero, in piccolo: il profilo, i viaggi che si leggono con
+        // dentro chi c'è e le spese, i traguardi.
+        return risposta({
+          'formato': 'trolley.dati',
+          'versione': 1,
+          'profilo': profilo,
+          'viaggi': [
+            for (final v in viaggi)
+              if (_partecipazione(v['id'], idDiProva)?['stato'] == 'attivo')
+                {
+                  'viaggio': v,
+                  'partecipazioni': [
+                    for (final p in partecipazioni)
+                      if (p['viaggio_id'] == v['id']) p,
+                  ],
+                  'spese': [
+                    for (final s in spese)
+                      if (s['viaggio_id'] == v['id']) s,
+                  ],
+                },
+          ],
+          'traguardi': traguardi,
+          'eventi': const <Object?>[],
+        });
+      case 'POST /rest/v1/rpc/chiudi_account':
+        chiusoConMisurazione = _corpo(r)['p_misurazione'] as bool;
+        profilo = null;
+        return http.Response('', 204);
     }
     return risposta(const []);
   }

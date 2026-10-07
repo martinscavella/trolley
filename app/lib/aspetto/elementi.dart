@@ -290,6 +290,7 @@ class RigaScheda extends StatelessWidget {
     required this.onTap,
     this.valore,
     this.sottotitolo,
+    this.pericolo = false,
   });
 
   final IconData simbolo;
@@ -301,6 +302,9 @@ class RigaScheda extends StatelessWidget {
 
   /// Sotto il nome, piccolo.
   final String? sottotitolo;
+
+  /// Porta a togliere qualcosa: nome e icona in rosso (tela, 100).
+  final bool pericolo;
 
   @override
   Widget build(BuildContext context) => Premibile(
@@ -326,7 +330,11 @@ class RigaScheda extends StatelessWidget {
                   color: Colori.foschia,
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(simbolo, size: 22, color: Colori.inchiostro),
+                child: Icon(
+                  simbolo,
+                  size: 22,
+                  color: pericolo ? Colori.pericolo : Colori.inchiostro,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -335,7 +343,9 @@ class RigaScheda extends StatelessWidget {
                   children: [
                     Text(
                       titolo,
-                      style: Testi.evidenza.copyWith(color: Colori.inchiostro),
+                      style: Testi.evidenza.copyWith(
+                        color: pericolo ? Colori.pericolo : Colori.inchiostro,
+                      ),
                     ),
                     if (sottotitolo != null)
                       Text(
@@ -932,6 +942,104 @@ class Avviso extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 30, top: 10),
             child: Wrap(spacing: 8, runSpacing: 8, children: azioni),
+          ),
+      ],
+    ),
+  );
+}
+
+/// La grande icona in alto di una pagina che spiega prima di chiedere (tela,
+/// 58, 59, 100, 101).
+class IconaGrande extends StatelessWidget {
+  const IconaGrande({
+    super.key,
+    required this.icona,
+    required this.fondo,
+    required this.colore,
+  });
+
+  final IconData icona;
+  final Color fondo;
+  final Color colore;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(
+          color: fondo,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Icon(icona, size: 38, color: colore),
+      ),
+    ),
+  );
+}
+
+/// Una scheda bianca di righe con un'icona: a che cosa serve, che cosa
+/// succede (tela, 58, 100, 101). Nel testo, le parole fra `**` vanno in
+/// neretto: «Da **Porto** esci».
+class Spiegazione extends StatelessWidget {
+  const Spiegazione({
+    super.key,
+    required this.righe,
+    this.colore = Colori.cobalto,
+  });
+
+  final List<(IconData, String)> righe;
+
+  /// Il colore delle icone: rosso per quello che si perde.
+  final Color colore;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
+    decoration: BoxDecoration(
+      color: Colori.bianco,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      children: [
+        for (final (i, (simbolo, testo)) in righe.indexed)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: i == 0
+                ? null
+                : const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0xFFEEF0F4), width: 1.5),
+                    ),
+                  ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(simbolo, size: 20, color: colore),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        for (final (j, parte) in testo.split('**').indexed)
+                          TextSpan(
+                            text: parte,
+                            style: j.isOdd
+                                ? const TextStyle(fontWeight: FontWeight.w700)
+                                : null,
+                          ),
+                      ],
+                    ),
+                    style: Testi.secondario.copyWith(color: Colori.inchiostro),
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     ),

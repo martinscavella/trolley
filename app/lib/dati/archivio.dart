@@ -15,6 +15,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../dominio/calendario.dart';
+import '../dominio/chiusura_account.dart';
 import '../dominio/conflitti.dart';
 import '../dominio/giornate.dart';
 import '../dominio/liste.dart';
@@ -32,6 +33,10 @@ import 'rete.dart';
 /// Quanto può essere lunga una nota: come sul server. Una risposta lunga di
 /// un assistente ci sta comoda.
 const lunghezzaMassimaNota = 20000;
+
+/// Il nome di chi ha chiuso l'account, dove compare fra i compagni: i suoi
+/// contributi restano nel viaggio, il suo nome no (06, «Conservazione»).
+const nomeAccountChiuso = 'Account chiuso';
 
 /// Un viaggio come compare nell'elenco: con i nomi di chi c'è.
 class ViaggioInElenco {
@@ -155,6 +160,82 @@ class Archivio {
     );
     return (await scaricaProfilo())!;
   }
+
+  // ─── I tuoi dati e chiudere l'account (U.1) ─────────────────────────────
+
+  /// Tutto ciò che è proprio su Trolley, preso dal server (06, «Diritti delle
+  /// persone»): il profilo, i viaggi come li si vede, i traguardi, le azioni
+  /// misurate. Richiede la rete.
+  Future<Map<String, dynamic>> iMieiDati() =>
+      _alServer(() => _server.rpc<Map<String, dynamic>>('i_miei_dati'));
+
+  /// I propri viaggi, con chi altro c'è ancora: quanto serve a dire che cosa
+  /// succede chiudendo l'account (dominio/chiusura_account.dart). Dalla copia.
+  Future<List<ViaggioDaChiudere<Viaggio>>> viaggiDaChiudereConLAccount() async {
+    final io = _io;
+    if (io == null) return const [];
+    final miei = [
+      for (final (p, v) in await mieiViaggi())
+        if (p.stato == 'attivo' &&
+            p.eliminatoIl == null &&
+            v.eliminatoIl == null)
+          (p, v),
+    ];
+    final altri =
+        await (_db.select(_db.partecipazioni).join([
+              leftOuterJoin(
+                _db.utenti,
+                _db.utenti.id.equalsExp(_db.partecipazioni.utenteId),
+              ),
+            ])..where(
+              _db.partecipazioni.viaggioId.isIn([
+                    for (final (_, v) in miei) v.id,
+                  ]) &
+                  _db.partecipazioni.utenteId.equals(io).not() &
+                  _db.partecipazioni.stato.equals('attivo') &
+                  _db.partecipazioni.eliminatoIl.isNull(),
+            ))
+            .get();
+    return [
+      for (final (p, v) in miei)
+        (
+          viaggio: v,
+          responsabile: p.ruolo == 'creatore',
+          altri: [
+            for (final r in altri)
+              if (r.readTable(_db.partecipazioni) case final q
+                  when q.viaggioId == v.id)
+                (
+                  id: q.utenteId,
+                  nome: r.readTableOrNull(_db.utenti)?.nome ?? '',
+                  entrato:
+                      DateTime.tryParse(q.creatoIl ?? '') ?? DateTime.utc(1970),
+                ),
+          ],
+        ),
+    ];
+  }
+
+  /// Chiude l'account sul server (chiudi_account), con la scelta della
+  /// persona sulla misurazione, che sta sul telefono. Richiede la rete.
+  /// Rimandata dopo una risposta persa non fa niente: è già chiuso.
+  Future<void> chiudiAccount({required bool misurazione}) => _alServer(
+    () => _server.rpc<dynamic>(
+      'chiudi_account',
+      params: {'p_misurazione': misurazione},
+    ),
+  );
+
+  /// Dopo la chiusura dell'account la copia si svuota: viaggi, coda,
+  /// impostazioni. I documenti no: i propri si tolgono prima, con i loro file
+  /// (CartellaDocumenti.eliminaQuelliDi), e quelli di un altro account su
+  /// questo telefono restano suoi.
+  Future<void> svuotaLaCopia() => _db.transaction(() async {
+    for (final tabella in _db.allTables) {
+      if (tabella.actualTableName == _db.documenti.actualTableName) continue;
+      await _db.delete(tabella).go();
+    }
+  });
 
   // ─── Copia di lettura ───────────────────────────────────────────────────
 
@@ -2393,7 +2474,8 @@ class Archivio {
   UtentiCompanion _utente(Map<String, dynamic> r, [DateTime? adesso]) =>
       UtentiCompanion.insert(
         id: r['id'] as String,
-        nome: r['nome'] as String,
+        // Di chi ha chiuso l'account il server non ha più il nome.
+        nome: r['nome'] as String? ?? nomeAccountChiuso,
         versione: r['versione'] as int,
         eliminatoIl: Value(r['eliminato_il'] as String?),
         scaricatoIl: adesso ?? DateTime.now().toUtc(),

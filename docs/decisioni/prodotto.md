@@ -409,6 +409,19 @@ Scelto con la fase 4.3 (tela, 65, 67 e 98), il 6 ottobre 2026.
 - **Non stanno nell'elenco dei viaggi né sulla mappa**: non hanno date, tappe né spese. Stanno nel passaporto e sul mappamondo.
 - **Non sono viaggi creati**: non contano in `viaggio_creato` né nella North Star. Aggiungerne uno è `passaporto_compilato`, curiosità e non adozione (07).
 
+### I tuoi dati e chiudere l'account (U.1)
+
+Scelto prima dell'ondata 1 (tela, 99–102), il 6 e il 7 ottobre 2026. Sono i diritti di [06](../tecnico/06-privacy-e-conformita.md), e lo store non accetta un account che non si chiude dall'app.
+
+- **Stanno insieme, nel profilo sotto Privacy**: «I tuoi dati» porta a scaricarli e, più sotto, a chiudere l'account.
+- **Scaricarli dà un file JSON** preso dal server (`i_miei_dati`): il profilo, i viaggi come li vede la persona — con chi c'è, i giorni, le tappe, le spese e le quote, le liste, le note —, i suoi traguardi e i suoi eventi di misurazione. Lo leggono una persona e una macchina. Le regole di accesso decidono che cosa c'è, come nell'app: dei compagni c'è il nome, niente di più. Il file si consegna con il foglio di condivisione (lo si salva in File o lo si manda) e poi si butta: non resta sul telefono.
+- **I documenti non sono nel file**: non sono mai stati sul server, e stanno già solo sul telefono della persona (03).
+- **Prima di chiudere si dice che cosa succede, con i numeri veri**: il profilo e l'accesso si cancellano; i viaggi in cui si è rimasti da soli — idee, viaggi da soli, viaggi passati — si cancellano con tutto dentro; dagli altri si esce, e quello che si è aggiunto resta con «Account chiuso» al posto del nome; le spese restano nei saldi; dove si era responsabili, il ruolo passa a chi è entrato per primo fra quelli che restano, e si dice a chi; i documenti del telefono si cancellano; se ci sono cose fatte senza rete che non sono arrivate, si dice quante se ne perdono. Poi il dialogo di sistema, e chiuso l'account si torna all'accesso.
+- **Chi chiude diventa una lapide**: la riga del profilo resta, senza nome, data di nascita né altro, perché i contributi nei viaggi altrui puntano a lei. L'accesso invece si cancella davvero: con la stessa email si può rientrare, come una persona nuova.
+- **Le voci che portava tornano libere**, come uscendo; le sue voci personali, i suoi traguardi e i link d'invito che aveva mandato se ne vanno.
+- **Gli eventi di misurazione restano, ma non portano più a lei**: cambiano tutti insieme con un id nuovo, così le soglie che seguono una persona nel tempo restano calcolabili. Si aggiunge `account_chiuso`, se la misurazione era accesa. Gli eventi di un account interno si cancellano: non contano comunque.
+- **Scaricare e chiudere richiedono la rete**: senza, il pulsante si spegne e lo dice. Chiudendo, prima partono i gesti in coda, perché arrivino nei viaggi degli altri.
+
 ---
 
 ## Ricordo e traguardi

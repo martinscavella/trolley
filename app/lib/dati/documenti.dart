@@ -242,6 +242,19 @@ class CartellaDocumenti {
     )..where((d) => d.viaggioId.equals(viaggioId))).go();
   }
 
+  /// Toglie dal telefono tutti i documenti di [proprietario], di ogni viaggio,
+  /// file e righe: per chi chiude l'account (U.1). Quelli di un altro account
+  /// su questo telefono restano. Restituisce quanti ne ha tolti.
+  Future<int> eliminaQuelliDi(String proprietario) async {
+    final suoi = await (_db.select(
+      _db.documenti,
+    )..where((d) => d.proprietarioId.equals(proprietario))).get();
+    for (final d in suoi) {
+      await elimina(d);
+    }
+    return suoi.length;
+  }
+
   /// Se a chi è entrato si è già detto, aggiungendo il primo documento, che i
   /// documenti stanno solo su questo telefono (07, regola 7): si dice una volta.
   Future<bool> avvisoGiaDato() async {

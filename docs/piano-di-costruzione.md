@@ -69,6 +69,16 @@ Va fatta **prima** della fase live: aggiungere la scrittura concorrente a funzio
 
 ### → Ondata 1 della beta
 
+Prima ancora c'è la fase interna: solo il team, su un viaggio vero ([punti aperti](punti-aperti.md), «La conseguenza sul calendario»). Per mettere l'app in mano a persone fuori dal team mancano tre cose da costruire, scritte il 6 ottobre 2026 a 4.3 finita:
+
+| | Cosa | Perché prima di uscire |
+|---|---|---|
+| U.1 | **I tuoi dati e chiudere l'account**: esportarli in un formato leggibile da una macchina, chiudere l'account dall'app | Sono diritti della persona ([06](tecnico/06-privacy-e-conformita.md)), e lo store non accetta un'app in cui si crea un account e non lo si può chiudere. Si fa per prima perché tocca lo schema: chi sparisce lascia i suoi contributi nei viaggi degli altri |
+| U.2 | **Il tetto delle mappe e la chiave del fornitore** | Senza tetto una persona sola consuma i crediti di tutti, e la chiave nell'app la trova chiunque la smonti ([ADR-006](tecnico/adr/006-mappe-e-percorsi.md)) |
+| U.3 | **L'informativa e la pagina su cosa si misura**, in bozza per l'avvocato | Lo store chiede l'indirizzo dell'informativa; 06 vuole le scelte confermate da un avvocato prima di aprire fuori dal team |
+
+E le cose che non sono codice: il programma sviluppatori di Apple (senza, niente TestFlight), il deep link differito provato da un'installazione vera (0.1), l'accesso con Google e Apple, il dominio dei link d'invito, le impostazioni di Supabase, la data. Stanno nei [prerequisiti operativi](punti-aperti.md).
+
 ---
 
 ## Fase 5 — La parte pubblica

@@ -711,6 +711,11 @@ class Coda {
 
   // ─── Quello che si vede ─────────────────────────────────────────────────
 
+  /// Quante operazioni sono ancora in coda, di tutti i viaggi, anche quelle
+  /// messe da parte: chiudendo l'account si perdono, e lo si dice prima.
+  Future<int> quante() async =>
+      (await _db.select(_db.codaScrittura).get()).length;
+
   /// Le operazioni ancora in coda per un viaggio, nell'ordine in cui sono
   /// state fatte.
   Stream<List<OperazioneInCoda>> osserva(String viaggioId) =>

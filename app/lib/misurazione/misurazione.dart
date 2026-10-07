@@ -40,6 +40,11 @@ abstract final class Eventi {
   static const permessoPosizione = 'permesso_posizione';
   static const viaggioChiuso = 'viaggio_chiuso';
   static const passaportoCompilato = 'passaporto_compilato';
+  static const datiEsportati = 'dati_esportati';
+
+  /// Lo scrive il server, in chiudi_account: dopo, il telefono non ha più
+  /// nessuno a nome di cui mandarlo.
+  static const accountChiuso = 'account_chiuso';
 }
 
 class Misurazione {

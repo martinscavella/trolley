@@ -41,7 +41,7 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 | Presenza in città | Fino alla fine del viaggio, poi cancellata |
 | Segnalazioni e contenuti segnalati | Il tempo necessario a gestirle, più il periodo utile a difendersi da una contestazione |
 | Eventi di misurazione | Aggregati oltre un orizzonte breve: non servono a lungo nel dettaglio |
-| Account chiuso | Dati personali cancellati; i contributi nei viaggi altrui restano, attribuiti a un partecipante non più presente |
+| Account chiuso | Dati personali cancellati, e l'accesso con loro; i viaggi in cui si era da soli cancellati; i contributi nei viaggi altrui restano, attribuiti a un partecipante non più presente («Account chiuso»). Gli eventi di misurazione restano sotto un id nuovo che non porta alla persona; quelli di un account interno si cancellano |
 
 L'ultima riga va spiegata alla persona **prima** che chiuda l'account: le spese che ha pagato non si cancellano dai saldi altrui, perché sparire non estingue un debito.
 
@@ -49,8 +49,8 @@ L'ultima riga va spiegata alla persona **prima** che chiuda l'account: le spese 
 
 ## Diritti delle persone
 
-- **Esportazione sempre gratuita**, in un formato leggibile da una macchina. È un diritto, non una funzione a pagamento: la reimportazione invece è un servizio e può essere premium.
-- **Cancellazione dell'account** raggiungibile dall'app, non solo scrivendo a un indirizzo.
+- **Esportazione sempre gratuita**, in un formato leggibile da una macchina. È un diritto, non una funzione a pagamento: la reimportazione invece è un servizio e può essere premium. Dal profilo, «I tuoi dati»: un file JSON con il profilo, i viaggi come la persona li vede, i traguardi e gli eventi (U.1; [decisioni](../decisioni/prodotto.md)).
+- **Cancellazione dell'account** raggiungibile dall'app, non solo scrivendo a un indirizzo. Dallo stesso posto, dopo aver detto che cosa succede (`chiudi_account`).
 - **Pagina leggibile su cosa si misura**, con la possibilità di rifiutare senza perdere funzioni.
 
 ---

@@ -124,7 +124,7 @@ class SchermataPercheLaPosizione extends StatelessWidget {
             MediaQuery.paddingOf(context).bottom + 32,
           ),
           children: [
-            _Icona(
+            IconaGrande(
               icona: icona(
                 ios: CupertinoIcons.location,
                 android: Icons.place_outlined,
@@ -142,40 +142,25 @@ class SchermataPercheLaPosizione extends StatelessWidget {
                   'viaggio, che tu sia nella città o nel paese del viaggio. Un '
                   'viaggio verificato dà i traguardi.',
             ).entra(context),
-            Container(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
-              decoration: BoxDecoration(
-                color: Colori.bianco,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  _Riga(
-                    icona: icona(
-                      ios: CupertinoIcons.lock,
-                      android: Icons.lock_outline,
-                    ),
-                    testo:
-                        'La posizione non lascia il telefono: al server arriva '
-                        'solo «sì» o «no».',
-                    primo: true,
+            Spiegazione(
+              righe: [
+                (
+                  icona(ios: CupertinoIcons.lock, android: Icons.lock_outline),
+                  'La posizione non lascia il telefono: al server arriva solo '
+                      '«sì» o «no».',
+                ),
+                (
+                  icona(
+                    ios: CupertinoIcons.globe,
+                    android: Icons.public_rounded,
                   ),
-                  _Riga(
-                    icona: icona(
-                      ios: CupertinoIcons.globe,
-                      android: Icons.public_rounded,
-                    ),
-                    testo: 'Si guarda la città o il paese, mai la via.',
-                  ),
-                  _Riga(
-                    icona: icona(
-                      ios: CupertinoIcons.map,
-                      android: Icons.map_outlined,
-                    ),
-                    testo: 'La stessa posizione mostra il puntino sulla mappa.',
-                  ),
-                ],
-              ),
+                  'Si guarda la città o il paese, mai la via.',
+                ),
+                (
+                  icona(ios: CupertinoIcons.map, android: Icons.map_outlined),
+                  'La stessa posizione mostra il puntino sulla mappa.',
+                ),
+              ],
             ).entra(context, ritardo: Ritmo.passo),
             const SizedBox(height: 24),
             PulsanteGrande(
@@ -219,7 +204,7 @@ class SchermataPosizioneNegata extends StatelessWidget {
           MediaQuery.paddingOf(context).bottom + 32,
         ),
         children: [
-          _Icona(
+          IconaGrande(
             icona: icona(
               ios: CupertinoIcons.location,
               android: Icons.place_outlined,
@@ -268,72 +253,6 @@ class SchermataPosizioneNegata extends StatelessWidget {
           ),
         ],
       ),
-    ),
-  );
-}
-
-/// La grande icona in alto (tela, 58 e 59).
-class _Icona extends StatelessWidget {
-  const _Icona({
-    required this.icona,
-    required this.fondo,
-    required this.colore,
-  });
-
-  final IconData icona;
-  final Color fondo;
-  final Color colore;
-
-  @override
-  Widget build(BuildContext context) => Align(
-    alignment: Alignment.centerLeft,
-    child: Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Container(
-        width: 72,
-        height: 72,
-        decoration: BoxDecoration(
-          color: fondo,
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Icon(icona, size: 38, color: colore),
-      ),
-    ),
-  );
-}
-
-class _Riga extends StatelessWidget {
-  const _Riga({required this.icona, required this.testo, this.primo = false});
-
-  final IconData icona;
-  final String testo;
-  final bool primo;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 9),
-    decoration: primo
-        ? null
-        : const BoxDecoration(
-            border: Border(
-              top: BorderSide(color: Color(0xFFEEF0F4), width: 1.5),
-            ),
-          ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Icon(icona, size: 20, color: Colori.cobalto),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            testo,
-            style: Testi.secondario.copyWith(color: Colori.inchiostro),
-          ),
-        ),
-      ],
     ),
   );
 }
