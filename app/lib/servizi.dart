@@ -7,6 +7,7 @@ import 'dati/database.dart';
 import 'dati/documenti.dart';
 import 'dati/mappe.dart';
 import 'dati/mappe_del_telefono.dart';
+import 'dati/pagine.dart';
 import 'dati/posizione.dart';
 import 'dati/rete.dart';
 import 'invito/ingresso_da_invito.dart';
@@ -27,6 +28,7 @@ class Servizi extends InheritedWidget {
     required this.mappe,
     required this.posizione,
     required this.mappeDelTelefono,
+    required this.pagine,
     required super.child,
   });
 
@@ -51,6 +53,9 @@ class Servizi extends InheritedWidget {
 
   /// Le Mappe del telefono, a cui si consegna una tappa.
   final MappeDelTelefono mappeDelTelefono;
+
+  /// Le pagine del sito: l'informativa, che cosa si misura (U.3).
+  final PagineDelSito pagine;
 
   static Servizi of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<Servizi>()!;

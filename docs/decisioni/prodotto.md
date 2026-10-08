@@ -431,6 +431,18 @@ Scelto l'8 ottobre 2026, prima dell'ondata 1. La parte tecnica è in [ADR-006](.
 - **Al tetto non si resta mai senza indicazioni** (ADR-006, regola 2): la strada la danno le Mappe del telefono, come dopo troppi ricalcoli; il posto di una tappa si scrive a mano, come senza rete. La persona lo legge con parole sue — «per oggi, in questo viaggio, le ricerche sono finite» — e non vede numeri né crediti.
 - **Nessuna schermata nuova**: il tetto parla nei posti dove già si dice che la strada non c'è o che la ricerca non risponde.
 
+### L'informativa e cosa si misura (U.3)
+
+Scelto l'8 ottobre 2026, prima dell'ondata 1 (tela, 1 e 99; nota n26).
+
+- **Sono pagine del sito, non schermate**: `trolleyapp.vercel.app/privacy` e `/misurazione`. Lo store chiede un indirizzo, e si leggono anche senza l'app. L'app le apre nel browser interno; senza rete il rimando si spegne e lo dice.
+- **Hanno i colori dell'app e i caratteri del telefono**: niente Google Fonts, che manderebbero a Google l'indirizzo di chi legge.
+- **L'informativa si dice prima di dare i dati**: sotto «Crea un account», «Come trattiamo i tuoi dati lo spiega l'informativa sulla privacy». Non si «accetta» niente: l'informativa informa, la base dell'account è il contratto.
+- **Nel profilo, sotto Privacy**: «Cosa misuriamo» chiude la spiegazione della misurazione, e «Informativa sulla privacy» è una riga accanto a «I tuoi dati».
+- **Prima in breve, poi per esteso**, in linguaggio semplice: le cinque cose che contano stanno in cima.
+- **«Cosa misuriamo» elenca ogni azione**, con quello che porta e il suo nome tecnico, lo stesso che si trova nel file dei dati: chi scarica i suoi dati può confrontare. Dice anche che cosa non si misura mai.
+- **Sono bozze**: lo dicono in cima, finché la revisione legale ([per la revisione](../legale/per-la-revisione.md)) non le conferma. Titolare e contatti sono da completare.
+
 ---
 
 ## Ricordo e traguardi

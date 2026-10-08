@@ -18,13 +18,13 @@ La documentazione in `docs/` è la fonte di verità: si parte da [docs/README.md
 | `supabase/migrations/` | Lo schema del server, una migrazione per file | Applicate a `trolley-db` (ref `nhdgxlynnudwkmxrrokp`). Il nome del file porta la versione registrata sul server |
 | `supabase/functions/` | Le funzioni del server: `mappe` tiene la chiave di Geoapify e il tetto (ADR-006) | Si pubblicano con `supabase functions deploy mappe --project-ref nhdgxlynnudwkmxrrokp --no-verify-jwt`; la chiave con `supabase secrets set GEOAPIFY_CHIAVE=…` |
 | `supabase/tests/` | Le prove delle regole di accesso | Girano dentro un blocco che si annulla da solo: si possono lanciare anche sul progetto remoto |
-| `sito/` | La pagina dei link d'invito, su `trolleyapp.vercel.app` | `vercel deploy --prod` dalla cartella |
+| `sito/` | La pagina dei link d'invito, l'informativa (`privacy.html`) e cosa si misura (`misurazione.html`), su `trolleyapp.vercel.app` | `vercel deploy --prod` dalla cartella |
 
 Nomi di tabelle, colonne ed eventi sono in italiano, uguali a quelli di `docs/tecnico/01-modello-dati.md`: sul server e nella copia locale sono gli stessi, così scaricare è tradurre righe.
 
 ## Regole che valgono per ogni modifica
 
-1. **Ogni funzione nasce con il suo evento** ([07 — Misurazione](docs/tecnico/07-misurazione.md)). Una funzione senza evento non è finita. Eventi: azioni, mai contenuti; niente coordinate, testi, nomi di documenti.
+1. **Ogni funzione nasce con il suo evento** ([07 — Misurazione](docs/tecnico/07-misurazione.md)). Una funzione senza evento non è finita. Eventi: azioni, mai contenuti; niente coordinate, testi, nomi di documenti. Un evento nuovo o cambiato si scrive anche in `sito/misurazione.html`, la pagina che le persone leggono.
 2. **Ogni funzione sa da che parte sta rispetto alla rete**: leggibile offline, uno dei quattro gesti scrivibili offline (registrare una spesa, marcare una tappa, spuntare una voce, aggiungere una tappa), oppure dipendente dalla rete — e in quel caso lo dice prima, disabilitando il controllo con il motivo ([02](docs/tecnico/02-sincronizzazione-e-offline.md)): `schermate/con_la_rete.dart` e il `motivo` di `PulsanteGrande`. Le chiamate al server passano da `alServer` con la `Rete`, e da `supabase.rest`, non da `supabase.from` (che ignora le opzioni del client).
 3. **I documenti non lasciano mai il telefono.** Nessun percorso di codice li carica o li sincronizza; il backend non ha object storage ([03](docs/tecnico/03-documenti-sul-dispositivo.md)).
 4. **Le regole di dominio vivono nell'app, in un posto solo** (capienza della giornata, stati del viaggio, verifica). Il server fa rispettare solo chi può leggere e scrivere cosa.

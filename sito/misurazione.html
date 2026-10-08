@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Cosa misuriamo · Trolley</title>
+  <!--
+    La pagina leggibile su cosa si misura (U.3; 06, «Diritti delle persone»;
+    07-misurazione.md). Elenca gli eventi che l'app registra davvero
+    (app/lib/misurazione/misurazione.dart, Eventi): quando se ne aggiunge o se
+    ne toglie uno, si cambia anche qui. BOZZA per la revisione legale.
+  -->
+  <style>
+    :root {
+      --fondo: #EDEFF3;
+      --carta: #FFFFFF;
+      --inchiostro: #15192B;
+      --grafite: #4A5066;
+      --attenuato: #5A6072;
+      --riga: #EEF0F4;
+      --cobalto: #2B4ACB;
+      --giallo: #FFCF4A;
+      --giallo-testo: #5C4300;
+      --foschia: #F2F4F8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fondo: #10131F;
+        --carta: #1B1F2E;
+        --inchiostro: #EEF0F6;
+        --grafite: #C3C8D6;
+        --attenuato: #A3A9BA;
+        --riga: #272C3D;
+        --cobalto: #8FA4FF;
+        --giallo: #3A3112;
+        --giallo-testo: #FFE08A;
+        --foschia: #252A3B;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--fondo);
+      color: var(--inchiostro);
+      font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    main { max-width: 680px; margin: 0 auto; padding: 40px 16px 64px; }
+    h1 { font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 8px; }
+    h2 { font-size: 20px; line-height: 1.25; margin: 36px 0 12px; }
+    p, li { color: var(--grafite); }
+    p { margin: 0 0 14px; }
+    ul { margin: 0 0 14px; padding-left: 20px; }
+    li { margin: 0 0 8px; }
+    strong { color: var(--inchiostro); }
+    a { color: var(--cobalto); font-weight: 600; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .sotto { color: var(--attenuato); font-size: 15px; margin-bottom: 24px; }
+    .bozza {
+      background: var(--giallo);
+      color: var(--giallo-testo);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 15px;
+      margin: 0 0 24px;
+    }
+    .carta { background: var(--carta); border-radius: 20px; padding: 6px 20px; margin: 0 0 16px; }
+    .evento { padding: 12px 0; border-top: 1.5px solid var(--riga); }
+    .evento:first-child { border-top: 0; }
+    .evento p { margin: 0; }
+    .evento .cosa { color: var(--inchiostro); font-weight: 600; }
+    .evento .con { font-size: 15px; color: var(--attenuato); margin-top: 2px; }
+    code {
+      font: 13px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+      background: var(--foschia);
+      border-radius: 6px;
+      padding: 1px 6px;
+      color: var(--grafite);
+      white-space: nowrap;
+    }
+    .mai { background: var(--carta); border-radius: 20px; padding: 16px 20px 6px; margin: 0 0 16px; }
+    footer { margin-top: 40px; font-size: 14px; color: var(--attenuato); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Cosa misuriamo</h1>
+  <p class="sotto">Trolley conta alcune azioni per capire quali funzioni servono davvero. Qui c'è l'elenco intero, e come spegnerlo.</p>
+
+  <p class="bozza"><strong>Bozza dell'8 ottobre 2026</strong>, in revisione legale: può cambiare.</p>
+
+  <h2>In breve</h2>
+  <ul>
+    <li><strong>Azioni, mai contenuti.</strong> Sappiamo che hai aggiunto una tappa, non quale.</li>
+    <li><strong>La spegni dal profilo</strong>, alla voce Privacy. Spenta, il telefono non scrive più niente e butta quello che aspettava di partire. Non perdi nessuna funzione.</li>
+    <li><strong>Resta dentro Trolley</strong>: nessuno strumento di altre aziende, nessun identificativo pubblicitario.</li>
+  </ul>
+
+  <h2>Che cosa non misuriamo mai</h2>
+  <div class="mai">
+    <ul>
+      <li>Il testo di quello che scrivi: note, nomi delle tappe, descrizioni delle spese, voci delle liste.</li>
+      <li>I documenti, i loro nomi, le loro foto.</li>
+      <li>Dove sei, o dove sei stato: nessuna coordinata, nessuna città, nessun paese.</li>
+      <li>Che cosa cerchi sulla mappa.</li>
+      <li>Quanto spendi.</li>
+      <li>I tuoi tocchi, i percorsi fra le schermate, quanto tempo resti su una pagina: niente registrazione delle sessioni. Di una schermata si sa solo se l'hai aperta senza rete (sotto).</li>
+    </ul>
+  </div>
+
+  <h2>Che cosa porta ogni azione</h2>
+  <p>Ogni azione registrata porta un identificativo suo, il tuo identificativo di account, il momento in cui è successa e la versione dell'app. Alcune portano anche l'identificativo del viaggio, per poter dire per esempio quante funzioni si usano in uno stesso viaggio. Sono legate al tuo account perché alcune domande seguono una persona nel tempo («chi crea un viaggio, aggiunge qualcosa entro una settimana?»). Se chiudi l'account, restano sotto un identificativo nuovo che non porta più a te.</p>
+  <p>Gli account del team non contano mai nei numeri.</p>
+
+  <h2>L'elenco</h2>
+
+  <div class="carta">
+    <div class="evento">
+      <p class="cosa">Hai creato un viaggio, o un'idea <code>viaggio_creato</code></p>
+      <p class="con">Se è un'idea o un viaggio con le date, e quanti giorni dura.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Un'idea è diventata un viaggio <code>idea_definita</code></p>
+      <p class="con">Quanti giorni ci sono voluti, e quanti giorni dura.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai aggiunto la prima cosa a un viaggio <code>primo_elemento_aggiunto</code></p>
+      <p class="con">Se era una tappa, un documento, una spesa o una voce di una lista, e dopo quante ore.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai usato una funzione in un viaggio <code>funzione_usata_nel_viaggio</code></p>
+      <p class="con">Quale: itinerario, documenti, spese, liste o mappa. Una volta per funzione e per viaggio.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai segnato una tappa come fatta o saltata <code>tappa_marcata</code></p>
+      <p class="con">Se il viaggio era in corso.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai preparato un viaggio per usarlo senza rete <code>viaggio_preparato</code></p>
+      <p class="con">Quanti giorni mancavano alla partenza.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai aperto una schermata senza rete <code>apertura_senza_rete</code></p>
+      <p class="con">Quale schermata, e se mancava qualcosa sul telefono.</p>
+    </div>
+  </div>
+
+  <div class="carta">
+    <div class="evento">
+      <p class="cosa">Hai creato un invito <code>invito_creato</code></p>
+      <p class="con">Niente oltre al viaggio.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai installato Trolley da un invito <code>installazione_da_invito</code></p>
+      <p class="con">Se dal link o dal codice.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Un invito ti ha portato al viaggio giusto <code>viaggio_corretto_aperto</code></p>
+      <p class="con">Se dal link o dal codice, e se eri già dentro.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai aggiunto la prima cosa a un viaggio in cui ti hanno invitato <code>primo_contributo_invitato</code></p>
+      <p class="con">Se era una tappa, un documento, una spesa o una voce.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai visto due versioni della stessa cosa, e hai scelto <code>conflitto_mostrato</code> <code>conflitto_risolto</code></p>
+      <p class="con">Che cosa era (date, tappa, spesa, voce), e quale versione hai tenuto.</p>
+    </div>
+  </div>
+
+  <div class="carta">
+    <div class="evento">
+      <p class="cosa">Hai preparato la richiesta per il tuo assistente <code>prompt_esportato</code></p>
+      <p class="con">Niente oltre al viaggio: mai il testo.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai incollato la risposta, e Trolley l'ha capita o no <code>incollato_riuscito</code> <code>incollato_non_interpretato</code></p>
+      <p class="con">Niente oltre al viaggio: mai il testo.</p>
+    </div>
+  </div>
+
+  <div class="carta">
+    <div class="evento">
+      <p class="cosa">Quanto hai usato le mappe <code>consumo_mappe</code></p>
+      <p class="con">Quanti pezzi di mappa, ricerche e percorsi, e quanti fermati dal tetto. Mai dove, mai che cosa.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai risposto alla domanda sulla posizione <code>permesso_posizione</code></p>
+      <p class="con">Se hai detto sì, no o non ora.</p>
+    </div>
+  </div>
+
+  <div class="carta">
+    <div class="evento">
+      <p class="cosa">Un viaggio si è chiuso <code>viaggio_chiuso</code></p>
+      <p class="con">Se è stato verificato e quale condizione è mancata, i punti viaggio, quante tappe e quante segnate durante il viaggio.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai aggiunto un viaggio passato al passaporto <code>passaporto_compilato</code></p>
+      <p class="con">Niente: né dove, né quando.</p>
+    </div>
+  </div>
+
+  <div class="carta">
+    <div class="evento">
+      <p class="cosa">Hai scaricato i tuoi dati <code>dati_esportati</code></p>
+      <p class="con">Niente.</p>
+    </div>
+    <div class="evento">
+      <p class="cosa">Hai chiuso l'account <code>account_chiuso</code></p>
+      <p class="con">Quanti viaggi si sono cancellati e da quanti sei uscito. Non c'è se la misurazione era spenta.</p>
+    </div>
+  </div>
+
+  <h2>Per quanto</h2>
+  <p>Il dettaglio serve per poco: dopo si tengono solo i numeri aggregati <span style="background: var(--giallo); color: var(--giallo-testo); border-radius: 6px; padding: 0 4px; font-weight: 600">[periodo da fissare]</span>. Il resto dei dati, e i tuoi diritti, sono nell'<a href="/privacy">informativa sulla privacy</a>.</p>
+
+  <footer>Versione dell'8 ottobre 2026 · bozza</footer>
+</main>
+</body>
+</html>

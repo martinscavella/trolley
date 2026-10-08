@@ -29,6 +29,7 @@ import 'package:trolley/dati/errori.dart';
 import 'package:trolley/dati/file_del_telefono.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/mappe_del_telefono.dart';
+import 'package:trolley/dati/pagine.dart';
 import 'package:trolley/dati/posizione.dart';
 import 'package:trolley/dati/rete.dart';
 import 'package:trolley/dominio/mappa.dart';
@@ -1429,6 +1430,7 @@ class Ambiente {
   final mappe = MappeFinte();
   final posizione = PosizioneFinta();
   final mappeDelTelefono = MappeDelTelefonoFinte();
+  final pagine = PagineFinte();
 
   Widget servizi(Widget figlio) => Servizi(
     db: db,
@@ -1442,6 +1444,7 @@ class Ambiente {
     mappe: mappe,
     posizione: posizione,
     mappeDelTelefono: mappeDelTelefono,
+    pagine: pagine,
     child: figlio,
   );
 
@@ -1542,5 +1545,16 @@ class Ambiente {
     await ingresso.controllo.close();
     await db.close();
     if (cartella.existsSync()) cartella.deleteSync(recursive: true);
+  }
+}
+
+/// Le pagine del sito, aperte per finta: si ricordano quali.
+class PagineFinte implements PagineDelSito {
+  final aperte = <PaginaDelSito>[];
+
+  @override
+  Future<bool> apri(PaginaDelSito pagina) async {
+    aperte.add(pagina);
+    return true;
   }
 }

@@ -4,6 +4,7 @@ library;
 
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'formati.dart';
@@ -1044,6 +1045,69 @@ class Spiegazione extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// Una frase con un rimando dentro: le parole fra `**` si toccano (tela, 1 e
+/// 99: «…lo spiega l'**informativa sulla privacy**»). Senza [onTap] il
+/// rimando si spegne, e [motivo] dice perché.
+class TestoConRimando extends StatefulWidget {
+  const TestoConRimando(
+    this.testo, {
+    super.key,
+    required this.onTap,
+    this.motivo,
+    this.stile,
+    this.allineamento = TextAlign.start,
+  });
+
+  final String testo;
+  final VoidCallback? onTap;
+  final String? motivo;
+  final TextStyle? stile;
+  final TextAlign allineamento;
+
+  @override
+  State<TestoConRimando> createState() => _TestoConRimandoState();
+}
+
+class _TestoConRimandoState extends State<TestoConRimando> {
+  final _tocco = TapGestureRecognizer();
+
+  @override
+  void dispose() {
+    _tocco.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final onTap = widget.onTap;
+    _tocco.onTap = onTap;
+    final base =
+        widget.stile ?? Testi.didascalia.copyWith(color: Colori.grafite);
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          for (final (i, parte) in widget.testo.split('**').indexed)
+            if (i.isOdd)
+              TextSpan(
+                text: parte,
+                recognizer: onTap == null ? null : _tocco,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: onTap == null ? Colori.piombo : Colori.cobalto,
+                ),
+              )
+            else
+              TextSpan(text: parte),
+          if (onTap == null && widget.motivo != null)
+            TextSpan(text: ' · ${widget.motivo}'),
+        ],
+      ),
+      textAlign: widget.allineamento,
+    );
+  }
 }
 
 /// «Sei offline», in alto a destra dove di solito c'è il più (tela, 16 e 22).

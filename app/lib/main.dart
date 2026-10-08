@@ -13,6 +13,7 @@ import 'dati/documenti.dart';
 import 'dati/file_del_telefono.dart';
 import 'dati/mappe.dart';
 import 'dati/mappe_del_telefono.dart';
+import 'dati/pagine.dart';
 import 'dati/posizione.dart';
 import 'dati/rete.dart';
 import 'invito/ingresso_da_invito.dart';
@@ -58,6 +59,7 @@ Future<void> main() async {
       ),
       posizione: const PosizioneDelTelefono(),
       mappeDelTelefono: const MappeDiSistema(),
+      pagine: const PagineNelBrowser(),
       child: const TrolleyApp(),
     ),
   );

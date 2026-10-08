@@ -58,6 +58,12 @@ Il campo **"quale condizione di verifica è mancata"** è il più importante del
 
 ---
 
+## La pagina per le persone
+
+`sito/misurazione.html` (U.3) elenca ogni evento in parole semplici, con quello che porta e il suo nome. **Un evento che si aggiunge, si toglie o cambia proprietà cambia anche lì**, nello stesso lavoro: la pagina è una promessa, e una promessa sbagliata è peggio di nessuna. Aprire l'informativa o questa pagina non ha un evento: nessuna soglia lo chiede (regola 2).
+
+---
+
 ## Cosa non si fa
 
 - Nessun identificativo pubblicitario, nessun tracciamento di terze parti

@@ -6,10 +6,12 @@ import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../configurazione.dart';
 import '../dati/errori.dart';
+import '../dati/pagine.dart';
 import '../servizi.dart';
 import 'avviso_invito.dart';
 import 'benvenuto.dart';
 import 'con_la_rete.dart';
+import 'pagine_del_sito.dart';
 
 /// Accesso con email e password (01-account-e-profilo.md).
 ///
@@ -139,6 +141,17 @@ class _SchermataAccessoState extends State<SchermataAccesso> {
                     onPressed: _inCorso || !rete
                         ? null
                         : () => _esegui(nuovoAccount: true),
+                  ),
+                  const SizedBox(height: 14),
+                  // Prima di dare email e data di nascita si dice dove si
+                  // legge come si trattano (U.3; tela, 1).
+                  TestoConRimando(
+                    'Come trattiamo i tuoi dati lo spiega '
+                    "l'**informativa sulla privacy**.",
+                    onTap: rete
+                        ? () => apriLaPagina(context, PaginaDelSito.privacy)
+                        : null,
+                    allineamento: TextAlign.center,
                   ),
                 ],
               ),

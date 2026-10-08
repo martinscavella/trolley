@@ -13,12 +13,14 @@ import '../configurazione.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
+import '../dati/pagine.dart';
 import '../dominio/ricordo.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'i_tuoi_dati.dart';
 import 'mappamondo.dart';
+import 'pagine_del_sito.dart';
 import 'passaporto.dart';
 import 'scelta_valuta.dart';
 import 'traguardi.dart';
@@ -215,12 +217,19 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
             ).entra(context, ritardo: Ritmo.passo * 5),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
-              child: Text(
-                'Trolley registra le azioni che fai, come "creato un viaggio" o '
-                '"aperto un invito", per capire quali funzioni servono davvero. '
-                'Mai i contenuti: né testi, né documenti, né dove ti trovi. Se la '
-                'spegni non perdi nessuna funzione.',
-                style: Testi.didascalia.copyWith(color: t.testoSecondario),
+              child: ConLaRete(
+                builder: (context, rete) => TestoConRimando(
+                  'Trolley registra le azioni che fai, come "creato un '
+                  'viaggio" o "aperto un invito", per capire quali funzioni '
+                  'servono davvero. Mai i contenuti: né testi, né documenti, '
+                  'né dove ti trovi. Se la spegni non perdi nessuna funzione. '
+                  '**Cosa misuriamo**',
+                  onTap: rete
+                      ? () => apriLaPagina(context, PaginaDelSito.misurazione)
+                      : null,
+                  motivo: motivoSenzaRete,
+                  stile: Testi.didascalia.copyWith(color: t.testoSecondario),
+                ),
               ),
             ).entra(context, ritardo: Ritmo.passo * 5),
             const SizedBox(height: 14),
@@ -232,6 +241,22 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
               titolo: 'I tuoi dati',
               sottotitolo: "Scaricarli, o chiudere l'account",
               onTap: () => apri<void>(context, const SchermataITuoiDati()),
+            ).entra(context, ritardo: Ritmo.passo * 5),
+            const SizedBox(height: 8),
+            ConLaRete(
+              builder: (context, rete) => RigaScheda(
+                simbolo: icona(
+                  ios: CupertinoIcons.checkmark_shield,
+                  android: Icons.verified_user_outlined,
+                ),
+                titolo: 'Informativa sulla privacy',
+                sottotitolo: rete
+                    ? 'Che cosa trattiamo, e perché'
+                    : motivoSenzaRete,
+                onTap: rete
+                    ? () => apriLaPagina(context, PaginaDelSito.privacy)
+                    : null,
+              ),
             ).entra(context, ritardo: Ritmo.passo * 5),
             const SizedBox(height: 20),
             PulsanteGrande(

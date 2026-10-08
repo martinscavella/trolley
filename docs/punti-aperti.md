@@ -28,7 +28,7 @@ Cose fuori dal codice senza le quali la [Fase 0](piano-di-costruzione.md) non si
 | **Data dell'ondata 1** | "Sei mesi alla beta" va ancorato a una data scritta, altrimenti non si vede quando slitta | Da fissare |
 | **Protezione dalle password compromesse** (Supabase Auth) | Con l'accesso via email è la difesa più economica contro le password già rubate altrove. La segnala il controllo di sicurezza di Supabase | Da attivare (Authentication → Policies) |
 | **Funzione `public.rls_auto_enable()`** | Non viene dalle nostre migrazioni: l'ha creata Supabase, ed è eseguibile anche senza accesso. Il controllo di sicurezza la segnala | Da capire se serve; se no, togliere l'esecuzione ad `anon` |
-| **Revisione legale** ([06](tecnico/06-privacy-e-conformita.md)) | Le scelte su dati, età, conservazione e chiusura dell'account sono ragionate, non certificate: vanno confermate prima di aprire fuori dal team. Con l'informativa in bozza (U.3) | Prima dell'ondata 1 |
+| **Revisione legale** ([06](tecnico/06-privacy-e-conformita.md)) | Le scelte su dati, età, conservazione e chiusura dell'account sono ragionate, non certificate: vanno confermate prima di aprire fuori dal team. Le domande sono in [per la revisione](legale/per-la-revisione.md), con l'informativa in bozza (U.3) | Prima dell'ondata 1 |
 
 ### Rimasto fuori dalla 1.1
 
@@ -271,6 +271,20 @@ U.2 (la chiave di Geoapify sul server, nella funzione `mappe`, e il tetto per pe
 | **Account moltiplicati** | Il tetto è per persona: chi crea molti account e molti viaggi ne ha molti. Non costa soldi (il piano è senza carta), ma consuma i crediti di tutti. Se capita, un tetto per tutta l'app nella stessa funzione | Se capita |
 | **Quanto è più lenta la mappa** | Ogni riquadro nuovo passa dal server: circa 370 ms l'uno contro pochi centesimi prima (registri dell'8 ottobre 2026). Da guardare camminando | Al primo giro a piedi |
 | **La prova del tetto sul server** | `supabase/tests/tetto_mappe.sql` non è ancora stata lanciata: tocca `configurazione` dentro un blocco che si annulla. Si lancia dall'editor SQL | Prima di chiudere U.2 |
+
+### Rimasto fuori da U.3
+
+U.3 (l'informativa e «Cosa misuriamo» come pagine del sito, aperte dall'accesso e dal profilo) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Titolare e contatto per la privacy** | Nell'informativa ci sono segnaposti: chi è il titolare, con quale indirizzo, e a quale email si scrive. Lo decide il progetto, non il codice | Prima di pubblicare le pagine |
+| **Pubblicare le due pagine** | `vercel deploy --prod` dalla cartella `sito/`. Finché non ci sono, i rimandi dell'app aprono una pagina che non c'è | Con titolare e contatto |
+| **La revisione legale** | Le diciassette domande di [per la revisione](legale/per-la-revisione.md): basi giuridiche, misurazione accesa di default, verifica, età, chiusura, fornitori, trasferimenti, conservazione | Prima dell'ondata 1 |
+| **Gli accordi con i fornitori** (art. 28) | Supabase, Vercel e Geoapify trattano dati per noi: gli accordi vanno accettati o firmati, e Geoapify va identificato con certezza (Germania o Cipro) | Con la revisione legale |
+| **Il periodo degli eventi nel dettaglio** | 06 dice «aggregati oltre un orizzonte breve» senza numero; le pagine hanno un segnaposto. Serve il numero, e un lavoro che aggreghi e cancelli | Con la revisione legale |
+| **Le dichiarazioni di privacy dell'App Store** | Apple chiede che cosa l'app raccoglie e se è legato alla persona; la nostra lettura è nella domanda 17 | Prima di TestFlight esterno |
+| **Il nome e la data di nascita si cambiano solo scrivendoci** | L'informativa lo dice così. Cambiare il nome dall'app è una funzione piccola, se la si vuole | Se la beta lo chiede |
 
 ### Impianto di sicurezza del matching — stima
 

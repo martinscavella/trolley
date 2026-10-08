@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Informativa sulla privacy · Trolley</title>
+  <!--
+    Informativa sulla privacy (U.3; docs/tecnico/06-privacy-e-conformita.md).
+    È una BOZZA per la revisione legale: le parti fra [ ] vanno completate o
+    confermate (docs/legale/per-la-revisione.md). La si apre dall'app (profilo,
+    Privacy; accesso) e la chiede lo store.
+    Caratteri del telefono, niente Google Fonts: manderebbero a Google
+    l'indirizzo di chi legge. Nessuna misurazione su questa pagina.
+  -->
+  <style>
+    :root {
+      --fondo: #EDEFF3;
+      --carta: #FFFFFF;
+      --inchiostro: #15192B;
+      --grafite: #4A5066;
+      --attenuato: #5A6072;
+      --bordo: #DCE0E8;
+      --riga: #EEF0F4;
+      --cobalto: #2B4ACB;
+      --giallo: #FFCF4A;
+      --giallo-testo: #5C4300;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fondo: #10131F;
+        --carta: #1B1F2E;
+        --inchiostro: #EEF0F6;
+        --grafite: #C3C8D6;
+        --attenuato: #A3A9BA;
+        --bordo: #2E3448;
+        --riga: #272C3D;
+        --cobalto: #8FA4FF;
+        --giallo: #3A3112;
+        --giallo-testo: #FFE08A;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--fondo);
+      color: var(--inchiostro);
+      font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    main { max-width: 680px; margin: 0 auto; padding: 40px 16px 64px; }
+    h1 { font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 8px; }
+    h2 { font-size: 20px; line-height: 1.25; margin: 40px 0 12px; }
+    h3 { font-size: 17px; margin: 20px 0 6px; }
+    p, li { color: var(--grafite); }
+    p { margin: 0 0 14px; }
+    ul { margin: 0 0 14px; padding-left: 20px; }
+    li { margin: 0 0 8px; }
+    strong { color: var(--inchiostro); }
+    a { color: var(--cobalto); font-weight: 600; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .sotto { color: var(--attenuato); font-size: 15px; margin-bottom: 24px; }
+    .bozza {
+      background: var(--giallo);
+      color: var(--giallo-testo);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 15px;
+      margin: 0 0 24px;
+    }
+    .carta {
+      background: var(--carta);
+      border-radius: 20px;
+      padding: 8px 20px;
+      margin: 0 0 16px;
+    }
+    .carta > div { padding: 12px 0; border-top: 1.5px solid var(--riga); }
+    .carta > div:first-child { border-top: 0; }
+    .carta p { margin: 0; color: var(--inchiostro); }
+    .tabella { overflow-x: auto; margin: 0 0 16px; border-radius: 16px; background: var(--carta); }
+    table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 15px; }
+    th, td { text-align: left; vertical-align: top; padding: 12px 14px; border-top: 1.5px solid var(--riga); }
+    thead th { border-top: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenuato); }
+    td { color: var(--grafite); }
+    td:first-child { color: var(--inchiostro); font-weight: 600; }
+    /* Sul telefono la tabella diventa una scheda per riga: quattro colonne
+       non ci stanno, e uno scorrimento di lato non si nota. */
+    @media (max-width: 620px) {
+      .tabella { overflow: visible; background: none; }
+      table, tbody, tr, td { display: block; min-width: 0; }
+      thead { display: none; }
+      tr { background: var(--carta); border-radius: 16px; padding: 6px 16px 10px; margin: 0 0 10px; }
+      td { border-top: 0; padding: 6px 0; }
+      td:first-child { padding-top: 10px; font-size: 16px; }
+      td[data-etichetta]::before {
+        content: attr(data-etichetta);
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--attenuato);
+        font-weight: 600;
+      }
+    }
+    .da-fare { background: var(--giallo); color: var(--giallo-testo); border-radius: 6px; padding: 0 4px; font-weight: 600; }
+    footer { margin-top: 40px; font-size: 14px; color: var(--attenuato); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Informativa sulla privacy</h1>
+  <p class="sotto">Che cosa Trolley tratta dei tuoi dati, perché, e che cosa puoi fare. Prima in breve, poi per esteso.</p>
+
+  <p class="bozza"><strong>Bozza dell'8 ottobre 2026</strong>, in revisione legale: può cambiare. Le parti evidenziate sono ancora da completare.</p>
+
+  <h2>In breve</h2>
+  <div class="carta">
+    <div><p><strong>I documenti che aggiungi e la tua posizione restano sul telefono.</strong> A noi non arrivano: non esiste una strada per mandarceli.</p></div>
+    <div><p>Teniamo quello che serve a far funzionare i viaggi: il tuo account, e quello che scrivi nei viaggi, che vedono anche le persone con cui viaggi.</p></div>
+    <div><p>Contiamo le azioni, mai i contenuti, per capire quali funzioni servono. <a href="/misurazione">Cosa misuriamo</a>: lo puoi spegnere senza perdere niente.</p></div>
+    <div><p>Niente pubblicità, niente tracciamento di altre aziende, nessuna vendita di dati.</p></div>
+    <div><p>Dal profilo scarichi i tuoi dati e chiudi l'account, quando vuoi.</p></div>
+  </div>
+
+  <h2>1. Chi tratta i tuoi dati</h2>
+  <p>Il titolare del trattamento è <span class="da-fare">[nome o ragione sociale, indirizzo]</span>. Per tutto quello che riguarda i tuoi dati scrivi a <span class="da-fare">[indirizzo email]</span>.</p>
+
+  <h2>2. Che cosa trattiamo, e perché</h2>
+  <div class="tabella">
+    <table>
+      <thead>
+        <tr><th>Dati</th><th>Perché</th><th>Su quale base</th><th>Per quanto</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Il tuo account: email, password, nome, data di nascita, la valuta che usi</td>
+          <td data-etichetta="Perché">Farti entrare; mostrare il tuo nome a chi viaggia con te; controllare che tu abbia almeno 16 anni. La password la conserva il servizio di accesso in forma non leggibile</td>
+          <td data-etichetta="Su quale base">Il contratto: senza, il servizio non funziona</td>
+          <td data-etichetta="Per quanto">Finché hai l'account</td>
+        </tr>
+        <tr>
+          <td>I tuoi viaggi: mete, date, tappe e i posti che scegli, spese e chi le divide, liste, note, inviti, chi partecipa, traguardi</td>
+          <td data-etichetta="Perché">Organizzare i viaggi e condividerli con chi inviti</td>
+          <td data-etichetta="Su quale base">Il contratto</td>
+          <td data-etichetta="Per quanto">Finché non li cancelli o chiudi l'account (vedi il punto 7)</td>
+        </tr>
+        <tr>
+          <td>Se eri sul posto durante un viaggio: solo «sì», e quando</td>
+          <td data-etichetta="Perché">La verifica del viaggio, che dà i traguardi</td>
+          <td data-etichetta="Su quale base">Il contratto, e il permesso di posizione che dai al telefono <span class="da-fare">[da confermare]</span></td>
+          <td data-etichetta="Per quanto">Come il viaggio</td>
+        </tr>
+        <tr>
+          <td>Le azioni che fai nell'app, come «creato un viaggio»</td>
+          <td data-etichetta="Perché">Capire quali funzioni servono davvero. <a href="/misurazione">Cosa misuriamo</a></td>
+          <td data-etichetta="Su quale base">Il nostro interesse legittimo a migliorare il servizio; puoi opporti spegnendo la misurazione <span class="da-fare">[da confermare]</span></td>
+          <td data-etichetta="Per quanto">Nel dettaglio per poco, poi in forma aggregata <span class="da-fare">[periodo da fissare]</span></td>
+        </tr>
+        <tr>
+          <td>Quante chiamate alle mappe fai in un viaggio, ogni giorno</td>
+          <td data-etichetta="Perché">Un tetto, perché una persona sola non consumi le mappe di tutti</td>
+          <td data-etichetta="Su quale base">Interesse legittimo</td>
+          <td data-etichetta="Per quanto">Una settimana</td>
+        </tr>
+        <tr>
+          <td>Dati tecnici delle richieste: indirizzo IP, città approssimativa, tipo di app e di dispositivo, orario</td>
+          <td data-etichetta="Perché">Far funzionare e proteggere il servizio. Li registrano i server dei nostri fornitori</td>
+          <td data-etichetta="Su quale base">Interesse legittimo</td>
+          <td data-etichetta="Per quanto">Pochi giorni <span class="da-fare">[da verificare con i fornitori]</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>3. Che cosa non arriva mai a noi</h2>
+  <ul>
+    <li><strong>I documenti</strong> — passaporti, biglietti, prenotazioni — stanno solo sul tuo telefono, cifrati con il suo codice di sblocco. Fanno parte del backup del telefono, se lo hai attivo, che è un servizio tuo con Apple.</li>
+    <li><strong>La tua posizione.</strong> Per la verifica il confronto con la meta lo fa il telefono, e a noi arriva solo il «sì». Quando chiedi a Trolley di portarti a una tappa, il punto da cui parti passa dal nostro server al fornitore delle mappe per calcolare la strada, e non viene salvato. La posizione si usa solo mentre usi l'app, mai in sottofondo.</li>
+    <li><strong>L'itinerario chiesto al tuo assistente.</strong> Trolley prepara una richiesta che copi tu nel tuo assistente (per esempio Claude o ChatGPT), con il tuo account: noi non lo chiamiamo e non vediamo la conversazione. Quello che incolli torna nel viaggio come nota.</li>
+  </ul>
+
+  <h2>4. Chi vede i tuoi dati</h2>
+  <ul>
+    <li><strong>Le persone con cui viaggi</strong> vedono il tuo nome e quello che aggiungi nei viaggi che condividete. Non vedono la tua email né la tua data di nascita.</li>
+    <li><strong>I fornitori che lavorano per noi</strong>, solo per quello che serve:
+      <ul>
+        <li><strong>Supabase</strong>: il database, l'accesso e le funzioni del server. I dati stanno su server nell'Unione europea, in Irlanda.</li>
+        <li><strong>Geoapify</strong> <span class="da-fare">[sede da verificare]</span>: mappe, ricerche dei posti e percorsi a piedi. Riceve dal nostro server le zone di mappa che guardi, il testo che cerchi e i due capi di un percorso; non sa chi sei e non vede il tuo telefono.</li>
+        <li><strong>Vercel</strong>: ospita questa pagina e la pagina dei link d'invito, e vede l'indirizzo IP di chi le apre.</li>
+      </ul>
+    </li>
+    <li><strong>Apple</strong>, quando scarichi l'app dall'App Store o da TestFlight, secondo le sue regole.</li>
+    <li>Nessuno per pubblicità. Non vendiamo dati, a nessuno.</li>
+  </ul>
+  <p>I tassi di cambio delle spese li scarica il nostro server da un servizio pubblico: lì non passa niente di tuo.</p>
+
+  <h2>5. Fuori dall'Unione europea</h2>
+  <p>Supabase e Vercel sono società con sede negli Stati Uniti. I dati dell'app stanno su server nell'Unione europea; per gli eventuali accessi dagli Stati Uniti valgono <span class="da-fare">[le garanzie da confermare: Data Privacy Framework o clausole contrattuali standard]</span>.</p>
+
+  <h2>6. La misurazione</h2>
+  <p>È accesa quando installi l'app, e la spegni dal profilo, alla voce Privacy. Spenta, sul telefono non si scrive più niente, e quello che aspettava di partire si butta. Non perdi nessuna funzione. Il dettaglio di che cosa si conta è in <a href="/misurazione">Cosa misuriamo</a>.</p>
+
+  <h2>7. Se chiudi l'account</h2>
+  <p>Lo chiudi dall'app: profilo, I tuoi dati, Chiudi l'account. Prima ti diciamo che cosa succede, con i numeri veri.</p>
+  <ul>
+    <li>L'accesso si cancella, e con lui la tua email. Il nome e la data di nascita si cancellano.</li>
+    <li>I viaggi in cui eri da solo si cancellano con tutto quello che c'è dentro.</li>
+    <li>Dai viaggi condivisi esci: quello che hai aggiunto resta, con «Account chiuso» al posto del tuo nome, perché gli altri non perdano il loro viaggio. Le spese restano nei saldi: chiudere l'account non cancella un debito.</li>
+    <li>I documenti sul telefono si cancellano.</li>
+    <li>Le azioni misurate restano, ma sotto un identificativo nuovo che non porta più a te.</li>
+  </ul>
+
+  <h2>8. I tuoi diritti</h2>
+  <ul>
+    <li><strong>Avere i tuoi dati</strong>, anche in un formato leggibile da una macchina: profilo, I tuoi dati, Scarica i tuoi dati. È gratis.</li>
+    <li><strong>Correggerli</strong>: quello che scrivi nei viaggi lo cambi dall'app; per il nome e la data di nascita scrivici.</li>
+    <li><strong>Cancellarli</strong>: chiudendo l'account, dall'app.</li>
+    <li><strong>Opporti alla misurazione</strong>: spegnendola dal profilo.</li>
+    <li><strong>Chiedere di limitare un trattamento</strong>, o qualunque altra cosa sui tuoi dati: scrivici a <span class="da-fare">[indirizzo email]</span>.</li>
+    <li><strong>Reclamare</strong> al Garante per la protezione dei dati personali, su <a href="https://www.garanteprivacy.it">garanteprivacy.it</a>.</li>
+  </ul>
+
+  <h2>9. Età</h2>
+  <p>Trolley è per chi ha almeno 16 anni: la data di nascita si chiede quando crei il profilo, e sotto i 16 anni l'account non si crea.</p>
+
+  <h2>10. Come proteggiamo i dati</h2>
+  <p>Le connessioni sono cifrate. Sul server ogni riga di dati ha le sue regole di accesso: un viaggio lo vede solo chi ci partecipa. I documenti, che restano sul telefono, sono protetti dal codice di sblocco.</p>
+
+  <h2>11. Se questa informativa cambia</h2>
+  <p>Quando arriverà una funzione che tratta dati nuovi — per esempio un profilo pubblico — questa pagina cambierà prima, e te lo diremo nell'app.</p>
+
+  <footer>Versione dell'8 ottobre 2026 · bozza</footer>
+</main>
+</body>
+</html>

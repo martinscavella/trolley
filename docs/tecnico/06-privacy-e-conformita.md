@@ -52,7 +52,8 @@ L'ultima riga va spiegata alla persona **prima** che chiuda l'account: le spese 
 
 - **Esportazione sempre gratuita**, in un formato leggibile da una macchina. È un diritto, non una funzione a pagamento: la reimportazione invece è un servizio e può essere premium. Dal profilo, «I tuoi dati»: un file JSON con il profilo, i viaggi come la persona li vede, i traguardi e gli eventi (U.1; [decisioni](../decisioni/prodotto.md)).
 - **Cancellazione dell'account** raggiungibile dall'app, non solo scrivendo a un indirizzo. Dallo stesso posto, dopo aver detto che cosa succede (`chiudi_account`).
-- **Pagina leggibile su cosa si misura**, con la possibilità di rifiutare senza perdere funzioni.
+- **Pagina leggibile su cosa si misura**, con la possibilità di rifiutare senza perdere funzioni: `sito/misurazione.html`, su `trolleyapp.vercel.app/misurazione`, aperta dal profilo (U.3).
+- **Informativa** in `sito/privacy.html`, su `trolleyapp.vercel.app/privacy`: dall'accesso, prima di creare l'account, e dal profilo. In bozza, con le domande per l'avvocato in [per la revisione](../legale/per-la-revisione.md).
 
 ---
 

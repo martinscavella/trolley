@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/native.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthClientOptions, SupabaseClient;
@@ -10,6 +12,7 @@ import 'package:trolley/dati/archivio.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/documenti.dart';
 import 'package:trolley/dati/errori.dart';
+import 'package:trolley/dati/pagine.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
 import 'package:trolley/servizi.dart';
@@ -28,8 +31,10 @@ void main() {
   late DatabaseLocale db;
   late SupabaseClient supabase;
   late _IngressoFinto ingresso;
+  late PagineFinte pagine;
 
   setUp(() {
+    pagine = PagineFinte();
     db = DatabaseLocale(NativeDatabase.memory());
     // Nessuna sessione e nessun server: la persona non ha ancora un accesso.
     supabase = SupabaseClient(
@@ -69,6 +74,7 @@ void main() {
         mappe: MappeFinte(),
         posizione: PosizioneFinta(),
         mappeDelTelefono: MappeDelTelefonoFinte(),
+        pagine: pagine,
         child: const TrolleyApp(),
       ),
     );
@@ -86,6 +92,26 @@ void main() {
   testWidgets('senza rete l\'accesso lo dice prima di provare', (tester) async {
     await avvia(tester, conRete: false);
     expect(find.text(motivoSenzaRete), findsOneWidget);
+  });
+
+  testWidgets('prima di creare un account si dice dove si legge come si '
+      'trattano i dati (U.3; tela, 1)', (tester) async {
+    await avvia(tester);
+    final frase = find.textContaining(
+      'informativa sulla privacy',
+      findRichText: true,
+    );
+    expect(frase, findsOneWidget);
+    TapGestureRecognizer? tocco;
+    tester.widget<RichText>(frase).text.visitChildren((span) {
+      if (span is TextSpan && span.text == 'informativa sulla privacy') {
+        tocco = span.recognizer as TapGestureRecognizer?;
+      }
+      return tocco == null;
+    });
+    tocco!.onTap!();
+    await tester.pumpAndSettle();
+    expect(pagine.aperte, [PaginaDelSito.privacy]);
   });
 
   testWidgets(
