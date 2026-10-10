@@ -1118,6 +1118,20 @@ class Archivio {
             ];
           });
 
+  /// A chi scrivere per la moderazione (12, regola 6): l'indirizzo sta nella
+  /// configurazione del server, `contatto_moderazione`, e cambia senza un
+  /// rilascio. `null` finché non c'è.
+  Stream<String?> osservaContattoModerazione() =>
+      (_db.select(_db.configurazioni)
+            ..where((c) => c.chiave.equals('contatto_moderazione')))
+          .watchSingleOrNull()
+          .map((riga) {
+            final valore = riga == null ? null : jsonDecode(riga.valore);
+            return valore is String && valore.trim().isNotEmpty
+                ? valore.trim()
+                : null;
+          });
+
   /// I nomi di tutti quelli che sono passati dal viaggio, anche chi è uscito:
   /// le sue spese restano, e restano sue (06, regola 10).
   Stream<Map<String, String>> osservaNomi(String viaggioId) {

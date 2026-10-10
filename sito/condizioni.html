@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Condizioni d'uso · Trolley</title>
+  <!--
+    Condizioni d'uso della parte pubblica (5.1; docs/prodotto/12-sicurezza-e-
+    moderazione.md, regola 7: una regola non scritta non si può applicare).
+    Si accettano accendendo il profilo pubblico: la loro versione è la data
+    qui sotto, e la stessa sta nell'app (versioneCondizioni, dati/pagine.dart).
+    Cambiandole, si cambiano tutte e due. Le regole sono numerate perché la
+    sospensione le cita: «Condizioni d'uso, regola 2: messaggi molesti».
+    È una BOZZA per la revisione legale: le parti fra [ ] vanno completate o
+    confermate (docs/legale/per-la-revisione.md).
+    Caratteri del telefono, niente Google Fonts: manderebbero a Google
+    l'indirizzo di chi legge. Nessuna misurazione su questa pagina.
+  -->
+  <style>
+    :root {
+      --fondo: #EDEFF3;
+      --carta: #FFFFFF;
+      --inchiostro: #15192B;
+      --grafite: #4A5066;
+      --attenuato: #5A6072;
+      --bordo: #DCE0E8;
+      --riga: #EEF0F4;
+      --cobalto: #2B4ACB;
+      --giallo: #FFCF4A;
+      --giallo-testo: #5C4300;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fondo: #10131F;
+        --carta: #1B1F2E;
+        --inchiostro: #EEF0F6;
+        --grafite: #C3C8D6;
+        --attenuato: #A3A9BA;
+        --bordo: #2E3448;
+        --riga: #272C3D;
+        --cobalto: #8FA4FF;
+        --giallo: #3A3112;
+        --giallo-testo: #FFE08A;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--fondo);
+      color: var(--inchiostro);
+      font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    main { max-width: 680px; margin: 0 auto; padding: 40px 16px 64px; }
+    h1 { font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 8px; }
+    h2 { font-size: 20px; line-height: 1.25; margin: 40px 0 12px; }
+    h3 { font-size: 17px; margin: 20px 0 6px; }
+    p, li { color: var(--grafite); }
+    p { margin: 0 0 14px; }
+    ul { margin: 0 0 14px; padding-left: 20px; }
+    li { margin: 0 0 8px; }
+    strong { color: var(--inchiostro); }
+    a { color: var(--cobalto); font-weight: 600; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .sotto { color: var(--attenuato); font-size: 15px; margin-bottom: 24px; }
+    .bozza {
+      background: var(--giallo);
+      color: var(--giallo-testo);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 15px;
+      margin: 0 0 24px;
+    }
+    .carta {
+      background: var(--carta);
+      border-radius: 20px;
+      padding: 8px 20px;
+      margin: 0 0 16px;
+    }
+    .carta > div { padding: 12px 0; border-top: 1.5px solid var(--riga); }
+    .carta > div:first-child { border-top: 0; }
+    .carta p { margin: 0; color: var(--inchiostro); }
+    .tabella { overflow-x: auto; margin: 0 0 16px; border-radius: 16px; background: var(--carta); }
+    table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 15px; }
+    th, td { text-align: left; vertical-align: top; padding: 12px 14px; border-top: 1.5px solid var(--riga); }
+    thead th { border-top: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenuato); }
+    td { color: var(--grafite); }
+    td:first-child { color: var(--inchiostro); font-weight: 600; }
+    /* Sul telefono la tabella diventa una scheda per riga: quattro colonne
+       non ci stanno, e uno scorrimento di lato non si nota. */
+    @media (max-width: 620px) {
+      .tabella { overflow: visible; background: none; }
+      table, tbody, tr, td { display: block; min-width: 0; }
+      thead { display: none; }
+      tr { background: var(--carta); border-radius: 16px; padding: 6px 16px 10px; margin: 0 0 10px; }
+      td { border-top: 0; padding: 6px 0; }
+      td:first-child { padding-top: 10px; font-size: 16px; }
+      td[data-etichetta]::before {
+        content: attr(data-etichetta);
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--attenuato);
+        font-weight: 600;
+      }
+    }
+    .da-fare { background: var(--giallo); color: var(--giallo-testo); border-radius: 6px; padding: 0 4px; font-weight: 600; }
+    footer { margin-top: 40px; font-size: 14px; color: var(--attenuato); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Condizioni d'uso della parte pubblica</h1>
+  <p class="sotto">Le regole per stare con gli altri viaggiatori su Trolley: il profilo pubblico, la ricerca, i collegamenti, i messaggi, chi c'è in città. Le accetti quando accendi il profilo pubblico.</p>
+
+  <p class="bozza"><strong>Bozza del 9 ottobre 2026</strong>, in revisione legale: può cambiare. Le parti evidenziate sono ancora da completare.</p>
+
+  <h2>In breve</h2>
+  <div class="carta">
+    <div><p><strong>Tratta gli altri come vorresti essere trattato.</strong> Niente molestie, niente insulti, niente profili falsi.</p></div>
+    <div><p>Se qualcuno ti mette a disagio, <strong>bloccalo</strong>: sparite l'uno all'altro, e non lo sa. Se fa qualcosa che qui è vietato, <strong>segnalalo</strong>: lo legge una persona, e ti diciamo com'è andata.</p></div>
+    <div><p>Chi non rispetta queste regole perde la parte pubblica. I suoi viaggi restano suoi.</p></div>
+    <div><p><strong>Se sei in pericolo, chiama il 112.</strong></p></div>
+  </div>
+
+  <h2>1. Chi può entrare</h2>
+  <ul>
+    <li>Chi ha <strong>almeno 18 anni</strong>. Il resto di Trolley è dai 16.</li>
+    <li>Con un <strong>numero di telefono verificato</strong>: lo verifichiamo con un codice SMS. Un numero vale per un account solo, e non compare da nessuna parte.</li>
+    <li>Con <strong>un account per persona</strong>.</li>
+  </ul>
+
+  <h2>2. Le regole</h2>
+  <p>Valgono per il profilo, per le richieste di collegamento e per i messaggi.</p>
+  <div class="carta">
+    <div><p><strong>Regola 1 · Rispetto.</strong> Niente insulti, niente odio o discriminazione per origine, religione, genere, orientamento, disabilità o qualunque altra ragione.</p></div>
+    <div><p><strong>Regola 2 · Niente molestie.</strong> Niente minacce, niente messaggi che continuano dopo un no, niente contenuti sessuali che l'altro non ha chiesto.</p></div>
+    <div><p><strong>Regola 3 · Sii chi sei.</strong> Niente profili falsi, niente spacciarsi per un altro, un account per persona.</p></div>
+    <div><p><strong>Regola 4 · Niente contenuti inappropriati.</strong> Niente immagini o testi sessualmente espliciti, violenti, o che mostrano cose illegali.</p></div>
+    <div><p><strong>Regola 5 · Niente affari.</strong> Niente pubblicità, vendite, spam, raccolte di soldi, truffe.</p></div>
+    <div><p><strong>Regola 6 · Solo adulti.</strong> Chi ha meno di 18 anni non entra nella parte pubblica, e non la si usa per cercare o contattare minori.</p></div>
+    <div><p><strong>Regola 7 · I dati degli altri sono loro.</strong> Non chiedere con insistenza e non diffondere dove qualcuno dorme, i suoi documenti, il suo numero, le sue foto.</p></div>
+    <div><p><strong>Regola 8 · Segnalazioni vere.</strong> Segnalare qualcuno per dargli fastidio è a sua volta una violazione.</p></div>
+    <div><p><strong>Regola 9 · La legge.</strong> Niente di quello che è vietato dalla legge, anche se qui non è scritto.</p></div>
+  </div>
+
+  <h2>3. Bloccare e segnalare</h2>
+  <ul>
+    <li><strong>Bloccare</strong> si fa in un tocco, da un profilo o da una conversazione, e non chiede spiegazioni. Chi blocchi sparisce per te, e tu per lui: nella ricerca, nei profili, nei messaggi. Non viene avvisato. Dal tuo profilo vedi chi hai bloccato, e lo sblocchi.</li>
+    <li><strong>Segnalare</strong> si fa da un profilo o da un messaggio. Scegli il motivo, se vuoi aggiungi qualcosa. Conserviamo quello che hai segnalato com'era in quel momento, anche se poi viene cancellato. Chi è segnalato non sa da chi.</li>
+    <li>Ti confermiamo che la segnalazione è arrivata, e ti diciamo quando l'abbiamo gestita e come.</li>
+    <li>Se la persona è anche in un tuo viaggio, chi ne è responsabile può toglierla dal viaggio: il blocco vale per la parte pubblica.</li>
+  </ul>
+
+  <h2>4. Che cosa facciamo</h2>
+  <p>Le segnalazioni le legge una persona, non un programma, cominciando dalle più gravi: minori, molestie e minacce. Poi:</p>
+  <ul>
+    <li>se non troviamo una violazione, la <strong>archiviamo</strong>;</li>
+    <li>se un messaggio viola le regole, lo <strong>togliamo</strong>;</li>
+    <li>se una persona viola le regole, <strong>sospendiamo il suo profilo pubblico</strong>: sparisce dalla parte pubblica, e nel suo profilo legge quale regola ha violato. I suoi viaggi, i documenti e le spese restano suoi;</li>
+    <li>nei casi gravi o ripetuti la parte pubblica le si chiude <span class="da-fare">[in modo definitivo: da confermare]</span>.</li>
+  </ul>
+  <p>Se una segnalazione riguarda un reato conserviamo quello che è stato segnalato e collaboriamo con le autorità quando la legge lo chiede <span class="da-fare">[da confermare]</span>. Per un pericolo immediato chiama il 112: noi non siamo un servizio di emergenza.</p>
+  <p>Quando arrivano più segnalazioni di quante riusciamo a guardare, chiudiamo per un po' la parte pubblica a chi non c'era ancora: meglio una funzione sospesa che una non sorvegliata.</p>
+
+  <h2>5. Se pensi che sia un errore</h2>
+  <p>Scrivi a <span class="da-fare">[contatto della moderazione]</span>, con la data della sospensione o della segnalazione. Ti rispondiamo, e se abbiamo sbagliato rimettiamo le cose come stavano.</p>
+
+  <h2>6. Il tuo profilo pubblico</h2>
+  <ul>
+    <li>Lo accendi e lo spegni tu, quando vuoi. Spento, sparisci dalla parte pubblica.</li>
+    <li>Gli altri vedono il passaporto dei viaggi chiusi, il mappamondo e i traguardi, il nome e cosa ti piace.</li>
+    <li>Non vedono mai i viaggi in programma o in corso, in nessuna forma; né documenti, spese, cose da portare, con chi hai viaggiato, il tuo numero.</li>
+    <li>Che cosa trattiamo dei tuoi dati, e perché, è nell'<a href="/privacy">informativa sulla privacy</a>.</li>
+  </ul>
+
+  <h2>7. Incontrarsi di persona</h2>
+  <p>Trolley mette in contatto viaggiatori che non si conoscono. Il numero verificato dice che dietro un profilo c'è una persona con un account solo, non chi è. Per un primo incontro scegli un posto pubblico e dì a qualcuno dove vai. <span class="da-fare">[Responsabilità: da scrivere con l'avvocato]</span></p>
+
+  <h2>8. Se queste condizioni cambiano</h2>
+  <p>Te lo diciamo nell'app prima che valgano, e ti chiediamo di accettarle di nuovo per restare nella parte pubblica.</p>
+
+  <footer>Versione del 9 ottobre 2026 · bozza · <a href="/privacy">Informativa sulla privacy</a> · <a href="/misurazione">Cosa misuriamo</a></footer>
+</main>
+</body>
+</html>

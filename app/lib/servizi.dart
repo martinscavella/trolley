@@ -8,8 +8,10 @@ import 'dati/documenti.dart';
 import 'dati/mappe.dart';
 import 'dati/mappe_del_telefono.dart';
 import 'dati/pagine.dart';
+import 'dati/parte_pubblica.dart';
 import 'dati/posizione.dart';
 import 'dati/rete.dart';
+import 'dati/telefono.dart';
 import 'invito/ingresso_da_invito.dart';
 import 'misurazione/misurazione.dart';
 
@@ -29,6 +31,8 @@ class Servizi extends InheritedWidget {
     required this.posizione,
     required this.mappeDelTelefono,
     required this.pagine,
+    required this.partePubblica,
+    required this.telefono,
     required super.child,
   });
 
@@ -56,6 +60,12 @@ class Servizi extends InheritedWidget {
 
   /// Le pagine del sito: l'informativa, che cosa si misura (U.3).
   final PagineDelSito pagine;
+
+  /// Il proprio profilo pubblico, chi si è bloccato, le segnalazioni (5.1).
+  final PartePubblica partePubblica;
+
+  /// La verifica del numero con un codice SMS (5.1, ADR-011).
+  final VerificaDelTelefono telefono;
 
   static Servizi of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<Servizi>()!;

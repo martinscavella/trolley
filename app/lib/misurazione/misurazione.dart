@@ -45,6 +45,21 @@ abstract final class Eventi {
   /// Lo scrive il server, in chiudi_account: dopo, il telefono non ha più
   /// nessuno a nome di cui mandarlo.
   static const accountChiuso = 'account_chiuso';
+
+  // La parte pubblica e la sua sicurezza (5.1).
+  static const telefonoVerificato = 'telefono_verificato';
+  static const profiloPubblicoAttivato = 'profilo_pubblico_attivato';
+  static const profiloPubblicoSpento = 'profilo_pubblico_spento';
+
+  /// `da`: `segnalazione` (con «Blocca anche»), `profilo` (5.3),
+  /// `messaggio` (5.4).
+  static const personaBloccata = 'persona_bloccata';
+  static const personaSbloccata = 'persona_sbloccata';
+
+  /// Le scrive il server, in segnala e quando chi modera la gestisce: le ore
+  /// fra le due sono quelle vere (07, sostenibilità della moderazione).
+  static const segnalazioneRicevuta = 'segnalazione_ricevuta';
+  static const segnalazioneGestita = 'segnalazione_gestita';
 }
 
 class Misurazione {

@@ -190,13 +190,15 @@ begin
     on conflict (id) do nothing;
   log := log || E'\nok  un evento reinviato non dà errore';
 
-  fallita := false;
-  begin
-    perform nome from public.evento;
-  exception when insufficient_privilege then fallita := true;
-  end;
-  if not fallita then raise exception 'FALLITA: gli eventi si rileggono dall''app'; end if;
-  log := log || E'\nok  gli eventi si scrivono ma non si rileggono';
+  -- Dalla U.1 i propri eventi si rileggono (sono nei dati che si scaricano):
+  -- quelli degli altri no.
+  if exists (select 1 from public.evento where utente_id is distinct from auth.uid()) then
+    raise exception 'FALLITA: si leggono gli eventi di un altro';
+  end if;
+  if not exists (select 1 from public.evento where id = r) then
+    raise exception 'FALLITA: i propri eventi non si rileggono';
+  end if;
+  log := log || E'\nok  si rileggono solo i propri eventi';
 
   -- ── anon ────────────────────────────────────────────────────────────────
   perform set_config('role', 'anon', true);

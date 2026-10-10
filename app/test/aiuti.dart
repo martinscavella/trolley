@@ -30,8 +30,10 @@ import 'package:trolley/dati/file_del_telefono.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/mappe_del_telefono.dart';
 import 'package:trolley/dati/pagine.dart';
+import 'package:trolley/dati/parte_pubblica.dart';
 import 'package:trolley/dati/posizione.dart';
 import 'package:trolley/dati/rete.dart';
+import 'package:trolley/dati/telefono.dart';
 import 'package:trolley/dominio/mappa.dart';
 import 'package:trolley/dominio/navigazione.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
@@ -354,6 +356,34 @@ class ServerFinto {
 
   /// Se l'account è stato chiuso, con quale scelta sulla misurazione.
   bool? chiusoConMisurazione;
+
+  /// La propria parte pubblica, come la dà la_mia_parte_pubblica (5.1).
+  /// Si parte chiusa: nel profilo non c'è niente.
+  Map<String, Object?> partePubblica = {
+    'visibile': false,
+    'accoglie': false,
+    'maggiorenne': true,
+    'telefono': null,
+    'attivo': false,
+    'sospeso_il': null,
+    'sospensione_motivo': null,
+    'condizioni': null,
+  };
+
+  /// La parte pubblica aperta, con o senza il numero già verificato.
+  void apriPartePubblica({String? telefono}) => partePubblica
+    ..['visibile'] = true
+    ..['accoglie'] = true
+    ..['telefono'] = telefono;
+
+  /// Chi si è bloccato: `utente_id`, `nome`, `dal`.
+  final bloccate = <Map<String, Object?>>[];
+
+  /// Le segnalazioni mandate, come le riceve segnala.
+  final segnalate = <Map<String, Object?>>[];
+
+  /// Le proprie segnalazioni, come le restituisce le_mie_segnalazioni.
+  final mieSegnalazioni = <Map<String, Object?>>[];
   final richieste = <http.Request>[];
 
   /// Percorsi con una risposta data dal test, che vince sulle altre.
@@ -1003,6 +1033,67 @@ class ServerFinto {
         chiusoConMisurazione = _corpo(r)['p_misurazione'] as bool;
         profilo = null;
         return http.Response('', 204);
+      case 'POST /rest/v1/rpc/la_mia_parte_pubblica':
+        return risposta(profilo == null ? null : partePubblica);
+      case 'POST /rest/v1/rpc/attiva_profilo_pubblico':
+        if (partePubblica['sospeso_il'] != null) {
+          return _errore('TR424', 'il profilo pubblico è sospeso');
+        }
+        if (partePubblica['accoglie'] != true) {
+          return _errore('TR423', 'la parte pubblica non accoglie');
+        }
+        if (partePubblica['telefono'] == null) {
+          return _errore('TR403', 'serve il numero di telefono verificato');
+        }
+        partePubblica
+          ..['attivo'] = true
+          ..['condizioni'] = _corpo(r)['p_condizioni'];
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/spegni_profilo_pubblico':
+        partePubblica['attivo'] = false;
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/persone_bloccate':
+        return risposta(bloccate);
+      case 'POST /rest/v1/rpc/blocca':
+        final chi = _corpo(r)['p_utente'];
+        if (!bloccate.any((b) => b['utente_id'] == chi)) {
+          bloccate.insert(0, {
+            'utente_id': chi,
+            'nome': _nomeDi(chi),
+            'dal': DateTime.now().toUtc().toIso8601String(),
+          });
+        }
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/sblocca':
+        bloccate.removeWhere((b) => b['utente_id'] == _corpo(r)['p_utente']);
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/segnala':
+        final corpo = _corpo(r);
+        if (segnalate.any((x) => x['p_id'] == corpo['p_id'])) {
+          return http.Response('', 204);
+        }
+        segnalate.add(corpo);
+        mieSegnalazioni.insert(0, {
+          'id': corpo['p_id'],
+          'tipo_oggetto': corpo['p_tipo'],
+          'nome': _nomeDi(corpo['p_oggetto']),
+          'motivo': corpo['p_motivo'],
+          'stato': 'ricevuta',
+          'esito': null,
+          'creata_il': DateTime.now().toUtc().toIso8601String(),
+          'gestita_il': null,
+        });
+        if (corpo['p_blocca'] == true &&
+            !bloccate.any((b) => b['utente_id'] == corpo['p_oggetto'])) {
+          bloccate.insert(0, {
+            'utente_id': corpo['p_oggetto'],
+            'nome': _nomeDi(corpo['p_oggetto']),
+            'dal': DateTime.now().toUtc().toIso8601String(),
+          });
+        }
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/le_mie_segnalazioni':
+        return risposta(mieSegnalazioni);
     }
     return risposta(const []);
   }
@@ -1102,6 +1193,11 @@ class ServerFinto {
 
   static Map<String, dynamic> _corpo(http.Request r) =>
       jsonDecode(r.body) as Map<String, dynamic>;
+
+  String _nomeDi(Object? id) =>
+      utenti.firstWhere((u) => u['id'] == id, orElse: () => {})['nome']
+          as String? ??
+      '';
 
   static http.Response _errore(String codice, String messaggio) => risposta({
     'code': codice,
@@ -1431,6 +1527,8 @@ class Ambiente {
   final posizione = PosizioneFinta();
   final mappeDelTelefono = MappeDelTelefonoFinte();
   final pagine = PagineFinte();
+  late final partePubblica = PartePubblica(server.supabase, rete: rete);
+  late final verifica = VerificaFinta(server);
 
   Widget servizi(Widget figlio) => Servizi(
     db: db,
@@ -1445,6 +1543,8 @@ class Ambiente {
     posizione: posizione,
     mappeDelTelefono: mappeDelTelefono,
     pagine: pagine,
+    partePubblica: partePubblica,
+    telefono: verifica,
     child: figlio,
   );
 
@@ -1545,6 +1645,52 @@ class Ambiente {
     await ingresso.controllo.close();
     await db.close();
     if (cartella.existsSync()) cartella.deleteSync(recursive: true);
+  }
+}
+
+/// La verifica del telefono per finta (5.1): il codice giusto è sempre
+/// `123456`; con la rete spenta dice che serve. Un numero verificato finisce
+/// nella parte pubblica del server finto, come farebbe la funzione `telefono`.
+class VerificaFinta implements VerificaDelTelefono {
+  VerificaFinta(this.server);
+
+  final ServerFinto server;
+  static const codiceGiusto = '123456';
+
+  /// A quali numeri si è mandato un codice.
+  final mandati = <String>[];
+
+  /// Il no da dare al prossimo invio, se il test lo vuole.
+  ErroreTrolley? rifiuto;
+
+  void _rete() {
+    if (server.rete?.disponibile == false) {
+      throw const ErroreTrolley(
+        'Serve la connessione. Riprova quando sei online.',
+        serveLaRete: true,
+      );
+    }
+  }
+
+  @override
+  Future<bool> mandaCodice(String numero) async {
+    _rete();
+    if (rifiuto case final no?) throw no;
+    if (server.partePubblica['telefono'] == numero) return false;
+    mandati.add(numero);
+    return true;
+  }
+
+  @override
+  Future<void> verifica(String numero, String codice) async {
+    _rete();
+    if (codice != codiceGiusto) {
+      throw const ErroreTrolley(
+        'Il codice non è giusto. Controllalo, o chiedine un altro.',
+        codice: CodiciTelefono.sbagliato,
+      );
+    }
+    server.partePubblica['telefono'] = numero;
   }
 }
 

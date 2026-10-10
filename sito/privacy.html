@@ -111,7 +111,7 @@
   <h1>Informativa sulla privacy</h1>
   <p class="sotto">Che cosa Trolley tratta dei tuoi dati, perché, e che cosa puoi fare. Prima in breve, poi per esteso.</p>
 
-  <p class="bozza"><strong>Bozza dell'8 ottobre 2026</strong>, in revisione legale: può cambiare. Le parti evidenziate sono ancora da completare.</p>
+  <p class="bozza"><strong>Bozza del 9 ottobre 2026</strong>, in revisione legale: può cambiare. Le parti evidenziate sono ancora da completare.</p>
 
   <h2>In breve</h2>
   <div class="carta">
@@ -163,6 +163,30 @@
           <td data-etichetta="Per quanto">Una settimana</td>
         </tr>
         <tr>
+          <td>Se accendi il profilo pubblico: il tuo numero di telefono</td>
+          <td data-etichetta="Perché">Sapere che dietro il profilo c'è una persona, con un account solo. Non lo vede nessuno</td>
+          <td data-etichetta="Su quale base">Il contratto: la parte pubblica lo richiede <span class="da-fare">[da confermare]</span></td>
+          <td data-etichetta="Per quanto">Finché hai l'account; i tentativi di verifica una settimana</td>
+        </tr>
+        <tr>
+          <td>Se accendi il profilo pubblico: quando e quali condizioni d'uso hai accettato, e un'eventuale sospensione con il suo motivo</td>
+          <td data-etichetta="Perché">Far rispettare le <a href="/condizioni">condizioni d'uso</a>, e dirti perché quando non le rispetti</td>
+          <td data-etichetta="Su quale base">Il contratto</td>
+          <td data-etichetta="Per quanto">Finché hai l'account</td>
+        </tr>
+        <tr>
+          <td>Chi hai bloccato</td>
+          <td data-etichetta="Perché">Non farvi vedere l'uno all'altro nella parte pubblica</td>
+          <td data-etichetta="Su quale base">Il contratto</td>
+          <td data-etichetta="Per quanto">Finché non sblocchi, o uno dei due chiude l'account</td>
+        </tr>
+        <tr>
+          <td>Le segnalazioni: chi segnala, chi è segnalato, il motivo, la nota, e quello che è stato segnalato com'era in quel momento</td>
+          <td data-etichetta="Perché">Proteggere le persone nella parte pubblica, e poter decidere su ciò che è successo anche se poi è stato cancellato</td>
+          <td data-etichetta="Su quale base">Interesse legittimo alla sicurezza delle persone, e gli obblighi delle piattaforme <span class="da-fare">[da confermare]</span></td>
+          <td data-etichetta="Per quanto">Il tempo di gestirle, più quello per difendersi da una contestazione <span class="da-fare">[periodo da fissare]</span>. Chiudendo l'account, quelle che hai fatto restano senza il tuo nome</td>
+        </tr>
+        <tr>
           <td>Dati tecnici delle richieste: indirizzo IP, città approssimativa, tipo di app e di dispositivo, orario</td>
           <td data-etichetta="Perché">Far funzionare e proteggere il servizio. Li registrano i server dei nostri fornitori</td>
           <td data-etichetta="Su quale base">Interesse legittimo</td>
@@ -187,6 +211,7 @@
         <li><strong>Supabase</strong>: il database, l'accesso e le funzioni del server. I dati stanno su server nell'Unione europea, in Irlanda.</li>
         <li><strong>Geoapify</strong> <span class="da-fare">[sede da verificare]</span>: mappe, ricerche dei posti e percorsi a piedi. Riceve dal nostro server le zone di mappa che guardi, il testo che cerchi e i due capi di un percorso; non sa chi sei e non vede il tuo telefono.</li>
         <li><strong>Vercel</strong>: ospita questa pagina e la pagina dei link d'invito, e vede l'indirizzo IP di chi le apre.</li>
+        <li><strong>Twilio</strong>, solo se accendi il profilo pubblico: manda e controlla il codice SMS che verifica il tuo numero. Riceve il numero dal nostro server, non sa altro di te.</li>
       </ul>
     </li>
     <li><strong>Apple</strong>, quando scarichi l'app dall'App Store o da TestFlight, secondo le sue regole.</li>
@@ -195,7 +220,7 @@
   <p>I tassi di cambio delle spese li scarica il nostro server da un servizio pubblico: lì non passa niente di tuo.</p>
 
   <h2>5. Fuori dall'Unione europea</h2>
-  <p>Supabase e Vercel sono società con sede negli Stati Uniti. I dati dell'app stanno su server nell'Unione europea; per gli eventuali accessi dagli Stati Uniti valgono <span class="da-fare">[le garanzie da confermare: Data Privacy Framework o clausole contrattuali standard]</span>.</p>
+  <p>Supabase, Vercel e Twilio sono società con sede negli Stati Uniti. I dati dell'app stanno su server nell'Unione europea; per gli eventuali accessi dagli Stati Uniti valgono <span class="da-fare">[le garanzie da confermare: Data Privacy Framework o clausole contrattuali standard]</span>.</p>
 
   <h2>6. La misurazione</h2>
   <p>È accesa quando installi l'app, e la spegni dal profilo, alla voce Privacy. Spenta, sul telefono non si scrive più niente, e quello che aspettava di partire si butta. Non perdi nessuna funzione. Il dettaglio di che cosa si conta è in <a href="/misurazione">Cosa misuriamo</a>.</p>
@@ -226,10 +251,13 @@
   <h2>10. Come proteggiamo i dati</h2>
   <p>Le connessioni sono cifrate. Sul server ogni riga di dati ha le sue regole di accesso: un viaggio lo vede solo chi ci partecipa. I documenti, che restano sul telefono, sono protetti dal codice di sblocco.</p>
 
-  <h2>11. Se questa informativa cambia</h2>
-  <p>Quando arriverà una funzione che tratta dati nuovi — per esempio un profilo pubblico — questa pagina cambierà prima, e te lo diremo nell'app.</p>
+  <h2>11. La parte pubblica</h2>
+  <p>È spenta finché non la accendi tu, ed è solo dai 18 anni. Accendendola accetti le <a href="/condizioni">condizioni d'uso</a>. Gli altri vedono il passaporto dei viaggi chiusi, il mappamondo, i traguardi, il nome e cosa ti piace; mai i viaggi in programma o in corso, i documenti, le spese, con chi hai viaggiato, il tuo numero. Chi blocchi non lo sa; chi segnali non sa da chi. Le segnalazioni le legge una persona.</p>
 
-  <footer>Versione dell'8 ottobre 2026 · bozza</footer>
+  <h2>12. Se questa informativa cambia</h2>
+  <p>Quando arriverà una funzione che tratta dati nuovi, questa pagina cambierà prima, e te lo diremo nell'app.</p>
+
+  <footer>Versione del 9 ottobre 2026 · bozza · <a href="/condizioni">Condizioni d'uso</a></footer>
 </main>
 </body>
 </html>

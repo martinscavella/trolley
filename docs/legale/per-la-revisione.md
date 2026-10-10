@@ -1,9 +1,10 @@
 # Per la revisione legale
 
-Bozza dell'8 ottobre 2026, da consegnare a chi farà la revisione privacy prima che l'app esca dal team (ondata 1 della beta). Accompagna due testi da rivedere:
+Bozza dell'8 ottobre 2026, con la parte pubblica aggiunta il 9; da consegnare a chi farà la revisione privacy prima che l'app esca dal team (ondata 1 della beta). Accompagna due testi da rivedere:
 
 - l'**informativa sulla privacy**: `sito/privacy.html`, che sarà pubblicata su `trolleyapp.vercel.app/privacy`;
-- la pagina **cosa misuriamo**: `sito/misurazione.html`, su `trolleyapp.vercel.app/misurazione`.
+- la pagina **cosa misuriamo**: `sito/misurazione.html`, su `trolleyapp.vercel.app/misurazione`;
+- le **condizioni d'uso della parte pubblica**: `sito/condizioni.html`, su `trolleyapp.vercel.app/condizioni` (aggiunte il 9 ottobre 2026, con la fase 5.1). Servono prima della seconda ondata, non della prima: le domande 18–26 possono aspettare.
 
 Il ragionamento completo sta in [06 — Privacy e conformità](../tecnico/06-privacy-e-conformita.md). Qui ci sono il quadro in breve e le domande a cui serve una risposta. Le parti evidenziate nelle due pagine sono le stesse di queste domande.
 
@@ -32,7 +33,9 @@ Non ci sono pubblicità, strumenti di analisi di terzi o identificativi pubblici
 | Conto delle chiamate alle mappe, per persona, viaggio e giorno | Server, una settimana | Il tetto di consumo |
 | IP, città approssimativa, user agent, ora di ogni richiesta | Registri di Supabase e Vercel | Funzionamento e sicurezza |
 
-Fuori da questo elenco, per ora: numero di telefono, profilo pubblico, ricerca di altri viaggiatori, messaggi, presenza in città. Sono funzioni future (fase 5), e per due di esse è già prevista una valutazione d'impatto prima della seconda ondata.
+Fuori da questo elenco, per ora: profilo pubblico, ricerca di altri viaggiatori, messaggi, presenza in città. Sono funzioni future (fase 5), e per due di esse è già prevista una valutazione d'impatto prima della seconda ondata.
+
+Il loro impianto di sicurezza (5.1) è già costruito, e resta spento finché la parte pubblica non apre: chi accende il profilo pubblico verifica il **numero di telefono** con un codice SMS (Twilio Verify, chiamato dal nostro server; il numero sta sul server, non lo vede nessuno, un numero per account) e accetta le **condizioni d'uso**; può **bloccare** (chi è bloccato non lo sa) e **segnalare** (la segnalazione conserva il contenuto com'era, e chi è segnalato non sa da chi). La moderazione la fa una persona, con uno strumento fuori dall'app; può **sospendere** il profilo pubblico, e la persona sospesa legge il motivo. Il processo è in [moderazione](../sicurezza/moderazione.md).
 
 ## Le domande
 
@@ -71,8 +74,20 @@ Fuori da questo elenco, per ora: numero di telefono, profilo pubblico, ricerca d
 16. **Il testo**: le due pagine sono scritte in linguaggio semplice, in italiano. Che cosa manca, o va detto diversamente?
 17. **App Store**: Apple chiede di dichiarare quali dati l'app raccoglie e se sono legati alla persona. La nostra lettura è: dati di contatto (email, nome) e contenuti dell'utente, legati alla persona, per il funzionamento; identificativi (id dell'account) e dati d'uso (interazioni con il prodotto), legati alla persona, per l'analisi; nessun tracciamento; nessuna posizione raccolta. Il sì della verifica va dichiarato come posizione approssimativa?
 
+### La parte pubblica (prima della seconda ondata)
+
+18. **Il numero di telefono** si tratta solo per chi accende la parte pubblica, sulla base del contratto. Twilio (Stati Uniti) lo riceve per mandare e controllare il codice: è un altro responsabile, con un trasferimento. Va bene? I tentativi di verifica si tengono una settimana, con il numero, per il tetto contro l'abuso degli SMS.
+19. **Le condizioni d'uso** si accettano accendendo il profilo pubblico, e il server ricorda quale versione e quando. Sono scritte come regole numerate, perché una sospensione le cita. Che cosa manca? In particolare: la responsabilità per gli incontri di persona (sezione 7), la chiusura definitiva della parte pubblica per i casi gravi, e se servono condizioni generali anche per il resto dell'app.
+20. **Digital Services Act.** Trolley ospiterà contenuti delle persone (profili, messaggi fra persone collegate). Quali obblighi valgono per noi, piccoli: il meccanismo di segnalazione (art. 16) e la motivazione delle decisioni (art. 17) li abbiamo previsti — chi segnala riceve conferma e l'esito, chi è sospeso legge il motivo e a chi scrivere. Serve un sistema interno di reclamo (art. 20), o basta il contatto? I punti di contatto per le autorità e per le persone (artt. 11 e 12)?
+21. **La conservazione delle segnalazioni** e dei contenuti segnalati: «il tempo di gestirle più il periodo utile a difendersi da una contestazione». Quanto? Chiudendo l'account, le segnalazioni fatte restano, e quelle ricevute anche: va bene?
+22. **Un possibile reato** segnalato: il processo dice di non cancellare niente, sospendere, e rispondere alle autorità solo su richiesta formale. È corretto? C'è un obbligo di denuncia?
+23. **Un possibile minore** nella parte pubblica: la data di nascita è dichiarata. Si sospende alla segnalazione; basta?
+24. **Il blocco** non avvisa chi è bloccato, e la segnalazione non dice a chi è segnalato chi l'ha fatta. Se la persona segnalata chiede l'accesso ai suoi dati (art. 15), che cosa le si deve dare delle segnalazioni che la riguardano?
+25. **App Store, linea guida 1.2** (contenuti delle persone): chiede di poter segnalare, bloccare, un contatto pubblicato, e «un modo per filtrare i contenuti inappropriati». La moderazione automatica è fuori di proposito ([12](../prodotto/12-sicurezza-e-moderazione.md)): i messaggi solo fra persone collegate, dopo un sì, bastano?
+26. **Le valutazioni d'impatto** per il matching e la presenza in città: chi le scrive, e con che cosa dell'impianto già costruito?
+
 ---
 
 ## Dopo la revisione
 
-Le risposte si riportano in [06](../tecnico/06-privacy-e-conformita.md), nelle decisioni e nelle due pagine. Poi si tolgono gli avvisi di bozza e si pubblica.
+Le risposte si riportano in [06](../tecnico/06-privacy-e-conformita.md), nelle decisioni e nelle pagine del sito. Poi si tolgono gli avvisi di bozza e si pubblica.

@@ -13,6 +13,7 @@ import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/documenti.dart';
 import 'package:trolley/dati/errori.dart';
 import 'package:trolley/dati/pagine.dart';
+import 'package:trolley/dati/parte_pubblica.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
 import 'package:trolley/servizi.dart';
@@ -75,6 +76,8 @@ void main() {
         posizione: PosizioneFinta(),
         mappeDelTelefono: MappeDelTelefonoFinte(),
         pagine: pagine,
+        partePubblica: PartePubblica(supabase),
+        telefono: VerificaFinta(ServerFinto()),
         child: const TrolleyApp(),
       ),
     );

@@ -11,7 +11,8 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 | Dato | Dove | Nota |
 |---|---|---|
 | Email, data di nascita | Server | Necessari per l'account e per l'età |
-| Numero di telefono | Server | Solo per chi attiva la parte pubblica |
+| Numero di telefono | Server, schema privato | Solo per chi attiva la parte pubblica. Lo verifica Twilio con un codice SMS, attraverso la nostra funzione `telefono` ([ADR-011](adr/011-verifica-del-telefono.md)); non lo legge nessun altro, e chiudendo l'account si cancella |
+| Blocchi e segnalazioni | Server | Chi blocca chi lo sa solo chi blocca; chi segnala chi lo sa solo chi modera. La segnalazione conserva il contenuto segnalato com'era (5.1) |
 | Viaggi, tappe, spese, liste | Server | Rivelano dove una persona è stata e con chi |
 | **Documenti d'identità e biglietti** | **Solo telefono** | Non esiste un endpoint che li accetti |
 | **Posizione durante la navigazione** | **Solo telefono** | Va al fornitore di mappe (Geoapify) solo come partenza di un percorso chiesto dalla persona, mai a noi. Si chiede «mentre si usa l'app», mai in sottofondo, e solo per un viaggio in corso o per farsi portare a una tappa |
@@ -39,7 +40,8 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 |---|---|
 | Viaggi, anche chiusi | **Finché la persona non li cancella.** Nessuna cancellazione automatica |
 | Presenza in città | Fino alla fine del viaggio, poi cancellata |
-| Segnalazioni e contenuti segnalati | Il tempo necessario a gestirle, più il periodo utile a difendersi da una contestazione |
+| Segnalazioni e contenuti segnalati | Il tempo necessario a gestirle, più il periodo utile a difendersi da una contestazione: il periodo è da fissare con l'avvocato, e manca il lavoro che le toglie. Chiudendo l'account le proprie restano, senza più diventare eventi a proprio nome |
+| Numero di telefono | Finché c'è l'account; i tentativi di verifica una settimana |
 | Eventi di misurazione | Aggregati oltre un orizzonte breve: non servono a lungo nel dettaglio |
 | Conto delle mappe per il tetto | Una settimana: serve solo a sapere se oggi si è sotto il tetto ([ADR-006](adr/006-mappe-e-percorsi.md)). Quante chiamate, mai dove né cosa |
 | Account chiuso | Dati personali cancellati, e l'accesso con loro; i viaggi in cui si era da soli cancellati; i contributi nei viaggi altrui restano, attribuiti a un partecipante non più presente («Account chiuso»). Gli eventi di misurazione restano sotto un id nuovo che non porta alla persona; quelli di un account interno si cancellano |
@@ -54,6 +56,8 @@ L'ultima riga va spiegata alla persona **prima** che chiuda l'account: le spese 
 - **Cancellazione dell'account** raggiungibile dall'app, non solo scrivendo a un indirizzo. Dallo stesso posto, dopo aver detto che cosa succede (`chiudi_account`).
 - **Pagina leggibile su cosa si misura**, con la possibilità di rifiutare senza perdere funzioni: `sito/misurazione.html`, su `trolleyapp.vercel.app/misurazione`, aperta dal profilo (U.3).
 - **Informativa** in `sito/privacy.html`, su `trolleyapp.vercel.app/privacy`: dall'accesso, prima di creare l'account, e dal profilo. In bozza, con le domande per l'avvocato in [per la revisione](../legale/per-la-revisione.md).
+- **Condizioni d'uso della parte pubblica** in `sito/condizioni.html` (5.1): si accettano accendendo il profilo pubblico, e il server ricorda quale versione. Sono le regole che la moderazione fa rispettare, numerate.
+- **Il motivo di una sospensione** lo legge la persona sospesa, nel suo profilo pubblico, con a chi scrivere se pensa che sia un errore.
 
 ---
 
@@ -70,7 +74,7 @@ Vanno fatte **prima** della seconda ondata, non dopo.
 
 ## Fornitori
 
-Ogni servizio esterno è un responsabile del trattamento e va nell'informativa: mappe e percorsi, invio SMS, tassi di cambio, e — se scelto — il servizio per il deep link differito.
+Ogni servizio esterno è un responsabile del trattamento e va nell'informativa: mappe e percorsi, invio SMS (Twilio Verify, dalla 5.1: riceve solo il numero, dal nostro server), tassi di cambio, e — se scelto — il servizio per il deep link differito.
 
 Le mappe passano dal nostro server (U.2): il fornitore riceve le zone guardate, il testo cercato e i capi di un percorso, ma non l'indirizzo del telefono né chi chiede. Ricerche e percorsi viaggiano nel corpo delle richieste, fuori dai registri del server; le zone di mappa sono nell'indirizzo di ogni riquadro, e i registri delle funzioni di Supabase le tengono per il loro breve periodo.
 

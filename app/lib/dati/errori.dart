@@ -37,8 +37,15 @@ abstract final class CodiciServer {
   static const nonInCorso = 'TR422';
 
   /// Il tetto delle mappe di oggi, per persona e per viaggio, è raggiunto: lo
-  /// dice la funzione `mappe` con 429 (U.2).
+  /// dice la funzione `mappe` con 429 (U.2). Lo stesso codice dice troppe
+  /// segnalazioni in un giorno (5.1).
   static const tettoMappe = 'TR429';
+
+  /// La parte pubblica non accoglie profili nuovi, per ora (5.1).
+  static const partePubblicaChiusa = 'TR423';
+
+  /// Chi modera ha sospeso il profilo pubblico (5.1).
+  static const profiloSospeso = 'TR424';
 }
 
 /// Il motivo scritto sotto un controllo spento perché manca la rete.

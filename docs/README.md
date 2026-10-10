@@ -29,7 +29,8 @@ E la documentazione di costruzione, in corso di scrittura:
 
 - [**Funzionale**](prodotto/README.md) — cosa fa l'app, schermata per schermata e regola per regola
 - [**Tecnica**](tecnico/README.md) — come è fatta, più gli ADR
-- [**Per la revisione legale**](legale/per-la-revisione.md) — il quadro dei dati e le domande per chi rivede l'informativa
+- [**Per la revisione legale**](legale/per-la-revisione.md) — il quadro dei dati e le domande per chi rivede l'informativa e le condizioni d'uso
+- [**Il processo di moderazione**](sicurezza/moderazione.md) — chi guarda le segnalazioni, entro quanto, che cosa fa, e quando si chiude la parte pubblica
 
 ---
 

@@ -22,6 +22,10 @@ const supabaseChiave = String.fromEnvironment(
 /// che tiene la chiave di Geoapify e il tetto. Nell'app la chiave non c'è.
 const indirizzoMappe = '$supabaseUrl/functions/v1/mappe';
 
+/// Dove si verifica il numero di telefono (5.1, ADR-011): la funzione
+/// `telefono` del server, che tiene le chiavi di Twilio e il tetto.
+const indirizzoTelefono = '$supabaseUrl/functions/v1/telefono';
+
 /// Dove torna la persona dopo aver confermato l'email. Va tra gli URL di
 /// reindirizzamento consentiti in Supabase (Authentication → URL Configuration).
 const redirectAccesso = 'trolley://accesso';

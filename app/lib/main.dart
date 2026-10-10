@@ -14,8 +14,10 @@ import 'dati/file_del_telefono.dart';
 import 'dati/mappe.dart';
 import 'dati/mappe_del_telefono.dart';
 import 'dati/pagine.dart';
+import 'dati/parte_pubblica.dart';
 import 'dati/posizione.dart';
 import 'dati/rete.dart';
+import 'dati/telefono.dart';
 import 'invito/ingresso_da_invito.dart';
 import 'misurazione/misurazione.dart';
 import 'servizi.dart';
@@ -60,6 +62,13 @@ Future<void> main() async {
       posizione: const PosizioneDelTelefono(),
       mappeDelTelefono: const MappeDiSistema(),
       pagine: const PagineNelBrowser(),
+      partePubblica: PartePubblica(supabase, rete: rete),
+      telefono: VerificaSulServer(
+        indirizzo: indirizzoTelefono,
+        chiavePubblica: supabaseChiave,
+        accesso: () => supabase.auth.currentSession?.accessToken,
+        rete: rete,
+      ),
       child: const TrolleyApp(),
     ),
   );

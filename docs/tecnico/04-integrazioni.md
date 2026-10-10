@@ -41,12 +41,13 @@ Li scarica il **server**, due volte al giorno per tutte le valute, da `fawazahme
 | | |
 |---|---|
 | **A cosa serve** | Attivare profilo pubblico e matching |
+| **Fornitore** | **Twilio Verify**, dietro la funzione `telefono` del nostro server ([ADR-011](adr/011-verifica-del-telefono.md)). Nell'app: `dati/telefono.dart`, l'interfaccia `VerificaDelTelefono` |
 | **Costo** | A messaggio. Variabile ma **limitato dalle registrazioni**, non dall'uso: è il più prevedibile dei tre |
 | **Senza rete** | Non si può verificare. Non blocca nulla del viaggio: serve solo per la parte pubblica |
 | **Se smette** | La parte pubblica non si può attivare. Il resto dell'app funziona per intero |
-| **Cosa vede** | Un numero di telefono |
+| **Cosa vede** | Un numero di telefono, dal nostro server: non il telefono, non chi è la persona |
 
-Serve un limite di tentativi per numero e per account, altrimenti è il primo posto da cui qualcuno fa uscire dei soldi per divertimento.
+Serve un limite di tentativi per numero e per account, altrimenti è il primo posto da cui qualcuno fa uscire dei soldi per divertimento. C'è, sul server: 5 codici al giorno per persona, 3 per numero, 10 tentativi di scriverlo, 100 codici per tutta l'app (`tetto_telefono` in `configurazione`). Twilio aggiunge le sue difese contro il traffico SMS gonfiato e i paesi permessi, che si impostano sul suo pannello.
 
 ---
 

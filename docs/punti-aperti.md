@@ -286,6 +286,29 @@ U.3 (l'informativa e «Cosa misuriamo» come pagine del sito, aperte dall'access
 | **Le dichiarazioni di privacy dell'App Store** | Apple chiede che cosa l'app raccoglie e se è legato alla persona; la nostra lettura è nella domanda 17 | Prima di TestFlight esterno |
 | **Il nome e la data di nascita si cambiano solo scrivendoci** | L'informativa lo dice così. Cambiare il nome dall'app è una funzione piccola, se la si vuole | Se la beta lo chiede |
 
+### Rimasto fuori dalla 5.1
+
+La 5.1 (l'interruttore della parte pubblica, il profilo pubblico con il numero verificato e le condizioni d'uso, segnalare, bloccare, la sospensione, la moderazione dall'editor SQL) è costruita. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| ~~**Applicare la migrazione `sicurezza`**~~ | Applicata dall'editor SQL il 9 ottobre 2026 e verificata in sola lettura; la versione non è in `schema_migrations`. Prima provata su un Postgres locale (PGlite) con tutte le migrazioni e le prove: 16 su 16 | ✅ |
+| **La prova `sicurezza.sql` sul server** | `supabase/tests/sicurezza.sql` cambia `parte_pubblica` dentro un blocco che si annulla: si lancia dall'editor SQL | Prima di aprire la parte pubblica |
+| ~~**Pubblicare la funzione `telefono`**~~ | Pubblicata il 9 ottobre 2026 con il numero di prova `+393400000001` (codice `123456`) nel segreto `TELEFONO_PROVA`. Provata sull'iPhone: numero verificato, profilo pubblico acceso, `telefono_verificato` e `profilo_pubblico_attivato` arrivati | ✅ |
+| ~~**Il proprio account come account del team**~~ | `interno = true` dal 9 ottobre 2026: vede la parte pubblica mentre è chiusa, ed è fuori da ogni metrica | ✅ |
+| **Un conto Twilio con un servizio Verify** | I segreti `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`; sul pannello di Twilio i paesi permessi e le difese contro gli SMS gonfiati ([ADR-011](tecnico/adr/011-verifica-del-telefono.md)) | Prima di aprire la parte pubblica |
+| **Togliere `TELEFONO_PROVA`** | Chi conosce un numero di prova si verifica senza telefono | Prima di aprire la parte pubblica |
+| **Il contatto della moderazione** | `contatto_moderazione` in `configurazione`, e il segnaposto nelle condizioni d'uso. Lo store lo chiede (12, regola 6) | Prima di aprire la parte pubblica |
+| **Pubblicare le condizioni d'uso** | `sito/condizioni.html`, con l'informativa e «Cosa misuriamo» aggiornate (Twilio, il numero, blocchi, segnalazioni). Bozze per l'avvocato: domande 18–26 di [per la revisione](legale/per-la-revisione.md) | Con le altre pagine del sito |
+| **«…» su un profilo e su un messaggio** | Segnalare e bloccare sono pronti (`segnala`, `blocca` nelle schermate), ma non c'è ancora niente da cui aprirli | 5.3 e 5.4 |
+| **Segnalare un messaggio, e toglierlo** | `segnala` accetta solo i profili; la terza azione della moderazione, `togli_contenuto`, nasce con i messaggi | 5.4 |
+| **Le regole della parte pubblica che usano il blocco** | `privato.si_bloccano` c'è e ha la sua prova; le regole di lettura di profili, ricerca e messaggi lo useranno | 5.3 e 5.4 |
+| **Conservazione delle segnalazioni** | Il periodo è da fissare con l'avvocato, e manca il lavoro che le toglie | Con la revisione legale |
+| **Chi è sospeso e chiude l'account** | Chiudendo, il numero torna libero: con un account nuovo e lo stesso numero si rientra. Tenere un'impronta dei numeri sospesi è un dato in più da giustificare | Se capita, con l'avvocato |
+| **I tempi della moderazione** | 24 ore per minori e molestie, 72 per il resto ([moderazione](sicurezza/moderazione.md)): stimati. Li corregge `segnalazione_gestita` | Dopo le prime settimane di parte pubblica |
+| **Le condizioni d'uso cambiate** | Il server ricorda quale versione si è accettata; chiedere di riaccettarle quando cambiano non è ancora costruito | Alla prima modifica |
+| **Rivedere sulla tela le tavole 103–107** | Disegnate e costruite il 9 ottobre 2026 (versione 43) | Prima di chiudere la 5.1 |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.

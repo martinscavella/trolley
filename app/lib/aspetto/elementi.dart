@@ -6,6 +6,7 @@ import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'formati.dart';
 import 'movimento.dart';
@@ -481,10 +482,22 @@ class Campo extends StatefulWidget {
     this.onInvio,
     this.onCambia,
     this.fuoco = false,
+    this.prefisso,
+    this.righe = 1,
+    this.lunghezzaMassima,
   });
 
   final TextEditingController controller;
   final String segnaposto;
+
+  /// Un testo fisso prima di quello che si scrive, in una capsula: «+39».
+  final String? prefisso;
+
+  /// Quante righe si vedono: più di una per un testo lungo, che va a capo.
+  final int righe;
+
+  /// Oltre, non si scrive.
+  final int? lunghezzaMassima;
 
   /// Sopra il campo, come nella tela. Se manca, conta il segnaposto.
   final String? etichetta;
@@ -533,12 +546,33 @@ class _CampoState extends State<Campo> {
       ),
     );
     final w = widget;
-    final icona = w.icona == null
+    final icona = w.prefisso != null
+        ? Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: attivo ? Colori.foschia : Colori.bianco,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                w.prefisso!,
+                style: Testi.evidenza.copyWith(color: Colori.inchiostro),
+              ),
+            ),
+          )
+        : w.icona == null
         ? null
         : Padding(
             padding: const EdgeInsets.only(left: 16),
             child: Icon(w.icona, size: 20, color: Colori.cobalto),
           );
+    final limite = w.lunghezzaMassima == null
+        ? null
+        : [LengthLimitingTextInputFormatter(w.lunghezzaMassima)];
+    final piuRighe = w.righe > 1;
     final campo = suIOS
         ? CupertinoTextField(
             controller: w.controller,
@@ -561,7 +595,10 @@ class _CampoState extends State<Campo> {
             onSubmitted: w.onInvio,
             onChanged: w.onCambia,
             autofocus: w.fuoco,
-            clearButtonMode: w.onCambia == null
+            inputFormatters: limite,
+            minLines: piuRighe ? w.righe : null,
+            maxLines: piuRighe ? w.righe + 2 : 1,
+            clearButtonMode: w.onCambia == null || piuRighe
                 ? OverlayVisibilityMode.never
                 : OverlayVisibilityMode.editing,
           )
@@ -593,6 +630,9 @@ class _CampoState extends State<Campo> {
               onSubmitted: w.onInvio,
               onChanged: w.onCambia,
               autofocus: w.fuoco,
+              inputFormatters: limite,
+              minLines: piuRighe ? w.righe : null,
+              maxLines: piuRighe ? w.righe + 2 : 1,
             ),
           );
     if (w.etichetta == null) return campo;

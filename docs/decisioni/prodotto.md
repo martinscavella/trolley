@@ -443,6 +443,22 @@ Scelto l'8 ottobre 2026, prima dell'ondata 1 (tela, 1 e 99; nota n26).
 - **«Cosa misuriamo» elenca ogni azione**, con quello che porta e il suo nome tecnico, lo stesso che si trova nel file dei dati: chi scarica i suoi dati può confrontare. Dice anche che cosa non si misura mai.
 - **Sono bozze**: lo dicono in cima, finché la revisione legale ([per la revisione](../legale/per-la-revisione.md)) non le conferma. Titolare e contatti sono da completare.
 
+### L'impianto di sicurezza (fase 5.1)
+
+Scelto il 9 ottobre 2026 (tela, 68–72 e 103–107; nota n18). Si costruisce prima della parte pubblica (5.3–5.5), che ci si appoggia.
+
+- **La parte pubblica ha un interruttore sul server**: chiusa, aperta, chiusa ai nuovi (`parte_pubblica` in `configurazione`). Nell'ondata 1 è chiusa: nel profilo non c'è niente. Quando le segnalazioni sono più di quante se ne gestiscono si chiude ai nuovi: chi c'era resta, e chi aveva spento il profilo lo riaccende. **Gli account del team la vedono sempre**, per provarla mentre per gli altri è chiusa.
+- **Nel profilo, sopra le impostazioni, «Parte pubblica»**: il profilo pubblico (acceso, spento, sospeso), chi hai bloccato, le tue segnalazioni. Tutto con la rete; senza, le righe si spengono e lo dicono.
+- **Accendere il profilo pubblico dice prima cosa vedono gli altri e cosa mai**, poi chiede il numero, poi «Accendi». Accendendolo si accettano le condizioni d'uso (`sito/condizioni.html`), e il server ricorda quale versione: a differenza dell'informativa, le condizioni si accettano, perché sono le regole che poi si fanno rispettare (12, regola 7).
+- **Il numero si scrive come lo si scrive**: senza prefisso è italiano, con «+44» o «0044» è di là. Il codice è di sei cifre, in sei caselle; su iPhone lo riempie l'SMS, e con l'ultima cifra si verifica. Un altro codice dopo 45 secondi. Il numero non compare da nessuna parte: nella schermata si vede «+39 347 ••• 4567».
+- **La verifica passa da una funzione nostra davanti a Twilio Verify** ([ADR-011](../tecnico/adr/011-verifica-del-telefono.md)), scelta dall'utente al posto del telefono di Supabase Auth, che avrebbe acceso anche l'accesso con il numero. Un numero vale per un account, e il server non dice di quale.
+- **Segnalare** è un foglio con cinque motivi fissi — messaggi molesti o minacce, profilo falso, contenuti inappropriati, potrebbe avere meno di 18 anni, altro —, una nota facoltativa (500 caratteri) e «Blocca anche», acceso di partenza. «Invia» si accende con un motivo. Dopo, «È arrivata» e l'elenco con lo stato: ricevuta, o gestita con l'esito («il profilo è stato sospeso»). Chi è segnalato non sa da chi.
+- **Si segnala un profilo che è, o è stato, nella parte pubblica**: spegnerlo non fa sfuggire. I messaggi si segnaleranno con la 5.4, tenendoli premuti e da «…»; i profili da «…» con la 5.3.
+- **Bloccare chiede conferma con il dialogo di sistema**, senza spiegazioni, e non avvisa; sbloccare anche. Dal profilo, «Persone bloccate» con «Sblocca».
+- **La sospensione si legge nel proprio profilo pubblico**: da quando, il motivo (la regola delle condizioni, mai chi ha segnalato), i viaggi che restano propri, a chi scrivere. È la motivazione che il DSA chiede (da confermare con l'avvocato).
+- **Il contatto della moderazione** sta in `configurazione` (`contatto_moderazione`), così si cambia senza un rilascio; finché manca, l'app dice solo di chiamare il 112 in caso di pericolo.
+- **La moderazione si fa dall'editor SQL di Supabase**, con lo schema `moderazione`, scelto dall'utente al posto di una pagina web interna. Il processo, scritto per una persona sola: [moderazione](../sicurezza/moderazione.md).
+
 ---
 
 ## Ricordo e traguardi

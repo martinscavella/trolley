@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +16,7 @@ import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dati/pagine.dart';
+import '../dominio/parte_pubblica.dart';
 import '../dominio/ricordo.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
@@ -22,7 +25,10 @@ import 'i_tuoi_dati.dart';
 import 'mappamondo.dart';
 import 'pagine_del_sito.dart';
 import 'passaporto.dart';
+import 'persone_bloccate.dart';
+import 'profilo_pubblico.dart';
 import 'scelta_valuta.dart';
+import 'segnalazioni.dart';
 import 'traguardi.dart';
 
 /// Il profilo, la misurazione, l'uscita.
@@ -163,6 +169,7 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
             const SizedBox(height: 8),
             const RigaTraguardi().entra(context, ritardo: Ritmo.passo * 3),
             const SizedBox(height: 18),
+            const _PartePubblica(),
             const EtichettaSezione('Impostazioni'),
             StreamBuilder<Utente?>(
               stream: servizi.archivio.osservaProfilo(),
@@ -387,4 +394,141 @@ class _Numero extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// La parte pubblica nel profilo (5.1; tela, 103): il profilo pubblico, chi
+/// si è bloccato, le proprie segnalazioni. C'è solo quando il server dice che
+/// la parte pubblica è aperta, o chiusa ai nuovi (per il team sempre): con
+/// la parte chiusa, come nell'ondata 1, non c'è niente. Si guarda con la
+/// rete; senza, le righe si spengono e lo dicono.
+class _PartePubblica extends StatefulWidget {
+  const _PartePubblica();
+
+  @override
+  State<_PartePubblica> createState() => _PartePubblicaState();
+}
+
+typedef _Quadro = ({
+  StatoPartePubblica stato,
+  int bloccate,
+  List<Segnalazione> segnalazioni,
+});
+
+class _PartePubblicaState extends State<_PartePubblica> {
+  _Quadro? _quadro;
+  StreamSubscription<bool>? _rete;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_rete != null) return;
+    final rete = Servizi.of(context).rete;
+    // Aperto senza rete, si guarda quando torna.
+    _rete = rete.cambi.listen((c) {
+      if (c && _quadro == null) _carica();
+    });
+    _carica();
+  }
+
+  @override
+  void dispose() {
+    _rete?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _carica() async {
+    final servizi = Servizi.of(context);
+    if (!servizi.rete.disponibile) return;
+    final parte = servizi.partePubblica;
+    try {
+      final stato = await parte.stato();
+      if (stato == null || !stato.visibile) {
+        if (mounted) setState(() => _quadro = null);
+        return;
+      }
+      final (bloccate, segnalazioni) = await (
+        parte.personeBloccate(),
+        parte.leMieSegnalazioni(),
+      ).wait;
+      if (!mounted) return;
+      setState(
+        () => _quadro = (
+          stato: stato,
+          bloccate: bloccate.length,
+          segnalazioni: segnalazioni,
+        ),
+      );
+    } on Object {
+      // Resta quello che si sapeva: senza rete le righe si spengono.
+    }
+  }
+
+  Future<void> _apri(Widget schermata) async {
+    await apri<void>(context, schermata);
+    if (mounted) unawaited(_carica());
+  }
+
+  static String _comeSta(StatoPartePubblica s) => switch (passoDi(s)) {
+    PassoProfiloPubblico.acceso => 'Acceso',
+    PassoProfiloPubblico.sospeso => 'Sospeso',
+    _ => 'Spento',
+  };
+
+  /// «Una in attesa», «Gestita il 2 ott».
+  static String? _segnalazioni(List<Segnalazione> elenco) {
+    if (elenco.isEmpty) return null;
+    final inAttesa = elenco.where((s) => !s.gestita).length;
+    if (inAttesa > 0) {
+      return inAttesa == 1 ? 'Una in attesa' : '$inAttesa in attesa';
+    }
+    final ultima = elenco.first.gestitaIl;
+    return ultima == null ? null : 'Gestita il ${dataBreve(ultima.toLocal())}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final quadro = _quadro;
+    if (quadro == null) return const SizedBox.shrink();
+    return ConLaRete(
+      builder: (context, rete) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const EtichettaSezione('Parte pubblica'),
+          RigaScheda(
+            simbolo: icona(
+              ios: CupertinoIcons.person_2,
+              android: Icons.group_outlined,
+            ),
+            titolo: 'Profilo pubblico',
+            sottotitolo: rete
+                ? 'Per trovare altri viaggiatori'
+                : motivoSenzaRete,
+            valore: _comeSta(quadro.stato),
+            onTap: rete ? () => _apri(const SchermataProfiloPubblico()) : null,
+          ),
+          const SizedBox(height: 8),
+          RigaScheda(
+            simbolo: icona(ios: CupertinoIcons.nosign, android: Icons.block),
+            titolo: 'Persone bloccate',
+            sottotitolo: rete ? null : motivoSenzaRete,
+            valore: quadro.bloccate > 0 ? '${quadro.bloccate}' : null,
+            onTap: rete ? () => _apri(const SchermataPersoneBloccate()) : null,
+          ),
+          const SizedBox(height: 8),
+          RigaScheda(
+            simbolo: icona(
+              ios: CupertinoIcons.flag,
+              android: Icons.flag_outlined,
+            ),
+            titolo: 'Le tue segnalazioni',
+            sottotitolo: rete
+                ? _segnalazioni(quadro.segnalazioni)
+                : motivoSenzaRete,
+            onTap: rete ? () => _apri(const SchermataSegnalazioni()) : null,
+          ),
+          const SizedBox(height: 18),
+        ],
+      ),
+    ).entra(context);
+  }
 }
