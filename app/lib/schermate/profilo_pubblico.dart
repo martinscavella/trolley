@@ -1,7 +1,8 @@
 /// «Il tuo profilo pubblico» (5.1; tela, 68 e 105–107): prima cosa vedono gli
 /// altri e cosa non vedono mai, poi il numero, poi «Accendi», che accetta le
-/// condizioni d'uso. Acceso, si spegne; sospeso, dice perché e a chi
-/// scrivere.
+/// condizioni d'uso. Acceso è «Così ti vedono» (5.3; tela, 75): l'anteprima,
+/// cosa piace, quali viaggi ci stanno (109), l'interruttore per spegnerlo.
+/// Sospeso, dice perché e a chi scrivere.
 ///
 /// Dipende dalla rete: lo stato lo dice il server, e senza i controlli si
 /// spengono con il motivo. Si misura accendere e spegnere (07,
@@ -23,12 +24,16 @@ import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../dati/errori.dart';
 import '../dati/pagine.dart';
+import '../dati/destinazioni.dart';
+import '../dominio/itinerario.dart';
 import '../dominio/parte_pubblica.dart';
+import '../dominio/profilo_pubblico.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'pagine_del_sito.dart';
 import 'verifica_telefono.dart';
+import 'viaggi_sul_profilo.dart';
 
 class SchermataProfiloPubblico extends StatefulWidget {
   const SchermataProfiloPubblico({super.key});
@@ -39,18 +44,77 @@ class SchermataProfiloPubblico extends StatefulWidget {
 }
 
 class _SchermataProfiloPubblicoState extends State<SchermataProfiloPubblico> {
-  Future<StatoPartePubblica?>? _stato;
+  /// Lo stato della parte pubblica, e il proprio profilo com'è per gli
+  /// altri con le scelte dei viaggi (5.3). Se il profilo non si legge, la
+  /// schermata resta quella della 5.1.
+  Future<(StatoPartePubblica?, ProfiloPubblico?)>? _letto;
+
+  /// I gusti come li si sta scegliendo: si scrivono a ogni tocco.
+  List<Interesse>? _gusti;
   bool _inCorso = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _stato ??= Servizi.of(context).partePubblica.stato();
+    _letto ??= _leggi();
   }
 
-  void _ricarica() => setState(() {
-    _stato = Servizi.of(context).partePubblica.stato();
-  });
+  Future<(StatoPartePubblica?, ProfiloPubblico?)> _leggi() =>
+      (Servizi.of(context).partePubblica.stato(), _leggiIlMio()).wait;
+
+  Future<ProfiloPubblico?> _leggiIlMio() async {
+    try {
+      final mio = await Servizi.of(context).partePubblica.ilMioProfilo();
+      _gusti = mio?.gusti;
+      return mio;
+    } on Object {
+      return null;
+    }
+  }
+
+  void _ricarica() {
+    final servizi = Servizi.of(context);
+    setState(() {
+      _letto = _leggi();
+    });
+    // Accendere, spegnere, il numero, i gusti cambiano la versione del
+    // profilo sul server: la copia la riprende, o il prossimo cambio di
+    // valuta sarebbe rifiutato come superato.
+    unawaited(servizi.archivio.scaricaProfilo().then((_) {}, onError: (_) {}));
+  }
+
+  Future<void> _scegliGusto(Interesse gusto) async {
+    final prima = _gusti ?? const <Interesse>[];
+    final scelti = prima.contains(gusto)
+        ? ({...prima}..remove(gusto))
+        : {...prima, gusto};
+    setState(
+      () => _gusti = [
+        for (final g in gusti)
+          if (scelti.contains(g)) g,
+      ],
+    );
+    final servizi = Servizi.of(context);
+    try {
+      final salvati = await servizi.partePubblica.scegliGusti(scelti);
+      if (mounted) setState(() => _gusti = salvati);
+      unawaited(
+        servizi.archivio.scaricaProfilo().then((_) {}, onError: (_) {}),
+      );
+    } on ErroreTrolley catch (e) {
+      if (!mounted) return;
+      mostraMessaggio(context, e.messaggio, errore: true);
+      setState(() => _gusti = prima);
+    }
+  }
+
+  Future<void> _sceltaDeiViaggi() async {
+    await apri<void>(context, const SchermataViaggiSulProfilo());
+    if (!mounted) return;
+    setState(() {
+      _letto = _leggi();
+    });
+  }
 
   /// Un gesto sul server, poi lo stato com'è diventato.
   Future<void> _fai(Future<void> Function() gesto) async {
@@ -87,42 +151,53 @@ class _SchermataProfiloPubblicoState extends State<SchermataProfiloPubblico> {
   @override
   Widget build(BuildContext context) => Pagina(
     corpo: Builder(
-      builder: (context) => FutureBuilder<StatoPartePubblica?>(
-        future: _stato,
-        builder: (context, letto) {
-          final padding = EdgeInsets.fromLTRB(
-            20,
-            MediaQuery.paddingOf(context).top,
-            20,
-            MediaQuery.paddingOf(context).bottom + 32,
-          );
-          if (letto.connectionState != ConnectionState.done) {
-            return const Center(child: IndicatoreAttivita());
-          }
-          final stato = letto.data;
-          if (letto.hasError || stato == null) {
-            return ListView(
-              padding: padding,
-              children: [
-                const TitoloPagina('Il tuo profilo pubblico'),
-                _NonSiLegge(
-                  errore: letto.error,
-                  onRiprova: _ricarica,
-                ).entra(context),
-              ],
-            );
-          }
-          return ListView(
-            padding: padding,
-            children: _contenuto(context, stato),
-          );
-        },
-      ),
+      builder: (context) =>
+          FutureBuilder<(StatoPartePubblica?, ProfiloPubblico?)>(
+            future: _letto,
+            builder: (context, letto) {
+              final padding = EdgeInsets.fromLTRB(
+                20,
+                MediaQuery.paddingOf(context).top,
+                20,
+                MediaQuery.paddingOf(context).bottom + 32,
+              );
+              if (letto.connectionState != ConnectionState.done) {
+                return const Center(child: IndicatoreAttivita());
+              }
+              final stato = letto.data?.$1;
+              if (letto.hasError || stato == null) {
+                return ListView(
+                  padding: padding,
+                  children: [
+                    const TitoloPagina('Il tuo profilo pubblico'),
+                    _NonSiLegge(
+                      errore: letto.error is ParallelWaitError
+                          ? (letto.error! as ParallelWaitError).errors.$1
+                          : letto.error,
+                      onRiprova: _ricarica,
+                    ).entra(context),
+                  ],
+                );
+              }
+              return ListView(
+                padding: padding,
+                children: _contenuto(context, stato, letto.data?.$2),
+              );
+            },
+          ),
     ),
   );
 
-  List<Widget> _contenuto(BuildContext context, StatoPartePubblica stato) {
+  List<Widget> _contenuto(
+    BuildContext context,
+    StatoPartePubblica stato,
+    ProfiloPubblico? mio,
+  ) {
     final passo = passoDi(stato);
+    if (passo == PassoProfiloPubblico.acceso && mio != null) {
+      return _cosiTiVedono(context, stato, mio);
+    }
+    final sulProfilo = mio?.tuttiIViaggi.where((v) => v.sulProfilo).length;
     const spento =
         'Per farti trovare da altri viaggiatori, e trovarne. È spento: lo '
         'accendi tu, e lo spegni quando vuoi.';
@@ -153,14 +228,20 @@ class _SchermataProfiloPubblicoState extends State<SchermataProfiloPubblico> {
           ).entra(context, ritardo: Ritmo.passo),
           const SizedBox(height: 12),
         ],
-        const _CosaVedono(
-          etichetta: 'Cosa vedono gli altri',
-          si: true,
-          righe: [
-            'Il passaporto dei viaggi chiusi',
-            'Il mappamondo e i traguardi',
-            'Il nome e cosa ti piace',
-          ],
+        ConLaRete(
+          builder: (context, rete) => _CosaVedono(
+            etichetta: 'Cosa vedono gli altri',
+            si: true,
+            righe: const [
+              'I viaggi chiusi che scegli tu',
+              'Il mappamondo e i traguardi',
+              'Il nome e cosa ti piace',
+            ],
+            // Si sceglie prima di accendere (tela, 105 → 109).
+            azione: sulProfilo == null
+                ? null
+                : ('$sulProfilo · Scegli', rete ? _sceltaDeiViaggi : null),
+          ),
         ).entra(context, ritardo: Ritmo.passo),
         const SizedBox(height: 12),
         const _CosaVedono(
@@ -264,6 +345,80 @@ class _SchermataProfiloPubblicoState extends State<SchermataProfiloPubblico> {
     ];
   }
 
+  /// Acceso (tela, 75): l'anteprima, cosa ti piace, quali viaggi,
+  /// l'interruttore.
+  List<Widget> _cosiTiVedono(
+    BuildContext context,
+    StatoPartePubblica stato,
+    ProfiloPubblico mio,
+  ) {
+    final telefono = stato.telefono;
+    final scelti = _gusti ?? mio.gusti;
+    final sulProfilo = mio.tuttiIViaggi.where((v) => v.sulProfilo).length;
+    return [
+      const TitoloPagina(
+        'Così ti vedono',
+        sottotitolo:
+            'Il profilo pubblico è acceso. Gli altri vedono solo questo.',
+      ).entra(context),
+      _Anteprima(profilo: mio).entra(context, ritardo: Ritmo.passo),
+      const SizedBox(height: 22),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Semantics(
+          header: true,
+          child: Text(
+            'Cosa ti piace',
+            style: Testi.titoloSezione.copyWith(color: Colori.inchiostro),
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      ConLaRete(
+        builder: (context, rete) => Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final g in gusti)
+              Gettone(
+                etichetta: g.nome,
+                scelto: scelti.contains(g),
+                onTap: rete ? () => _scegliGusto(g) : null,
+              ),
+          ],
+        ),
+      ).entra(context, ritardo: Ritmo.passo),
+      const SizedBox(height: 18),
+      ConLaRete(
+        builder: (context, rete) => _RigaVai(
+          titolo: 'Viaggi sul profilo',
+          sotto: rete
+              ? '$sulProfilo di ${mio.tuttiIViaggi.length} · scegli quali'
+              : motivoSenzaRete,
+          onTap: rete ? _sceltaDeiViaggi : null,
+        ),
+      ).entra(context, ritardo: Ritmo.passo * 2),
+      const SizedBox(height: 10),
+      ConLaRete(
+        builder: (context, rete) => _Interruttore(
+          acceso: true,
+          sotto: rete
+              ? 'Spento, sparisci dalla ricerca e non vedi gli altri'
+              : motivoSenzaRete,
+          onCambia: rete && !_inCorso ? (_) => _spegni() : null,
+        ),
+      ).entra(context, ritardo: Ritmo.passo * 2),
+      const SizedBox(height: 14),
+      if (telefono != null)
+        Text(
+          'Telefono verificato · ${numeroNascosto(telefono)}',
+          textAlign: TextAlign.center,
+          style: Testi.didascalia.copyWith(color: Colori.grafite),
+        ),
+      const _Condizioni(testo: '**Condizioni d\'uso** accettate'),
+    ];
+  }
+
   List<Widget> _sospeso(BuildContext context, StatoPartePubblica stato) {
     final contatto = Servizi.of(context).archivio.osservaContattoModerazione();
     return [
@@ -343,11 +498,15 @@ class _CosaVedono extends StatelessWidget {
     required this.etichetta,
     required this.si,
     required this.righe,
+    this.azione,
   });
 
   final String etichetta;
   final bool si;
   final List<String> righe;
+
+  /// A destra della prima riga, in cobalto: «9 · Scegli» (tela, 105).
+  final (String, VoidCallback?)? azione;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -400,10 +559,137 @@ class _CosaVedono extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (azione case (final scritta, final onTap) when i == 0) ...[
+                  const SizedBox(width: 8),
+                  Premibile(
+                    onTap: onTap,
+                    etichetta: 'Scegli quali viaggi vanno sul profilo',
+                    child: ExcludeSemantics(
+                      child: Text(
+                        scritta,
+                        style: Testi.secondario.copyWith(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: onTap == null ? Colori.piombo : Colori.cobalto,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
       ],
+    ),
+  );
+}
+
+/// L'anteprima del proprio profilo pubblico (tela, 75): com'è per gli altri.
+class _Anteprima extends StatelessWidget {
+  const _Anteprima({required this.profilo});
+
+  final ProfiloPubblico profilo;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = profilo;
+    return Pannello(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Avatar(nome: p.nome, dimensione: 52),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      p.nome,
+                      style: Testi.titoli(18)
+                          .copyWith(color: Colori.inchiostro),
+                    ),
+                    Text(
+                      [
+                        quanti(p.viaggi.length, 'viaggio', 'viaggi'),
+                        quanti(p.paesi.length, 'paese', 'paesi'),
+                        quanti(p.traguardi, 'traguardo', 'traguardi'),
+                      ].join(' · '),
+                      style: Testi.didascalia.copyWith(color: Colori.grafite),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (p.paesi.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final paese in p.paesi)
+                  Pillola((nomeDelPaese(paese) ?? paese).toUpperCase()),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Una riga bianca che porta altrove, senza icona (tela, 75: «Viaggi sul
+/// profilo»).
+class _RigaVai extends StatelessWidget {
+  const _RigaVai({
+    required this.titolo,
+    required this.sotto,
+    required this.onTap,
+  });
+
+  final String titolo;
+  final String sotto;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Premibile(
+    onTap: onTap,
+    etichetta: '$titolo, $sotto',
+    child: ExcludeSemantics(
+      child: Pannello(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        raggio: 18,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titolo,
+                    style: Testi.evidenza.copyWith(color: Colori.inchiostro),
+                  ),
+                  Text(
+                    sotto,
+                    style: Testi.didascalia.copyWith(color: Colori.grafite),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              icona(
+                ios: CupertinoIcons.chevron_forward,
+                android: Icons.chevron_right,
+              ),
+              size: 18,
+              color: onTap == null ? Colori.piombo : Colori.grafite,
+            ),
+          ],
+        ),
+      ),
     ),
   );
 }

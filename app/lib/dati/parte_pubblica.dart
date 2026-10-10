@@ -1,5 +1,7 @@
 /// La parte pubblica e la sua sicurezza, sul server (5.1; sicurezza.sql): il
-/// proprio profilo pubblico, chi si è bloccato, le proprie segnalazioni.
+/// proprio profilo pubblico, chi si è bloccato, le proprie segnalazioni. Con
+/// la 5.3 (profilo_pubblico.sql) i profili degli altri, la ricerca, i gusti e
+/// i viaggi sul profilo.
 ///
 /// Tutto richiede la rete, e niente sta nella copia del telefono: la parte
 /// pubblica è fatta di altre persone, e si guarda com'è adesso (11, 12). Chi
@@ -8,15 +10,22 @@ library;
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../dominio/itinerario.dart';
 import '../dominio/parte_pubblica.dart';
+import '../dominio/profilo_pubblico.dart';
 import 'errori.dart';
 import 'rete.dart';
 
 class PartePubblica {
-  PartePubblica(this._supabase, {this.rete});
+  PartePubblica(this._supabase, {this.rete, this.ricorda});
 
   final SupabaseClient _supabase;
   final Rete? rete;
+
+  /// Chiamata ogni volta che si sa se per questa persona la parte pubblica
+  /// c'è (aperta, o per il team) ed è maggiorenne: il telefono lo ricorda,
+  /// per mettere Community nella barra anche senza rete (5.3).
+  final Future<void> Function(bool)? ricorda;
 
   /// Come in Archivio: `rest`, perché applica le opzioni del client.
   PostgrestClient get _server => _supabase.rest;
@@ -31,7 +40,9 @@ class PartePubblica {
     final riga = await _alServer(
       () => _server.rpc<Map<String, dynamic>?>('la_mia_parte_pubblica'),
     );
-    return riga == null ? null : StatoPartePubblica.daServer(riga);
+    final stato = riga == null ? null : StatoPartePubblica.daServer(riga);
+    await ricorda?.call(stato != null && stato.visibile && stato.maggiorenne);
+    return stato;
   }
 
   /// Accende il profilo pubblico, accettando le condizioni d'uso nella
@@ -125,4 +136,83 @@ class PartePubblica {
         Segnalazione.daServer(r),
     ];
   }
+
+  // ─── Il profilo pubblico e la ricerca (5.3) ──────────────────────────────
+
+  static const _nonSiVede = {
+    CodiciServer.nonTrovato: 'Questo profilo non è più nella parte pubblica.',
+    CodiciServer.nonPermesso:
+        'Per vedere gli altri serve il tuo profilo pubblico acceso.',
+  };
+
+  /// Il proprio profilo com'è per gli altri, con tutti i viaggi che ci
+  /// possono stare e la scelta per ciascuno (tela, 75 e 109).
+  Future<ProfiloPubblico?> ilMioProfilo() async {
+    final riga = await _alServer(
+      () => _server.rpc<Map<String, dynamic>?>('il_mio_profilo_pubblico'),
+    );
+    return riga == null ? null : ProfiloPubblico.daServer(riga);
+  }
+
+  /// Il profilo di [utenteId], se si può vedere (tela, 73). Se non si può —
+  /// spento, sospeso, bloccato — il server dice solo che non c'è.
+  Future<ProfiloPubblico> profiloDi(String utenteId) async =>
+      ProfiloPubblico.daServer(
+        await _alServer(
+          () => _server.rpc<Map<String, dynamic>>(
+            'profilo_pubblico',
+            params: {'p_utente': utenteId},
+          ),
+          messaggi: _nonSiVede,
+        ),
+      );
+
+  /// Chi risponde a [ricerca], al più trenta (tela, 74). Senza meta né gusti
+  /// non si chiede niente.
+  Future<List<ProfiloPubblico>> cerca(Ricerca ricerca) async {
+    if (ricerca.vuota) return const [];
+    final righe = await _alServer(
+      () => _server.rpc<List<dynamic>>(
+        'cerca_viaggiatori',
+        params: {
+          'p_paese': ricerca.paese,
+          'p_citta': ricerca.citta,
+          'p_gusti': [for (final g in ricerca.gusti) codiceGusto(g)],
+        },
+      ),
+      messaggi: {
+        ..._nonSiVede,
+        CodiciServer.tettoMappe: 'Per oggi hai cercato molto: riprova domani.',
+      },
+    );
+    return [
+      for (final r in righe.cast<Map<String, dynamic>>())
+        ProfiloPubblico.daServer(r),
+    ];
+  }
+
+  /// Sceglie che cosa piace in viaggio; restituisce i gusti come li ha
+  /// salvati il server.
+  Future<List<Interesse>> scegliGusti(Set<Interesse> scelti) async => gustiDa(
+    await _alServer(
+      () => _server.rpc<List<dynamic>>(
+        'scegli_gusti',
+        params: {
+          'p_gusti': [for (final g in scelti) codiceGusto(g)],
+        },
+      ),
+    ),
+  );
+
+  /// Mette o toglie un viaggio dal proprio profilo pubblico (tela, 109).
+  Future<void> mostraSulProfilo(String viaggioId, {required bool mostra}) =>
+      _alServer(
+        () => _server.rpc<dynamic>(
+          'mostra_sul_profilo',
+          params: {'p_viaggio': viaggioId, 'p_mostra': mostra},
+        ),
+        messaggi: const {
+          CodiciServer.nonTrovato: 'Non sei più in questo viaggio.',
+        },
+      );
 }

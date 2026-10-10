@@ -29,9 +29,8 @@ import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
-import 'impostazioni.dart';
-import 'nuovo_viaggio.dart';
 import 'permesso_posizione.dart';
+import 'sezioni.dart';
 import 'tappa.dart';
 
 /// La mappa del viaggio (08-mappa.md; tela, 50–55): le tappe di un giorno
@@ -570,7 +569,7 @@ class _SchermataMappaState extends State<SchermataMappa> {
     return null;
   }
 
-  Widget _barra(_Vista vista) => BarraPrincipale(
+  Widget _barra(_Vista vista) => BarraDelleSezioni(
     prima: [
       VoceBarra(
         icona: icona(
@@ -590,16 +589,6 @@ class _SchermataMappaState extends State<SchermataMappa> {
         }),
       ),
     ],
-    dopo: [
-      VoceBarra(
-        icona: icona(ios: CupertinoIcons.person, android: Icons.person_outline),
-        etichetta: 'Profilo',
-        onTap: () => apri<void>(context, const SchermataImpostazioni()),
-      ),
-    ],
-    etichettaAggiungi: 'Nuovo viaggio',
-    onAggiungi: () =>
-        apri<void>(context, const SchermataNuovoViaggio(), dalBasso: true),
   );
 
   // ─── Senza la mappa: gli indirizzi ───────────────────────────────────────

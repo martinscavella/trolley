@@ -32,15 +32,14 @@ import 'gesti_chiusura.dart';
 import 'gesti_partecipanti.dart';
 import 'gesti_tappa.dart';
 import 'giornata.dart';
-import 'impostazioni.dart';
 import 'itinerario.dart';
 import 'mappa.dart';
 import 'note.dart';
-import 'nuovo_viaggio.dart';
 import 'partecipanti.dart';
 import 'prima_di_partire.dart';
 import 'problemi_coda.dart';
 import 'scelta_periodo.dart';
+import 'sezioni.dart';
 import 'spese.dart';
 import 'tappa.dart';
 
@@ -124,7 +123,7 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
         }
         final stato = viaggio.statoA(DateTime.now());
         return Pagina(
-          inBasso: BarraPrincipale(
+          inBasso: BarraDelleSezioni(
             prima: [
               VoceBarra(
                 icona: icona(
@@ -145,22 +144,6 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                     apri<void>(context, SchermataMappa(viaggioId: viaggio.id)),
               ),
             ],
-            dopo: [
-              VoceBarra(
-                icona: icona(
-                  ios: CupertinoIcons.person,
-                  android: Icons.person_outline,
-                ),
-                etichetta: 'Profilo',
-                onTap: () => apri<void>(context, const SchermataImpostazioni()),
-              ),
-            ],
-            etichettaAggiungi: 'Nuovo viaggio',
-            onAggiungi: () => apri<void>(
-              context,
-              const SchermataNuovoViaggio(),
-              dalBasso: true,
-            ),
           ),
           corpo: Builder(
             builder: (context) => ListView(

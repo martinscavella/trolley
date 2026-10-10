@@ -309,6 +309,36 @@ La 5.1 (l'interruttore della parte pubblica, il profilo pubblico con il numero v
 | **Le condizioni d'uso cambiate** | Il server ricorda quale versione si è accettata; chiedere di riaccettarle quando cambiano non è ancora costruito | Alla prima modifica |
 | **Rivedere sulla tela le tavole 103–107** | Disegnate e costruite il 9 ottobre 2026 (versione 43) | Prima di chiudere la 5.1 |
 
+### Rimasto fuori dalla 5.2
+
+La 5.2 sono le due valutazioni d'impatto, scritte in bozza il 10 ottobre 2026 prima di costruire la parte pubblica: [la parte pubblica fra sconosciuti](legale/valutazione-impatto-parte-pubblica.md) e [chi c'è in città](legale/valutazione-impatto-presenza-in-citta.md). Le misure decise sono in [decisioni](decisioni/prodotto.md), «Dopo le valutazioni d'impatto». Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **La revisione dell'avvocato e la firma del titolare** | Le bozze concludono che il rischio residuo non è alto e che non serve consultare il Garante: lo deve confermare chi fa la revisione. Le domande sono dentro, P1–P9 e C-1–C-5, e la 26 di [per la revisione](legale/per-la-revisione.md) | Prima della seconda ondata |
+| ~~**Ridisegnare sulla tela 73, 74 e 75**~~ | Fatto il 10 ottobre 2026 (versione 45), con le nuove 108–110 e la 105 ritoccata | ✅ |
+| **Ridisegnare sulla tela 79 e 80** | Prima del «sul posto», «Quando sarai a Porto» (C1); via «Fino al 14 ott» dalle righe degli altri (C2) | Prima di costruire la 5.5 |
+| **M8, M9, M10** | Il tetto alle richieste di collegamento e il divieto di richiedere dopo un no: proposte, per ora non adottate. Le righe di prudenza al primo collegamento: da disegnare, se si vogliono | M8 e M9 se le segnalazioni per molestie arrivano dalle richieste; M10 con la 5.4 |
+| **C3, la soglia di abitanti** | Non adottata: la presenza vale anche nei comuni piccoli, e il rischio resta medio. È la domanda C-5 | Se l'avvocato la chiede, o alla prima segnalazione che riguarda un posto piccolo |
+| **C4–C8** | Il modo di costruire la presenza: si spegne cambiando meta o date, letture da una funzione, niente copia sul telefono, una alla volta, nessun «da quando» | Con la 5.5 |
+| **Il «sul posto» è una barriera, non una prova** | Lo decide l'app, e il server controlla solo chi e quando: chi chiama `segna_sul_posto` senza l'app passa. Far provare al server che la richiesta viene dall'app vera è App Attest, che chiede il programma sviluppatori | Se qualcuno lo aggira |
+| **Il parere delle persone** (art. 35.9) | Cinque domande a chi usa l'ondata 1: che cosa si aspetta di vedere e di non vedere in un profilo pubblico | Prima di finire la 5.3 |
+| **Nessuna copia di sicurezza del database** | Il progetto è sul piano gratuito di Supabase, che non ne fa: un errore o una migrazione sbagliata non si recupera, e con persone vere dentro è un rischio sulla disponibilità dei loro viaggi. Passando a un piano che le fa, la presenza in città resta nelle copie per sette giorni, e l'informativa lo deve dire | Prima dell'ondata 1 |
+
+### Rimasto fuori dalla 5.3
+
+Il profilo pubblico e la ricerca (Community nella barra, la ricerca per meta e gusti, il profilo di un altro con «…», «Così ti vedono», i viaggi sul profilo) sono costruiti il 10 ottobre 2026. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| ~~**Applicare la migrazione `profilo_pubblico`**~~ | Applicata dall'editor SQL il 10 ottobre 2026 e verificata in sola lettura; la versione non è in `schema_migrations`. Prima provata su un Postgres locale (PGlite): 17 prove su 17 | ✅ |
+| ~~**La prova `profilo_pubblico.sql` sul server**~~ | Lanciata il 10 ottobre 2026: 10 su 10, e non ha lasciato niente. Sul server ci sono anche le persone vere: dei risultati di una ricerca la prova guarda solo le sue | ✅ |
+| **«Chiedi di collegarvi»** | Il pulsante della 73 apre la 76: arriva con i collegamenti | 5.4 |
+| **La segnalazione di un profilo fotografa solo il nome** | `segnala` conserva nome e stato del profilo (5.1); gusti e viaggi si possono ricostruire, ma non com'erano | Se chi modera ne ha bisogno |
+| **Un indice delle mete pubbliche** | `cerca_viaggiatori` legge i viaggi di ogni profilo acceso a ogni ricerca | Con qualche migliaio di profili accesi |
+| **Una meta scritta a mano** | Compare sul profilo com'è scritta (M5): la persona la vede nella 109 e la può nascondere. Il server non ha l'elenco delle destinazioni per riconoscerla | Se capita un nome di persona |
+| **Rivedere sulla tela 73–75 e 108–110** | Ridisegnate e costruite il 10 ottobre 2026 (versione 45) | Prima di chiudere la 5.3 |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.

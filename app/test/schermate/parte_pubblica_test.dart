@@ -142,10 +142,11 @@ void main() {
       await aspetta(tester);
 
       // Di nuovo il profilo pubblico (tela, 105).
+      await tester.scrollUntilVisible(find.text('Telefono verificato'), 200);
       expect(find.text('Telefono verificato'), findsOneWidget);
       expect(find.textContaining('+39 347 ••• 4567'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('Accendi il profilo pubblico'),
+        find.textContaining('condizioni d\'uso', findRichText: true),
         200,
       );
       expect(
@@ -157,10 +158,9 @@ void main() {
 
       expect(ambiente.server.partePubblica['attivo'], isTrue);
       expect(ambiente.server.partePubblica['condizioni'], versioneCondizioni);
-      expect(
-        find.text('È acceso: altri viaggiatori ti possono trovare.'),
-        findsOneWidget,
-      );
+      // Acceso, è «Così ti vedono» (5.3; tela, 75).
+      await tester.scrollUntilVisible(find.text('Così ti vedono'), -200);
+      expect(find.text('Così ti vedono'), findsOneWidget);
       expect(await eventi(tester), [
         Eventi.telefonoVerificato,
         Eventi.profiloPubblicoAttivato,
@@ -252,6 +252,7 @@ void main() {
         ..apriPartePubblica(telefono: '+393471234567')
         ..partePubblica['attivo'] = true;
       await dentro(tester, const SchermataProfiloPubblico());
+      await tester.scrollUntilVisible(find.byType(Switch), 200);
       await tester.tap(find.byType(Switch));
       await aspetta(tester);
 

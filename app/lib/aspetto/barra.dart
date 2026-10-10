@@ -43,86 +43,95 @@ class BarraPrincipale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget voce(VoceBarra v) => Semantics(
-      selected: v.attiva,
-      child: Premibile(
-        onTap: v.onTap,
-        scala: 0.94,
-        etichetta: v.etichetta,
-        child: AnimatedContainer(
-          duration: Ritmo.breve,
-          curve: Ritmo.curva,
-          height: 48,
-          constraints: const BoxConstraints(minWidth: 48),
-          padding: EdgeInsets.symmetric(horizontal: v.attiva ? 16 : 0),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            color: v.attiva ? Colori.bianco : Colori.inchiostro,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                v.icona,
-                size: 22,
-                color: v.attiva
-                    ? Colori.inchiostro
-                    : Colori.bianco.withValues(alpha: 0.75),
-              ),
-              if (v.attiva) ...[
-                const SizedBox(width: 8),
-                Text(
+    // La voce attiva prende lo spazio che resta: con cinque voci, su un
+    // telefono stretto, il suo nome si accorcia invece di uscire.
+    Widget voce(VoceBarra v) => v.attiva ? Flexible(child: _voce(v)) : _voce(v);
+
+    return _barra(voce);
+  }
+
+  Widget _voce(VoceBarra v) => Semantics(
+    selected: v.attiva,
+    child: Premibile(
+      onTap: v.onTap,
+      scala: 0.94,
+      etichetta: v.etichetta,
+      child: AnimatedContainer(
+        duration: Ritmo.breve,
+        curve: Ritmo.curva,
+        height: 48,
+        constraints: const BoxConstraints(minWidth: 48),
+        padding: EdgeInsets.symmetric(horizontal: v.attiva ? 16 : 0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          color: v.attiva ? Colori.bianco : Colori.inchiostro,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              v.icona,
+              size: 22,
+              color: v.attiva
+                  ? Colori.inchiostro
+                  : Colori.bianco.withValues(alpha: 0.75),
+            ),
+            if (v.attiva) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
                   v.etichetta,
                   maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Testi.voceBarra.copyWith(color: Colori.inchiostro),
                 ),
-              ],
+              ),
             ],
-          ),
+          ],
         ),
       ),
-    );
+    ),
+  );
 
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colori.inchiostro,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colori.inchiostro.withValues(alpha: 0.3),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ...prima.map(voce),
-          Premibile(
-            onTap: onAggiungi,
-            scala: 0.9,
-            etichetta: etichettaAggiungi,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colori.sole,
-              ),
-              child: const Icon(
-                Icons.add_rounded,
-                size: 28,
-                color: Colori.inchiostro,
-              ),
+  Widget _barra(Widget Function(VoceBarra) voce) => Container(
+    height: 64,
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: Colori.inchiostro,
+      borderRadius: BorderRadius.circular(32),
+      boxShadow: [
+        BoxShadow(
+          color: Colori.inchiostro.withValues(alpha: 0.3),
+          blurRadius: 30,
+          offset: const Offset(0, 12),
+        ),
+      ],
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        ...prima.map(voce),
+        Premibile(
+          onTap: onAggiungi,
+          scala: 0.9,
+          etichetta: etichettaAggiungi,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colori.sole,
+            ),
+            child: const Icon(
+              Icons.add_rounded,
+              size: 28,
+              color: Colori.inchiostro,
             ),
           ),
-          ...dopo.map(voce),
-        ],
-      ),
-    );
-  }
+        ),
+        ...dopo.map(voce),
+      ],
+    ),
+  );
 }

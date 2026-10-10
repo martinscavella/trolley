@@ -39,7 +39,7 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 | Dato | Per quanto |
 |---|---|
 | Viaggi, anche chiusi | **Finché la persona non li cancella.** Nessuna cancellazione automatica |
-| Presenza in città | Fino alla fine del viaggio, poi cancellata |
+| Presenza in città | Fino alla fine del viaggio, poi cancellata. Le copie di sicurezza del database la terrebbero per il loro periodo: oggi il progetto è sul piano gratuito di Supabase, che non ne fa; sul piano Pro sono sette giorni, e va detto nell'informativa |
 | Segnalazioni e contenuti segnalati | Il tempo necessario a gestirle, più il periodo utile a difendersi da una contestazione: il periodo è da fissare con l'avvocato, e manca il lavoro che le toglie. Chiudendo l'account le proprie restano, senza più diventare eventi a proprio nome |
 | Numero di telefono | Finché c'è l'account; i tentativi di verifica una settimana |
 | Eventi di misurazione | Aggregati oltre un orizzonte breve: non servono a lungo nel dettaglio |
@@ -61,14 +61,14 @@ L'ultima riga va spiegata alla persona **prima** che chiuda l'account: le spese 
 
 ---
 
-## Le due valutazioni d'impatto probabili
+## Le due valutazioni d'impatto
 
-Due funzioni, per conto loro, fanno scattare l'obbligo di valutare formalmente l'impatto sulla protezione dei dati:
+Due funzioni, per conto loro, chiedono di valutare formalmente l'impatto sulla protezione dei dati. Le bozze sono scritte (fase 5.2, 10 ottobre 2026), prima di costruire le funzioni perché potessero ancora cambiarle; vanno riviste dall'avvocato e firmate dal titolare **prima** della seconda ondata.
 
-1. **La presenza in città**, perché mette in relazione persone in base a dove si trovano. È mitigata parecchio dal fatto che la città arriva dalla destinazione del viaggio e non dalla posizione rilevata, e che non esiste storico — ma va scritta, non dedotta.
-2. **Il matching fra sconosciuti**, per la combinazione di dati sociali e rischio sulle persone.
+1. **[La parte pubblica fra sconosciuti](../legale/valutazione-impatto-parte-pubblica.md)** — profilo pubblico, ricerca, collegamenti, messaggi. Il rischio vero è sulle persone: molestie, una persona cercata apposta, un incontro andato male. Ne sono uscite le regole 2, 6 e 7 di [11](../prodotto/11-community.md): chi guarda si fa guardare, niente ricerca per nome, del viaggio solo la meta e quando, ogni viaggio si può nascondere, compare solo dopo la fine.
+2. **[La presenza in città](../legale/valutazione-impatto-presenza-in-citta.md)** — il trattamento più delicato del prodotto, perché dice dove si trova adesso una persona. La meta dichiarata non bastava: la presenza si accende solo dopo il «sul posto» del telefono, e gli altri non sanno fino a quando si resta. La soglia di abitanti proposta non è stata adottata.
 
-Vanno fatte **prima** della seconda ondata, non dopo.
+La conclusione delle due bozze: con le misure decise il rischio residuo è medio, non alto, e non serve la consultazione preventiva del Garante (art. 36). È la conclusione che l'avvocato deve confermare.
 
 ---
 

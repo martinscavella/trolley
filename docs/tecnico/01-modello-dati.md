@@ -22,12 +22,14 @@ Le cose che possono trovarsi in due versioni — viaggio, tappa, spesa, voce di 
 | `condizioni_accettate`, `condizioni_accettate_il` | Quale versione delle condizioni d'uso ha accettato accendendo il profilo pubblico, e quando (`sito/condizioni.html`) |
 | `sospeso_il`, `sospensione_motivo` | La sospensione decisa da chi modera, con il motivo che la persona legge. Toglie la parte pubblica, non i dati |
 | `interno` | Account del team. **Escluso da ogni metrica** |
+| `gusti` | Cosa piace in viaggio, per il profilo pubblico e la ricerca (5.3): una lista chiusa — `arte`, `cibo`, `storia`, `natura`, `panorami`, `shopping`, `vita_notturna` —, le voci dell'itinerario. Mai una voce che dica una religione, la salute, l'orientamento, la politica. Si scrive solo con `scegli_gusti`; gli altri non la leggono dalla tabella |
 
 **Invarianti**
 - Sotto i 16 anni non esiste un utente.
 - Sotto i 18 anni `profilo_pubblico_attivo` non può essere vero, e i collegamenti non esistono.
 - `profilo_pubblico_attivo` vero richiede `telefono_verificato` vero, le condizioni accettate e nessuna sospensione.
 - `telefono_verificato` lo scrive solo `telefono_conferma`, chiamata dalla funzione `telefono` con la chiave di servizio ([ADR-011](adr/011-verifica-del-telefono.md)). Il numero non sta qui: sta in `privato.telefono`.
+- I gusti, le scelte dei viaggi sul profilo e il conto delle ricerche li toglie un trigger quando si scrive `eliminato_il` (5.3).
 - Chi chiude l'account (U.1) lascia una **lapide**: la riga resta, con `eliminato_il` e senza `nome` né `data_nascita`, perché partecipazioni, spese e tappe nei viaggi altrui puntano a lei. L'accesso invece si cancella: la riga non dipende più da `auth.users`. `eliminato_il` lo scrive solo `chiudi_account`.
 - Gli eventi di misurazione non dipendono dalla riga: chiudendo l'account cambiano `utente_id`, tutti con lo stesso id nuovo.
 
@@ -175,7 +177,7 @@ La risposta di un assistente incollata nell'app si salva qui **prima** di provar
 
 ### `configurazione`
 
-`chiave`, `valore` (JSON), `aggiornata_il`. Quello che deve cambiare senza un rilascio: `modelli_suggeriti`, l'elenco dei modelli da consigliare per l'itinerario ([ADR-010](adr/010-itinerario-incollato.md)); `tetto_mappe`, quante chiamate di ogni tipo per persona, viaggio e giorno ([ADR-006](adr/006-mappe-e-percorsi.md)); `parte_pubblica`, `"chiusa"`, `"aperta"` o `"chiusa_ai_nuovi"` (5.1: chiusa nell'ondata 1, chiusa ai nuovi quando le segnalazioni sono troppe; gli account interni la vedono sempre); `tetto_telefono`, i codici SMS e i tentativi al giorno ([ADR-011](adr/011-verifica-del-telefono.md)); `contatto_moderazione`, l'indirizzo che l'app mostra a chi segnala o è sospeso. La legge chi ha un accesso, la scrive solo chi gestisce il progetto.
+`chiave`, `valore` (JSON), `aggiornata_il`. Quello che deve cambiare senza un rilascio: `modelli_suggeriti`, l'elenco dei modelli da consigliare per l'itinerario ([ADR-010](adr/010-itinerario-incollato.md)); `tetto_mappe`, quante chiamate di ogni tipo per persona, viaggio e giorno ([ADR-006](adr/006-mappe-e-percorsi.md)); `parte_pubblica`, `"chiusa"`, `"aperta"` o `"chiusa_ai_nuovi"` (5.1: chiusa nell'ondata 1, chiusa ai nuovi quando le segnalazioni sono troppe; gli account interni la vedono sempre); `tetto_telefono`, i codici SMS e i tentativi al giorno ([ADR-011](adr/011-verifica-del-telefono.md)); `contatto_moderazione`, l'indirizzo che l'app mostra a chi segnala o è sospeso; `tetto_ricerca`, quante ricerche di viaggiatori al giorno per persona (5.3). La legge chi ha un accesso, la scrive solo chi gestisce il progetto.
 
 ### `consumo_mappe` — solo sul server, nello schema privato
 
@@ -187,6 +189,12 @@ La risposta di un assistente incollata nell'app si salva qui **prima** di provar
 
 `tentativo_telefono`: `giorno`, `utente_id`, `numero`, `invii`, `controlli`. Il conto del tetto della verifica; si toglie dopo una settimana.
 
+### `fuori_dal_profilo` e `ricerca_viaggiatori` — solo sul server, nello schema privato
+
+`fuori_dal_profilo`: `utente_id`, `viaggio_id`. I viaggi che una persona ha tolto dal suo profilo pubblico (5.3; 5.2, M3). Non lo leggono nemmeno i compagni di quel viaggio: si scrive con `mostra_sul_profilo`, si legge con `il_mio_profilo_pubblico`.
+
+`ricerca_viaggiatori`: `utente_id`, `giorno`, `quante`. Il conto del tetto delle ricerche (`tetto_ricerca`, 60 al giorno): quante, mai che cosa. Si toglie dopo una settimana.
+
 ---
 
 ## Parte pubblica
@@ -197,7 +205,7 @@ La risposta di un assistente incollata nell'app si salva qui **prima** di provar
 | `messaggio` | `collegamento_id`, `da_utente`, `testo`. Esiste solo se il collegamento è `accettato` |
 | `blocco` | `da_utente`, `a_utente`, `creato_il`. Effetto **bidirezionale** (`privato.si_bloccano`). Si scrive con `blocca` e `sblocca`, che toglie la riga; si legge solo chi si è bloccato (`persone_bloccate`), mai chi ci ha bloccato. Chiudendo l'account si tolgono quelli nei due versi |
 | `segnalazione` | `id` (nato sul telefono), `da_utente`, `a_utente` (chi è segnalato), `tipo_oggetto` (`profilo` · `messaggio`), `oggetto_id`, `motivo` (`molestie` · `falso` · `inappropriato` · `minore` · `altro`), `nota`, `contenuto` (com'era quando è stato segnalato), `stato` (`ricevuta` · `gestita`), `esito` (`nessuna_azione` · `contenuto_rimosso` · `profilo_sospeso`), `nota_moderazione`, `misurata`, `creata_il`, `gestita_il`. Si scrive con `segnala`, si legge con `le_mie_segnalazioni` (senza il contenuto né la nota di chi modera); la gestisce lo schema `moderazione` ([moderazione](../sicurezza/moderazione.md)) |
-| `presenza_citta` | `utente_id`, `viaggio_id`, `citta`, `attiva_fino`. Mai coordinate, mai storico |
+| `presenza_citta` | `utente_id`, `viaggio_id`, `citta`, `attiva_fino`. Mai coordinate, mai storico. Si scrive solo con `partecipazione.sul_posto_il` di quel viaggio; `attiva_fino` lo legge solo la persona (5.2) |
 
 **Invarianti**
 - Un viaggio con stato diverso da `chiuso` non è raggiungibile da nessuna query della parte pubblica.

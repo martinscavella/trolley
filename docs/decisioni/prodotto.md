@@ -459,6 +459,32 @@ Scelto il 9 ottobre 2026 (tela, 68–72 e 103–107; nota n18). Si costruisce pr
 - **Il contatto della moderazione** sta in `configurazione` (`contatto_moderazione`), così si cambia senza un rilascio; finché manca, l'app dice solo di chiamare il 112 in caso di pericolo.
 - **La moderazione si fa dall'editor SQL di Supabase**, con lo schema `moderazione`, scelto dall'utente al posto di una pagina web interna. Il processo, scritto per una persona sola: [moderazione](../sicurezza/moderazione.md).
 
+### Dopo le valutazioni d'impatto (fase 5.2)
+
+Scelto il 10 ottobre 2026, leggendo le due bozze — [la parte pubblica](../legale/valutazione-impatto-parte-pubblica.md) e [la presenza in città](../legale/valutazione-impatto-presenza-in-citta.md) — prima di costruire la 5.3. Cambiano le tavole 73–75, 79 e 80 della tela, che le disegnava prima.
+
+- **Guarda solo chi si fa guardare** (M1): la ricerca e i profili degli altri si vedono solo con il proprio profilo pubblico acceso. È «chi guarda è anche visto» della presenza in città, esteso a tutta la parte pubblica: chi guarda ha un numero verificato, ha accettato le condizioni e si può segnalare.
+- **Niente ricerca per nome** (M2): si cerca per meta, dall'elenco delle destinazioni, e per gusti. Al più trenta risultati, e un tetto di ricerche al giorno. Chi vuole trovare una persona precisa — un ex, un collega — non ha una casella dove scriverne il nome.
+- **Del viaggio, sul profilo pubblico, solo la meta, il mese e l'anno, i giorni** (M5): niente compagni, tappe, spese, note. Il viaggio non ha un titolo libero; una meta scritta a mano compare com'è scritta, e si nasconde come le altre.
+- **Ogni viaggio si può nascondere dal profilo pubblico** (M3), uno per uno, e accendendo il profilo si vede l'elenco di quello che comparirà. Una meta può dire una religione o la salute: la sceglie la persona.
+- **Un viaggio compare solo dopo la sua fine** (M4), anche se chi ne è responsabile l'ha chiuso prima: è la regola «mai i viaggi in corso» (11, regola 2) presa alla lettera.
+- **La presenza in città si accende solo dopo il «sul posto»** (C1): il telefono deve aver già trovato la persona entro 50 km dalla meta, per quel viaggio (3.4). La meta da sola è dichiarata, e un viaggio finto a Porto bastava per guardare chi c'è senza esserci. Al server non arriva niente di nuovo.
+- **Gli altri vedono «a Porto adesso», non fino a quando** (C2): la data di fine la vede solo la persona. Per quanti giorni ancora la si trova lì è un dato sul futuro, quello che il profilo pubblico esclude.
+- **Nessuna soglia di abitanti** per la presenza: vale per tutte le mete dell'elenco, anche i comuni piccoli. La bozza la proponeva (C3, 50.000 abitanti): il rischio dei posti piccoli resta medio, ed è una domanda per l'avvocato.
+- **Per ora niente tetto alle richieste di collegamento e niente divieto di richiedere dopo un no** (M8, M9): restano proposte. Chi insiste lo ferma il blocco di chi riceve. Sono le prime misure da riprendere se le segnalazioni per molestie arrivano dalle richieste.
+
+### Il profilo pubblico e la ricerca (fase 5.3)
+
+Costruiti il 10 ottobre 2026 sulle scelte della 5.2 (tela, 73–75 e 108–110, ridisegnate quel giorno; nota n19).
+
+- **Community sta nella barra, fra il «+» e il profilo**, solo quando la parte pubblica c'è per chi usa l'app: aperta o chiusa ai nuovi (per il team sempre) e dai 18 anni. Nell'ondata 1 non c'è. Il telefono ricorda l'ultima risposta del server, così la barra non aspetta la rete.
+- **Con il profilo spento, Community dice come accenderlo** (108) invece di mostrare la ricerca: per vedere gli altri ci si fa vedere. Sospeso, dice che è sospeso.
+- **Si cerca con una meta e con i gusti** (74). La meta si sceglie dall'elenco delle destinazioni — un paese o una città — senza la riga «Usa com'è scritto»: un nome a mano non troverebbe nessuno. I gusti sono le voci dell'itinerario. Senza criteri non si vede nessuno, e si dice che cosa scegliere. Si cerca quando si smette di toccare: tre gusti di fila sono una ricerca.
+- **Ogni risultato dice perché è lì**: «Kyoto nel passaporto · ama il cibo», o i paesi quando non ci sono gusti in comune; a destra quante cose avete in comune, paesi e gusti. Nessuno è il caso normale con pochi viaggiatori (110), e la schermata suggerisce il paese invece della città, o un gusto in meno.
+- **Il profilo di un altro** (73): l'iniziale, il nome, da quando è su Trolley (il mese), viaggi · paesi · traguardi, cosa ama in viaggio, «In comune: …», i viaggi chiusi come biglietti — l'importato bianco e tratteggiato, come nel passaporto. «…» in alto apre il menu di sistema con «Segnala» e «Blocca»: bloccando si torna indietro e la persona sparisce dai risultati. «Chiedi di collegarvi» arriva con la 5.4.
+- **Acceso, il proprio profilo è «Così ti vedono»** (75, al posto della 106): l'anteprima esatta, cosa ti piace (si scrive a ogni tocco), «Viaggi sul profilo» con quanti su quanti, l'interruttore per spegnerlo, il numero e le condizioni.
+- **I viaggi sul profilo si scelgono uno per uno** (109), con l'interruttore di sistema: ci si arriva da «Così ti vedono» e, prima di accendere, da «I viaggi chiusi che scegli tu · Scegli» nella 105. Di partenza ci sono tutti: la persona li vede prima di accendere.
+
 ---
 
 ## Ricordo e traguardi

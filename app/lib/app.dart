@@ -104,6 +104,9 @@ class _TrolleyAppState extends State<TrolleyApp> {
           ),
         );
     unawaited(_servizi.misurazione.invia());
+    // Se c'è la parte pubblica per questa persona: la barra lo ricorda, e
+    // mostra Community (5.3). Senza rete resta quello che si sapeva.
+    unawaited(_servizi.partePubblica.stato().then((_) {}, onError: (_) {}));
     // La copia la aggiorna l'elenco dei viaggi, che compare adesso.
     if (_invitoInAttesa != null) await _apriInvito();
   }

@@ -56,6 +56,11 @@ abstract final class Eventi {
   static const personaBloccata = 'persona_bloccata';
   static const personaSbloccata = 'persona_sbloccata';
 
+  /// La ricerca (5.3): `criteri` — `meta`, `gusti` o `entrambi`, mai quali
+  /// — e `risultati`, quanti. Quante ricerche finiscono vuote dice se la
+  /// community è abbastanza fitta da trovarsi (H7).
+  static const viaggiatoriCercati = 'viaggiatori_cercati';
+
   /// Le scrive il server, in segnala e quando chi modera la gestisce: le ore
   /// fra le due sono quelle vere (07, sostenibilità della moderazione).
   static const segnalazioneRicevuta = 'segnalazione_ricevuta';

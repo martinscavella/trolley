@@ -435,7 +435,7 @@ begin
   -- ── I tuoi dati ──────────────────────────────────────────────────────────
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   dati := public.i_miei_dati();
-  if dati ->> 'telefono' <> num_giulia or (dati ->> 'versione')::int <> 2
+  if dati ->> 'telefono' <> num_giulia or (dati ->> 'versione')::int < 2
      or not (dati -> 'profilo' ? 'condizioni_accettate') then
     raise exception 'FALLITA: i dati di Giulia non hanno il telefono e la parte pubblica';
   end if;

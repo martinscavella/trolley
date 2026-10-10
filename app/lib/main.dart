@@ -44,11 +44,13 @@ Future<void> main() async {
   // Un'aggiunta interrotta a metà non lascia file.
   unawaited(documenti.pulisci().catchError((_) {}));
 
+  final archivio = Archivio(db, supabase, rete: rete);
+
   runApp(
     Servizi(
       db: db,
       supabase: supabase,
-      archivio: Archivio(db, supabase, rete: rete),
+      archivio: archivio,
       misurazione: Misurazione(db, supabase, versioneApp: versioneApp),
       ingresso: IngressoDaLink(),
       rete: rete,
@@ -62,7 +64,11 @@ Future<void> main() async {
       posizione: const PosizioneDelTelefono(),
       mappeDelTelefono: const MappeDiSistema(),
       pagine: const PagineNelBrowser(),
-      partePubblica: PartePubblica(supabase, rete: rete),
+      partePubblica: PartePubblica(
+        supabase,
+        rete: rete,
+        ricorda: archivio.ricordaCommunity,
+      ),
       telefono: VerificaSulServer(
         indirizzo: indirizzoTelefono,
         chiavePubblica: supabaseChiave,

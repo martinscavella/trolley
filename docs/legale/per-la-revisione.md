@@ -6,6 +6,11 @@ Bozza dell'8 ottobre 2026, con la parte pubblica aggiunta il 9; da consegnare a 
 - la pagina **cosa misuriamo**: `sito/misurazione.html`, su `trolleyapp.vercel.app/misurazione`;
 - le **condizioni d'uso della parte pubblica**: `sito/condizioni.html`, su `trolleyapp.vercel.app/condizioni` (aggiunte il 9 ottobre 2026, con la fase 5.1). Servono prima della seconda ondata, non della prima: le domande 18–26 possono aspettare.
 
+E dal 10 ottobre 2026 (fase 5.2) due **valutazioni d'impatto** in bozza, anche loro per la seconda ondata, ciascuna con le sue domande (P1–P9 e C-1–C-5):
+
+- [la parte pubblica fra sconosciuti](valutazione-impatto-parte-pubblica.md): profilo pubblico, ricerca, collegamenti, messaggi;
+- [chi c'è in città](valutazione-impatto-presenza-in-citta.md): la presenza in città.
+
 Il ragionamento completo sta in [06 — Privacy e conformità](../tecnico/06-privacy-e-conformita.md). Qui ci sono il quadro in breve e le domande a cui serve una risposta. Le parti evidenziate nelle due pagine sono le stesse di queste domande.
 
 ---
@@ -33,7 +38,7 @@ Non ci sono pubblicità, strumenti di analisi di terzi o identificativi pubblici
 | Conto delle chiamate alle mappe, per persona, viaggio e giorno | Server, una settimana | Il tetto di consumo |
 | IP, città approssimativa, user agent, ora di ogni richiesta | Registri di Supabase e Vercel | Funzionamento e sicurezza |
 
-Fuori da questo elenco, per ora: profilo pubblico, ricerca di altri viaggiatori, messaggi, presenza in città. Sono funzioni future (fase 5), e per due di esse è già prevista una valutazione d'impatto prima della seconda ondata.
+Fuori da questo elenco, per ora: profilo pubblico, ricerca di altri viaggiatori, messaggi, presenza in città. Sono funzioni future (fase 5), e le loro due valutazioni d'impatto sono scritte in bozza (sopra).
 
 Il loro impianto di sicurezza (5.1) è già costruito, e resta spento finché la parte pubblica non apre: chi accende il profilo pubblico verifica il **numero di telefono** con un codice SMS (Twilio Verify, chiamato dal nostro server; il numero sta sul server, non lo vede nessuno, un numero per account) e accetta le **condizioni d'uso**; può **bloccare** (chi è bloccato non lo sa) e **segnalare** (la segnalazione conserva il contenuto com'era, e chi è segnalato non sa da chi). La moderazione la fa una persona, con uno strumento fuori dall'app; può **sospendere** il profilo pubblico, e la persona sospesa legge il motivo. Il processo è in [moderazione](../sicurezza/moderazione.md).
 
@@ -66,7 +71,7 @@ Il loro impianto di sicurezza (5.1) è già costruito, e resta spento finché la
 ### Conservazione e adempimenti
 
 13. **Conservazione**: i viaggi restano finché la persona non li cancella o chiude l'account; il conto delle mappe una settimana; gli eventi nel dettaglio «per poco», poi solo aggregati. Quale periodo fissare per gli eventi? Per i registri tecnici valgono i periodi dei fornitori: vanno citati?
-14. **Registro dei trattamenti** (art. 30) e **valutazioni d'impatto**: per quello che c'è oggi servono? Per la presenza in città e per il matching fra sconosciuti (fase 5) le abbiamo già previste prima della seconda ondata.
+14. **Registro dei trattamenti** (art. 30) e **valutazioni d'impatto**: per quello che c'è oggi servono? Per la presenza in città e per il matching fra sconosciuti (fase 5) le bozze sono scritte, per la seconda ondata.
 
 ### L'informativa
 
@@ -84,7 +89,7 @@ Il loro impianto di sicurezza (5.1) è già costruito, e resta spento finché la
 23. **Un possibile minore** nella parte pubblica: la data di nascita è dichiarata. Si sospende alla segnalazione; basta?
 24. **Il blocco** non avvisa chi è bloccato, e la segnalazione non dice a chi è segnalato chi l'ha fatta. Se la persona segnalata chiede l'accesso ai suoi dati (art. 15), che cosa le si deve dare delle segnalazioni che la riguardano?
 25. **App Store, linea guida 1.2** (contenuti delle persone): chiede di poter segnalare, bloccare, un contatto pubblicato, e «un modo per filtrare i contenuti inappropriati». La moderazione automatica è fuori di proposito ([12](../prodotto/12-sicurezza-e-moderazione.md)): i messaggi solo fra persone collegate, dopo un sì, bastano?
-26. **Le valutazioni d'impatto** per il matching e la presenza in città: chi le scrive, e con che cosa dell'impianto già costruito?
+26. **Le valutazioni d'impatto** per il matching e la presenza in città: le abbiamo scritte noi, in bozza, con l'impianto già costruito e i disegni delle schermate ancora da costruire. Bastano come forma e come contenuto, e chi le firma? Le loro domande sono dentro, P1–P9 e C-1–C-5.
 
 ---
 

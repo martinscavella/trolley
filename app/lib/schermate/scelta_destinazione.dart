@@ -13,8 +13,13 @@ import '../dati/destinazioni.dart';
 /// Dove si va. Si cerca nell'elenco incorporato, che funziona anche senza rete
 /// (ADR-005). Quello che l'elenco non conosce — una valle, un'isola, un paesino
 /// — si scrive com'è, e poi si dice in che paese sta.
+///
+/// Con [soloElenco] si sceglie solo dall'elenco: per cercare viaggiatori per
+/// meta (5.3; tela, 74), dove un nome scritto a mano non troverebbe nessuno.
 class SchermataDestinazione extends StatefulWidget {
-  const SchermataDestinazione({super.key});
+  const SchermataDestinazione({super.key, this.soloElenco = false});
+
+  final bool soloElenco;
 
   @override
   State<SchermataDestinazione> createState() => _SchermataDestinazioneState();
@@ -74,7 +79,7 @@ class _SchermataDestinazioneState extends State<SchermataDestinazione> {
             aMano == null ? d : Destinazione.aMano(aMano, paese: d.paese),
           ),
         ),
-      if (aMano == null && cercato.isNotEmpty)
+      if (aMano == null && cercato.isNotEmpty && !widget.soloElenco)
         _RigaDestinazione(
           simbolo: _Simbolo(
             icona(ios: CupertinoIcons.pencil, android: Icons.edit_outlined),
@@ -106,7 +111,11 @@ class _SchermataDestinazioneState extends State<SchermataDestinazione> {
                 child: Semantics(
                   header: true,
                   child: Text(
-                    aMano == null ? 'Dove?' : 'In che paese?',
+                    aMano != null
+                        ? 'In che paese?'
+                        : widget.soloElenco
+                        ? 'Quale meta?'
+                        : 'Dove?',
                     style: Testi.titoloGrande.copyWith(
                       color: Colori.inchiostro,
                     ),
@@ -154,7 +163,14 @@ class _SchermataDestinazioneState extends State<SchermataDestinazione> {
                           MediaQuery.paddingOf(context).bottom + 24,
                         ),
                         children: [
-                          if (cercato.isEmpty && aMano == null)
+                          if (cercato.isEmpty &&
+                              aMano == null &&
+                              widget.soloElenco)
+                            _Suggerimento(
+                              'Un paese o una città: trovi chi ci è stato e '
+                              'l\'ha messo sul suo profilo.',
+                            )
+                          else if (cercato.isEmpty && aMano == null)
                             _Suggerimento(
                               'Città e paesi, anche senza rete. Se il posto non '
                               'c\'è — una valle, un\'isola — lo scrivi com\'è.',

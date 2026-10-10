@@ -539,6 +539,26 @@ class Archivio {
     }
   }
 
+  static const _community = 'community_visibile';
+
+  /// Se la barra mostra Community (5.3): l'ultima volta che il server l'ha
+  /// detto, la parte pubblica c'era per questa persona ed era maggiorenne.
+  /// Lo si ricorda per mostrarla subito, anche senza rete.
+  Stream<bool> osservaCommunity() =>
+      (_db.select(_db.impostazioni)..where((i) => i.chiave.equals(_community)))
+          .watchSingleOrNull()
+          .map((r) => r?.valore == '1');
+
+  Future<void> ricordaCommunity(bool visibile) => visibile
+      ? _db
+            .into(_db.impostazioni)
+            .insertOnConflictUpdate(
+              ImpostazioniCompanion.insert(chiave: _community, valore: '1'),
+            )
+      : (_db.delete(
+          _db.impostazioni,
+        )..where((i) => i.chiave.equals(_community))).go();
+
   static const _nonOra = 'posizione_non_ora';
   static const _negataDetta = 'posizione_negata_detta';
 

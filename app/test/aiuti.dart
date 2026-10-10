@@ -384,6 +384,26 @@ class ServerFinto {
 
   /// Le proprie segnalazioni, come le restituisce le_mie_segnalazioni.
   final mieSegnalazioni = <Map<String, Object?>>[];
+
+  /// La 5.3: i propri gusti, come li salva scegli_gusti.
+  List<String> gusti = [];
+
+  /// I propri viaggi che possono stare sul profilo, come tutti_i_viaggi di
+  /// il_mio_profilo_pubblico: con `viaggio_id` e `sul_profilo`.
+  final viaggiSulProfilo = <Map<String, Object?>>[];
+
+  /// I profili degli altri che si vedono, come li manda profilo_pubblico.
+  final profiliPubblici = <Map<String, Object?>>[];
+
+  static const _listaGusti = [
+    'arte',
+    'cibo',
+    'storia',
+    'natura',
+    'panorami',
+    'shopping',
+    'vita_notturna',
+  ];
   final richieste = <http.Request>[];
 
   /// Percorsi con una risposta data dal test, che vince sulle altre.
@@ -1094,6 +1114,77 @@ class ServerFinto {
         return http.Response('', 204);
       case 'POST /rest/v1/rpc/le_mie_segnalazioni':
         return risposta(mieSegnalazioni);
+      // ── La 5.3: profilo pubblico e ricerca ──
+      case 'POST /rest/v1/rpc/il_mio_profilo_pubblico':
+        final io = profilo;
+        if (io == null) return risposta(null);
+        return risposta({
+          'id': io['id'],
+          'nome': io['nome'],
+          'dal': '${DateTime.now().year}-03-01',
+          'gusti': gusti,
+          'traguardi': traguardi.length,
+          'viaggi': [
+            for (final v in viaggiSulProfilo)
+              if (v['sul_profilo'] == true)
+                {...v}
+                  ..remove('viaggio_id')
+                  ..remove('sul_profilo'),
+          ],
+          'attivo': partePubblica['attivo'],
+          'tutti_i_viaggi': viaggiSulProfilo,
+        });
+      case 'POST /rest/v1/rpc/profilo_pubblico':
+        final chi = _corpo(r)['p_utente'];
+        final trovato = profiliPubblici.where((p) => p['id'] == chi);
+        // Chi ha il profilo spento non vede nessuno, e un blocco non si
+        // distingue da un profilo spento: non c'è.
+        if (partePubblica['attivo'] != true ||
+            trovato.isEmpty ||
+            bloccate.any((b) => b['utente_id'] == chi)) {
+          return _errore('TR404', 'profilo non trovato');
+        }
+        return risposta(trovato.first);
+      case 'POST /rest/v1/rpc/cerca_viaggiatori':
+        if (partePubblica['attivo'] != true) {
+          return _errore('TR403', 'serve il profilo pubblico acceso');
+        }
+        final corpo = _corpo(r);
+        final paese = corpo['p_paese'] as String?;
+        final citta = (corpo['p_citta'] as String?)?.toLowerCase();
+        final cercati = (corpo['p_gusti'] as List).cast<String>();
+        if (paese == null && cercati.isEmpty) {
+          return _errore('22023', 'serve una meta o un gusto');
+        }
+        return risposta([
+          for (final p in profiliPubblici)
+            if (!bloccate.any((b) => b['utente_id'] == p['id']) &&
+                (cercati.isEmpty ||
+                    (p['gusti'] as List).any(cercati.contains)) &&
+                (paese == null ||
+                    (p['viaggi'] as List).cast<Map<String, Object?>>().any(
+                      (v) =>
+                          v['paese'] == paese &&
+                          (citta == null ||
+                              (v['citta'] as String?)?.toLowerCase() == citta),
+                    )))
+              p,
+        ]);
+      case 'POST /rest/v1/rpc/scegli_gusti':
+        final scelti = (_corpo(r)['p_gusti'] as List).cast<String>();
+        gusti = [
+          for (final g in _listaGusti)
+            if (scelti.contains(g)) g,
+        ];
+        return risposta(gusti);
+      case 'POST /rest/v1/rpc/mostra_sul_profilo':
+        final corpo = _corpo(r);
+        final viaggio = viaggiSulProfilo.where(
+          (v) => v['viaggio_id'] == corpo['p_viaggio'],
+        );
+        if (viaggio.isEmpty) return _errore('TR404', 'non partecipi');
+        viaggio.first['sul_profilo'] = corpo['p_mostra'];
+        return http.Response('', 204);
     }
     return risposta(const []);
   }
@@ -1527,7 +1618,11 @@ class Ambiente {
   final posizione = PosizioneFinta();
   final mappeDelTelefono = MappeDelTelefonoFinte();
   final pagine = PagineFinte();
-  late final partePubblica = PartePubblica(server.supabase, rete: rete);
+  late final partePubblica = PartePubblica(
+    server.supabase,
+    rete: rete,
+    ricorda: archivio.ricordaCommunity,
+  );
   late final verifica = VerificaFinta(server);
 
   Widget servizi(Widget figlio) => Servizi(
