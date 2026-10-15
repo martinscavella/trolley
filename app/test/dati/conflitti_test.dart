@@ -19,8 +19,8 @@ void main() {
         rigaViaggio(
           'v',
           stato: 'definito',
-          inizio: '2026-10-10',
-          fine: '2026-10-11',
+          inizio: '2036-10-10',
+          fine: '2036-10-11',
         ),
       )
       ..partecipazioni.addAll([
@@ -28,8 +28,8 @@ void main() {
         rigaPartecipazione('v', utente: marco, ruolo: 'partecipante'),
       ])
       ..giorni.addAll([
-        rigaGiorno('v', '2026-10-10', '10:00:00', '24:00:00', id: 'g1'),
-        rigaGiorno('v', '2026-10-11', '00:00:00', '18:00:00', id: 'g2'),
+        rigaGiorno('v', '2036-10-10', '10:00:00', '24:00:00', id: 'g1'),
+        rigaGiorno('v', '2036-10-11', '00:00:00', '18:00:00', id: 'g2'),
       ])
       ..tappe.addAll([
         rigaDiTappa(
@@ -65,7 +65,7 @@ void main() {
     ..addAll(valori)
     ..['versione'] = (sulServer(id)['versione']! as int) + 1
     ..['modificato_da'] = marco
-    ..['modificato_il'] = '2026-10-04T16:42:00Z';
+    ..['modificato_il'] = '2036-10-04T16:42:00Z';
 
   Future<Conflitto> conflittoDa(Future<void> scrittura) => scrittura.then(
     (_) => fail('doveva trovare due versioni'),
@@ -112,7 +112,7 @@ void main() {
       expect(c.cosa, CosaInConflitto.tappa);
       expect(c.viaggioId, 'v');
       expect(c.autoreId, marco);
-      expect(c.salvataIl, DateTime.utc(2026, 10, 4, 16, 42));
+      expect(c.salvataIl, DateTime.utc(2036, 10, 4, 16, 42));
       expect(c.diversi, {'ora_inizio', 'durata_stimata_min'});
       expect(c.mia['ora_inizio'], '11:30:00');
       expect(c.loro['ora_inizio'], '12:00:00');
@@ -174,7 +174,7 @@ void main() {
     test('Marco l\'ha tolta mentre la si cambiava: si può rimetterla con la '
         'propria versione', () async {
       final vista = (await tappa('t'))!;
-      marcoCambia('t', {'eliminato_il': '2026-10-04T16:42:00Z'});
+      marcoCambia('t', {'eliminato_il': '2036-10-04T16:42:00Z'});
 
       final c = await conflittoDa(
         ambiente.archivio.modificaTappa(vista, {

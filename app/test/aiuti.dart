@@ -395,6 +395,19 @@ class ServerFinto {
   /// I profili degli altri che si vedono, come li manda profilo_pubblico.
   final profiliPubblici = <Map<String, Object?>>[];
 
+  /// La 5.4: a che punto si è con ciascuno, per id: `stato` (`richiesto`,
+  /// `accettato`, `rifiutato`), `da_me`, `messaggio`, `chiesto_il`,
+  /// `risposto_il`.
+  final collegamenti = <String, Map<String, Object?>>{};
+
+  /// I messaggi come li vede chi usa il telefono: `id`, `con`, `mio`,
+  /// `testo`, `scritto_il`, `tolto`, `letto`. Togliere una conversazione li
+  /// toglie da qui: dall'altra parte non si guarda.
+  final messaggi = <Map<String, Object?>>[];
+
+  /// Chi ha chiuso l'account: nelle conversazioni non ha più un nome.
+  final accountChiusi = <String>{};
+
   static const _listaGusti = [
     'arte',
     'cibo',
@@ -1093,10 +1106,17 @@ class ServerFinto {
           return http.Response('', 204);
         }
         segnalate.add(corpo);
+        // Di un messaggio si segnala, e si blocca, chi l'ha scritto (5.4).
+        final segnalato = corpo['p_tipo'] == 'messaggio'
+            ? messaggi.firstWhere(
+                (m) => m['id'] == corpo['p_oggetto'],
+                orElse: () => {},
+              )['con']
+            : corpo['p_oggetto'];
         mieSegnalazioni.insert(0, {
           'id': corpo['p_id'],
           'tipo_oggetto': corpo['p_tipo'],
-          'nome': _nomeDi(corpo['p_oggetto']),
+          'nome': _nomeDi(segnalato),
           'motivo': corpo['p_motivo'],
           'stato': 'ricevuta',
           'esito': null,
@@ -1104,10 +1124,10 @@ class ServerFinto {
           'gestita_il': null,
         });
         if (corpo['p_blocca'] == true &&
-            !bloccate.any((b) => b['utente_id'] == corpo['p_oggetto'])) {
+            !bloccate.any((b) => b['utente_id'] == segnalato)) {
           bloccate.insert(0, {
-            'utente_id': corpo['p_oggetto'],
-            'nome': _nomeDi(corpo['p_oggetto']),
+            'utente_id': segnalato,
+            'nome': _nomeDi(segnalato),
             'dal': DateTime.now().toUtc().toIso8601String(),
           });
         }
@@ -1144,7 +1164,10 @@ class ServerFinto {
             bloccate.any((b) => b['utente_id'] == chi)) {
           return _errore('TR404', 'profilo non trovato');
         }
-        return risposta(trovato.first);
+        return risposta({
+          ...trovato.first,
+          'collegamento': _collegamentoPer(chi as String),
+        });
       case 'POST /rest/v1/rpc/cerca_viaggiatori':
         if (partePubblica['attivo'] != true) {
           return _errore('TR403', 'serve il profilo pubblico acceso');
@@ -1185,8 +1208,259 @@ class ServerFinto {
         if (viaggio.isEmpty) return _errore('TR404', 'non partecipi');
         viaggio.first['sul_profilo'] = corpo['p_mostra'];
         return http.Response('', 204);
+      // ── La 5.4: collegamenti e messaggi ──
+      case 'POST /rest/v1/rpc/chiedi_collegamento':
+        final corpo = _corpo(r);
+        final chi = corpo['p_utente'] as String;
+        if (!_siVede(chi)) return _errore('TR404', 'profilo non trovato');
+        final c = collegamenti[chi];
+        final adesso = DateTime.now().toUtc().toIso8601String();
+        if (c != null &&
+            (c['stato'] == 'accettato' ||
+                (c['stato'] == 'richiesto' && c['da_me'] == true))) {
+          return risposta('nessun_cambio');
+        }
+        if (c != null && c['stato'] == 'richiesto') {
+          _accetta(chi);
+          return risposta('accettato');
+        }
+        collegamenti[chi] = {
+          'stato': 'richiesto',
+          'da_me': true,
+          'messaggio': corpo['p_messaggio'],
+          'chiesto_il': adesso,
+          'risposto_il': null,
+        };
+        return risposta('richiesto');
+      case 'POST /rest/v1/rpc/rispondi':
+        final corpo = _corpo(r);
+        final chi = corpo['p_utente'] as String;
+        final c = collegamenti[chi];
+        if (c == null ||
+            c['stato'] != 'richiesto' ||
+            c['da_me'] == true ||
+            !_siVede(chi)) {
+          return _errore('TR404', 'nessuna richiesta da questa persona');
+        }
+        if (corpo['p_accetta'] == true) {
+          _accetta(chi);
+        } else {
+          c
+            ..['stato'] = 'rifiutato'
+            ..['messaggio'] = null
+            ..['risposto_il'] = DateTime.now().toUtc().toIso8601String();
+        }
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/ritira_richiesta':
+        final chi = _corpo(r)['p_utente'];
+        collegamenti.removeWhere(
+          (id, c) =>
+              id == chi && c['da_me'] == true && c['stato'] != 'accettato',
+        );
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/togli_collegamento':
+        final chi = _corpo(r)['p_utente'];
+        if (collegamenti[chi]?['stato'] != 'accettato') {
+          return _errore('TR404', 'non siete collegati');
+        }
+        collegamenti.remove(chi);
+        messaggi.removeWhere((m) => m['con'] == chi);
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/togli_conversazione':
+        final chi = _corpo(r)['p_utente'];
+        messaggi.removeWhere((m) => m['con'] == chi);
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/i_miei_collegamenti':
+        final visibili = {
+          for (final e in collegamenti.entries)
+            if (_siVede(e.key)) e.key: e.value,
+        };
+        return risposta({
+          'ricevute': [
+            for (final e in visibili.entries)
+              if (e.value['stato'] == 'richiesto' && e.value['da_me'] != true)
+                {
+                  'utente_id': e.key,
+                  'nome': _nomeDi(e.key),
+                  'messaggio': e.value['messaggio'],
+                  'chiesto_il': e.value['chiesto_il'],
+                  'profilo': profiliPubblici
+                      .where((p) => p['id'] == e.key)
+                      .firstOrNull,
+                },
+          ],
+          'inviate': [
+            for (final e in visibili.entries)
+              if (e.value['stato'] != 'accettato' && e.value['da_me'] == true)
+                {
+                  'utente_id': e.key,
+                  'nome': _nomeDi(e.key),
+                  'stato': e.value['stato'],
+                  'chiesto_il': e.value['chiesto_il'],
+                },
+          ],
+          'collegati': [
+            for (final e in visibili.entries)
+              if (e.value['stato'] == 'accettato')
+                {
+                  'utente_id': e.key,
+                  'nome': _nomeDi(e.key),
+                  'dal': e.value['risposto_il'],
+                },
+          ],
+        });
+      case 'POST /rest/v1/rpc/i_miei_messaggi':
+        final altri = {
+          ...collegamenti.keys.where(
+            (id) => collegamenti[id]!['stato'] == 'accettato',
+          ),
+          ...messaggi.map((m) => m['con']! as String),
+        };
+        final righe = [
+          for (final altro in altri)
+            if (_conversazione(altro) case final stato?)
+              _rigaConversazione(altro, stato),
+        ];
+        String quando(Map<String, Object?> r) =>
+            (r['ultimo'] as Map?)?['scritto_il'] as String? ??
+            r['dal'] as String? ??
+            '';
+        righe.sort((a, b) => quando(b).compareTo(quando(a)));
+        return risposta(righe);
+      case 'POST /rest/v1/rpc/conversazione':
+        final corpo = _corpo(r);
+        final chi = corpo['p_utente'] as String;
+        final stato = _conversazione(chi);
+        if (stato == null) {
+          return _errore('TR404', 'conversazione non trovata');
+        }
+        final dopo = corpo['p_dopo'] as String?;
+        final suoi = _messaggiCon(chi);
+        for (final m in suoi) {
+          if (m['mio'] != true) m['letto'] = true;
+        }
+        return risposta({
+          'utente_id': chi,
+          'nome': accountChiusi.contains(chi) ? null : _nomeDi(chi),
+          'collegati': stato == 'collegati',
+          'dal': collegamenti[chi]?['risposto_il'],
+          'messaggi': [
+            for (final m in suoi)
+              if (dopo == null ||
+                  DateTime.parse(m['scritto_il']! as String)
+                      .isAfter(DateTime.parse(dopo)))
+                _messaggioPer(m),
+          ],
+        });
+      case 'POST /rest/v1/rpc/scrivi':
+        final corpo = _corpo(r);
+        final chi = corpo['p_utente'] as String;
+        final gia = messaggi.where((m) => m['id'] == corpo['p_id']);
+        if (gia.isNotEmpty) return risposta(_messaggioPer(gia.first));
+        if (_conversazione(chi) != 'collegati') {
+          return _errore('TR404', 'non siete collegati');
+        }
+        final m = {
+          'id': corpo['p_id'],
+          'con': chi,
+          'mio': true,
+          'testo': corpo['p_testo'],
+          'scritto_il': DateTime.now().toUtc().toIso8601String(),
+          'tolto': false,
+          'letto': true,
+        };
+        messaggi.add(m);
+        return risposta(_messaggioPer(m));
     }
     return risposta(const []);
+  }
+
+  /// Come privato.vede_il_profilo: il proprio profilo acceso, il suo nella
+  /// parte pubblica, nessun blocco.
+  bool _siVede(String chi) =>
+      partePubblica['attivo'] == true &&
+      profiliPubblici.any((p) => p['id'] == chi) &&
+      !bloccate.any((b) => b['utente_id'] == chi);
+
+  /// Come privato.conversazione_per: `collegati`, `finita`, o `null`.
+  String? _conversazione(String chi) {
+    if (collegamenti[chi]?['stato'] == 'accettato') {
+      return _siVede(chi) ? 'collegati' : null;
+    }
+    if (partePubblica['attivo'] != true ||
+        bloccate.any((b) => b['utente_id'] == chi) ||
+        !messaggi.any((m) => m['con'] == chi)) {
+      return null;
+    }
+    return 'finita';
+  }
+
+  List<Map<String, Object?>> _messaggiCon(String chi) =>
+      [
+        for (final m in messaggi)
+          if (m['con'] == chi) m,
+      ]..sort(
+        (a, b) =>
+            (a['scritto_il']! as String).compareTo(b['scritto_il']! as String),
+      );
+
+  Map<String, Object?> _rigaConversazione(String chi, String stato) {
+    final suoi = _messaggiCon(chi);
+    return {
+      'utente_id': chi,
+      'nome': accountChiusi.contains(chi) ? null : _nomeDi(chi),
+      'collegati': stato == 'collegati',
+      'dal': collegamenti[chi]?['risposto_il'],
+      'ultimo': suoi.isEmpty ? null : _messaggioPer(suoi.last),
+      'da_leggere': suoi
+          .where((m) => m['mio'] != true && m['letto'] != true)
+          .length,
+    };
+  }
+
+  static Map<String, Object?> _messaggioPer(Map<String, Object?> m) => {
+    'id': m['id'],
+    'mio': m['mio'],
+    'testo': m['tolto'] == true ? null : m['testo'],
+    'scritto_il': m['scritto_il'],
+    'tolto': m['tolto'] == true,
+  };
+
+  /// Come privato.accetta: la richiesta diventa il primo messaggio.
+  void _accetta(String chi) {
+    final c = collegamenti[chi]!;
+    if (c['messaggio'] != null) {
+      messaggi.add({
+        'id': 'richiesta-$chi',
+        'con': chi,
+        'mio': c['da_me'] == true,
+        'testo': c['messaggio'],
+        'scritto_il': c['chiesto_il'],
+        'tolto': false,
+        'letto': c['da_me'] == true,
+      });
+    }
+    c
+      ..['stato'] = 'accettato'
+      ..['messaggio'] = null
+      ..['risposto_il'] = DateTime.now().toUtc().toIso8601String();
+  }
+
+  /// Lo stato con [chi] come lo dice profilo_pubblico (5.4).
+  Map<String, Object?>? _collegamentoPer(String chi) {
+    final c = collegamenti[chi];
+    if (c == null) return null;
+    return switch ((c['stato'], c['da_me'] == true)) {
+      ('accettato', _) => {'stato': 'collegati', 'dal': c['risposto_il']},
+      ('richiesto', true) => {'stato': 'inviata', 'dal': c['chiesto_il']},
+      ('richiesto', false) => {
+        'stato': 'ricevuta',
+        'dal': c['chiesto_il'],
+        'messaggio': c['messaggio'],
+      },
+      ('rifiutato', true) => {'stato': 'non_accettata', 'dal': c['chiesto_il']},
+      _ => null,
+    };
   }
 
   /// I filtri di PostgREST che l'app usa: `eq`, `neq`, `is.null`, `in`.
@@ -1287,6 +1561,8 @@ class ServerFinto {
 
   String _nomeDi(Object? id) =>
       utenti.firstWhere((u) => u['id'] == id, orElse: () => {})['nome']
+          as String? ??
+      profiliPubblici.firstWhere((p) => p['id'] == id, orElse: () => {})['nome']
           as String? ??
       '';
 

@@ -177,7 +177,7 @@ La risposta di un assistente incollata nell'app si salva qui **prima** di provar
 
 ### `configurazione`
 
-`chiave`, `valore` (JSON), `aggiornata_il`. Quello che deve cambiare senza un rilascio: `modelli_suggeriti`, l'elenco dei modelli da consigliare per l'itinerario ([ADR-010](adr/010-itinerario-incollato.md)); `tetto_mappe`, quante chiamate di ogni tipo per persona, viaggio e giorno ([ADR-006](adr/006-mappe-e-percorsi.md)); `parte_pubblica`, `"chiusa"`, `"aperta"` o `"chiusa_ai_nuovi"` (5.1: chiusa nell'ondata 1, chiusa ai nuovi quando le segnalazioni sono troppe; gli account interni la vedono sempre); `tetto_telefono`, i codici SMS e i tentativi al giorno ([ADR-011](adr/011-verifica-del-telefono.md)); `contatto_moderazione`, l'indirizzo che l'app mostra a chi segnala o è sospeso; `tetto_ricerca`, quante ricerche di viaggiatori al giorno per persona (5.3). La legge chi ha un accesso, la scrive solo chi gestisce il progetto.
+`chiave`, `valore` (JSON), `aggiornata_il`. Quello che deve cambiare senza un rilascio: `modelli_suggeriti`, l'elenco dei modelli da consigliare per l'itinerario ([ADR-010](adr/010-itinerario-incollato.md)); `tetto_mappe`, quante chiamate di ogni tipo per persona, viaggio e giorno ([ADR-006](adr/006-mappe-e-percorsi.md)); `parte_pubblica`, `"chiusa"`, `"aperta"` o `"chiusa_ai_nuovi"` (5.1: chiusa nell'ondata 1, chiusa ai nuovi quando le segnalazioni sono troppe; gli account interni la vedono sempre); `tetto_telefono`, i codici SMS e i tentativi al giorno ([ADR-011](adr/011-verifica-del-telefono.md)); `contatto_moderazione`, l'indirizzo che l'app mostra a chi segnala o è sospeso; `tetto_ricerca`, quante ricerche di viaggiatori al giorno per persona (5.3); `tetto_messaggi`, quanti messaggi al giorno per persona (5.4, 500). La legge chi ha un accesso, la scrive solo chi gestisce il progetto.
 
 ### `consumo_mappe` — solo sul server, nello schema privato
 
@@ -195,14 +195,18 @@ La risposta di un assistente incollata nell'app si salva qui **prima** di provar
 
 `ricerca_viaggiatori`: `utente_id`, `giorno`, `quante`. Il conto del tetto delle ricerche (`tetto_ricerca`, 60 al giorno): quante, mai che cosa. Si toglie dopo una settimana.
 
+### `conversazione_tolta` — solo sul server, nello schema privato
+
+`utente_id`, `altro_id`, `fino_al`. Fino a quando una persona non vede più la conversazione con un'altra: ha tolto il collegamento, o la conversazione rimasta (5.4, P6). I messaggi scritti prima di `fino_al` per lei non ci sono più; quelli che nessuno dei due vede più si cancellano.
+
 ---
 
 ## Parte pubblica
 
 | Entità | Campi |
 |---|---|
-| `collegamento` | `da_utente`, `a_utente`, `stato` (`richiesto` · `accettato` · `rifiutato`) |
-| `messaggio` | `collegamento_id`, `da_utente`, `testo`. Esiste solo se il collegamento è `accettato` |
+| `collegamento` | `id`, `da_utente` (chi ha chiesto per ultimo), `a_utente`, `stato` (`richiesto` · `accettato` · `rifiutato`), `messaggio` (quello della richiesta, al più 200 caratteri: solo finché è `richiesto`), `chiesto_il`, `risposto_il`. Uno per coppia, in qualunque verso. Si scrive con `chiedi_collegamento`, `rispondi`, `ritira_richiesta`, `togli_collegamento`; si legge con `i_miei_collegamenti` e nel `collegamento` di `profilo_pubblico` (5.4) |
+| `messaggio` | `id` (nato sul telefono), `da_utente`, `a_utente`, `testo` (1–1000 caratteri; vuoto quando chi modera l'ha tolto), `scritto_il`, `letto_il` (solo per dire a chi riceve che cosa è da leggere), `tolto_il`. Non porta il collegamento: la conversazione è fra due persone, e sopravvive al collegamento tolto (P6). Si scrive con `scrivi`, solo fra collegati che si vedono; si legge con `conversazione` e `i_miei_messaggi` |
 | `blocco` | `da_utente`, `a_utente`, `creato_il`. Effetto **bidirezionale** (`privato.si_bloccano`). Si scrive con `blocca` e `sblocca`, che toglie la riga; si legge solo chi si è bloccato (`persone_bloccate`), mai chi ci ha bloccato. Chiudendo l'account si tolgono quelli nei due versi |
 | `segnalazione` | `id` (nato sul telefono), `da_utente`, `a_utente` (chi è segnalato), `tipo_oggetto` (`profilo` · `messaggio`), `oggetto_id`, `motivo` (`molestie` · `falso` · `inappropriato` · `minore` · `altro`), `nota`, `contenuto` (com'era quando è stato segnalato), `stato` (`ricevuta` · `gestita`), `esito` (`nessuna_azione` · `contenuto_rimosso` · `profilo_sospeso`), `nota_moderazione`, `misurata`, `creata_il`, `gestita_il`. Si scrive con `segnala`, si legge con `le_mie_segnalazioni` (senza il contenuto né la nota di chi modera); la gestisce lo schema `moderazione` ([moderazione](../sicurezza/moderazione.md)) |
 | `presenza_citta` | `utente_id`, `viaggio_id`, `citta`, `attiva_fino`. Mai coordinate, mai storico. Si scrive solo con `partecipazione.sul_posto_il` di quel viaggio; `attiva_fino` lo legge solo la persona (5.2) |
@@ -211,7 +215,8 @@ La risposta di un assistente incollata nell'app si salva qui **prima** di provar
 - Un viaggio con stato diverso da `chiuso` non è raggiungibile da nessuna query della parte pubblica.
 - `presenza_citta` si cancella alla fine del viaggio. Non si archivia: si cancella.
 - Un `blocco` rende invisibili entrambi all'altro, in ricerca, profili e messaggi.
-- Si segnala un profilo solo se è, o è stato, nella parte pubblica (ha accettato le condizioni d'uso): spegnerlo non fa sfuggire. I messaggi si segnalano dalla 5.4.
+- Si segnala un profilo solo se è, o è stato, nella parte pubblica (ha accettato le condizioni d'uso): spegnerlo non fa sfuggire. Un messaggio si segnala solo se lo si è ricevuto, in una conversazione che si vede.
+- Si scrive solo a un collegamento `accettato`, finché vi vedete. Una conversazione finita resta a chi non l'ha tolta, senza poter scrivere.
 
 ---
 

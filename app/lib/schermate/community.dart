@@ -3,6 +3,10 @@
 /// guarda si fa guardare: con il profilo pubblico spento non si vede nessuno,
 /// e la schermata dice come accenderlo (11, regola 6).
 ///
+/// Con la 5.4 accanto a Cerca ci sono Collegamenti e Messaggi (tela, 77 e
+/// 111), con il numero delle richieste ricevute e delle conversazioni da
+/// leggere. Senza notifiche, si ricaricano ogni tanto mentre li si guarda.
+///
 /// Dipende dalla rete: i profili degli altri si guardano com'erano adesso, e
 /// non restano sul telefono. Si misura ogni ricerca (07,
 /// `viaggiatori_cercati`): che criteri, mai quali, e quanti risultati.
@@ -22,13 +26,16 @@ import '../aspetto/testi.dart';
 import '../dati/destinazioni.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
+import '../dominio/collegamenti.dart';
 import '../dominio/itinerario.dart';
 import '../dominio/parte_pubblica.dart';
 import '../dominio/profilo_pubblico.dart';
 import '../dominio/ricordo.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
+import 'collegamenti.dart';
 import 'con_la_rete.dart';
+import 'conversazione.dart';
 import 'profilo_altrui.dart';
 import 'profilo_pubblico.dart';
 import 'scelta_destinazione.dart';
@@ -47,8 +54,22 @@ class SchermataCommunity extends StatefulWidget {
 /// la copia sul telefono, a parte.
 typedef _Io = ({StatoPartePubblica stato, Set<Interesse> gusti});
 
+/// Le tre schede in alto (tela, 74, 77 e 111).
+enum _Scheda { cerca, collegamenti, messaggi }
+
 class _SchermataCommunityState extends State<SchermataCommunity> {
   Future<_Io?>? _io;
+  _Scheda _scheda = _Scheda.cerca;
+
+  /// I collegamenti e le conversazioni (5.4): `null` finché non arrivano.
+  Collegamenti? _collegamenti;
+  List<RigaConversazione>? _conversazioni;
+  ErroreTrolley? _erroreSociale;
+  Timer? _orologio;
+
+  /// Ogni quanto, guardando Collegamenti o Messaggi, si chiede se c'è
+  /// qualcosa di nuovo: senza notifiche, arriva così.
+  static const _ogni = Duration(seconds: 15);
   Ricerca _ricerca = const Ricerca();
   List<ProfiloPubblico>? _trovati;
   String? _errore;
@@ -70,8 +91,15 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _orologio = Timer.periodic(_ogni, (_) => _aggiornaSociale());
+  }
+
+  @override
   void dispose() {
     _attesa?.cancel();
+    _orologio?.cancel();
     super.dispose();
   }
 
@@ -83,6 +111,8 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
     if (stato.attivo) {
       final mio = await servizi.partePubblica.ilMioProfilo();
       gusti = {...?mio?.gusti};
+      // I numeri sulle schede, senza far aspettare la ricerca.
+      unawaited(_caricaSociale());
     }
     return (stato: stato, gusti: gusti);
   }
@@ -93,6 +123,44 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
     _errore = null;
     if (!_ricerca.vuota) _programma();
   });
+
+  /// I collegamenti e le conversazioni, dal server.
+  Future<void> _caricaSociale() async {
+    if (!mounted) return;
+    final parte = Servizi.of(context).partePubblica;
+    try {
+      final collegamenti = await parte.collegamenti();
+      final conversazioni = await parte.conversazioni();
+      if (!mounted) return;
+      setState(() {
+        _collegamenti = collegamenti;
+        _conversazioni = conversazioni;
+        _erroreSociale = null;
+      });
+    } on ErroreTrolley catch (e) {
+      if (mounted) setState(() => _erroreSociale = e);
+    }
+  }
+
+  /// Di tanto in tanto, mentre si guardano Collegamenti o Messaggi e la
+  /// schermata è davanti.
+  void _aggiornaSociale() {
+    if (!mounted ||
+        _scheda == _Scheda.cerca ||
+        _collegamenti == null ||
+        !Servizi.of(context).rete.disponibile ||
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed ||
+        !(ModalRoute.of(context)?.isCurrent ?? false)) {
+      return;
+    }
+    unawaited(_caricaSociale());
+  }
+
+  void _cambiaScheda(_Scheda scheda) {
+    if (scheda == _scheda) return;
+    setState(() => _scheda = scheda);
+    if (scheda != _Scheda.cerca) unawaited(_caricaSociale());
+  }
 
   void _cambia(Ricerca ricerca) {
     setState(() {
@@ -163,25 +231,37 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
   }
 
   Future<void> _apriProfilo(
-    ProfiloPubblico p,
+    String utenteId,
+    String nome,
     _Io io,
     List<Meta> mieMete,
   ) async {
     final tolto = await apri<bool>(
       context,
       SchermataProfiloAltrui(
-        utenteId: p.id,
-        nome: p.nome,
+        utenteId: utenteId,
+        nome: nome,
         mieiGusti: io.gusti,
         mieMete: mieMete,
       ),
     );
+    if (!mounted) return;
     // Bloccato o segnalato con «Blocca anche»: non lo si vede più.
-    if (tolto == true && mounted) {
+    if (tolto == true) {
       setState(
-        () => _trovati = [...?_trovati]..removeWhere((x) => x.id == p.id),
+        () => _trovati = [...?_trovati]..removeWhere((x) => x.id == utenteId),
       );
     }
+    // Dal profilo si chiede, si risponde, si scrive.
+    unawaited(_caricaSociale());
+  }
+
+  Future<void> _apriConversazione(String utenteId, String? nome) async {
+    await apri<bool>(
+      context,
+      SchermataConversazione(utenteId: utenteId, nome: nome),
+    );
+    if (mounted) unawaited(_caricaSociale());
   }
 
   Future<void> _apriIlMioProfilo() async {
@@ -221,7 +301,22 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
                 final io when !io.stato.visibile || !io.stato.maggiorenne =>
                   _nonCe(),
                 final io when !io.stato.attivo => _spento(io.stato),
-                final io => _perCercare(io),
+                final io => [
+                  _Schede(
+                    scelta: _scheda,
+                    richieste: _collegamenti?.ricevute.length ?? 0,
+                    daLeggere: conversazioniDaLeggere(
+                      _conversazioni ?? const [],
+                    ),
+                    onScegli: _cambiaScheda,
+                  ),
+                  const SizedBox(height: 12),
+                  ...switch (_scheda) {
+                    _Scheda.cerca => _perCercare(io),
+                    _Scheda.collegamenti => _deiCollegamenti(io),
+                    _Scheda.messaggi => _deiMessaggi(),
+                  },
+                ],
               },
             ],
           );
@@ -447,7 +542,7 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
                     inComune: quantiInComune(
                       inComune(mieMete: mieMete, mieiGusti: io.gusti, altro: p),
                     ),
-                    onTap: () => _apriProfilo(p, io, mieMete),
+                    onTap: () => _apriProfilo(p.id, p.nome, io, mieMete),
                   ).entra(context, ritardo: Ritmo.passo * (i < 8 ? i : 8)),
                   const SizedBox(height: 8),
                 ],
@@ -463,6 +558,73 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
     ];
   }
 
+  // ─── Collegamenti e messaggi ─────────────────────────────────────────────
+
+  /// Finché non arrivano: l'attesa, o perché non sono arrivati.
+  List<Widget>? _inAttesa() {
+    final errore = _erroreSociale;
+    if (_collegamenti != null && _conversazioni != null) return null;
+    if (errore == null) {
+      return const [
+        Padding(
+          padding: EdgeInsets.only(top: 24),
+          child: Center(child: IndicatoreAttivita()),
+        ),
+      ];
+    }
+    return [
+      Avviso(
+        icona: icona(
+          ios: CupertinoIcons.wifi_slash,
+          android: Icons.wifi_off_rounded,
+        ),
+        errore: true,
+        testo: errore.messaggio,
+      ).entra(context),
+      const SizedBox(height: 16),
+      ConLaRete(
+        builder: (context, rete) => PulsanteGrande(
+          etichetta: 'Riprova',
+          secondario: true,
+          motivo: rete ? null : motivoSenzaRete,
+          onPressed: () {
+            setState(() => _erroreSociale = null);
+            unawaited(_caricaSociale());
+          },
+        ),
+      ),
+    ];
+  }
+
+  /// «Collegamenti» (tela, 77).
+  List<Widget> _deiCollegamenti(_Io io) =>
+      _inAttesa() ??
+      [
+        // Le proprie mete, come per la ricerca: per dire che cosa si ha in
+        // comune con chi chiede.
+        StreamBuilder<List<Meta>>(
+          stream: Servizi.of(context).archivio
+              .osservaMieiViaggi()
+              .map((miei) => meteDi(delPassaporto(miei, DateTime.now()))),
+          builder: (context, mete) {
+            final mieMete = mete.data ?? const <Meta>[];
+            return ElencoCollegamenti(
+              collegamenti: _collegamenti!,
+              mieMete: mieMete,
+              mieiGusti: io.gusti,
+              onCambiato: () => unawaited(_caricaSociale()),
+              onProfilo: (id, nome) => _apriProfilo(id, nome, io, mieMete),
+              onConversazione: _apriConversazione,
+            );
+          },
+        ),
+      ];
+
+  /// «Messaggi» (tela, 111).
+  List<Widget> _deiMessaggi() =>
+      _inAttesa() ??
+      [ElencoConversazioni(righe: _conversazioni!, onApri: _apriConversazione)];
+
   /// «Kyoto nel passaporto · ama il cibo», «Tokyo nel passaporto · 14 paesi».
   static String _perche(ProfiloPubblico p, Ricerca ricerca) {
     final viaggio = ricerca.viaggioNellaMeta(p);
@@ -475,6 +637,90 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
       else
         paesi == 1 ? '1 paese' : '$paesi paesi',
     ].join(' · ');
+  }
+}
+
+/// Cerca, Collegamenti, Messaggi (tela, 74, 77 e 111): con il numero delle
+/// richieste ricevute e delle conversazioni da leggere, quando ce ne sono.
+class _Schede extends StatelessWidget {
+  const _Schede({
+    required this.scelta,
+    required this.richieste,
+    required this.daLeggere,
+    required this.onScegli,
+  });
+
+  final _Scheda scelta;
+  final int richieste;
+  final int daLeggere;
+  final ValueChanged<_Scheda> onScegli;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget scheda(_Scheda s, String nome, int quanti, String descrizione) {
+      final attiva = s == scelta;
+      final etichetta = quanti > 0 ? '$nome · $quanti' : nome;
+      return Expanded(
+        child: Semantics(
+          selected: attiva,
+          child: Premibile(
+            onTap: () => onScegli(s),
+            scala: 0.96,
+            etichetta: quanti > 0 ? '$nome, $quanti $descrizione' : nome,
+            child: AnimatedContainer(
+              duration: Ritmo.breve,
+              height: 40,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: attiva ? Colori.inchiostro : Colori.bianco,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ExcludeSemantics(
+                child: Text(
+                  etichetta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Testi.secondario.copyWith(
+                    color: attiva ? Colori.bianco : Colori.ardesia,
+                    fontWeight: attiva ? FontWeight.w700 : FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colori.bianco,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          scheda(_Scheda.cerca, 'Cerca', 0, ''),
+          const SizedBox(width: 4),
+          scheda(
+            _Scheda.collegamenti,
+            'Collegamenti',
+            richieste,
+            richieste == 1 ? 'richiesta ricevuta' : 'richieste ricevute',
+          ),
+          const SizedBox(width: 4),
+          scheda(
+            _Scheda.messaggi,
+            'Messaggi',
+            daLeggere,
+            daLeggere == 1
+                ? 'conversazione da leggere'
+                : 'conversazioni da leggere',
+          ),
+        ],
+      ),
+    );
   }
 }
 

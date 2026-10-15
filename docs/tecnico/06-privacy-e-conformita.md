@@ -13,6 +13,7 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 | Email, data di nascita | Server | Necessari per l'account e per l'età |
 | Numero di telefono | Server, schema privato | Solo per chi attiva la parte pubblica. Lo verifica Twilio con un codice SMS, attraverso la nostra funzione `telefono` ([ADR-011](adr/011-verifica-del-telefono.md)); non lo legge nessun altro, e chiudendo l'account si cancella |
 | Blocchi e segnalazioni | Server | Chi blocca chi lo sa solo chi blocca; chi segnala chi lo sa solo chi modera. La segnalazione conserva il contenuto segnalato com'era (5.1) |
+| Collegamenti e messaggi | Server | Li leggono solo le due persone, dalle funzioni del server; chi modera solo un messaggio segnalato, nella sua fotografia. Non restano sul telefono (5.4) |
 | Viaggi, tappe, spese, liste | Server | Rivelano dove una persona è stata e con chi |
 | **Documenti d'identità e biglietti** | **Solo telefono** | Non esiste un endpoint che li accetti |
 | **Posizione durante la navigazione** | **Solo telefono** | Va al fornitore di mappe (Geoapify) solo come partenza di un percorso chiesto dalla persona, mai a noi. Si chiede «mentre si usa l'app», mai in sottofondo, e solo per un viaggio in corso o per farsi portare a una tappa |
@@ -42,9 +43,10 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 | Presenza in città | Fino alla fine del viaggio, poi cancellata. Le copie di sicurezza del database la terrebbero per il loro periodo: oggi il progetto è sul piano gratuito di Supabase, che non ne fa; sul piano Pro sono sette giorni, e va detto nell'informativa |
 | Segnalazioni e contenuti segnalati | Il tempo necessario a gestirle, più il periodo utile a difendersi da una contestazione: il periodo è da fissare con l'avvocato, e manca il lavoro che le toglie. Chiudendo l'account le proprie restano, senza più diventare eventi a proprio nome |
 | Numero di telefono | Finché c'è l'account; i tentativi di verifica una settimana |
+| Messaggi | Finché uno dei due vede la conversazione: chi toglie il collegamento o la conversazione non la vede più, e quando non la vede più nessuno si cancella. Il messaggio di una richiesta rifiutata si cancella subito. Senza un limite di tempo: è la parte di P6 ancora aperta ([valutazione d'impatto](../legale/valutazione-impatto-parte-pubblica.md)) |
 | Eventi di misurazione | Aggregati oltre un orizzonte breve: non servono a lungo nel dettaglio |
 | Conto delle mappe per il tetto | Una settimana: serve solo a sapere se oggi si è sotto il tetto ([ADR-006](adr/006-mappe-e-percorsi.md)). Quante chiamate, mai dove né cosa |
-| Account chiuso | Dati personali cancellati, e l'accesso con loro; i viaggi in cui si era da soli cancellati; i contributi nei viaggi altrui restano, attribuiti a un partecipante non più presente («Account chiuso»). Gli eventi di misurazione restano sotto un id nuovo che non porta alla persona; quelli di un account interno si cancellano |
+| Account chiuso | Dati personali cancellati, e l'accesso con loro; i viaggi in cui si era da soli cancellati; i contributi nei viaggi altrui restano, attribuiti a un partecipante non più presente («Account chiuso»); così le conversazioni, che restano agli altri, tranne dove c'era un blocco. Gli eventi di misurazione restano sotto un id nuovo che non porta alla persona; quelli di un account interno si cancellano |
 
 L'ultima riga va spiegata alla persona **prima** che chiuda l'account: le spese che ha pagato non si cancellano dai saldi altrui, perché sparire non estingue un debito.
 
@@ -52,7 +54,7 @@ L'ultima riga va spiegata alla persona **prima** che chiuda l'account: le spese 
 
 ## Diritti delle persone
 
-- **Esportazione sempre gratuita**, in un formato leggibile da una macchina. È un diritto, non una funzione a pagamento: la reimportazione invece è un servizio e può essere premium. Dal profilo, «I tuoi dati»: un file JSON con il profilo, i viaggi come la persona li vede, i traguardi e gli eventi (U.1; [decisioni](../decisioni/prodotto.md)).
+- **Esportazione sempre gratuita**, in un formato leggibile da una macchina. È un diritto, non una funzione a pagamento: la reimportazione invece è un servizio e può essere premium. Dal profilo, «I tuoi dati»: un file JSON con il profilo, i viaggi come la persona li vede, i traguardi e gli eventi (U.1; [decisioni](../decisioni/prodotto.md)); dalla 5.4 anche i collegamenti e i messaggi che si vedono ancora.
 - **Cancellazione dell'account** raggiungibile dall'app, non solo scrivendo a un indirizzo. Dallo stesso posto, dopo aver detto che cosa succede (`chiudi_account`).
 - **Pagina leggibile su cosa si misura**, con la possibilità di rifiutare senza perdere funzioni: `sito/misurazione.html`, su `trolleyapp.vercel.app/misurazione`, aperta dal profilo (U.3).
 - **Informativa** in `sito/privacy.html`, su `trolleyapp.vercel.app/privacy`: dall'accesso, prima di creare l'account, e dal profilo. In bozza, con le domande per l'avvocato in [per la revisione](../legale/per-la-revisione.md).

@@ -23,8 +23,8 @@ void main() {
           stato: 'definito',
           citta: 'Marrakech',
           paese: 'MA',
-          inizio: '2026-10-10',
-          fine: '2026-10-12',
+          inizio: '2036-10-10',
+          fine: '2036-10-12',
         ),
       )
       ..partecipazioni.add(rigaPartecipazione('v'));
@@ -41,10 +41,10 @@ void main() {
         centesimi: centesimi,
         valuta: valuta,
         paganteId: idDiProva,
-        data: DateTime.utc(2026, 10, 10),
+        data: DateTime.utc(2036, 10, 10),
         descrizione: '  Jardin Majorelle ',
         tassoUsato: '11.18',
-        tassoAl: DateTime.utc(2026, 10, 10, 4),
+        tassoAl: DateTime.utc(2036, 10, 10, 4),
       );
 
   Future<List<Spesa>> copia() => ambiente.db.select(ambiente.db.spese).get();
@@ -74,10 +74,10 @@ void main() {
         expect(arrivata['importo'], 170);
         expect(arrivata['pagante_id'], idDiProva);
         // Entra con la sua data, non con quella dell'invio (06, casi limite).
-        expect(arrivata['data'], '2026-10-10');
+        expect(arrivata['data'], '2036-10-10');
         // Il tasso resta nella spesa con la sua data.
         expect(arrivata['tasso_usato'], '11.18');
-        expect(arrivata['tasso_al'], '2026-10-10T04:00:00.000Z');
+        expect(arrivata['tasso_al'], '2036-10-10T04:00:00.000Z');
         expect(await inCoda(), isEmpty);
         expect((await copia()).single.versione, 1);
       },
@@ -93,7 +93,7 @@ void main() {
           viaggio: 'v',
           importo: '170',
           valuta: 'MAD',
-          data: '2026-10-10',
+          data: '2036-10-10',
         ),
       );
 
@@ -114,7 +114,7 @@ void main() {
           centesimi: 5000000,
           valuta: 'VND',
           paganteId: idDiProva,
-          data: DateTime.utc(2026, 10, 10),
+          data: DateTime.utc(2036, 10, 10),
         ).riga;
         expect(riga['tasso_usato'], isNull);
         expect(riga['tasso_al'], isNull);
@@ -161,9 +161,9 @@ void main() {
   group('la copia', () {
     test('scarica le spese del viaggio, senza quelle tolte', () async {
       ambiente.server.spese.addAll([
-        rigaDiSpesa('a', viaggio: 'v', data: '2026-10-10'),
-        rigaDiSpesa('b', viaggio: 'v', data: '2026-10-11')
-          ..['eliminato_il'] = '2026-10-11T20:00:00Z',
+        rigaDiSpesa('a', viaggio: 'v', data: '2036-10-10'),
+        rigaDiSpesa('b', viaggio: 'v', data: '2036-10-11')
+          ..['eliminato_il'] = '2036-10-11T20:00:00Z',
       ]);
       await ambiente.archivio.aggiornaCopia();
       expect((await copia()).map((s) => s.id), ['a']);
@@ -171,8 +171,8 @@ void main() {
 
     test('scarica i tassi, e non li richiede prima di sei ore', () async {
       ambiente.server.tassi.addAll([
-        rigaTasso('MAD', 11.18, '2026-10-10'),
-        rigaTasso('USD', 1.125, '2026-10-10'),
+        rigaTasso('MAD', 11.18, '2036-10-10'),
+        rigaTasso('USD', 1.125, '2036-10-10'),
       ]);
       // Il setUp li ha già chiesti, quando il server non ne aveva: si riprova.
       await ambiente.archivio.aggiornaTassi(
@@ -193,7 +193,7 @@ void main() {
     });
 
     test('senza rete i tassi restano quelli di prima', () async {
-      ambiente.server.tassi.add(rigaTasso('MAD', 11.18, '2026-10-10'));
+      ambiente.server.tassi.add(rigaTasso('MAD', 11.18, '2036-10-10'));
       await ambiente.archivio.aggiornaTassi(
         adesso: DateTime.now().add(const Duration(hours: 7)),
       );
@@ -212,7 +212,7 @@ void main() {
   group('cambiare e togliere richiedono la rete', () {
     setUp(() async {
       ambiente.server.spese.add(
-        rigaDiSpesa('a', viaggio: 'v', data: '2026-10-10', versione: 2),
+        rigaDiSpesa('a', viaggio: 'v', data: '2036-10-10', versione: 2),
       );
       await ambiente.archivio.aggiornaCopia();
     });
@@ -318,7 +318,7 @@ void main() {
           centesimi: 4200,
           valuta: 'EUR',
           paganteId: idDiProva,
-          data: DateTime.utc(2026, 10, 10),
+          data: DateTime.utc(2036, 10, 10),
           quote: const {idDiProva: 2100, 'marco': 2100},
         ),
       );
@@ -351,7 +351,7 @@ void main() {
           centesimi: 1220,
           valuta: 'EUR',
           paganteId: 'sara',
-          data: DateTime.utc(2026, 10, 12),
+          data: DateTime.utc(2036, 10, 12),
           quote: const {idDiProva: 1220},
           rimborso: true,
         ),
@@ -363,11 +363,11 @@ void main() {
 
     test('scaricando la copia arrivano le quote, senza quelle tolte', () async {
       ambiente.server
-        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2026-10-10'))
+        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2036-10-10'))
         ..quote.addAll([
           rigaDiQuota('a', viaggio: 'v', utente: idDiProva, quota: '6.20'),
           rigaDiQuota('a', viaggio: 'v', utente: 'marco', quota: '6.20')
-            ..['eliminato_il'] = '2026-10-11T20:00:00Z',
+            ..['eliminato_il'] = '2036-10-11T20:00:00Z',
         ]);
       await ambiente.archivio.aggiornaCopia();
       expect((await quoteNellaCopia()).map((q) => q.utenteId), [idDiProva]);
@@ -376,7 +376,7 @@ void main() {
     test('chi ha pagato e per chi si cambiano con la spesa, in una '
         'scrittura sola', () async {
       ambiente.server
-        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2026-10-10'))
+        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2036-10-10'))
         ..quote.addAll([
           rigaDiQuota('a', viaggio: 'v', utente: idDiProva, quota: '6.20'),
           rigaDiQuota('a', viaggio: 'v', utente: 'marco', quota: '6.20'),
@@ -405,7 +405,7 @@ void main() {
 
     test('se intanto qualcuno ha cambiato per chi è, due versioni', () async {
       ambiente.server
-        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2026-10-10'))
+        ..spese.add(rigaDiSpesa('a', viaggio: 'v', data: '2036-10-10'))
         ..quote.add(
           rigaDiQuota('a', viaggio: 'v', utente: idDiProva, quota: '12.40'),
         );

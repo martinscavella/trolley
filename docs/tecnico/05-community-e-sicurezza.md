@@ -13,7 +13,7 @@ Poche, e vanno scritte una volta sola con dei test. È qui che si sbaglia.
 | **Viaggi** | Si legge un viaggio solo se si è partecipanti con stato `attivo`. Nessuna eccezione, nemmeno per chi ha creato il viaggio dopo esserne uscito |
 | **Profilo pubblico** | Si legge solo se `profilo_pubblico_attivo` è vero, **anche quello di chi guarda**, e i due non si bloccano. La ricerca passa da una funzione: per meta e gusti, mai per nome, al più trenta risultati, un tetto al giorno, i criteri nel corpo della richiesta (5.2, M1 e M2) |
 | **Viaggi sul profilo** | Solo quelli con stato `chiuso` **e la fine passata**, che la persona non ha nascosto. I viaggi futuri e in corso **non compaiono in nessuna query pubblica**: non è un filtro nell'interfaccia, è una condizione della regola. Del viaggio escono la meta, il mese e l'anno, i giorni e se è verificato o importato: mai i compagni, le tappe, le spese, le note (5.2, M3–M5) |
-| **Messaggi** | Si scrive solo verso un collegamento con stato `accettato` |
+| **Collegamenti e messaggi** | Si chiede di collegarsi solo a chi si vede; si scrive solo verso un collegamento con stato `accettato`, finché vi vedete. Una conversazione finita resta a chi non l'ha tolta, senza poter scrivere (5.4, P6) |
 | **Blocco** | Bidirezionale: nessuno dei due compare all'altro in ricerca, profili o messaggi |
 | **Presenza in città** | Si legge solo da chi ha a sua volta la presenza attiva per un viaggio in corso nella stessa città, e senza `attiva_fino`: la fine la legge solo la persona (5.2, C2). Le righe scadute non si leggono, anche se la cancellazione tarda |
 
@@ -60,7 +60,7 @@ Non esiste nessun percorso in cui una coordinata raggiunge il server. Se in futu
 - **Il blocco** sta in `blocco`; `privato.si_bloccano(a, b)` lo dice nei due versi alle regole della 5.3 e della 5.4. Chi è bloccato non può saperlo: la tabella si legge solo dal lato di chi blocca.
 - **La segnalazione** passa da `segnala`, che fotografa il contenuto sul server — chi segnala non può scriverlo da sé — e, con «Blocca anche», blocca nella stessa operazione. Al massimo venti al giorno per persona. Chi segnala vede lo stato con `le_mie_segnalazioni`.
 - **Lo strumento di moderazione** è lo schema `moderazione`: la vista `coda` e le funzioni `archivia`, `sospendi`, `riattiva`, `parte_pubblica`. L'API e le funzioni del server non ci arrivano: si usa dall'editor SQL di Supabase, con l'accesso al progetto e la sua verifica in due passaggi. Scelto dall'utente il 9 ottobre 2026 al posto di una pagina web interna, che sarebbe stata una superficie in più da difendere. Il processo è in [moderazione](../sicurezza/moderazione.md).
-- **La terza azione**, togliere un contenuto, arriva con i messaggi (5.4): oggi si segnalano solo i profili.
+- **La terza azione**, togliere un contenuto, è arrivata con i messaggi: `moderazione.togli` (5.4).
 
 ### Come è fatto (5.3)
 
@@ -70,6 +70,21 @@ Non esiste nessun percorso in cui una coordinata raggiunge il server. Se in futu
 - **Le funzioni passano dal corpo della richiesta** (RPC), come tutte quelle dell'app: la meta e i gusti cercati non finiscono nell'indirizzo, che è quello che i registri del server tengono.
 - **Che cosa avete in comune lo calcola il telefono di chi guarda**, con i propri viaggi chiusi (dalla copia) e i propri gusti: il server non conserva un'affinità fra due persone.
 - **La barra mostra Community** se l'ultima volta che il server l'ha detto la parte pubblica c'era per quella persona ed era maggiorenne: il telefono lo ricorda, e lo richiede a ogni apertura dell'app. Mostrarla per errore non apre niente: dentro, ogni cosa la chiede al server.
+
+### Come è fatto (5.4)
+
+- **Collegamenti e messaggi si toccano solo dalle loro funzioni** (M7): `collegamento` e `messaggio` hanno la sicurezza per riga accesa e nessun privilegio per l'app. `chiedi_collegamento`, `rispondi`, `ritira_richiesta`, `togli_collegamento`, `togli_conversazione`, `scrivi` scrivono; `i_miei_collegamenti`, `i_miei_messaggi`, `conversazione` e il campo `collegamento` di `profilo_pubblico` leggono.
+- **Un collegamento per coppia**, in qualunque verso (un indice unico su `least`/`greatest`): chi ha chiesto per ultimo è `da_utente`. Se l'altro aveva già chiesto, chiedere è un sì. Dopo un no si chiede di nuovo, e la riga torna `richiesto` (M9 non adottata). Il messaggio della richiesta vive nella riga finché si risponde: accettata, diventa il primo messaggio con la sua ora; rifiutata, si cancella.
+- **Tutto segue `privato.vede_il_profilo`**: un profilo spento, sospeso o bloccato sparisce anche da collegamenti e conversazioni, e torna quando si riaccende o si sblocca. Bloccare non cancella niente.
+- **La conversazione sopravvive al collegamento** (P6, scelto dall'utente il 10 ottobre 2026). `privato.conversazione_per(io, altro)` dice `collegati` (vi vedete: si scrive), `finita` (non più collegati, ma restano messaggi per chi guarda, che è nella parte pubblica, e nessun blocco) o niente. Chi toglie il collegamento o la conversazione finisce in `privato.conversazione_tolta` con un `fino_al`: i messaggi di prima non li vede più. Quelli che nessuno dei due vede più si cancellano. Gli orari vengono da `clock_timestamp()`, perché dentro una transazione `now()` è fermo e «prima» e «dopo» si confonderebbero.
+- **Chi chiude l'account** perde i collegamenti; le conversazioni restano agli altri con «Account chiuso» (il profilo resta come lapide, senza nome). Dove c'era un blocco, in un verso o nell'altro, la conversazione si toglie anche all'altra persona, e quindi si cancella: chi aveva bloccato non deve ritrovarsela.
+- **Un messaggio ha l'id nato sul telefono**: rimandato dopo una risposta persa, `scrivi` lo riconosce e non lo scrive due volte. Fra 1 e 1000 caratteri; al più `tetto_messaggi` (500) al giorno per persona. Le richieste non hanno tetto (M8 non adottata).
+- **Niente conferme di lettura**: `letto_il` serve solo a dire a chi riceve che cosa è da leggere, e chi scrive non lo vede.
+- **Niente notifiche, e niente Realtime**: la conversazione aperta chiede i messaggi nuovi ogni 5 secondi, da un minuto prima dell'ultimo arrivato (uno scritto un attimo prima può essere salvato dopo; quelli già arrivati si riconoscono dall'id). Collegamenti e Messaggi si ricaricano ogni 15 secondi mentre li si guarda. Con molte più persone, o con le notifiche (14), si passa a Realtime.
+- **I messaggi non restano sul telefono**: si leggono con la rete, come tutta la parte pubblica. Scrivere non è uno dei quattro gesti offline; un messaggio che non parte resta con «Non inviato · Riprova», con lo stesso id.
+- **Segnalare un messaggio** passa da `segnala` con il tipo `messaggio`: solo uno ricevuto, non tolto, in una conversazione che si vede. La fotografia tiene il testo, il nome di chi l'ha scritto e quando; chi è segnalato è chi l'ha scritto. Segnalando un profilo che ha chiesto di collegarsi, la fotografia tiene anche il messaggio della richiesta in attesa: rifiutando si cancellerebbe.
+- **Togliere un messaggio** è `moderazione.togli(segnalazione)`: il testo si cancella (resta nella fotografia), le due persone vedono «Messaggio tolto da chi modera», e si chiudono tutte le segnalazioni aperte su quel messaggio con l'esito `contenuto_rimosso`.
+- **I tuoi dati** (versione 4) hanno `corrispondenza`: i propri collegamenti e i messaggi che si vedono ancora, anche con chi oggi non si vede, da `la_mia_corrispondenza`.
 
 ---
 

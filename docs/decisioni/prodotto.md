@@ -485,6 +485,22 @@ Costruiti il 10 ottobre 2026 sulle scelte della 5.2 (tela, 73–75 e 108–110, 
 - **Acceso, il proprio profilo è «Così ti vedono»** (75, al posto della 106): l'anteprima esatta, cosa ti piace (si scrive a ogni tocco), «Viaggi sul profilo» con quanti su quanti, l'interruttore per spegnerlo, il numero e le condizioni.
 - **I viaggi sul profilo si scelgono uno per uno** (109), con l'interruttore di sistema: ci si arriva da «Così ti vedono» e, prima di accendere, da «I viaggi chiusi che scegli tu · Scegli» nella 105. Di partenza ci sono tutti: la persona li vede prima di accendere.
 
+### I collegamenti e i messaggi (fase 5.4)
+
+Scelto il 10 ottobre 2026 (tela, 76–78 e 111–116, ridisegnate quel giorno; nota n20), costruito il 15 ottobre.
+
+- **La conversazione sopravvive al collegamento** (P6, scelta dall'utente al posto di «spariscono per entrambi»): chi toglie il collegamento non la vede più; all'altra persona resta, senza poter scrivere, finché non la toglie anche lei (116). Quando non la vede più nessuno dei due, si cancella. Chi chiude l'account diventa «Account chiuso», come nei viaggi; dove c'era un blocco, in un verso o nell'altro, la conversazione non resta a nessuno. Per quanto tempo si tengono i messaggi resta la domanda per l'avvocato.
+- **Le righe di prudenza** (M10, scelte dall'utente): la prima volta che si apre una conversazione con qualcuno con cui si è collegati, in cima, «Prima di incontrarvi» — un posto pubblico di giorno, dirlo a qualcuno, «…» e il 112 —, con «Ho capito». Una volta sola, per il telefono. Resta P9.
+- **La richiesta porta un messaggio breve e facoltativo** (76, 200 caratteri), e nient'altro passa prima del sì. Accettata, diventa il primo messaggio della conversazione, con l'ora in cui era stato scritto. Rifiutata, si cancella.
+- **Rifiutare chiede conferma** con il dialogo di sistema, e dice che non lo diciamo: chi ha chiesto vede solo «non accettata», e può togliere la riga o chiedere di nuovo (M9 non adottata). Per chi ha rifiutato non resta niente fra i due: può chiedere lui. Due richieste incrociate sono un sì.
+- **In «Viaggiatori», accanto a Cerca, Collegamenti e Messaggi** (74, 77, 111), con un numero quando c'è qualcosa da fare: le richieste ricevute, e le conversazioni con qualcosa da leggere (non i messaggi). Collegamenti: le ricevute, con il messaggio, che cosa avete in comune, Accetta e Rifiuta; i collegati, che aprono la conversazione; le inviate, in attesa (Ritira) o non accettate (Togli). Messaggi: una riga per conversazione, dalla più recente, l'ultimo messaggio («Tu: …» se è tuo), i non letti in cobalto; un collegamento nuovo dice «scrivi tu per primo»; una conversazione finita è grigia.
+- **Sul profilo di un altro il pulsante dice a che punto siete** (73, 112, 113): Chiedi di collegarvi; Richiesta inviata, che toccata chiede se ritirarla; Chiedi di nuovo, dopo un no; la sua richiesta con il messaggio, Accetta e Rifiuta; Scrivi a Teresa, con «COLLEGATI» sotto il nome. Collegati, «…» ha anche «Togli il collegamento», con il dialogo di sistema.
+- **La conversazione** (78): i propri messaggi a destra in cobalto, il giorno quando cambia. Tenendo premuto un messaggio: Copia, e per quelli ricevuti Segnala il messaggio (115; 12, regola 1). «…»: Segnala, Blocca, Togli il collegamento — o Togli la conversazione, se è finita. Un messaggio tolto da chi modera lo dice, tratteggiato.
+- **Un messaggio fino a 1000 caratteri, al più 500 al giorno** per persona (`tetto_messaggi`): tanti per parlarsi, non per riempire il database da uno script. Le richieste non hanno tetto (M8 non adottata).
+- **Niente notifiche, per ora**: i messaggi arrivano mentre Trolley è aperta, e la schermata lo dice. Niente conferme di lettura: chi scrive non sa quando l'altro ha letto.
+- **I messaggi non restano sul telefono**: si leggono e si scrivono con la rete, come tutta la parte pubblica. Un messaggio che non parte resta con «Non inviato · Riprova», e riprovando non arriva due volte.
+- **Segnalando un profilo che ti ha chiesto di collegarvi**, la fotografia tiene anche il messaggio della richiesta: le molestie possono arrivare da lì, e rifiutando quel messaggio si cancella.
+
 ---
 
 ## Ricordo e traguardi

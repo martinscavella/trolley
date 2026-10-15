@@ -1,7 +1,8 @@
 /// La parte pubblica e la sua sicurezza, sul server (5.1; sicurezza.sql): il
 /// proprio profilo pubblico, chi si è bloccato, le proprie segnalazioni. Con
 /// la 5.3 (profilo_pubblico.sql) i profili degli altri, la ricerca, i gusti e
-/// i viaggi sul profilo.
+/// i viaggi sul profilo; con la 5.4 (collegamenti_e_messaggi.sql) i
+/// collegamenti e i messaggi.
 ///
 /// Tutto richiede la rete, e niente sta nella copia del telefono: la parte
 /// pubblica è fatta di altre persone, e si guarda com'è adesso (11, 12). Chi
@@ -10,6 +11,7 @@ library;
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../dominio/collegamenti.dart';
 import '../dominio/itinerario.dart';
 import '../dominio/parte_pubblica.dart';
 import '../dominio/profilo_pubblico.dart';
@@ -215,4 +217,124 @@ class PartePubblica {
           CodiciServer.nonTrovato: 'Non sei più in questo viaggio.',
         },
       );
+
+  // ─── I collegamenti e i messaggi (5.4) ───────────────────────────────────
+
+  static const _nonCePiu = {
+    CodiciServer.nonTrovato: 'Questa persona non è più nella parte pubblica.',
+  };
+
+  /// Chiede a [utenteId] di collegarvi, con un [messaggio] facoltativo
+  /// (tela, 76). Se aveva già chiesto lui, siete collegati.
+  Future<EsitoRichiesta> chiediCollegamento(
+    String utenteId, {
+    String? messaggio,
+  }) async => esitoRichiesta(
+    await _alServer(
+      () => _server.rpc<dynamic>(
+        'chiedi_collegamento',
+        params: {
+          'p_utente': utenteId,
+          'p_messaggio': messaggio?.trim().isEmpty ?? true
+              ? null
+              : messaggio!.trim(),
+        },
+      ),
+      messaggi: _nonCePiu,
+    ),
+  );
+
+  /// Risponde alla richiesta di [utenteId]. Rifiutare non glielo dice (11,
+  /// regola 5).
+  Future<void> rispondi(String utenteId, {required bool accetta}) => _alServer(
+    () => _server.rpc<dynamic>(
+      'rispondi',
+      params: {'p_utente': utenteId, 'p_accetta': accetta},
+    ),
+    messaggi: const {CodiciServer.nonTrovato: 'Questa richiesta non c\'è più.'},
+  );
+
+  /// Toglie la propria richiesta a [utenteId]: in attesa, o non accettata.
+  Future<void> ritiraRichiesta(String utenteId) => _alServer(
+    () => _server.rpc<dynamic>(
+      'ritira_richiesta',
+      params: {'p_utente': utenteId},
+    ),
+  );
+
+  /// Toglie il collegamento con [utenteId]: chi lo toglie non vede più la
+  /// conversazione, che resta all'altra persona (P6).
+  Future<void> togliCollegamento(String utenteId) => _alServer(
+    () => _server.rpc<dynamic>(
+      'togli_collegamento',
+      params: {'p_utente': utenteId},
+    ),
+    messaggi: const {CodiciServer.nonTrovato: 'Non siete più collegati.'},
+  );
+
+  /// Toglie la conversazione rimasta con [utenteId] (tela, 116).
+  Future<void> togliConversazione(String utenteId) => _alServer(
+    () => _server.rpc<dynamic>(
+      'togli_conversazione',
+      params: {'p_utente': utenteId},
+    ),
+  );
+
+  /// Le richieste ricevute e mandate, e i collegati (tela, 77).
+  Future<Collegamenti> collegamenti() async => Collegamenti.daServer(
+    await _alServer(
+      () => _server.rpc<Map<String, dynamic>>('i_miei_collegamenti'),
+    ),
+  );
+
+  /// Le conversazioni, dalla più recente (tela, 111).
+  Future<List<RigaConversazione>> conversazioni() async {
+    final righe = await _alServer(
+      () => _server.rpc<List<dynamic>>('i_miei_messaggi'),
+    );
+    return [
+      for (final r in righe.cast<Map<String, dynamic>>())
+        RigaConversazione.daServer(r),
+    ];
+  }
+
+  /// La conversazione con [utenteId]: tutta, o i messaggi arrivati [dopo].
+  /// Quelli ricevuti diventano letti.
+  Future<Conversazione> conversazione(
+    String utenteId, {
+    DateTime? dopo,
+  }) async => Conversazione.daServer(
+    await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'conversazione',
+        params: {
+          'p_utente': utenteId,
+          'p_dopo': dopo?.toUtc().toIso8601String(),
+        },
+      ),
+      messaggi: const {
+        CodiciServer.nonTrovato: 'Questa conversazione non c\'è più.',
+      },
+    ),
+  );
+
+  /// Scrive [testo] a [utenteId], con l'[id] nato sul telefono: rimandato
+  /// dopo una risposta persa, non arriva due volte.
+  Future<Messaggio> scrivi({
+    required String id,
+    required String utenteId,
+    required String testo,
+  }) async => Messaggio.daServer(
+    await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'scrivi',
+        params: {'p_id': id, 'p_utente': utenteId, 'p_testo': testo.trim()},
+      ),
+      messaggi: const {
+        CodiciServer.nonTrovato: 'Per ora non potete scrivervi.',
+        CodiciServer.tettoMappe:
+            'Per oggi hai scritto moltissimo: riprova domani.',
+      },
+    ),
+  );
 }

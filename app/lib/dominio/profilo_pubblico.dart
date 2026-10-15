@@ -9,6 +9,7 @@
 /// nasconde niente (05).
 library;
 
+import 'collegamenti.dart';
 import 'itinerario.dart';
 import 'periodo.dart';
 import 'ricordo.dart';
@@ -143,6 +144,7 @@ class ProfiloPubblico {
     required this.viaggi,
     this.attivo,
     this.tuttiIViaggi = const [],
+    this.collegamento,
   });
 
   factory ProfiloPubblico.daServer(Map<String, dynamic> r) => ProfiloPubblico(
@@ -160,6 +162,7 @@ class ProfiloPubblico {
       for (final v in (r['tutti_i_viaggi'] as List? ?? const []))
         ViaggioPubblico.daServer(v as Map<String, dynamic>),
     ]),
+    collegamento: Collegamento.daServer(r['collegamento']),
   );
 
   final String id;
@@ -176,6 +179,10 @@ class ProfiloPubblico {
   /// Solo il proprio: se è acceso, e tutti i viaggi che ci possono stare.
   final bool? attivo;
   final List<ViaggioPubblico> tuttiIViaggi;
+
+  /// Solo il profilo di un altro (5.4): a che punto siete. `null` se fra voi
+  /// non c'è niente.
+  final Collegamento? collegamento;
 
   /// I paesi dei viaggi sul profilo, una volta ciascuno, dal più recente.
   List<String> get paesi => paesiGrattati(viaggi.map((v) => v.meta));

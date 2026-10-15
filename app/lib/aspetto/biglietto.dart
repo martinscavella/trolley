@@ -279,7 +279,7 @@ class BigliettoBasso extends StatelessWidget {
           // Il bordo sotto, i dentelli sopra: lo interrompono come nella tela.
           child: CustomPaint(
             painter: tratteggiato
-                ? const _BordoTratteggiato(Colori.piombo, raggio: 18)
+                ? const BordoTratteggiato(Colori.piombo, raggio: 18)
                 : null,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -402,8 +402,8 @@ class _Perforazione extends StatelessWidget {
 }
 
 /// Il bordo tratteggiato di un biglietto bianco, lungo gli angoli tondi.
-class _BordoTratteggiato extends CustomPainter {
-  const _BordoTratteggiato(this.colore, {required this.raggio});
+class BordoTratteggiato extends CustomPainter {
+  const BordoTratteggiato(this.colore, {required this.raggio});
 
   final Color colore;
   final double raggio;
@@ -432,7 +432,7 @@ class _BordoTratteggiato extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BordoTratteggiato vecchio) =>
+  bool shouldRepaint(BordoTratteggiato vecchio) =>
       vecchio.colore != colore || vecchio.raggio != raggio;
 }
 

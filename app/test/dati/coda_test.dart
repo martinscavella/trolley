@@ -20,13 +20,13 @@ void main() {
         rigaViaggio(
           'v',
           stato: 'definito',
-          inizio: '2026-10-10',
-          fine: '2026-10-12',
+          inizio: '2036-10-10',
+          fine: '2036-10-12',
         ),
       )
       ..partecipazioni.add(rigaPartecipazione('v'))
       ..giorni.add(
-        rigaGiorno('v', '2026-10-11', '00:00:00', '24:00:00', id: 'g1'),
+        rigaGiorno('v', '2036-10-11', '00:00:00', '24:00:00', id: 'g1'),
       );
     await ambiente.archivio.aggiornaCopia();
   });
@@ -134,7 +134,7 @@ void main() {
     'giornata si è riempita, la tappa entra segnalata come eccedente',
     () async {
       ambiente.server.giorni.add(
-        rigaGiorno('v', '2026-10-12', '00:00:00', '02:00:00', id: 'g2'),
+        rigaGiorno('v', '2036-10-12', '00:00:00', '02:00:00', id: 'g2'),
       );
       await ambiente.archivio.aggiornaCopia();
 
@@ -208,12 +208,12 @@ void main() {
         rigaViaggio(
           'w',
           stato: 'definito',
-          inizio: '2026-11-01',
-          fine: '2026-11-01',
+          inizio: '2036-11-01',
+          fine: '2036-11-01',
         ),
       )
       ..giorni.add(
-        rigaGiorno('w', '2026-11-01', '09:00:00', '20:00:00', id: 'gw'),
+        rigaGiorno('w', '2036-11-01', '09:00:00', '20:00:00', id: 'gw'),
       );
     await ambiente.archivio.aggiornaCopia();
 
@@ -370,7 +370,7 @@ void main() {
 
     test('spostata in un altro giorno, va in fondo', () async {
       ambiente.server.giorni.add(
-        rigaGiorno('v', '2026-10-12', '00:00:00', '18:00:00', id: 'g2'),
+        rigaGiorno('v', '2036-10-12', '00:00:00', '18:00:00', id: 'g2'),
       );
       ambiente.server.tappe.add(
         rigaDiTappa('c', viaggio: 'v', giorno: 'g2', ordine: 1, titolo: 'C'),
@@ -386,7 +386,7 @@ void main() {
 
     test('le tappe di un giorno uscito dalle date restano nella copia, da '
         'ricollocare', () async {
-      ambiente.server.giorni.first['eliminato_il'] = '2026-10-01T10:00:00Z';
+      ambiente.server.giorni.first['eliminato_il'] = '2036-10-01T10:00:00Z';
       await ambiente.archivio.aggiornaCopia();
       expect(await ambiente.db.select(ambiente.db.giorni).get(), isEmpty);
       expect((await copia()).map((t) => t.id), containsAll(['a', 'b']));

@@ -44,6 +44,8 @@ Le regole 2, 6, 7, 9 e 12 vengono dalle valutazioni d'impatto della fase 5.2 ([d
 | Situazione | Comportamento |
 |---|---|
 | Una persona spegne il profilo pubblico | Sparisce dalla ricerca, i collegamenti restano ma diventano inattivi. Riaccendendolo tornano |
+| Uno dei due toglie il collegamento | Non vi scrivete più. Chi l'ha tolto non vede più la conversazione; all'altro resta, senza poter scrivere, finché non la toglie anche lui. Quando non la vede più nessuno, si cancella (decisioni, 5.4) |
+| Una persona con cui si è collegati chiude l'account | Il collegamento sparisce; la conversazione resta con «Account chiuso» al posto del nome, come i contributi nei viaggi. Dove c'era un blocco non resta a nessuno |
 | Qualcuno manda molte richieste senza risposta | Non scatta nessun controllo automatico: è lo stesso comportamento di chi segue cento profili privati su un social. Il tasso di accettazione resta un indicatore aggregato di salute |
 | Due persone collegate finiscono nello stesso viaggio | Normale, ed è il risultato migliore possibile per questa funzione |
 | Si è a Porto, ma il telefono non ha ancora trovato la persona sul posto | La presenza non si accende ancora: «Quando sarai a Porto». Senza il permesso di posizione non si accende mai, e la schermata lo dice |

@@ -300,9 +300,9 @@ La 5.1 (l'interruttore della parte pubblica, il profilo pubblico con il numero v
 | **Togliere `TELEFONO_PROVA`** | Chi conosce un numero di prova si verifica senza telefono | Prima di aprire la parte pubblica |
 | **Il contatto della moderazione** | `contatto_moderazione` in `configurazione`, e il segnaposto nelle condizioni d'uso. Lo store lo chiede (12, regola 6) | Prima di aprire la parte pubblica |
 | **Pubblicare le condizioni d'uso** | `sito/condizioni.html`, con l'informativa e «Cosa misuriamo» aggiornate (Twilio, il numero, blocchi, segnalazioni). Bozze per l'avvocato: domande 18–26 di [per la revisione](legale/per-la-revisione.md) | Con le altre pagine del sito |
-| **«…» su un profilo e su un messaggio** | Segnalare e bloccare sono pronti (`segnala`, `blocca` nelle schermate), ma non c'è ancora niente da cui aprirli | 5.3 e 5.4 |
-| **Segnalare un messaggio, e toglierlo** | `segnala` accetta solo i profili; la terza azione della moderazione, `togli_contenuto`, nasce con i messaggi | 5.4 |
-| **Le regole della parte pubblica che usano il blocco** | `privato.si_bloccano` c'è e ha la sua prova; le regole di lettura di profili, ricerca e messaggi lo useranno | 5.3 e 5.4 |
+| ~~**«…» su un profilo e su un messaggio**~~ | Dal profilo con la 5.3, dalla conversazione e dal messaggio tenuto premuto con la 5.4 | ✅ |
+| ~~**Segnalare un messaggio, e toglierlo**~~ | `segnala` accetta i messaggi ricevuti; la terza azione è `moderazione.togli` (5.4) | ✅ |
+| ~~**Le regole della parte pubblica che usano il blocco**~~ | Profili e ricerca con la 5.3, collegamenti e messaggi con la 5.4: tutti passano da `privato.vede_il_profilo` | ✅ |
 | **Conservazione delle segnalazioni** | Il periodo è da fissare con l'avvocato, e manca il lavoro che le toglie | Con la revisione legale |
 | **Chi è sospeso e chiude l'account** | Chiudendo, il numero torna libero: con un account nuovo e lo stesso numero si rientra. Tenere un'impronta dei numeri sospesi è un dato in più da giustificare | Se capita, con l'avvocato |
 | **I tempi della moderazione** | 24 ore per minori e molestie, 72 per il resto ([moderazione](sicurezza/moderazione.md)): stimati. Li corregge `segnalazione_gestita` | Dopo le prime settimane di parte pubblica |
@@ -318,7 +318,7 @@ La 5.2 sono le due valutazioni d'impatto, scritte in bozza il 10 ottobre 2026 pr
 | **La revisione dell'avvocato e la firma del titolare** | Le bozze concludono che il rischio residuo non è alto e che non serve consultare il Garante: lo deve confermare chi fa la revisione. Le domande sono dentro, P1–P9 e C-1–C-5, e la 26 di [per la revisione](legale/per-la-revisione.md) | Prima della seconda ondata |
 | ~~**Ridisegnare sulla tela 73, 74 e 75**~~ | Fatto il 10 ottobre 2026 (versione 45), con le nuove 108–110 e la 105 ritoccata | ✅ |
 | **Ridisegnare sulla tela 79 e 80** | Prima del «sul posto», «Quando sarai a Porto» (C1); via «Fino al 14 ott» dalle righe degli altri (C2) | Prima di costruire la 5.5 |
-| **M8, M9, M10** | Il tetto alle richieste di collegamento e il divieto di richiedere dopo un no: proposte, per ora non adottate. Le righe di prudenza al primo collegamento: da disegnare, se si vogliono | M8 e M9 se le segnalazioni per molestie arrivano dalle richieste; M10 con la 5.4 |
+| **M8, M9** | Il tetto alle richieste di collegamento e il divieto di richiedere dopo un no: proposte, per ora non adottate. M10, le righe di prudenza, è decisa e costruita con la 5.4 | Se le segnalazioni per molestie arrivano dalle richieste |
 | **C3, la soglia di abitanti** | Non adottata: la presenza vale anche nei comuni piccoli, e il rischio resta medio. È la domanda C-5 | Se l'avvocato la chiede, o alla prima segnalazione che riguarda un posto piccolo |
 | **C4–C8** | Il modo di costruire la presenza: si spegne cambiando meta o date, letture da una funzione, niente copia sul telefono, una alla volta, nessun «da quando» | Con la 5.5 |
 | **Il «sul posto» è una barriera, non una prova** | Lo decide l'app, e il server controlla solo chi e quando: chi chiama `segna_sul_posto` senza l'app passa. Far provare al server che la richiesta viene dall'app vera è App Attest, che chiede il programma sviluppatori | Se qualcuno lo aggira |
@@ -333,11 +333,28 @@ Il profilo pubblico e la ricerca (Community nella barra, la ricerca per meta e g
 |---|---|---|
 | ~~**Applicare la migrazione `profilo_pubblico`**~~ | Applicata dall'editor SQL il 10 ottobre 2026 e verificata in sola lettura; la versione non è in `schema_migrations`. Prima provata su un Postgres locale (PGlite): 17 prove su 17 | ✅ |
 | ~~**La prova `profilo_pubblico.sql` sul server**~~ | Lanciata il 10 ottobre 2026: 10 su 10, e non ha lasciato niente. Sul server ci sono anche le persone vere: dei risultati di una ricerca la prova guarda solo le sue | ✅ |
-| **«Chiedi di collegarvi»** | Il pulsante della 73 apre la 76: arriva con i collegamenti | 5.4 |
+| ~~**«Chiedi di collegarvi»**~~ | Costruito con la 5.4 | ✅ |
 | **La segnalazione di un profilo fotografa solo il nome** | `segnala` conserva nome e stato del profilo (5.1); gusti e viaggi si possono ricostruire, ma non com'erano | Se chi modera ne ha bisogno |
 | **Un indice delle mete pubbliche** | `cerca_viaggiatori` legge i viaggi di ogni profilo acceso a ogni ricerca | Con qualche migliaio di profili accesi |
 | **Una meta scritta a mano** | Compare sul profilo com'è scritta (M5): la persona la vede nella 109 e la può nascondere. Il server non ha l'elenco delle destinazioni per riconoscerla | Se capita un nome di persona |
 | **Rivedere sulla tela 73–75 e 108–110** | Ridisegnate e costruite il 10 ottobre 2026 (versione 45) | Prima di chiudere la 5.3 |
+
+### Rimasto fuori dalla 5.4
+
+I collegamenti e i messaggi (chiedere con un messaggio breve, accettare e rifiutare, Collegamenti e Messaggi accanto a Cerca, la conversazione con le righe di prudenza, segnalare un messaggio e toglierlo, la conversazione che resta dopo il collegamento) sono costruiti il 15 ottobre 2026. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Applicare la migrazione `collegamenti_e_messaggi`** | Dall'editor SQL, come le altre. Prima provata su un Postgres locale (PGlite) con tutte le migrazioni e le prove: 18 su 18 | Prima di installare la 5.4 sul telefono |
+| **La prova `collegamenti_e_messaggi.sql` sul server** | Gira dentro un blocco che si annulla; sul server ci sono anche le persone vere, e la prova guarda solo le sue | Subito dopo la migrazione |
+| **Le notifiche** | Un messaggio o una richiesta arrivano solo con Trolley aperta, e la schermata lo dice. Le notifiche sono il capitolo 14, con un servizio esterno dietro un'interfaccia | Con le notifiche |
+| **Realtime al posto delle domande ripetute** | La conversazione aperta chiede ogni 5 secondi, Collegamenti e Messaggi ogni 15 mentre li si guarda: con la beta va bene | Con le notifiche, o con molte più persone |
+| **Per quanto si tengono i messaggi** | Finché uno dei due vede la conversazione, senza un limite di tempo: è la parte di P6 ancora aperta | Con la revisione legale |
+| **Un numero su Community nella barra** | Chi non apre «Viaggiatori» non sa che ha un messaggio. La tela non lo disegna | Se le persone non si accorgono dei messaggi |
+| **Le conversazioni senza rete** | Non restano sul telefono, come tutta la parte pubblica. Se H4 dicesse che le persone le cercano offline, sarebbe una copia nuova da proteggere | Se H4 lo chiede |
+| **`compagni` sa solo dei viaggi sul telefono** | Lo dice la copia, che ha le partecipazioni dei propri viaggi: chi è stato in un viaggio lasciato prima che il telefono lo scaricasse non risulta | Se i numeri di H7 sembrano strani |
+| **«Chiudi l'account» non dice delle conversazioni** | La schermata conta viaggi e documenti; che le conversazioni restano agli altri con «Account chiuso» lo dice l'informativa. Una riga in più va disegnata sulla tela | Con la revisione dell'informativa |
+| **Rivedere sulla tela 76–78 e 111–116** | Ridisegnate il 10 ottobre 2026 e costruite il 15. «Richiesta inviata» e «Chiedi di nuovo» sul profilo sono il pulsante della 73 con un'altra etichetta, senza una tavola loro | Prima di chiudere la 5.4 |
 
 ### Impianto di sicurezza del matching — stima
 

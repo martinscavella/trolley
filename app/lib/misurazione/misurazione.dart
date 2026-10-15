@@ -61,6 +61,13 @@ abstract final class Eventi {
   /// community è abbastanza fitta da trovarsi (H7).
   static const viaggiatoriCercati = 'viaggiatori_cercati';
 
+  /// I collegamenti (5.4): chi chiede, e chi accetta — anche chiedendo a chi
+  /// aveva già chiesto. `compagni`: se l'altro è, o è stato, in un viaggio
+  /// con chi chiede o accetta (lo sa la copia sul telefono). Mai chi: H7
+  /// conta i collegamenti fra chi non si conosceva.
+  static const collegamentoRichiesto = 'collegamento_richiesto';
+  static const collegamentoAccettato = 'collegamento_accettato';
+
   /// Le scrive il server, in segnala e quando chi modera la gestisce: le ore
   /// fra le due sono quelle vere (07, sostenibilità della moderazione).
   static const segnalazioneRicevuta = 'segnalazione_ricevuta';

@@ -11,7 +11,7 @@ La presenza in città ha una valutazione sua, che si appoggia a questa: [presenz
 - **Che cosa si valuta**: persone maggiorenni che non si conoscono si trovano per le mete già viste e per cosa piace loro in viaggio, chiedono di collegarsi e, se l'altro accetta, si scrivono.
 - **Il rischio vero non è sui dati, è sulle persone**: molestie, una persona cercata apposta, un incontro di persona andato male. I dati in gioco sono pochi e scelti: nome, numeri del passaporto, viaggi già chiusi, una lista chiusa di gusti, i messaggi fra due persone collegate.
 - **Gran parte delle difese è già costruita** (5.1): età, numero verificato, condizioni d'uso accettate, blocco reciproco, segnalazione che fotografa il contenuto, sospensione motivata, interruttore della parte pubblica, viaggi futuri irraggiungibili per regola del server.
-- **Leggendo i disegni della 5.3 e della 5.4 sono emerse dieci misure in più** (M1–M10). Il 10 ottobre 2026 ne sono state decise cinque — chi guarda è visibile, niente ricerca per nome, ogni viaggio si può nascondere, del viaggio solo la meta e quando, un viaggio compare solo dopo la sua fine — più due che sono il modo di costruire. Il tetto alle richieste e il divieto di richiedere dopo un no restano proposte, per ora non adottate.
+- **Leggendo i disegni della 5.3 e della 5.4 sono emerse dieci misure in più** (M1–M10). Il 10 ottobre 2026 ne sono state decise cinque — chi guarda è visibile, niente ricerca per nome, ogni viaggio si può nascondere, del viaggio solo la meta e quando, un viaggio compare solo dopo la sua fine — più due che sono il modo di costruire. Il tetto alle richieste e il divieto di richiedere dopo un no restano proposte, per ora non adottate. Con la 5.4, sempre il 10 ottobre, sono state decise anche le righe di prudenza (M10) e la risposta di prodotto a P6: la conversazione resta all'altra persona.
 - **Con quelle misure il rischio che resta è medio, non alto**: secondo questa bozza non serve consultare il Garante prima (art. 36). È la conclusione da confermare.
 
 ---
@@ -51,7 +51,7 @@ L'elenco del Garante (provvedimento n. 467 dell'11 ottobre 2018) mette fra i tra
 | «In comune» | Calcolato al momento fra chi guarda e chi è guardato | Solo chi guarda | Non si conserva |
 | Richiesta di collegamento, con un messaggio di 200 caratteri | Scritta da chi chiede | Solo chi la riceve | Finché non si risponde; poi M9 |
 | Collegamento accettato | Le due persone | Le due persone | Finché uno dei due non lo toglie, o chiude l'account |
-| Messaggi | Le due persone collegate | Solo loro due | Da fissare (domanda P6) |
+| Messaggi | Le due persone collegate | Solo loro due; chi modera solo un messaggio segnalato | Finché uno dei due vede la conversazione: chi toglie il collegamento o la conversazione non la vede più, e quando non la vede più nessuno si cancella. Chiudendo l'account resta all'altra persona con «Account chiuso», tranne dove c'era un blocco (scelta di prodotto del 10 ottobre 2026; da confermare, domanda P6) |
 | Blocchi | Chi blocca | Solo chi blocca | Finché non sblocca (5.1) |
 | Segnalazioni e contenuto segnalato | Chi segnala; la fotografia la fa il server | Chi modera; chi segnala vede solo lo stato | Da fissare (domanda 21) |
 | Numero di telefono | Chi accende il profilo | Nessuno: schema privato del server | Finché c'è l'account (5.1) |
@@ -106,7 +106,7 @@ Probabilità e gravità sono stimate prima delle misure, su tre livelli. «Già 
 
 ## 5. Le misure in più
 
-Decise il 10 ottobre 2026: M1, M2, M3, M4 e M5 cambiano quello che la tela disegna per la 5.3; M6 e M7 sono il modo di costruirla. M8, M9 e M10 restano proposte.
+Decise il 10 ottobre 2026: M1, M2, M3, M4 e M5 cambiano quello che la tela disegna per la 5.3; M6 e M7 sono il modo di costruirla. M10 è stata decisa lo stesso giorno, con la 5.4. M8 e M9 restano proposte.
 
 | | Misura | Contro | Che cosa cambia | Stato |
 |---|---|---|---|---|
@@ -119,7 +119,7 @@ Decise il 10 ottobre 2026: M1, M2, M3, M4 e M5 cambiano quello che la tela diseg
 | **M7** | **Collegamenti e messaggi si toccano solo con funzioni del server** (`chiedi_collegamento`, `rispondi`, `scrivi`, `i_miei_messaggi`), che controllano blocco, collegamento e tetti in un posto solo, come `segnala` | R1, R10 | Come si costruisce la 5.4 | Decisa |
 | **M8** | **Un tetto alle richieste di collegamento**: venti al giorno, come le segnalazioni. Non giudica nessuno e non guarda quante vengono accettate (12, regola 5): impedisce solo di scriverne cento | R1, R8 | Una riga in `configurazione`; il caso limite di 11 «molte richieste senza risposta» resta vero per il resto | Proposta, non adottata |
 | **M9** | **Dopo un no non si richiede.** La richiesta rifiutata resta sul server, invisibile, per impedire la seconda; chi aveva chiesto vede «non accettata» per sempre | R1 | Lo stato `rifiutato` di `collegamento` non si cancella | Proposta, non adottata |
-| **M10** | **Due righe di prudenza** quando un collegamento è accettato: incontrarsi in un posto pubblico, dirlo a qualcuno, che cosa fare se qualcosa non va. Una volta sola | R3 | Una scheda nella tela della 5.4 | Proposta |
+| **M10** | **Due righe di prudenza** quando un collegamento è accettato: incontrarsi in un posto pubblico, dirlo a qualcuno, che cosa fare se qualcosa non va. Una volta sola | R3 | Una scheda in cima alla prima conversazione con qualcuno con cui si è collegati (tela, 114) | Decisa il 10 ottobre 2026, costruita con la 5.4. Resta P9 |
 
 ---
 
@@ -156,7 +156,7 @@ Continuano quelle di [per la revisione](per-la-revisione.md); qui con il prefiss
 - **P3.** Una meta che rivela una religione, mostrata sul profilo da chi l'ha scelto viaggio per viaggio (M3): basta l'art. 9.2.e, dati «resi manifestamente pubblici dall'interessato»? Le persone viste sono le altre con il profilo acceso, non chiunque: è «manifestamente pubblico»?
 - **P4.** La ricerca che conta le cose in comune è «profilazione» ai sensi dell'art. 4.4? Se sì, che cosa va scritto in più nell'informativa?
 - **P5.** Serve nominare un responsabile della protezione dei dati (art. 37), oggi o a quale soglia?
-- **P6.** **Per quanto si tengono i messaggi**, e che cosa succede ai messaggi di chi chiude l'account o toglie il collegamento: si cancellano anche per l'altra persona, o restano a lei con «Account chiuso», come i contributi nei viaggi?
+- **P6.** **Per quanto si tengono i messaggi**, e che cosa succede ai messaggi di chi chiude l'account o toglie il collegamento: si cancellano anche per l'altra persona, o restano a lei con «Account chiuso», come i contributi nei viaggi? *Scelta di prodotto del 10 ottobre 2026: restano all'altra persona, senza poter scrivere, finché non la toglie; dove c'era un blocco si cancellano. Non c'è un limite di tempo: è la parte della domanda ancora aperta.*
 - **P7.** I messaggi non sono cifrati da capo a capo: li protegge l'accesso al server. Va detto nell'informativa con queste parole? Basta?
 - **P8.** M9 tiene una richiesta rifiutata per sempre, solo per impedire la seconda. È un trattamento proporzionato, o serve un limite di tempo?
 - **P9.** M10, le righe di prudenza: aiutano a dimostrare la diligenza, o rischiano di sembrare un'assunzione di responsabilità per gli incontri?

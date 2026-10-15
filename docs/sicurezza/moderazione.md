@@ -9,7 +9,7 @@ Le regole che si fanno rispettare sono le [condizioni d'uso](../../sito/condizio
 ## Chi, e con che cosa
 
 - **Chi modera** è una persona del team con l'accesso al progetto Supabase `trolley-db`, protetto dalla verifica in due passaggi. È l'unico accesso agli strumenti: non stanno nell'app né nelle funzioni del server ([05](../tecnico/05-community-e-sicurezza.md), regola 5).
-- **Lo strumento** è lo schema `moderazione` (migrazione `sicurezza`), che l'API non raggiunge. Si usa dall'editor SQL di Supabase; conviene salvare le cinque righe qui sotto come snippet.
+- **Lo strumento** è lo schema `moderazione` (migrazioni `sicurezza` e `collegamenti_e_messaggi`), che l'API non raggiunge. Si usa dall'editor SQL di Supabase; conviene salvare le righe qui sotto come snippet.
 
 ```sql
 -- La coda: prima i minori e le molestie, poi chi è segnalato da più persone, poi la più vecchia.
@@ -21,6 +21,10 @@ select moderazione.archivia('<id della segnalazione>', 'nota per chi modera, fac
 -- Sospendere il profilo pubblico. Il motivo lo legge la persona sospesa: la regola, mai chi l'ha segnalata.
 -- Chiude tutte le segnalazioni aperte su di lei.
 select moderazione.sospendi('<id>', 'Condizioni d''uso, regola 2: messaggi molesti.', 'nota interna');
+
+-- Togliere un messaggio segnalato: le due persone vedono «Messaggio tolto da chi modera».
+-- Il testo resta solo nel contenuto conservato. Chiude tutte le segnalazioni aperte su quel messaggio.
+select moderazione.togli('<id della segnalazione>', 'nota interna');
 
 -- Togliere la sospensione (un errore, un ricorso accolto).
 select moderazione.riattiva('<id della persona>');
@@ -54,7 +58,8 @@ Per ogni segnalazione, dall'alto della coda:
 1. **Si legge il contenuto conservato**, non quello di adesso: può essere stato cambiato o cancellato.
 2. **Si confronta con le condizioni d'uso.** Se non viola una regola scritta, si **archivia**, anche se è antipatico: una regola non scritta non si applica (12, regola 7).
 3. **Se viola una regola**, si **sospende** il profilo pubblico, citando la regola nel motivo. Il motivo è breve, e non dice chi ha segnalato né che cosa ha scritto.
-4. Un messaggio che viola le regole si toglierà con la terza azione, che arriva con i messaggi (5.4).
+4. **Se è un messaggio che viola una regola**, lo si **toglie** (`moderazione.togli`): sparisce dalla conversazione per tutti e due, e chi ha segnalato vede «il messaggio è stato tolto». Se chi l'ha scritto insiste, o la violazione è grave, si sospende anche il profilo.
+5. **Se è un profilo segnalato da chi aveva ricevuto una sua richiesta**, nel contenuto c'è anche il messaggio della richiesta (`richiesta`): rifiutandola si sarebbe cancellato.
 
 Segnalazioni dalla stessa persona contro la stessa persona contano una volta: «da quante persone» conta le persone, non le segnalazioni.
 

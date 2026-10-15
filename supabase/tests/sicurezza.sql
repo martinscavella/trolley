@@ -301,9 +301,16 @@ begin
     raise exception 'FALLITA: un motivo che non c''è';
   exception when sqlstate '22023' then null;
   end;
+  -- Dalla 5.4 i messaggi si segnalano: un id che non è un messaggio ricevuto
+  -- non c'è.
   begin
     perform public.segnala(gen_random_uuid(), 'messaggio', a, 'molestie');
-    raise exception 'FALLITA: si segnala un messaggio prima della 5.4';
+    raise exception 'FALLITA: si segnala come messaggio qualcosa che non lo è';
+  exception when sqlstate 'TR404' then null;
+  end;
+  begin
+    perform public.segnala(gen_random_uuid(), 'viaggio', a, 'molestie');
+    raise exception 'FALLITA: si segnala qualcosa che non è un profilo né un messaggio';
   exception when sqlstate '22023' then null;
   end;
   fallita := false;

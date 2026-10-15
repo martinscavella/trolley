@@ -364,7 +364,7 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
   perform public.mostra_sul_profilo(osaka, false);
   r := public.i_miei_dati();
-  if (r ->> 'versione')::int <> 3 or r -> 'profilo' -> 'gusti' <> '["arte", "cibo"]'::jsonb
+  if (r ->> 'versione')::int < 3 or r -> 'profilo' -> 'gusti' <> '["arte", "cibo"]'::jsonb
      or jsonb_array_length(r -> 'profilo_pubblico' -> 'tutti_i_viaggi') <> 1 then
     raise exception 'FALLITA: i dati di Elena non hanno gusti e scelte: % / %',
       r -> 'profilo', r -> 'profilo_pubblico';

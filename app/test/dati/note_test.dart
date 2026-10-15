@@ -15,8 +15,8 @@ void main() {
         rigaViaggio(
           'v',
           stato: 'definito',
-          inizio: '2026-10-10',
-          fine: '2026-10-12',
+          inizio: '2036-10-10',
+          fine: '2036-10-12',
         ),
       )
       ..partecipazioni.add(rigaPartecipazione('v'))

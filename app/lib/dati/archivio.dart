@@ -559,6 +559,32 @@ class Archivio {
           _db.impostazioni,
         )..where((i) => i.chiave.equals(_community))).go();
 
+  static const _prudenza = 'prudenza_vista';
+
+  /// Se le righe di prudenza (5.4, M10; tela, 114) si sono già viste: si
+  /// mostrano una volta sola, la prima volta che si è collegati con qualcuno.
+  Future<bool> prudenzaVista() async =>
+      await (_db.select(
+        _db.impostazioni,
+      )..where((i) => i.chiave.equals(_prudenza))).getSingleOrNull() !=
+      null;
+
+  Future<void> segnaPrudenzaVista() => _db
+      .into(_db.impostazioni)
+      .insertOnConflictUpdate(
+        ImpostazioniCompanion.insert(chiave: _prudenza, valore: '1'),
+      );
+
+  /// Se [utenteId] è, o è stato, in un viaggio con chi usa il telefono: per
+  /// `collegamento_richiesto` e `collegamento_accettato` (07), che contano i
+  /// collegamenti fra chi non si conosceva.
+  Future<bool> compagnoDiViaggio(String utenteId) async =>
+      await (_db.select(_db.partecipazioni)
+            ..where((p) => p.utenteId.equals(utenteId))
+            ..limit(1))
+          .getSingleOrNull() !=
+      null;
+
   static const _nonOra = 'posizione_non_ora';
   static const _negataDetta = 'posizione_negata_detta';
 
