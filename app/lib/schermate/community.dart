@@ -6,6 +6,8 @@
 /// Con la 5.4 accanto a Cerca ci sono Collegamenti e Messaggi (tela, 77 e
 /// 111), con il numero delle richieste ricevute e delle conversazioni da
 /// leggere. Senza notifiche, si ricaricano ogni tanto mentre li si guarda.
+/// Con la 5.5, durante un viaggio in corso, sotto la ricerca c'è «Chi c'è a
+/// Porto» (tela, 74).
 ///
 /// Dipende dalla rete: i profili degli altri si guardano com'erano adesso, e
 /// non restano sul telefono. Si misura ogni ricerca (07,
@@ -23,6 +25,7 @@ import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
+import '../dati/database.dart';
 import '../dati/destinazioni.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
@@ -36,6 +39,7 @@ import '../servizi.dart';
 import 'collegamenti.dart';
 import 'con_la_rete.dart';
 import 'conversazione.dart';
+import 'presenza.dart';
 import 'profilo_altrui.dart';
 import 'profilo_pubblico.dart';
 import 'scelta_destinazione.dart';
@@ -491,6 +495,32 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
           ],
         ),
       ).entra(context),
+      // Un viaggio in corso con una città, dalla copia sul telefono: la
+      // presenza in città (5.5).
+      StreamBuilder<List<(Partecipazione, Viaggio)>>(
+        stream: Servizi.of(context).archivio.osservaMieiViaggi(),
+        builder: (context, letti) {
+          final miei = letti.data ?? const [];
+          final adesso = DateTime.now();
+          final perChi = perLaPresenza(miei, adesso);
+          if (perChi == null) return const SizedBox.shrink();
+          final viaggio = perChi.$2;
+          return Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: _ChiCeInCitta(
+              citta: viaggio.destinazioneCitta ?? '',
+              onTap: () => apri<void>(
+                context,
+                SchermataPresenza(
+                  viaggioId: viaggio.id,
+                  mieiGusti: io.gusti,
+                  mieMete: meteDi(delPassaporto(miei, adesso)),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
       const SizedBox(height: 14),
       if (ricerca.vuota)
         Avviso(
@@ -722,6 +752,68 @@ class _Schede extends StatelessWidget {
       ),
     );
   }
+}
+
+/// «Chi c'è a Porto» (tela, 74): il viaggio è in corso, e si può guardare
+/// chi altro c'è.
+class _ChiCeInCitta extends StatelessWidget {
+  const _ChiCeInCitta({required this.citta, required this.onTap});
+
+  final String citta;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Premibile(
+    onTap: onTap,
+    scala: 0.98,
+    etichetta:
+        'Chi c\'è a $citta. Il tuo viaggio è in corso: guarda chi altro è qui',
+    child: ExcludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: Colori.cobaltoChiaro,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icona(
+                ios: CupertinoIcons.person_2,
+                android: Icons.group_outlined,
+              ),
+              size: 24,
+              color: Colori.cobalto,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Chi c\'è a $citta',
+                    style: Testi.evidenza.copyWith(color: Colori.inchiostro),
+                  ),
+                  Text(
+                    'Il tuo viaggio è in corso: guarda chi altro è qui',
+                    style: Testi.didascalia.copyWith(color: Colori.grafite),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              icona(
+                ios: CupertinoIcons.chevron_forward,
+                android: Icons.chevron_right,
+              ),
+              size: 16,
+              color: Colori.grafite,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 /// La meta della ricerca (tela, 74): vuota dice che cosa ci va; scelta ha il

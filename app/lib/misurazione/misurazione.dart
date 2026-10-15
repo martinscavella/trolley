@@ -68,6 +68,12 @@ abstract final class Eventi {
   static const collegamentoRichiesto = 'collegamento_richiesto';
   static const collegamentoAccettato = 'collegamento_accettato';
 
+  /// Chi c'è in città (5.5): accenderla, con quanti altri c'erano in quel
+  /// momento (H7: se la community è abbastanza fitta da incontrarsi), e
+  /// spegnerla a mano. Mai la città, mai il viaggio, mai chi (C5).
+  static const presenzaAttivata = 'presenza_attivata';
+  static const presenzaSpenta = 'presenza_spenta';
+
   /// Le scrive il server, in segnala e quando chi modera la gestisce: le ore
   /// fra le due sono quelle vere (07, sostenibilità della moderazione).
   static const segnalazioneRicevuta = 'segnalazione_ricevuta';

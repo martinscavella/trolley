@@ -356,7 +356,7 @@ begin
   -- ── I dati scaricati ─────────────────────────────────────────────────────
   perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
   r := public.i_miei_dati();
-  if (r ->> 'versione')::int <> 4
+  if (r ->> 'versione')::int < 4
      or jsonb_array_length(r -> 'corrispondenza' -> 'collegamenti') <> 1
      or r -> 'corrispondenza' -> 'messaggi' -> 0 ->> 'testo' <> 'Ciao Elena' then
     raise exception 'FALLITA: i dati di Elena non hanno la corrispondenza: %', r -> 'corrispondenza';

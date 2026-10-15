@@ -408,6 +408,11 @@ class ServerFinto {
   /// Chi ha chiuso l'account: nelle conversazioni non ha più un nome.
   final accountChiusi = <String>{};
 
+  /// La 5.5: la propria presenza in città, come la dà chi_ce_in_citta, e i
+  /// profili di chi altro l'ha accesa nella stessa città.
+  Map<String, Object?>? presenza;
+  final inCitta = <Map<String, Object?>>[];
+
   static const _listaGusti = [
     'arte',
     'cibo',
@@ -1350,6 +1355,40 @@ class ServerFinto {
                   DateTime.parse(m['scritto_il']! as String)
                       .isAfter(DateTime.parse(dopo)))
                 _messaggioPer(m),
+          ],
+        });
+      // ── La 5.5: chi c'è in città ──
+      case 'POST /rest/v1/rpc/accendi_presenza':
+        final id = _corpo(r)['p_viaggio'];
+        if (partePubblica['attivo'] != true) {
+          return _errore('TR403', 'serve il profilo pubblico acceso');
+        }
+        final viaggio = _viaggio(id as String);
+        final mia = _partecipazione(id, idDiProva);
+        if (viaggio == null || mia == null || mia['stato'] != 'attivo') {
+          return _errore('TR404', 'non partecipi a questo viaggio');
+        }
+        if (mia['sul_posto_il'] == null) {
+          return _errore('TR425', 'non ancora sul posto');
+        }
+        presenza = {
+          'viaggio_id': id,
+          'citta': viaggio['destinazione_citta'],
+          'paese': viaggio['destinazione_paese'],
+          'fino': viaggio['data_fine'],
+        };
+        return risposta(presenza);
+      case 'POST /rest/v1/rpc/spegni_presenza':
+        presenza = null;
+        return http.Response('', 204);
+      case 'POST /rest/v1/rpc/chi_ce_in_citta':
+        return risposta({
+          'mia': presenza,
+          'altri': [
+            if (presenza != null)
+              for (final p in inCitta)
+                if (!bloccate.any((b) => b['utente_id'] == p['id']))
+                  {...p, 'collegamento': _collegamentoPer(p['id']! as String)},
           ],
         });
       case 'POST /rest/v1/rpc/scrivi':

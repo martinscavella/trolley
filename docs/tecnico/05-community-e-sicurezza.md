@@ -35,6 +35,15 @@ La città si ricava dalla destinazione del viaggio, **non dalla posizione rileva
 
 La meta però è dichiarata: un viaggio finto a Porto, con le date di oggi, bastava per guardare chi c'è senza esserci. Per questo la presenza chiede anche il «sul posto» della verifica, che il telefono calcola da sé e di cui il server ha già il sì: nessuna posizione nuova arriva al server, e per guardare bisogna esserci. È una barriera, non una prova: il sì lo decide l'app (`segna_sul_posto`), e chi falsifica la posizione o chiama il server senza l'app passa. Le ragioni sono nella [valutazione d'impatto](../legale/valutazione-impatto-presenza-in-citta.md).
 
+### Come è fatto (5.5)
+
+- **`presenza_citta` si tocca solo dalle sue funzioni**: `accendi_presenza(viaggio)`, `spegni_presenza()`, `chi_ce_in_citta()`. La chiave è la persona, quindi una presenza alla volta (C7): accenderne un'altra la sostituisce.
+- **`accendi_presenza` controlla tutto sul server**: chi chiama è nella parte pubblica (`privato.nella_parte_pubblica`), partecipa al viaggio, il viaggio non è importato, è definito o in corso, oggi è fra il giorno prima dell'inizio e la fine, la meta ha una città, e c'è `sul_posto_il` (C1, errore `TR425`). La città e la fine le prende dal viaggio, non dalla richiesta.
+- **`chi_ce_in_citta` non prende parametri** (C5): la città la sa dalla presenza di chi chiama. Senza la propria presenza valida restituisce nessuno. Gli altri sono quelli nella stessa città e paese (senza badare alle maiuscole), con una presenza valida, che si vedono con chi chiama (`privato.vede_il_profilo`: profili accesi, nessun blocco, M1), in ordine di nome, al più cento; di ciascuno il profilo pubblico e lo stato del collegamento, mai `attiva_fino` né il viaggio (C2, C8).
+- **Quando vale** lo dice `privato.presenza_vale`: non scaduta (la data UTC non oltre l'ultimo giorno) e chi l'ha accesa è ancora nel viaggio. Il resto lo garantiscono tre trigger (C4): su `viaggio` (meta o date cambiate, stato che non è più definito o in corso, cancellato), su `partecipazione` (uscito, tolto) e su `utente` (profilo spento, sospeso, account chiuso). Un lavoro ogni ora cancella le scadute.
+- **L'app** sceglie il viaggio dalla copia (`perLaPresenza`: in corso, con una città; prima quello già «sul posto») e la schermata dal «sul posto» della copia e dal permesso di posizione; aprendola prima del «sul posto» il telefono guarda dov'è (`guardaIlPosto`, come «Adesso»). Chi c'è si chiede ogni volta e ogni 30 secondi mentre la si guarda accesa (C6).
+- **I tuoi dati** (versione 5) hanno `presenza_in_citta`, da `la_mia_presenza`.
+
 ---
 
 ## Verifica del viaggio e posizione

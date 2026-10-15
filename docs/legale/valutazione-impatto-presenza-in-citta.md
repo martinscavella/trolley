@@ -82,18 +82,18 @@ La tabella del server è `presenza_citta`: chi, quale viaggio, quale città, fin
 
 ## 5. Le misure in più
 
-C1 e C2 sono la condizione perché la funzione esca, e sono decise. C3 non è stata adottata. C4–C8 sono il modo di costruire la 5.5, da confermare quando la si costruisce. Tutte cambiano quello che la tela disegna.
+C1 e C2 sono la condizione perché la funzione esca, e sono decise. C3 non è stata adottata. C4–C8 sono il modo di costruire la 5.5, e sono costruite come proposte il 16 ottobre 2026: cambiare la meta o le date, chiudere il viaggio, uscirne o spegnere il profilo la spengono; la città non passa mai, nemmeno nel corpo della richiesta, perché il server la sa dalla presenza di chi chiama; gli eventi non la portano. Tutte cambiano quello che la tela disegna, e la tela le disegna (79–81, 117, 118).
 
 | | Misura | Che cosa cambia | Stato |
 |---|---|---|---|
 | **C1** | **Solo dopo il «sul posto».** La presenza si accende solo se il telefono ha già trovato la persona entro 50 km dalla meta, per quel viaggio (`partecipazione.sul_posto_il`, 3.4). Al server non arriva niente di nuovo: il sì c'è già. È una barriera, non una prova: il server si fida dell'app (R1). Senza, la schermata dice «Quando sarai a Porto» | Tela 79; la funzione che accende la presenza controlla `sul_posto_il`. **Usa per un fine nuovo un dato raccolto per la verifica**: va detto nell'informativa (domanda C-2) | Decisa |
 | **C2** | **La data di fine la vede solo la persona.** Gli altri leggono «a Porto adesso» | Tela 80: via «Fino al 14 ott» dalle righe degli altri; resta «Sei visibile fino a domenica» per sé | Decisa |
 | **C3** | **Solo città con almeno 50.000 abitanti**, secondo l'elenco delle destinazioni. Un viaggio in un paese intero, o in una meta scritta a mano, non ha presenza | La regola di 11; la soglia sta in `configurazione`, così si cambia senza un rilascio. Positano (3.729) no, Matera (59.685) sì | Non adottata |
-| **C4** | **Cambiare la meta o le date la spegne**, e così chiudere il viaggio prima della fine. La lettura esclude da sé le righe scadute | Il server, nelle funzioni che cambiano il viaggio; la regola di lettura di `presenza_citta` | Da confermare con la 5.5 |
-| **C5** | **Letture da una funzione**, con la città nel corpo della richiesta, non nell'indirizzo; nessun evento di misurazione porta la città | Come si costruisce la 5.5; `presenza_attivata` senza la città, come già `passaporto_compilato` senza il dove (07) | Da confermare con la 5.5 |
-| **C6** | **Niente copia sul telefono** dell'elenco di chi c'è: si chiede ogni volta, e senza rete la schermata lo dice | È una delle funzioni «dipendenti dalla rete» (02) | Da confermare con la 5.5 |
-| **C7** | **Una presenza alla volta** per persona | Un vincolo sulla tabella | Da confermare con la 5.5 |
-| **C8** | **Nessun «da quando»**, e l'elenco in ordine di nome | Tela 80 | Da confermare con la 5.5 |
+| **C4** | **Cambiare la meta o le date la spegne**, e così chiudere il viaggio prima della fine. La lettura esclude da sé le righe scadute | Il server, nelle funzioni che cambiano il viaggio; la regola di lettura di `presenza_citta` | Costruita con la 5.5 (16 ottobre 2026) |
+| **C5** | **Letture da una funzione**, con la città nel corpo della richiesta, non nell'indirizzo; nessun evento di misurazione porta la città | Come si costruisce la 5.5; `presenza_attivata` senza la città, come già `passaporto_compilato` senza il dove (07) | Costruita con la 5.5 (16 ottobre 2026) |
+| **C6** | **Niente copia sul telefono** dell'elenco di chi c'è: si chiede ogni volta, e senza rete la schermata lo dice | È una delle funzioni «dipendenti dalla rete» (02) | Costruita con la 5.5 (16 ottobre 2026) |
+| **C7** | **Una presenza alla volta** per persona | Un vincolo sulla tabella | Costruita con la 5.5 (16 ottobre 2026) |
+| **C8** | **Nessun «da quando»**, e l'elenco in ordine di nome | Tela 80 | Costruita con la 5.5 (16 ottobre 2026) |
 
 ---
 

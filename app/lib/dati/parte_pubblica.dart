@@ -2,7 +2,8 @@
 /// proprio profilo pubblico, chi si è bloccato, le proprie segnalazioni. Con
 /// la 5.3 (profilo_pubblico.sql) i profili degli altri, la ricerca, i gusti e
 /// i viaggi sul profilo; con la 5.4 (collegamenti_e_messaggi.sql) i
-/// collegamenti e i messaggi.
+/// collegamenti e i messaggi; con la 5.5 (presenza_in_citta.sql) chi c'è in
+/// città.
 ///
 /// Tutto richiede la rete, e niente sta nella copia del telefono: la parte
 /// pubblica è fatta di altre persone, e si guarda com'è adesso (11, 12). Chi
@@ -14,6 +15,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../dominio/collegamenti.dart';
 import '../dominio/itinerario.dart';
 import '../dominio/parte_pubblica.dart';
+import '../dominio/presenza.dart';
 import '../dominio/profilo_pubblico.dart';
 import 'errori.dart';
 import 'rete.dart';
@@ -336,5 +338,38 @@ class PartePubblica {
             'Per oggi hai scritto moltissimo: riprova domani.',
       },
     ),
+  );
+
+  // ─── Chi c'è in città (5.5) ──────────────────────────────────────────────
+
+  /// Accende la presenza per [viaggioId] (tela, 79): il server controlla il
+  /// profilo, il viaggio in corso e il «sul posto» (C1). Restituisce la
+  /// propria presenza.
+  Future<PresenzaMia> accendiPresenza(String viaggioId) async {
+    final r = await _alServer(
+      () => _server.rpc<Map<String, dynamic>>(
+        'accendi_presenza',
+        params: {'p_viaggio': viaggioId},
+      ),
+      messaggi: const {
+        CodiciServer.nonSulPosto:
+            'Il telefono non ti ha ancora trovato sul posto: riprova quando '
+            'sei lì.',
+        CodiciServer.nonInCorso: 'Il viaggio non è in corso.',
+        CodiciServer.nonPermesso: 'Serve il profilo pubblico acceso.',
+        CodiciServer.nonTrovato: 'Non sei più in questo viaggio.',
+      },
+    );
+    return PresenzaMia.daServer(r)!;
+  }
+
+  /// Spegne la propria presenza: sul server la riga sparisce.
+  Future<void> spegniPresenza() =>
+      _alServer(() => _server.rpc<dynamic>('spegni_presenza'));
+
+  /// La propria presenza e chi altro c'è (tela, 80 e 81). La città non si
+  /// manda: il server la sa dalla propria presenza (C5).
+  Future<ChiCeInCitta> chiCeInCitta() async => ChiCeInCitta.daServer(
+    await _alServer(() => _server.rpc<Map<String, dynamic>>('chi_ce_in_citta')),
   );
 }

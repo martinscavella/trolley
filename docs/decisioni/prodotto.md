@@ -501,6 +501,19 @@ Scelto il 10 ottobre 2026 (tela, 76–78 e 111–116, ridisegnate quel giorno; n
 - **I messaggi non restano sul telefono**: si leggono e si scrivono con la rete, come tutta la parte pubblica. Un messaggio che non parte resta con «Non inviato · Riprova», e riprovando non arriva due volte.
 - **Segnalando un profilo che ti ha chiesto di collegarvi**, la fotografia tiene anche il messaggio della richiesta: le molestie possono arrivare da lì, e rifiutando quel messaggio si cancella.
 
+### Chi c'è in città (fase 5.5)
+
+Costruito il 16 ottobre 2026 sulle scelte della 5.2 (C1, C2; tela, 79–81 ridisegnate quel giorno, 117 e 118 nuove; nota n21). Le misure C4–C8, che la [valutazione d'impatto](../legale/valutazione-impatto-presenza-in-citta.md) lasciava da confermare costruendo, sono costruite come proposte.
+
+- **Si entra da «Viaggiatori», sotto la ricerca**: durante un viaggio in corso con una città nella meta compare «Chi c'è a Porto» (74). Se i viaggi in corso sono più d'uno, vale quello in cui il telefono ha già trovato la persona, poi quello che finisce prima. Un viaggio con il solo paese nella meta non ha presenza: la città è la granularità (11, regola 8).
+- **Prima di accenderla si dice tutto**, in quattro righe: chi guarda è visto; solo la città; gli altri vedono «a Porto adesso» e non fino a quando; si spegne da sola alla fine, e nessuno storico.
+- **Prima del «sul posto» non si accende** (C1): la schermata dice «Quando sarai a Porto» (117), e aprendola il telefono guarda dov'è, come «Adesso» (3.4), così chi è già lì la accende subito. Senza il permesso di posizione lo dice, con «Apri Impostazioni» (118).
+- **Si accende con l'interruttore di sistema**, «Mostrami a Porto fino a domenica» (79). Sotto: si accende perché il telefono ti ha trovato lì, e cambiando la meta o le date si spegne. Accesa per un altro viaggio, accenderla qui spegne quella (C7), e lo dice.
+- **Accesa** (80): «Sei visibile a Porto fino a domenica 18. Gli altri non sanno fino a quando», con «Spegni adesso», senza conferma. Poi chi c'è, in ordine di nome, senza «da quando» né «fino a» (C2, C8): l'iniziale, il nome, quanti paesi, che cosa avete in comune o «già nei tuoi collegamenti», e il gesto di quel momento — Collegati (la richiesta della 5.4), Richiesta inviata, Rispondi, Scrivi. Toccando la persona si apre il suo profilo. Da soli, «Per ora ci sei solo tu» (81).
+- **Si spegne da sola** (C4): alla fine del viaggio, cambiando la meta o le date, chiudendo il viaggio, uscendone, spegnendo il profilo pubblico, con una sospensione, chiudendo l'account.
+- **Chi c'è non resta sul telefono** (C6): si chiede ogni volta, e ogni 30 secondi mentre la si guarda accesa. Senza rete l'interruttore si spegne e lo dice.
+- **Si misura accenderla, con quanti altri c'erano, e spegnerla a mano** (`presenza_attivata`, `presenza_spenta`): mai la città, mai il viaggio, mai chi (C5).
+
 ---
 
 ## Ricordo e traguardi

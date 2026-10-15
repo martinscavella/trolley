@@ -9,6 +9,7 @@ import '../dominio/giornate.dart';
 import '../dominio/liste.dart';
 import '../dominio/mappa.dart';
 import '../dominio/periodo.dart';
+import '../dominio/presenza.dart';
 import '../dominio/ricordo.dart';
 import '../dominio/spese.dart';
 import '../dominio/stato_viaggio.dart';
@@ -90,6 +91,32 @@ List<(Partecipazione, Viaggio)> delPassaporto(
         a.$2.inizioRicordo ?? a.$2.creato,
       ),
     );
+
+/// Il viaggio per cui si può accendere la presenza in città (5.5): in
+/// corso, con una città. Se ce n'è più d'uno, prima quello in cui il telefono
+/// ha già trovato la persona sul posto, poi quello che finisce prima.
+(Partecipazione, Viaggio)? perLaPresenza(
+  Iterable<(Partecipazione, Viaggio)> miei,
+  DateTime oggi,
+) {
+  final possibili =
+      [
+        for (final (p, v) in miei)
+          if (v.eliminatoIl == null &&
+              presenzaPossibile(
+                stato: v.statoA(oggi),
+                importato: v.importato,
+                citta: v.destinazioneCitta,
+                partecipa: p.stato == 'attivo' && p.eliminatoIl == null,
+              ))
+            (p, v),
+      ]..sort((a, b) {
+        final (x, y) = (a.$1.sulPostoIl != null, b.$1.sulPostoIl != null);
+        if (x != y) return x ? -1 : 1;
+        return (a.$2.fine ?? oggi).compareTo(b.$2.fine ?? oggi);
+      });
+  return possibili.firstOrNull;
+}
 
 /// Le mete dei viaggi, per il mappamondo.
 List<Meta> meteDi(Iterable<(Partecipazione, Viaggio)> viaggi) => [

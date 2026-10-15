@@ -18,7 +18,7 @@ Trolley tratta **documenti d'identità** e **dati che rivelano gli spostamenti d
 | **Documenti d'identità e biglietti** | **Solo telefono** | Non esiste un endpoint che li accetti |
 | **Posizione durante la navigazione** | **Solo telefono** | Va al fornitore di mappe (Geoapify) solo come partenza di un percorso chiesto dalla persona, mai a noi. Si chiede «mentre si usa l'app», mai in sottofondo, e solo per un viaggio in corso o per farsi portare a una tappa |
 | **Posizione per la verifica** | **Solo telefono** | Il confronto con la meta lo fa il telefono, con l'elenco delle destinazioni che ha dentro (ADR-005): nessun fornitore la vede. Al server arriva solo il sì, con il momento (`partecipazione.sul_posto_il`), una volta per viaggio. Si guarda solo mentre il viaggio è in corso, e solo finché non si è trovato il sì |
-| Presenza in città | Server | Ricavata dalla destinazione del viaggio, non dalla posizione rilevata. Cancellata a fine viaggio |
+| Presenza in città | Server | Ricavata dalla destinazione del viaggio, non dalla posizione rilevata; si accende solo con il «sul posto» del telefono, che usa per un fine nuovo un dato raccolto per la verifica (domanda C-2). Cancellata a fine viaggio, e prima se cambiano meta o date. Non resta sul telefono (5.5) |
 | Eventi di misurazione | Server | Azioni, mai contenuti |
 
 **La riga che vale più di tutte le altre**: l'architettura è fatta in modo che i dati più delicati non ci arrivino proprio. Non è una promessa di buona condotta, è un'assenza di strada.

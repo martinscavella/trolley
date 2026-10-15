@@ -316,11 +316,11 @@ La 5.2 sono le due valutazioni d'impatto, scritte in bozza il 10 ottobre 2026 pr
 | Voce | Perché aspetta | Quando |
 |---|---|---|
 | **La revisione dell'avvocato e la firma del titolare** | Le bozze concludono che il rischio residuo non è alto e che non serve consultare il Garante: lo deve confermare chi fa la revisione. Le domande sono dentro, P1–P9 e C-1–C-5, e la 26 di [per la revisione](legale/per-la-revisione.md) | Prima della seconda ondata |
+| ~~**Ridisegnare sulla tela 79 e 80**~~ | Fatto il 16 ottobre 2026 (versione 48), con 81 ritoccata e le nuove 117 e 118 | ✅ |
 | ~~**Ridisegnare sulla tela 73, 74 e 75**~~ | Fatto il 10 ottobre 2026 (versione 45), con le nuove 108–110 e la 105 ritoccata | ✅ |
-| **Ridisegnare sulla tela 79 e 80** | Prima del «sul posto», «Quando sarai a Porto» (C1); via «Fino al 14 ott» dalle righe degli altri (C2) | Prima di costruire la 5.5 |
 | **M8, M9** | Il tetto alle richieste di collegamento e il divieto di richiedere dopo un no: proposte, per ora non adottate. M10, le righe di prudenza, è decisa e costruita con la 5.4 | Se le segnalazioni per molestie arrivano dalle richieste |
 | **C3, la soglia di abitanti** | Non adottata: la presenza vale anche nei comuni piccoli, e il rischio resta medio. È la domanda C-5 | Se l'avvocato la chiede, o alla prima segnalazione che riguarda un posto piccolo |
-| **C4–C8** | Il modo di costruire la presenza: si spegne cambiando meta o date, letture da una funzione, niente copia sul telefono, una alla volta, nessun «da quando» | Con la 5.5 |
+| ~~**C4–C8**~~ | Costruite con la 5.5, come proposte | ✅ |
 | **Il «sul posto» è una barriera, non una prova** | Lo decide l'app, e il server controlla solo chi e quando: chi chiama `segna_sul_posto` senza l'app passa. Far provare al server che la richiesta viene dall'app vera è App Attest, che chiede il programma sviluppatori | Se qualcuno lo aggira |
 | **Il parere delle persone** (art. 35.9) | Cinque domande a chi usa l'ondata 1: che cosa si aspetta di vedere e di non vedere in un profilo pubblico | Prima di finire la 5.3 |
 | **Nessuna copia di sicurezza del database** | Il progetto è sul piano gratuito di Supabase, che non ne fa: un errore o una migrazione sbagliata non si recupera, e con persone vere dentro è un rischio sulla disponibilità dei loro viaggi. Passando a un piano che le fa, la presenza in città resta nelle copie per sette giorni, e l'informativa lo deve dire | Prima dell'ondata 1 |
@@ -355,6 +355,20 @@ I collegamenti e i messaggi (chiedere con un messaggio breve, accettare e rifiut
 | **`compagni` sa solo dei viaggi sul telefono** | Lo dice la copia, che ha le partecipazioni dei propri viaggi: chi è stato in un viaggio lasciato prima che il telefono lo scaricasse non risulta | Se i numeri di H7 sembrano strani |
 | **«Chiudi l'account» non dice delle conversazioni** | La schermata conta viaggi e documenti; che le conversazioni restano agli altri con «Account chiuso» lo dice l'informativa. Una riga in più va disegnata sulla tela | Con la revisione dell'informativa |
 | **Rivedere sulla tela 76–78 e 111–116** | Ridisegnate il 10 ottobre 2026 e costruite il 15. «Richiesta inviata» e «Chiedi di nuovo» sul profilo sono il pulsante della 73 con un'altra etichetta, senza una tavola loro | Prima di chiudere la 5.4 |
+
+### Rimasto fuori dalla 5.5
+
+Chi c'è in città (la scheda in «Viaggiatori», «Quando sarai a Porto» prima del «sul posto», l'interruttore, chi c'è in ordine di nome senza fino a quando, «Spegni adesso», lo spegnimento da sola) è costruito il 16 ottobre 2026. Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Applicare la migrazione `presenza_in_citta`** | Dall'editor SQL, come le altre. Prima provata su un Postgres locale (PGlite) con tutte le migrazioni e le prove: 19 su 19; la nuova si accorge se manca il controllo del «sul posto» o se esce la data di fine | Prima di installare la 5.5 sul telefono |
+| **La prova `presenza_in_citta.sql` sul server** | Gira dentro un blocco che si annulla | Subito dopo la migrazione |
+| **Il «sul posto» è una barriera, non una prova** | Resta il rischio medio R1 della valutazione: chi falsifica la posizione o chiama il server senza l'app accende la presenza ovunque. La misura dopo è App Attest, con il programma sviluppatori | Se succede |
+| **I posti piccoli** (C3, domanda C-5) | Nessuna soglia di abitanti: in un paese di pochi vicoli chi c'è davvero può trovare l'altra persona | Alla prima segnalazione che riguarda la presenza in un posto piccolo |
+| **«È arrivato qualcuno a Porto»** | Senza notifiche, chi arriva compare solo a chi guarda la schermata | Con le notifiche (14), se servono |
+| **Le copie di sicurezza** | Cambiando piano di Supabase le righe cancellate restano nelle copie per sette giorni: l'informativa lo deve dire (C-3) | Con il cambio di piano |
+| **Rivedere sulla tela 79–81, 117 e 118** | Ridisegnate e costruite il 16 ottobre 2026 (versione 48) | Prima di chiudere la 5.5 |
 
 ### Impianto di sicurezza del matching — stima
 

@@ -46,6 +46,10 @@ abstract final class CodiciServer {
 
   /// Chi modera ha sospeso il profilo pubblico (5.1).
   static const profiloSospeso = 'TR424';
+
+  /// Il telefono non ha ancora trovato la persona sul posto: la presenza in
+  /// città non si accende (5.5, C1).
+  static const nonSulPosto = 'TR425';
 }
 
 /// Il motivo scritto sotto un controllo spento perché manca la rete.
