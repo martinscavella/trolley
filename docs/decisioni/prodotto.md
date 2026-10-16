@@ -534,7 +534,7 @@ Finito il piano con la 5.5, l'utente ha scelto di continuare con le notifiche, c
 
 ### Il marchio: logo, icona e avvio (16 ottobre 2026)
 
-L'utente ha portato il kit del marchio approvato (`trolley-app-kit/`): il logo — la valigia con dentro l'itinerario e la scritta «trolley» —, il simbolo da solo, l'icona dell'app per iOS e Android, l'avvio animato e tre valigie per le attese. Tela, 1 aggiornata e 121 nuova; nota n27.
+L'utente ha portato il kit del marchio approvato (le sorgenti stanno in [`marchio/`](../../marchio/README.md)): il logo — la valigia con dentro l'itinerario e la scritta «trolley» —, il simbolo da solo, l'icona dell'app per iOS e Android, l'avvio animato e tre valigie per le attese. Tela, 1 aggiornata e 121 nuova; nota n27.
 
 - **L'icona dell'app** è quella del kit, la valigia bianca sul blu, al posto di quella di Flutter. Su Android anche rotonda e adattiva.
 - **Nella testata dell'accesso** il logo bianco prende il posto della scritta «Trolley» in Unbounded (tela, 1).
