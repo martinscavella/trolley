@@ -20,6 +20,10 @@ abstract final class Ritmo {
   /// Il ritardo fra un elemento e il successivo di un elenco che entra.
   static const passo = Duration(milliseconds: 70);
 
+  /// L'avvio animato del marchio, tutto: il kit lo fa di 4,8 secondi, qui è
+  /// un quarto più svelto.
+  static const avvio = Duration(milliseconds: 3600);
+
   static const curva = Curves.easeOutCubic;
   static const molla = Curves.easeOutBack;
 }

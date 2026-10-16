@@ -532,6 +532,16 @@ Finito il piano con la 5.5, l'utente ha scelto di continuare con le notifiche, c
 
 ---
 
+### Il marchio: logo, icona e avvio (16 ottobre 2026)
+
+L'utente ha portato il kit del marchio approvato (`trolley-app-kit/`): il logo — la valigia con dentro l'itinerario e la scritta «trolley» —, il simbolo da solo, l'icona dell'app per iOS e Android, l'avvio animato e tre valigie per le attese. Tela, 1 aggiornata e 121 nuova; nota n27.
+
+- **L'icona dell'app** è quella del kit, la valigia bianca sul blu, al posto di quella di Flutter. Su Android anche rotonda e adattiva.
+- **Nella testata dell'accesso** il logo bianco prende il posto della scritta «Trolley» in Unbounded (tela, 1).
+- **All'apertura dell'app da spenta** si vede l'avvio animato, sul bianco: la valigia arriva da sinistra, frena e il percorso traccia la scritta, 3,6 secondi, una volta (tela, 121). Il kit la fa di 4,8: vista sull'iPhone il 17 ottobre, l'utente l'ha voluta un po' più corta, e tutta la sequenza va un quarto più svelta (`Ritmo.avvio`). Si va avanti quando sono finiti sia l'animazione sia l'avvio vero; se l'app ci mette di più, sotto il logo aspetta la valigia che si disegna l'itinerario. Una notifica o un invito toccati ad app spenta aprono il loro posto senza aspettare la fine. Con «Riduci movimento» il logo compare già composto. La schermata di lancio di iOS resta bianca e vuota, così l'animazione parte senza stacchi.
+- **Il blu del marchio è il suo**, #3049D3, e il kit lo disegna così; l'app tiene il cobalto della tela, #2B4ACB. La differenza si vede appena: se allinearli lo decide l'utente.
+- **Il kit sta nell'app** come pacchetto, `app/packages/trolley_brand`, e disegna tutto in vettoriale; le schermate lo usano solo da `aspetto/marchio.dart`.
+
 ## Ricordo e traguardi
 
 ### Badge e mappamondo digitale
@@ -561,7 +571,7 @@ Due conseguenze immediate: **Android smette di essere una seconda costruzione** 
 
 ### "Trolley" è un nome in codice
 
-Serve a identificare il progetto adesso, quasi sicuramente non sarà il nome finale. Non si investe un'ora sull'identità visiva finché non è deciso.
+Serve a identificare il progetto adesso, quasi sicuramente non sarà il nome finale. Non si investe un'ora sull'identità visiva finché non è deciso. Il 16 ottobre 2026 l'utente ha portato un marchio approvato con questo nome ([Il marchio](#il-marchio-logo-icona-e-avvio-16-ottobre-2026)): se il nome resta in codice o diventa quello vero non è scritto qui.
 
 ## Decisioni registrate altrove
 

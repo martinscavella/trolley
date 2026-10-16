@@ -383,6 +383,18 @@ I promemoria che il telefono si programma da solo (prima di partire, tappe da se
 | **Android** | Desugaring, ricevitori e permesso sono nel progetto, ma un telefono Android non l'ha mai provato | Con Android |
 | **Rivedere sulla tela 82–84, 119 e 120** | Ridisegnate e costruite il 16 ottobre 2026 (versione 50): gli orari, «Non ora» per un mese e l'anniversario sull'ultimo giorno sono proposte | Prima di chiudere le notifiche |
 
+### Rimasto fuori dal marchio
+
+Il logo, l'icona dell'app e l'avvio animato del kit sono nell'app dal 16 ottobre 2026 ([decisioni](decisioni/prodotto.md#il-marchio-logo-icona-e-avvio-16-ottobre-2026)). Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Quanto dura l'avvio** | Accorciato a 3,6 secondi il 17 ottobre, dopo la prova sull'iPhone. Se pesa ancora, si può mostrarlo intero solo la prima volta e poi il logo già composto | Se l'utente o chi prova la beta lo trova lungo |
+| **Le altre attese** | La valigia che aspetta c'è solo nell'avvio; gli altri caricamenti restano l'indicatore di sistema, perché quasi sempre durano un attimo e una valigia di 72 punti lampeggerebbe | Se l'utente la vuole altrove |
+| **Il blu del marchio e il cobalto** | Il marchio è #3049D3, la tela #2B4ACB | Quando lo decide l'utente |
+| **L'icona a tema di Android** | Il kit non ha la variante monocromatica | Con Android |
+| **Il sito** | `sito/` non ha ancora il logo né l'icona nella scheda del browser | Quando si pubblica il sito |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.

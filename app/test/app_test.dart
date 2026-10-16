@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthClientOptions, SupabaseClient;
 import 'package:trolley/app.dart';
+import 'package:trolley/aspetto/marchio.dart';
+import 'package:trolley/aspetto/movimento.dart';
 import 'package:trolley/dati/archivio.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/documenti.dart';
@@ -17,6 +19,7 @@ import 'package:trolley/dati/parte_pubblica.dart';
 import 'package:trolley/dati/promemoria.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
+import 'package:trolley/schermate/benvenuto.dart';
 import 'package:trolley/servizi.dart';
 
 import 'aiuti.dart';
@@ -52,11 +55,15 @@ void main() {
     await db.close();
   });
 
-  Future<void> avvia(WidgetTester tester, {bool conRete = true}) async {
+  Future<void> avvia(
+    WidgetTester tester, {
+    bool conRete = true,
+    bool movimentoRidotto = true,
+  }) async {
     // Con "Riduci movimento" lo sfondo resta fermo e l'app si assesta: è anche
     // la prova che le schermate funzionano senza animazioni.
     tester.platformDispatcher.accessibilityFeaturesTestValue =
-        const FakeAccessibilityFeatures(disableAnimations: true);
+        FakeAccessibilityFeatures(disableAnimations: movimentoRidotto);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await tester.pumpWidget(
       Servizi(
@@ -89,8 +96,59 @@ void main() {
         child: const TrolleyApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    if (movimentoRidotto) await tester.pumpAndSettle();
   }
+
+  testWidgets('l\'avvio animato si vede tutto, poi si va all\'accesso', (
+    tester,
+  ) async {
+    await avvia(tester, movimentoRidotto: false);
+    // Chi deve entrare lo si sa subito, ma il logo deve finire di comporsi.
+    await tester.pump(Ritmo.avvio - const Duration(milliseconds: 200));
+    expect(find.byType(AvvioAnimato), findsOneWidget);
+    expect(find.text('Accedi'), findsNothing);
+
+    // Finita l'animazione, l'avvio si dissolve nell'accesso.
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(AvvioAnimato), findsNothing);
+    expect(find.text('Accedi'), findsOneWidget);
+    // L'app era già pronta: la valigia non è mai comparsa.
+    expect(find.byType(ValigiaCheAspetta), findsNothing);
+  });
+
+  testWidgets('con "Riduci movimento" l\'avvio non fa aspettare', (
+    tester,
+  ) async {
+    await avvia(tester);
+    expect(find.byType(AvvioAnimato), findsNothing);
+    expect(find.text('Accedi'), findsOneWidget);
+  });
+
+  testWidgets('se a fine animazione l\'app non è pronta, aspetta la valigia', (
+    tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    var finita = false;
+    Widget avvio({required bool pronta}) => Directionality(
+      textDirection: TextDirection.ltr,
+      child: SchermataAvvio(
+        pronta: pronta,
+        onAnimazioneFinita: () => finita = true,
+      ),
+    );
+
+    await tester.pumpWidget(avvio(pronta: false));
+    await tester.pump();
+    expect(finita, isTrue);
+    expect(find.byType(ValigiaCheAspetta), findsOneWidget);
+
+    await tester.pumpWidget(avvio(pronta: true));
+    expect(find.byType(ValigiaCheAspetta), findsNothing);
+  });
 
   testWidgets('senza accesso si parte dalla schermata d\'accesso', (
     tester,

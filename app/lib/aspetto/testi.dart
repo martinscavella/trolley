@@ -26,9 +26,6 @@ abstract final class Testi {
     height: altezza,
   );
 
-  /// "Trolley" nell'accesso.
-  static final marchio = titoli(50, spaziatura: -0.02, altezza: 1, peso: 800);
-
   /// Il codice di tre lettere di un biglietto: «LIS».
   static TextStyle codice(double grandezza) =>
       titoli(grandezza, spaziatura: -0.02, altezza: 0.95, peso: 800);

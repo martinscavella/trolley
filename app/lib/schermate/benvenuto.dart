@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../aspetto/elementi.dart';
+import '../aspetto/marchio.dart';
 import '../aspetto/movimento.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 
 /// L'impaginazione dell'accesso, come "1 · Accesso" della tela: la testata
-/// cobalto con il nome in bianco e il percorso a puntini, e una scheda bianca
+/// cobalto con il logo in bianco e il percorso a puntini, e una scheda bianca
 /// con i campi che le sale sopra. Sotto, una nota.
 class LayoutBenvenuto extends StatelessWidget {
   const LayoutBenvenuto({super.key, this.scheda, this.nota});
@@ -95,7 +96,7 @@ class LayoutBenvenuto extends StatelessWidget {
   }
 }
 
-/// Il nome, la frase e il percorso a puntini, sul cobalto.
+/// Il logo, la frase e il percorso a puntini, sul cobalto.
 class _Testata extends StatelessWidget {
   const _Testata();
 
@@ -112,7 +113,9 @@ class _Testata extends StatelessWidget {
             child: const CustomPaint(painter: _Percorso()),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(28, sopra + 64, 28, 0),
+            // Il logo è più alto della scritta della tela: parte un po' più
+            // su, e la frase resta dov'era.
+            padding: EdgeInsets.fromLTRB(28, sopra + 46, 28, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -178,27 +181,64 @@ class _Percorso extends CustomPainter {
   bool shouldRepaint(_Percorso vecchio) => false;
 }
 
-/// Il primo istante: si sta capendo se c'è già un accesso.
-class SchermataAvvio extends StatelessWidget {
-  const SchermataAvvio({super.key});
+/// Il primo istante: l'avvio animato del marchio, sul bianco, mentre si
+/// capisce se c'è già un accesso. Si va avanti quando sono finiti tutti e due;
+/// se l'app ci mette più dell'animazione, sotto il logo aspetta la valigia.
+class SchermataAvvio extends StatefulWidget {
+  const SchermataAvvio({
+    super.key,
+    this.pronta = false,
+    this.onAnimazioneFinita,
+  });
+
+  /// L'app sa già dove andare: a fine animazione non serve la valigia.
+  final bool pronta;
+
+  final VoidCallback? onAnimazioneFinita;
+
+  @override
+  State<SchermataAvvio> createState() => _SchermataAvvioState();
+}
+
+class _SchermataAvvioState extends State<SchermataAvvio> {
+  static const _valigia = 72.0;
+
+  bool _finita = false;
+
+  void _fine() {
+    setState(() => _finita = true);
+    widget.onAnimazioneFinita?.call();
+  }
 
   @override
   Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
-    value: SystemUiOverlayStyle.light,
-    child: Stack(
-      children: [
-        const Positioned.fill(child: ColoredBox(color: Colori.cobalto)),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Marchio().sboccia(context),
-              const SizedBox(height: 32),
-              const IndicatoreAttivita(colore: Colori.bianco),
-            ],
+    value: SystemUiOverlayStyle.dark,
+    child: ColoredBox(
+      color: Colori.bianco,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Sopra lo stesso spazio della valigia, così il logo resta al
+                // centro e non salta quando lei compare.
+                const SizedBox(height: _valigia + 16),
+                AvvioAnimato(onFinito: _fine),
+                const SizedBox(height: 16),
+                SizedBox.square(
+                  dimension: _valigia,
+                  child: _finita && !widget.pronta
+                      ? const ValigiaCheAspetta(dimensione: _valigia)
+                      : null,
+                ),
+              ],
+            ),
           ),
         ),
-      ],
+      ),
     ),
   );
 }

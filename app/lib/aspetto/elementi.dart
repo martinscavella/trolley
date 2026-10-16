@@ -1246,21 +1246,6 @@ class PulsantePiccolo extends StatelessWidget {
   );
 }
 
-/// Il nome, come nell'accesso della tela: "Trolley" in Unbounded, bianco.
-class Marchio extends StatelessWidget {
-  const Marchio({super.key, this.grande = true});
-
-  final bool grande;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    'Trolley',
-    style: (grande ? Testi.marchio : Testi.titoli(34, peso: 800)).copyWith(
-      color: Colori.bianco,
-    ),
-  );
-}
-
 class IndicatoreAttivita extends StatelessWidget {
   const IndicatoreAttivita({super.key, this.colore, this.piccolo = false});
 

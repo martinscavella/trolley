@@ -45,6 +45,10 @@ class _TrolleyAppState extends State<TrolleyApp> {
 
   _Fase _fase = _Fase.caricamento;
 
+  /// L'avvio animato si vede tutto, una volta per ogni apertura da spenta:
+  /// fino alla fine resta la schermata d'avvio, anche se la fase è già decisa.
+  bool _avvioFinito = false;
+
   /// Un invito arrivato prima che la persona potesse entrare: si tiene finché
   /// non ha un accesso e un profilo, poi si apre da solo.
   (String, ViaInvito)? _invitoInAttesa;
@@ -205,6 +209,7 @@ class _TrolleyAppState extends State<TrolleyApp> {
   @override
   Widget build(BuildContext context) {
     final invitoInAttesa = _invitoInAttesa != null;
+    final fase = _avvioFinito ? _fase : _Fase.caricamento;
     return AdaptiveApp(
       title: 'Trolley',
       navigatorKey: _navigatore,
@@ -222,9 +227,14 @@ class _TrolleyAppState extends State<TrolleyApp> {
         switchInCurve: Ritmo.curva,
         switchOutCurve: Curves.easeIn,
         child: KeyedSubtree(
-          key: ValueKey(_fase),
-          child: switch (_fase) {
-            _Fase.caricamento => const SchermataAvvio(),
+          key: ValueKey(fase),
+          child: switch (fase) {
+            _Fase.caricamento => SchermataAvvio(
+              pronta: _fase != _Fase.caricamento,
+              onAnimazioneFinita: () {
+                if (mounted) setState(() => _avvioFinito = true);
+              },
+            ),
             _Fase.accesso => SchermataAccesso(invitoInAttesa: invitoInAttesa),
             _Fase.profilo => SchermataNuovoProfilo(
               invitoInAttesa: invitoInAttesa,
