@@ -114,8 +114,8 @@ void main() {
     expect(find.text('Per chi'), findsOneWidget);
     expect(find.text('14,00 € a testa.'), findsOneWidget);
 
-    await tester.ensureVisible(pulsante('Salva'));
-    await tester.tap(pulsante('Salva'));
+    await tester.ensureVisible(pulsante('Registra'));
+    await tester.tap(pulsante('Registra'));
     await aspetta(tester);
 
     expect(ambiente.server.spese.single['pagante_id'], idDiProva);
@@ -133,8 +133,8 @@ void main() {
     await tester.pump();
     expect(find.text('21,00 € a testa.'), findsOneWidget);
 
-    await tester.ensureVisible(pulsante('Salva'));
-    await tester.tap(pulsante('Salva'));
+    await tester.ensureVisible(pulsante('Registra'));
+    await tester.tap(pulsante('Registra'));
     await aspetta(tester);
 
     expect(ambiente.server.spese.single['pagante_id'], marco);
@@ -170,7 +170,13 @@ void main() {
 
     await tester.enterText(campi.at(2), '10');
     await tester.pump();
-    await tester.tap(pulsante('Registra'));
+    // Quello del foglio degli importi, sopra quello della spesa.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(FoglioImportiDiversi),
+        matching: pulsante('Registra'),
+      ),
+    );
     await aspetta(tester);
 
     expect(find.byType(FoglioSpesa), findsNothing);
@@ -313,8 +319,8 @@ void main() {
     await nuovaSpesa(tester, '12');
     expect(find.text('Ha pagato'), findsNothing);
     expect(find.text('Per chi'), findsNothing);
-    await tester.ensureVisible(pulsante('Salva'));
-    await tester.tap(pulsante('Salva'));
+    await tester.ensureVisible(pulsante('Registra'));
+    await tester.tap(pulsante('Registra'));
     await aspetta(tester);
     expect(ambiente.server.quote, isEmpty);
     expect(find.text('La tua parte'), findsNothing);

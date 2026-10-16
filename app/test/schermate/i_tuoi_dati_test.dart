@@ -107,6 +107,8 @@ void main() {
 
     await tester.scrollUntilVisible(find.text('I tuoi dati'), 200);
     expect(find.text("Scaricarli, o chiudere l'account"), findsOneWidget);
+    await tester.ensureVisible(find.text('I tuoi dati'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('I tuoi dati'));
     await aspetta(tester);
     expect(find.byType(SchermataITuoiDati), findsOneWidget);
@@ -186,6 +188,67 @@ void main() {
       findsOneWidget,
     );
     expect(scritto('fatta senza rete'), findsNothing);
+    expect(scritto('conversazion'), findsNothing);
+  });
+
+  testWidgets('con la parte pubblica, dice che le conversazioni restano '
+      'all\'altra persona (tela, 101)', (tester) async {
+    const teresa = 'bbbbbbbb-2222-4222-8222-222222222222';
+    const luca = 'aaaaaaaa-1111-4111-8111-111111111111';
+    final ieri = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(days: 1))
+        .toIso8601String();
+    ambiente.server
+      ..apriPartePubblica(telefono: '+393471234567')
+      ..partePubblica['attivo'] = true
+      ..profiliPubblici.addAll([
+        for (final (id, nome) in [(teresa, 'Teresa'), (luca, 'Luca')])
+          {
+            'id': id,
+            'nome': nome,
+            'dal': '${DateTime.now().year}-03-01',
+            'gusti': ['cibo'],
+            'traguardi': 0,
+            'viaggi': <Object?>[],
+          },
+      ])
+      ..collegamenti.addAll({
+        for (final id in [teresa, luca])
+          id: {
+            'stato': 'accettato',
+            'da_me': true,
+            'messaggio': null,
+            'chiesto_il': ieri,
+            'risposto_il': ieri,
+          },
+      })
+      ..messaggi.add({
+        'id': 'm1',
+        'con': teresa,
+        'mio': true,
+        'testo': 'Ciao!',
+        'scritto_il': ieri,
+        'tolto': false,
+        'letto': true,
+      });
+    await viaggi(tester);
+    await ambiente.monta(
+      tester,
+      SchermataChiudiAccount(
+        cartella: () async => ambiente.cartella,
+        consegna: (_, _) async => true,
+      ),
+    );
+    await aspetta(tester);
+
+    expect(
+      scritto(
+        'Le tue 2 conversazioni restano a chi le aveva con te, con «Account '
+        'chiuso» al posto del tuo nome. I collegamenti si cancellano.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('confermato, l\'account si chiude: via i documenti, la copia e '

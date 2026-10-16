@@ -387,7 +387,9 @@ class _FoglioState extends State<_Foglio> {
       inBasso: AzioniFoglio(
         motivo: motivo,
         azione: PulsanteGrande(
-          etichetta: 'Salva',
+          // Come sulla tela (15, 37): una spesa nuova si registra, una che
+          // c'era si salva.
+          etichetta: _nuova ? 'Registra' : 'Salva',
           inCorso: _inCorso,
           onPressed: motivo == null ? _salva : null,
         ),

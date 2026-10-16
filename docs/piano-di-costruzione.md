@@ -97,6 +97,17 @@ E le cose che non sono codice: il programma sviluppatori di Apple (senza, niente
 
 ---
 
+## Le notifiche
+
+Non erano una fase del piano: il capitolo [14](prodotto/14-notifiche.md) si costruisce finita la 5.5, in due parti, perché metà delle notifiche vuole un server che le mandi.
+
+| | Cosa |
+|---|---|
+| N.1 | **I promemoria programmati dal telefono**: prima di partire, tappe da segnare, idee che scadono, un anno fa. Costruiti il 16 ottobre 2026 ([ADR-012](tecnico/adr/012-notifiche-locali.md)) |
+| N.2 | **Le notifiche dal server**: novità nei viaggi, scelte da fare, collegamenti e messaggi. Vogliono il programma sviluppatori di Apple |
+
+---
+
 ## Fase 6 — Monetizzazione
 
 Non nell'MVP. Si accende quando i numeri di H1 dicono quali funzioni le persone valutano davvero, perché è quello che decide cosa sta dietro il pagamento.

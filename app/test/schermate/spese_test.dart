@@ -103,8 +103,8 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, '12,40');
     await tester.pump();
-    await tester.ensureVisible(pulsante('Salva'));
-    await tester.tap(pulsante('Salva'));
+    await tester.ensureVisible(pulsante('Registra'));
+    await tester.tap(pulsante('Registra'));
     await aspetta(tester);
 
     expect(find.text('Nuova spesa'), findsNothing);
@@ -152,8 +152,8 @@ void main() {
 
     await tester.enterText(find.byType(TextField).at(1), 'Jardin Majorelle');
     await tester.pump();
-    await tester.ensureVisible(pulsante('Salva'));
-    await tester.tap(pulsante('Salva'));
+    await tester.ensureVisible(pulsante('Registra'));
+    await tester.tap(pulsante('Registra'));
     await aspetta(tester);
 
     expect(find.text('Jardin Majorelle'), findsOneWidget);
@@ -182,8 +182,8 @@ void main() {
     await tester.tap(find.text('MAD Dirham · del posto'));
     await tester.enterText(find.byType(TextField).first, '80');
     await tester.pump();
-    await tester.ensureVisible(pulsante('Salva'));
-    await tester.tap(pulsante('Salva'));
+    await tester.ensureVisible(pulsante('Registra'));
+    await tester.tap(pulsante('Registra'));
     await aspetta(tester);
 
     expect(ambiente.server.spese, isEmpty);

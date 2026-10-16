@@ -17,6 +17,7 @@ import '../servizi.dart';
 import 'campi_date.dart';
 import 'con_la_rete.dart';
 import 'due_versioni.dart';
+import 'notifiche.dart';
 import 'scelta_periodo.dart';
 
 /// Le date di un viaggio che esiste già: fissarle per un'idea, che così
@@ -67,6 +68,13 @@ class _SchermataDateState extends State<SchermataDate> {
       }
       HapticFeedback.mediumImpact();
       navigatore.pop(true);
+      // L'idea ha preso le date: è il momento dei promemoria (tela, 82).
+      if (eraIdea) {
+        await proponiLeNotifiche(
+          navigatore,
+          citta: widget.viaggio.destinazioneCitta,
+        );
+      }
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {

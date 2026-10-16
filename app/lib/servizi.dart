@@ -10,6 +10,7 @@ import 'dati/mappe_del_telefono.dart';
 import 'dati/pagine.dart';
 import 'dati/parte_pubblica.dart';
 import 'dati/posizione.dart';
+import 'dati/promemoria.dart';
 import 'dati/rete.dart';
 import 'dati/telefono.dart';
 import 'invito/ingresso_da_invito.dart';
@@ -33,6 +34,7 @@ class Servizi extends InheritedWidget {
     required this.pagine,
     required this.partePubblica,
     required this.telefono,
+    required this.promemoria,
     required super.child,
   });
 
@@ -66,6 +68,9 @@ class Servizi extends InheritedWidget {
 
   /// La verifica del numero con un codice SMS (5.1, ADR-011).
   final VerificaDelTelefono telefono;
+
+  /// I promemoria che il telefono si programma da solo (14-notifiche.md).
+  final Promemoria promemoria;
 
   static Servizi of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<Servizi>()!;

@@ -75,4 +75,61 @@ void main() {
     expect(find.text('Lisbona'), findsOneWidget);
     expect(find.text('Fissa le date'), findsOneWidget);
   });
+
+  testWidgets('un viaggio che nasce con le date propone i promemoria '
+      '(tela, 82)', (tester) async {
+    await ambiente.monta(tester, const SchermataNuovoViaggio());
+
+    await tester.tap(find.text('Ho le date'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Una città o un paese'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'lisb');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lisbona'));
+    await tester.pumpAndSettle();
+
+    /// Sceglie una data scrivendola, come si può fare nel selettore Material.
+    Future<void> scegli(Finder campo, DateTime data) async {
+      await tester.ensureVisible(campo);
+      await tester.pumpAndSettle();
+      await tester.tap(campo);
+      await tester.pumpAndSettle();
+      final testi = MaterialLocalizations.of(
+        tester.element(find.byType(DatePickerDialog)),
+      );
+      await tester.tap(find.byTooltip(testi.inputDateModeButtonLabel));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(DatePickerDialog),
+          matching: find.byType(TextField),
+        ),
+        testi.formatCompactDate(data),
+      );
+      await tester.tap(find.text(testi.okButtonLabel));
+      await tester.pumpAndSettle();
+    }
+
+    final inizio = DateTime.now().add(const Duration(days: 40));
+    await scegli(find.text('Primo giorno'), inizio);
+    await scegli(
+      find.text('Al ${dataEstesa(inizio)}'),
+      inizio.add(const Duration(days: 2)),
+    );
+
+    final crea = find.descendant(
+      of: find.byType(PulsanteGrande),
+      matching: find.text('Crea'),
+    );
+    await tester.tap(crea);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Vuoi un promemoria?'), findsOneWidget);
+    expect(find.text('Hai appena fissato le date di Lisbona.'), findsOneWidget);
+    await tester.tap(find.text('Sì, avvisami'));
+    await tester.pumpAndSettle();
+    expect(ambiente.notifiche.richieste, 1);
+    expect(find.text('Vuoi un promemoria?'), findsNothing);
+  });
 }

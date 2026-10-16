@@ -34,3 +34,4 @@ Le decisioni architetturali che vale la pena motivare per iscritto vivono in `ad
 - [**ADR-009** — Tassi di cambio: chi li scarica, da dove, come si usano](adr/009-tassi-di-cambio.md) ✅
 - [**ADR-010** — Itinerario incollato: il formato del ritorno, la nota, l'elenco dei modelli](adr/010-itinerario-incollato.md) ✅
 - [**ADR-011** — La verifica del numero di telefono](adr/011-verifica-del-telefono.md) ✅
+- [**ADR-012** — Le notifiche, prima parte: i promemoria programmati dal telefono](adr/012-notifiche-locali.md) ✅

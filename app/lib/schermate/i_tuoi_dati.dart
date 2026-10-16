@@ -197,6 +197,10 @@ typedef _Conto = ({
   ChiusuraAccount<Viaggio> viaggi,
   int documenti,
   int nonArrivati,
+
+  /// Le conversazioni della parte pubblica (5.4): restano all'altra persona,
+  /// con «Account chiuso» al posto del nome. Le sa solo il server.
+  int conversazioni,
 });
 
 /// «Chiudere l'account?» (tela, 101 e 102): che cosa succede, poi il dialogo
@@ -244,10 +248,20 @@ class _SchermataChiudiAccountState extends State<SchermataChiudiAccount> {
   Future<_Conto> _conta() async {
     final servizi = Servizi.of(context);
     final archivio = servizi.archivio;
+    var conversazioni = 0;
+    if (servizi.rete.disponibile) {
+      try {
+        conversazioni = (await servizi.partePubblica.conversazioni()).length;
+      } on ErroreTrolley {
+        // Senza la parte pubblica non ce ne sono; senza risposta non si dice
+        // niente: chiudere l'account vuole comunque la rete.
+      }
+    }
     return (
       viaggi: cosaSuccede(await archivio.viaggiDaChiudereConLAccount()),
       documenti: await servizi.documenti.osservaQuanti().first,
       nonArrivati: await archivio.coda.quante(),
+      conversazioni: conversazioni,
     );
   }
 
@@ -341,6 +355,20 @@ class _SchermataChiudiAccountState extends State<SchermataChiudiAccount> {
           icona(ios: CupertinoIcons.star, android: Icons.star_outline_rounded),
           'A **${titoloViaggio(viaggio)}** eri responsabile: il ruolo passa a '
               '**${erede.nome}**.',
+        ),
+      if (conto.conversazioni > 0)
+        (
+          icona(
+            ios: CupertinoIcons.chat_bubble_2,
+            android: Icons.forum_outlined,
+          ),
+          conto.conversazioni == 1
+              ? "La tua **conversazione** resta a chi l'aveva con te, con "
+                    '«Account chiuso» al posto del tuo nome. I collegamenti '
+                    'si cancellano.'
+              : 'Le tue **${conto.conversazioni} conversazioni** restano a '
+                    'chi le aveva con te, con «Account chiuso» al posto del '
+                    'tuo nome. I collegamenti si cancellano.',
         ),
       if (conto.documenti > 0)
         (

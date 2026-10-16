@@ -47,3 +47,18 @@ Ricordarsi di Trolley nei momenti giusti — che su un'app usata poche volte l'a
 
 - Notifiche in base alla posizione
 - Email: nell'MVP si comunica solo dentro l'app e con le notifiche di sistema
+
+---
+
+## Che cosa c'è (16 ottobre 2026)
+
+La prima parte: i promemoria che il telefono si programma da solo, dalla copia, senza server e anche senza rete ([ADR-012](../tecnico/adr/012-notifiche-locali.md); [decisioni](../decisioni/prodotto.md), «Le notifiche, prima parte»).
+
+| Notifica | Quando parte | Dove porta |
+|---|---|---|
+| Prima di partire | Due giorni prima alle 18, o il giorno prima; solo se manca qualcosa | Prima di partire |
+| Tappe da segnare | Alle 21 dei giorni di viaggio con tappe ancora da fare | La giornata |
+| Idee che scadono | Alle 10 del giorno in cui compare il sollecito; al massimo una al giorno | L'idea |
+| Un anno fa | Alle 10, un anno dopo l'ultimo giorno | Il riepilogo |
+
+Il permesso si chiede la prima volta che un viaggio prende le date, e ogni tipo si spegne dal profilo. Le notifiche che vengono da un altro telefono — novità nei viaggi, conflitti, collegamenti, messaggi, «la parte pubblica è disponibile» — aspettano le push, cioè il programma sviluppatori di Apple ([punti aperti](../punti-aperti.md)).

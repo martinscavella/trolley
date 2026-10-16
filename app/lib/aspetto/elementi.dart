@@ -1029,6 +1029,7 @@ class Spiegazione extends StatelessWidget {
     super.key,
     required this.righe,
     this.colore = Colori.cobalto,
+    this.fondo = Colori.bianco,
   });
 
   final List<(IconData, String)> righe;
@@ -1036,11 +1037,14 @@ class Spiegazione extends StatelessWidget {
   /// Il colore delle icone: rosso per quello che si perde.
   final Color colore;
 
+  /// Grigio dentro un foglio bianco (tela, 82).
+  final Color fondo;
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
     decoration: BoxDecoration(
-      color: Colori.bianco,
+      color: fondo,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Column(
@@ -1050,9 +1054,14 @@ class Spiegazione extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: i == 0
                 ? null
-                : const BoxDecoration(
+                : BoxDecoration(
                     border: Border(
-                      top: BorderSide(color: Color(0xFFEEF0F4), width: 1.5),
+                      top: BorderSide(
+                        color: fondo == Colori.bianco
+                            ? const Color(0xFFEEF0F4)
+                            : const Color(0xFFE3E6EE),
+                        width: 1.5,
+                      ),
                     ),
                   ),
             child: Row(

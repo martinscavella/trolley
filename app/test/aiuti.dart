@@ -29,13 +29,16 @@ import 'package:trolley/dati/errori.dart';
 import 'package:trolley/dati/file_del_telefono.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/mappe_del_telefono.dart';
+import 'package:trolley/dati/notifiche.dart';
 import 'package:trolley/dati/pagine.dart';
 import 'package:trolley/dati/parte_pubblica.dart';
 import 'package:trolley/dati/posizione.dart';
+import 'package:trolley/dati/promemoria.dart';
 import 'package:trolley/dati/rete.dart';
 import 'package:trolley/dati/telefono.dart';
 import 'package:trolley/dominio/mappa.dart';
 import 'package:trolley/dominio/navigazione.dart';
+import 'package:trolley/dominio/notifiche.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
 import 'package:trolley/servizi.dart';
@@ -1892,6 +1895,57 @@ class MappeDelTelefonoFinte implements MappeDelTelefono {
   }
 }
 
+/// Le notifiche del telefono per finta: si ricordano che cosa hanno
+/// programmato, e il test decide che cosa risponde la persona al permesso.
+class NotificheFinte implements Notifiche {
+  NotificheFinte({this.attive = false});
+
+  /// Se il telefono le lascia arrivare.
+  bool attive;
+
+  /// Che cosa risponde la persona la prima volta che glielo si chiede.
+  bool risposta = true;
+  int richieste = 0;
+  bool _chieste = false;
+  int impostazioniAperte = 0;
+  List<Notifica> programmate = const [];
+  int programmazioni = 0;
+  final _toccate = StreamController<DovePorta>.broadcast();
+
+  /// La persona tocca una notifica.
+  void tocca(DovePorta dove) => _toccate.add(dove);
+
+  @override
+  Future<void> avvia() async {}
+
+  @override
+  Future<bool> accese() async => attive;
+
+  @override
+  Future<bool> chiedi() async {
+    richieste++;
+    if (!_chieste) {
+      _chieste = true;
+      attive = risposta;
+    }
+    return attive;
+  }
+
+  @override
+  Future<void> programma(List<Notifica> notifiche) async {
+    programmazioni++;
+    programmate = [...notifiche];
+  }
+
+  @override
+  Stream<DovePorta> get toccate => _toccate.stream;
+
+  @override
+  Future<void> apriImpostazioni() async => impostazioniAperte++;
+
+  Future<void> chiudi() => _toccate.close();
+}
+
 /// Tutto quello che serve a una schermata per funzionare in un test: il
 /// database in memoria, il server finto, la rete comandabile.
 class Ambiente {
@@ -1939,6 +1993,14 @@ class Ambiente {
     ricorda: archivio.ricordaCommunity,
   );
   late final verifica = VerificaFinta(server);
+  final notifiche = NotificheFinte();
+  late final promemoria = Promemoria(
+    db,
+    notifiche: notifiche,
+    misurazione: misurazione,
+    io: () => server.supabase.auth.currentUser?.id,
+    attesa: Duration.zero,
+  );
 
   Widget servizi(Widget figlio) => Servizi(
     db: db,
@@ -1955,6 +2017,7 @@ class Ambiente {
     pagine: pagine,
     partePubblica: partePubblica,
     telefono: verifica,
+    promemoria: promemoria,
     child: figlio,
   );
 
@@ -2052,6 +2115,8 @@ class Ambiente {
   Future<void> chiudi() async {
     await rete.chiudi();
     await posizione.chiudi();
+    await promemoria.ferma();
+    await notifiche.chiudi();
     await ingresso.controllo.close();
     await db.close();
     if (cartella.existsSync()) cartella.deleteSync(recursive: true);

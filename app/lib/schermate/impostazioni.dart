@@ -23,6 +23,7 @@ import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'i_tuoi_dati.dart';
 import 'mappamondo.dart';
+import 'notifiche.dart';
 import 'pagine_del_sito.dart';
 import 'passaporto.dart';
 import 'persone_bloccate.dart';
@@ -201,6 +202,15 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
                 ),
               ),
             ),
+            const SizedBox(height: 14),
+            RigaScheda(
+              simbolo: icona(
+                ios: CupertinoIcons.bell,
+                android: Icons.notifications_none_rounded,
+              ),
+              titolo: 'Notifiche',
+              onTap: () => apri<void>(context, const SchermataNotifiche()),
+            ).entra(context, ritardo: Ritmo.passo * 4),
             const SizedBox(height: 18),
             const EtichettaSezione('Privacy'),
             Pannello(

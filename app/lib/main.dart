@@ -13,9 +13,11 @@ import 'dati/documenti.dart';
 import 'dati/file_del_telefono.dart';
 import 'dati/mappe.dart';
 import 'dati/mappe_del_telefono.dart';
+import 'dati/notifiche.dart';
 import 'dati/pagine.dart';
 import 'dati/parte_pubblica.dart';
 import 'dati/posizione.dart';
+import 'dati/promemoria.dart';
 import 'dati/rete.dart';
 import 'dati/telefono.dart';
 import 'invito/ingresso_da_invito.dart';
@@ -45,13 +47,14 @@ Future<void> main() async {
   unawaited(documenti.pulisci().catchError((_) {}));
 
   final archivio = Archivio(db, supabase, rete: rete);
+  final misurazione = Misurazione(db, supabase, versioneApp: versioneApp);
 
   runApp(
     Servizi(
       db: db,
       supabase: supabase,
       archivio: archivio,
-      misurazione: Misurazione(db, supabase, versioneApp: versioneApp),
+      misurazione: misurazione,
       ingresso: IngressoDaLink(),
       rete: rete,
       documenti: documenti,
@@ -74,6 +77,12 @@ Future<void> main() async {
         chiavePubblica: supabaseChiave,
         accesso: () => supabase.auth.currentSession?.accessToken,
         rete: rete,
+      ),
+      promemoria: Promemoria(
+        db,
+        notifiche: NotificheDelTelefono(),
+        misurazione: misurazione,
+        io: () => supabase.auth.currentUser?.id,
       ),
       child: const TrolleyApp(),
     ),

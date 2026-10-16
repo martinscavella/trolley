@@ -51,6 +51,19 @@ Serve un limite di tentativi per numero e per account, altrimenti è il primo po
 
 ---
 
+## Notifiche
+
+| | |
+|---|---|
+| **A cosa serve** | I promemoria del capitolo [14](../prodotto/14-notifiche.md): prima di partire, le tappe da segnare, le idee che scadono, un anno fa |
+| **Fornitore** | Il telefono: per ora solo le notifiche che si programma da solo, con `flutter_local_notifications` ([ADR-012](adr/012-notifiche-locali.md)). Nell'app: `dati/notifiche.dart`, l'interfaccia `Notifiche`; le calcola `dati/promemoria.dart` dalla copia |
+| **Costo** | Nessuno |
+| **Senza rete** | Funzionano: le calcola il telefono da quello che ha già |
+| **Se smette** | Non arriva niente, e le stesse cose restano dentro l'app (14, regola 1) |
+| **Cosa vede** | Nessuno fuori dal telefono. Le notifiche dal server (push: messaggi, collegamenti, novità nei viaggi) vogliono il programma sviluppatori di Apple, e passeranno da qui |
+
+---
+
 ## Deep link differito
 
 | | |

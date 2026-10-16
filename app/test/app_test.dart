@@ -14,6 +14,7 @@ import 'package:trolley/dati/documenti.dart';
 import 'package:trolley/dati/errori.dart';
 import 'package:trolley/dati/pagine.dart';
 import 'package:trolley/dati/parte_pubblica.dart';
+import 'package:trolley/dati/promemoria.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
 import 'package:trolley/servizi.dart';
@@ -78,6 +79,13 @@ void main() {
         pagine: pagine,
         partePubblica: PartePubblica(supabase),
         telefono: VerificaFinta(ServerFinto()),
+        promemoria: Promemoria(
+          db,
+          notifiche: NotificheFinte(),
+          misurazione: Misurazione(db, supabase, versioneApp: 'prova'),
+          io: () => supabase.auth.currentUser?.id,
+          attesa: Duration.zero,
+        ),
         child: const TrolleyApp(),
       ),
     );

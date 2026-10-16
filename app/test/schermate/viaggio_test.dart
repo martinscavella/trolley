@@ -175,15 +175,24 @@ void main() {
     expect(corpoDi(chiamata)['p_data_inizio'], scriviData(inizio));
     expect(corpoDi(chiamata)['p_giorni'], hasLength(3));
 
+    // Il viaggio ha preso le date: è il momento dei promemoria (tela, 82).
+    expect(find.text('Vuoi un promemoria?'), findsOneWidget);
+    expect(find.text('Hai appena fissato le date di Porto.'), findsOneWidget);
+    await tester.tap(find.text('Non ora'));
+    await tester.pumpAndSettle();
+
     // Di nuovo sul viaggio, che adesso ha i suoi giorni.
     expect(find.text('IN PROGRAMMA'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Giorni'), 300);
     expect(find.text('Giorni'), findsOneWidget);
 
     final eventi = await ambiente.eventi(tester);
-    expect(eventi.single.nome, 'idea_definita');
+    expect([for (final e in eventi) e.nome], [
+      'idea_definita',
+      'permesso_notifiche',
+    ]);
     expect(
-      jsonDecode(eventi.single.proprieta),
+      jsonDecode(eventi.first.proprieta),
       containsPair('durata_prevista_giorni', 3),
     );
   });

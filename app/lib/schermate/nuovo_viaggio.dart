@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +18,7 @@ import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'campi_date.dart';
 import 'con_la_rete.dart';
+import 'notifiche.dart';
 import 'scelta_destinazione.dart';
 import 'scelta_periodo.dart';
 import 'viaggio.dart';
@@ -78,9 +81,15 @@ class _SchermataNuovoViaggioState extends State<SchermataNuovoViaggio> {
         'durata_prevista_giorni': programma?.durataGiorni,
       });
       HapticFeedback.mediumImpact();
-      await navigatore.pushReplacement(
-        rotta<void>(SchermataViaggio(viaggioId: id)),
+      unawaited(
+        navigatore.pushReplacement(
+          rotta<void>(SchermataViaggio(viaggioId: id)),
+        ),
       );
+      // Un viaggio con le date: è il momento dei promemoria (tela, 82).
+      if (programma != null) {
+        await proponiLeNotifiche(navigatore, citta: destinazione.citta);
+      }
     } on ErroreTrolley catch (e) {
       if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
     } finally {

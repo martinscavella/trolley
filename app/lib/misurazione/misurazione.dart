@@ -74,6 +74,15 @@ abstract final class Eventi {
   static const presenzaAttivata = 'presenza_attivata';
   static const presenzaSpenta = 'presenza_spenta';
 
+  /// I promemoria (14): che cosa si risponde al permesso — `esito`
+  /// `concesso`, `negato` o `non_ora`, e `da` `viaggio` o `impostazioni` —;
+  /// quali tipi si spengono e si riaccendono (`tipo`, `accesa`); quante
+  /// arrivano e quante si toccano, per `tipo`. Mai che cosa dicevano.
+  static const permessoNotifiche = 'permesso_notifiche';
+  static const notificaImpostata = 'notifica_impostata';
+  static const notificaArrivata = 'notifica_arrivata';
+  static const notificaAperta = 'notifica_aperta';
+
   /// Le scrive il server, in segnala e quando chi modera la gestisce: le ore
   /// fra le due sono quelle vere (07, sostenibilità della moderazione).
   static const segnalazioneRicevuta = 'segnalazione_ricevuta';

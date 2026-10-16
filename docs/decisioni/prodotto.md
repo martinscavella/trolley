@@ -43,7 +43,7 @@ Sul server il periodo resta testo, nella forma in cui si legge — `agosto 2027`
 
 "Prima di archiviare si avvisa, una volta sola" diventa così:
 
-- **Il sollecito compare nelle ultime due settimane del periodo**, e dopo: sulla scheda nell'elenco ("Ancora un'idea?") e dentro l'idea, con il giorno in cui andrà in archivio. È un avviso che sta dove si guarda, non una notifica che interrompe: quella arriva con le notifiche ([14](../prodotto/14-notifiche.md)).
+- **Il sollecito compare nelle ultime due settimane del periodo**, e dopo: sulla scheda nell'elenco ("Ancora un'idea?") e dentro l'idea, con il giorno in cui andrà in archivio. È un avviso che sta dove si guarda, non una notifica che interrompe: quella arriva con le notifiche ([14](../prodotto/14-notifiche.md)), ed è arrivata il 16 ottobre 2026 («Le notifiche, prima parte»).
 - **L'idea va in archivio quando il periodo è passato e il sollecito è stato visibile da almeno due settimane.** Chi riapre l'app dopo mesi non trova l'idea già sparita: trova il sollecito, e due settimane per decidere.
 - Il sollecito si conta **per telefono**: è la persona che deve averlo visto. Un periodo cambiato vuole un sollecito nuovo.
 
@@ -360,7 +360,7 @@ Scelto con la fase 3.3 (tela, 56, 57, 90–92), il 5 ottobre 2026.
 - **«Prima di partire»** compare nel viaggio, sotto il biglietto, da due giorni prima fino al giorno della partenza compreso: quel giorno il viaggio è già in corso, ma la valigia spesso si chiude la mattina. Dice quante cose chiedono ancora uno sguardo, o che è tutto a posto.
 - **Il giro di controllo** ha quattro righe: i **documenti** sul telefono (nessuno è un suggerimento, un file sparito è un problema); la **valigia** — la propria lista e le voci della lista del viaggio che porti tu, più quante voci del viaggio non porta nessuno —; le **tappe senza un posto**, che non si vedranno sulla mappa; e se il viaggio è **pronto senza rete**. «Sistemale» apre l'elenco delle tappe senza posto: ognuna si cerca in «Dove?» e si salva subito, e il foglio resta aperto per la prossima. Una tappa senza posto va bene lo stesso.
 - **«Preparalo per l'uso senza rete»** scarica l'ultima versione di tutto il viaggio e i tassi di cambio, anche se quelli sul telefono sono di poche ore fa, e lo ricorda su quel telefono. Richiede la rete e senza lo dice prima. Fatto, dice che cosa c'è sul telefono, di quando è, e che mappa e navigazione restano dalla rete (08, regola 6). Le mappe scaricabili restano fuori.
-- **La notifica prima della partenza** con quello che manca è dell'insieme delle notifiche ([14](../prodotto/14-notifiche.md)).
+- **La notifica prima della partenza** con quello che manca è dell'insieme delle notifiche ([14](../prodotto/14-notifiche.md)): c'è dal 16 ottobre 2026, due giorni prima alle 18 («Le notifiche, prima parte»).
 
 ### La verifica: sul posto e il permesso di posizione (fase 3.4)
 
@@ -416,7 +416,7 @@ Scelto prima dell'ondata 1 (tela, 99–102), il 6 e il 7 ottobre 2026. Sono i di
 - **Stanno insieme, nel profilo sotto Privacy**: «I tuoi dati» porta a scaricarli e, più sotto, a chiudere l'account.
 - **Scaricarli dà un file JSON** preso dal server (`i_miei_dati`): il profilo, i viaggi come li vede la persona — con chi c'è, i giorni, le tappe, le spese e le quote, le liste, le note —, i suoi traguardi e i suoi eventi di misurazione. Lo leggono una persona e una macchina. Le regole di accesso decidono che cosa c'è, come nell'app: dei compagni c'è il nome, niente di più. Il file si consegna con il foglio di condivisione (lo si salva in File o lo si manda) e poi si butta: non resta sul telefono.
 - **I documenti non sono nel file**: non sono mai stati sul server, e stanno già solo sul telefono della persona (03).
-- **Prima di chiudere si dice che cosa succede, con i numeri veri**: il profilo e l'accesso si cancellano; i viaggi in cui si è rimasti da soli — idee, viaggi da soli, viaggi passati — si cancellano con tutto dentro; dagli altri si esce, e quello che si è aggiunto resta con «Account chiuso» al posto del nome; le spese restano nei saldi; dove si era responsabili, il ruolo passa a chi è entrato per primo fra quelli che restano, e si dice a chi; i documenti del telefono si cancellano; se ci sono cose fatte senza rete che non sono arrivate, si dice quante se ne perdono. Poi il dialogo di sistema, e chiuso l'account si torna all'accesso.
+- **Prima di chiudere si dice che cosa succede, con i numeri veri**: il profilo e l'accesso si cancellano; i viaggi in cui si è rimasti da soli — idee, viaggi da soli, viaggi passati — si cancellano con tutto dentro; dagli altri si esce, e quello che si è aggiunto resta con «Account chiuso» al posto del nome; le spese restano nei saldi; dove si era responsabili, il ruolo passa a chi è entrato per primo fra quelli che restano, e si dice a chi; i documenti del telefono si cancellano; se ci sono cose fatte senza rete che non sono arrivate, si dice quante se ne perdono. Dal 16 ottobre 2026, con la parte pubblica, anche quante conversazioni restano a chi le aveva, con «Account chiuso», e che i collegamenti si cancellano (tela, 101). Poi il dialogo di sistema, e chiuso l'account si torna all'accesso.
 - **Chi chiude diventa una lapide**: la riga del profilo resta, senza nome, data di nascita né altro, perché i contributi nei viaggi altrui puntano a lei. L'accesso invece si cancella davvero: con la stessa email si può rientrare, come una persona nuova.
 - **Le voci che portava tornano libere**, come uscendo; le sue voci personali, i suoi traguardi e i link d'invito che aveva mandato se ne vanno.
 - **Gli eventi di misurazione restano, ma non portano più a lei**: cambiano tutti insieme con un id nuovo, così le soglie che seguono una persona nel tempo restano calcolabili. Si aggiunge `account_chiuso`, se la misurazione era accesa. Gli eventi di un account interno si cancellano: non contano comunque.
@@ -513,6 +513,22 @@ Costruito il 16 ottobre 2026 sulle scelte della 5.2 (C1, C2; tela, 79–81 ridis
 - **Si spegne da sola** (C4): alla fine del viaggio, cambiando la meta o le date, chiudendo il viaggio, uscendone, spegnendo il profilo pubblico, con una sospensione, chiudendo l'account.
 - **Chi c'è non resta sul telefono** (C6): si chiede ogni volta, e ogni 30 secondi mentre la si guarda accesa. Senza rete l'interruttore si spegne e lo dice.
 - **Si misura accenderla, con quanti altri c'erano, e spegnerla a mano** (`presenza_attivata`, `presenza_spenta`): mai la città, mai il viaggio, mai chi (C5).
+
+### Le notifiche, prima parte: i promemoria (16 ottobre 2026)
+
+Finito il piano con la 5.5, l'utente ha scelto di continuare con le notifiche, cominciando da quelle che il telefono si programma da solo e che funzionano con l'account Apple gratuito ([ADR-012](../tecnico/adr/012-notifiche-locali.md)). Tela, 82–84 ridisegnate quel giorno, 119 e 120 nuove; nota n22. Gli orari, «Non ora» per un mese e l'anniversario sull'ultimo giorno sono proposte di Claude: dirlo se non vanno.
+
+- **Quattro tipi**, quelli che il telefono sa calcolare dalla copia:
+  - **Prima di partire**: due giorni prima alle 18, quando compare «Prima di partire», e se è passata l'ora il giorno prima («Si parte domani per Porto»). Solo se manca qualcosa: cose della propria valigia da mettere, cose del viaggio che non porta nessuno, nessun documento del viaggio sul telefono. Porta a Prima di partire.
+  - **Tappe da segnare**: alle 21 di ogni giorno di viaggio in cui restano tappe da fare; segnarle tutte prima la toglie. Una volta per giorno (09, regola 11). Porta alla giornata.
+  - **Idee che scadono**: alle 10 del giorno in cui compare il sollecito, due settimane prima della scadenza, e finché l'idea è viva per chi apre l'app dopo. Al massimo una al giorno in tutto, la prima a scadere per prima. Un periodo cambiato è un'idea nuova. Porta all'idea.
+  - **Un anno fa**: alle 10, un anno dopo l'ultimo giorno — «a un anno dalla chiusura» (10, regola 9) preso nel giorno in cui «un anno fa eri a Lisbona» è vero —, e ancora per una settimana se il telefono non ha potuto programmarlo. «12 giorni, 3 traguardi.»: la tela aggiungeva «Ci torni?», tolto perché è un invito a tornare, non una cosa da dire (14, regola 4). Non per i viaggi aggiunti a mano, finiti chissà quando. Porta al riepilogo.
+- **I testi nominano la città, mai il paese**: «Si parte giovedì per Porto», ma con il solo paese nella meta «Si parte giovedì», perché «per Portogallo» non si dice e l'articolo cambia da paese a paese.
+- **Mai di notte**: fra le 10 e le 21. **Mentre si è in viaggio** le idee e gli anni fa aspettano il giorno dopo la fine (14, casi limite); prima di partire e le tappe no, perché sono di un viaggio che comincia o che c'è.
+- **Il permesso si chiede quando un viaggio prende le date** — nasce con le date, o un'idea le fissa —, con un foglio che dice prima che cosa arriverà (82). «Sì, avvisami» lo fa chiedere al telefono; «Non ora», o chiudere il foglio, lo ripropone non prima di un mese, al prossimo viaggio che prende le date. Dopo un no del telefono non si insiste.
+- **Dal profilo**, sotto la valuta, «Notifiche» (64, 83): le quattro righe, ognuna col suo interruttore, accese di partenza. Prima del permesso le righe sono ferme e c'è «Accendile» (119); spente dal telefono lo dice, con «Apri Impostazioni» (120). Le scelte sono di questo telefono, e valgono senza rete.
+- **Le notifiche che vengono da un altro telefono** — novità nei viaggi, scelte da fare, collegamenti e messaggi, «la parte pubblica è disponibile» — vogliono le push, quindi il programma sviluppatori di Apple: restano fuori, e il foglio e le righe di 83 non le nominano finché non ci sono.
+- **Si misura** che cosa si risponde al permesso, quali tipi si spengono, quante notifiche arrivano e quante si toccano, per tipo (`permesso_notifiche`, `notifica_impostata`, `notifica_arrivata`, `notifica_aperta`). Mai che cosa dicevano, mai di quale viaggio.
 
 ---
 

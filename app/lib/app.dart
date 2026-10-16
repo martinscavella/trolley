@@ -11,9 +11,11 @@ import 'aspetto/piattaforma.dart';
 import 'aspetto/tema.dart';
 import 'dati/database.dart';
 import 'dati/errori.dart';
+import 'dominio/notifiche.dart';
 import 'misurazione/misurazione.dart';
 import 'schermate/accesso.dart';
 import 'schermate/benvenuto.dart';
+import 'schermate/notifiche.dart';
 import 'schermate/nuovo_profilo.dart';
 import 'schermate/viaggi.dart';
 import 'schermate/viaggio.dart';
@@ -38,6 +40,7 @@ class _TrolleyAppState extends State<TrolleyApp> {
   late Servizi _servizi;
   StreamSubscription<AuthState>? _accesso;
   StreamSubscription<String>? _codici;
+  StreamSubscription<DovePorta>? _toccate;
   bool _avviato = false;
 
   _Fase _fase = _Fase.caricamento;
@@ -46,6 +49,10 @@ class _TrolleyAppState extends State<TrolleyApp> {
   /// non ha un accesso e un profilo, poi si apre da solo.
   (String, ViaInvito)? _invitoInAttesa;
   bool _invitoInCorso = false;
+
+  /// Una notifica toccata prima che la persona fosse dentro: si apre appena
+  /// entra.
+  DovePorta? _notificaInAttesa;
 
   static const _chiaveIngressoCompletato = 'primo_ingresso_completato';
 
@@ -61,6 +68,7 @@ class _TrolleyAppState extends State<TrolleyApp> {
     _codici = _servizi.ingresso.codici.listen(
       (codice) => _riceviInvito(codice, ViaInvito.link),
     );
+    _toccate = _servizi.promemoria.toccate.listen(_apriNotifica);
     // Non si aspetta il primo evento dell'accesso per uscire dal caricamento.
     unawaited(_valutaFase());
   }
@@ -69,12 +77,15 @@ class _TrolleyAppState extends State<TrolleyApp> {
   void dispose() {
     _accesso?.cancel();
     _codici?.cancel();
+    _toccate?.cancel();
     super.dispose();
   }
 
   Future<void> _valutaFase() async {
     if (_servizi.supabase.auth.currentSession == null) {
       _cambiaFase(_Fase.accesso);
+      // Chi è uscito non riceve i promemoria dei suoi viaggi.
+      unawaited(_servizi.promemoria.ripianifica().catchError((_) {}));
       return;
     }
     var profilo = await _servizi.archivio.profiloLocale();
@@ -107,8 +118,22 @@ class _TrolleyAppState extends State<TrolleyApp> {
     // Se c'è la parte pubblica per questa persona: la barra lo ricorda, e
     // mostra Community (5.3). Senza rete resta quello che si sapeva.
     unawaited(_servizi.partePubblica.stato().then((_) {}, onError: (_) {}));
+    // I promemoria seguono la copia da qui in poi (14-notifiche.md).
+    unawaited(_servizi.promemoria.avvia().catchError((_) {}));
     // La copia la aggiorna l'elenco dei viaggi, che compare adesso.
     if (_invitoInAttesa != null) await _apriInvito();
+    if (_notificaInAttesa case final dove?) _apriNotifica(dove);
+  }
+
+  /// Una notifica toccata porta al suo posto (14, regola 7).
+  void _apriNotifica(DovePorta dove) {
+    final navigatore = _navigatore.currentState;
+    if (_fase != _Fase.pronto || navigatore == null) {
+      _notificaInAttesa = dove;
+      return;
+    }
+    _notificaInAttesa = null;
+    apriDaNotifica(navigatore, dove);
   }
 
   void _cambiaFase(_Fase fase) {

@@ -27,7 +27,7 @@ Cose fuori dal codice senza le quali la [Fase 0](piano-di-costruzione.md) non si
 | **Accesso con Google** | Credenziali OAuth di Google configurate in Supabase | Da fare |
 | **Data dell'ondata 1** | "Sei mesi alla beta" va ancorato a una data scritta, altrimenti non si vede quando slitta | Da fissare |
 | **Protezione dalle password compromesse** (Supabase Auth) | Con l'accesso via email è la difesa più economica contro le password già rubate altrove. La segnala il controllo di sicurezza di Supabase | Da attivare (Authentication → Policies) |
-| **Funzione `public.rls_auto_enable()`** | Non viene dalle nostre migrazioni: l'ha creata Supabase, ed è eseguibile anche senza accesso. Il controllo di sicurezza la segnala | Da capire se serve; se no, togliere l'esecuzione ad `anon` |
+| ~~**Funzione `public.rls_auto_enable()`**~~ | Capito il 16 ottobre 2026: è la funzione del trigger di eventi `ensure_rls` di Supabase, che accende da solo le regole di accesso su ogni tabella nuova in `public`, e si tiene. Non si può chiamare a mano; la migrazione `rls_automatica` le toglie comunque l'esecuzione per `anon` e `authenticated`, provata su PGlite (20 su 20, due mutanti presi) | Da applicare dall'editor SQL, con la prova `rls_automatica.sql` |
 | **Revisione legale** ([06](tecnico/06-privacy-e-conformita.md)) | Le scelte su dati, età, conservazione e chiusura dell'account sono ragionate, non certificate: vanno confermate prima di aprire fuori dal team. Le domande sono in [per la revisione](legale/per-la-revisione.md), con l'informativa in bozza (U.3) | Prima dell'ondata 1 |
 
 ### Rimasto fuori dalla 1.1
@@ -36,8 +36,8 @@ La fase 1.1 (stati idea e definito, giorni, capienza) è costruita. Restano, cia
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Notifica "è ancora un'idea?"** | Oggi il sollecito sta dentro l'app, sulla scheda e nell'idea. La notifica ha bisogno del permesso, che si chiede quando serve davvero ([14](prodotto/14-notifiche.md)) | Con le notifiche |
-| **Chiusura del viaggio** | "In corso" e "concluso" si ricavano dalle date; scriverli sul server, con verifica e traguardi, è la 4.1 | Fase 4.1 |
+| ~~**Notifica "è ancora un'idea?"**~~ | Fatta il 16 ottobre 2026: «Idee che scadono», alle 10 del giorno in cui compare il sollecito, al massimo una al giorno | ✅ Notifiche, prima parte |
+| ~~**Chiusura del viaggio**~~ | Fatta nella 4.1: chiusura, verifica, traguardi, riepilogo | ✅ Fase 4.1 |
 
 ### Rimasto fuori dalla 1.2
 
@@ -45,7 +45,7 @@ La fase 1.2 (tappe: durata, ordine, stato, la coda per aggiungerle e segnarle se
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Promemoria di fine giornata** sulle tappe non segnate (04, regola 18) | È una notifica, e il permesso si chiede quando serve davvero ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| ~~**Promemoria di fine giornata**~~ sulle tappe non segnate (04, regola 18) | Fatto il 16 ottobre 2026: «Tappe da segnare», alle 21 | ✅ Notifiche, prima parte |
 | ~~**Copia delle tappe solo di oggi e domani**~~ (01, "Dove vive ogni entità") | Deciso nella 3.3: i viaggi non finiti stanno interi, perché pesano pochi byte e le schermate leggono dalla copia; è selettivo che cosa si riscarica e quando ([02](tecnico/02-sincronizzazione-e-offline.md), [decisioni](decisioni/prodotto.md)) | ✅ Fase 3.3 |
 | **Togliere il segno di eccedente** da una tappa | Il segno resta sulla riga; la giornata lo mostra solo finché sfora davvero, quindi sistemata la giornata sparisce dalla vista | Se servirà a qualcosa |
 | **Spostare una tappa trascinandola in un altro giorno** | Oggi si sposta dal foglio della tappa, scegliendo il giorno; trascinare vale dentro la giornata | Se la beta lo chiede |
@@ -58,7 +58,7 @@ La fase 1.3 (documenti sul telefono: scansione, foto, file; elenco con oggi in c
 | Voce | Perché aspetta | Quando |
 |---|---|---|
 | **Android** | Il canale `trolley/documenti` esiste solo in Swift ([ADR-008](tecnico/adr/008-documenti-sul-telefono.md)): va scritto in Kotlin, e va capito il backup (l'Auto Backup si ferma a 25 MB per app) | Prima della prima build Android |
-| **Schermata di chiusura account** | 03 vuole che dica che disinstallare porta via i documenti. Oggi l'avviso sta al primo documento e nel dialogo "Esci"; la chiusura account non esiste ancora | Con la chiusura account |
+| ~~**Schermata di chiusura account**~~ | Fatta con U.1: chiudere l'account cancella i propri documenti dal telefono, e la schermata lo dice prima con quanti sono (tela, 101) | ✅ U.1 |
 | ~~**Rimuovere un viaggio dal telefono**~~ | Fatto nella 2.1: uscendo da un viaggio i propri documenti si cancellano, dopo una conferma che li conta. Se invece il viaggio sparisce perché ti tolgono, i documenti restano e l'elenco dei viaggi lo dice, con «Guardali» ed «Eliminali» | ✅ Fase 2.1 |
 | ~~**Il documento di adesso**~~ | Fatto nella 3.1: «Adesso» mostra il primo documento di oggi con l'ora non passata da più di un'ora, o quello di oggi senza ora; con la giornata libera, quello di domani | ✅ Fase 3.1 |
 | **Luminosità al massimo** mostrando un codice a barre | Comodo al gate; non chiesto dai documenti | Se la beta lo chiede |
@@ -81,9 +81,9 @@ La fase 1.5 (cose da portare: la propria lista, anche nelle idee, spuntabile sen
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Due persone cambiano il testo della stessa voce** | Oggi la seconda viene rifiutata e la copia si riscarica, con il testo che si stava scrivendo ancora nel campo; le due versioni affiancate sono la 2.2 | Fase 2.2 |
+| ~~**Due persone cambiano il testo della stessa voce**~~ | Fatto nella 2.2: si vedono le due versioni, e per le voci si possono tenere tutte e due | ✅ Fase 2.2 |
 | **Aggiungere una voce senza rete** | Non è uno dei quattro gesti: senza rete il campo si spegne e lo dice. Si allarga solo se H4 lo chiede | Se H4 lo chiede |
-| **Notifica prima della partenza con le cose non spuntate** (14-notifiche) | Le notifiche non ci sono ancora | Con le notifiche |
+| ~~**Notifica prima della partenza con le cose non spuntate**~~ (14-notifiche) | Fatta il 16 ottobre 2026: «Prima di partire», due giorni prima alle 18, solo se manca qualcosa | ✅ Notifiche, prima parte |
 | **Liste suggerite e modelli da riusare** (05, cosa resta fuori) | Fuori dal perimetro | Da decidere |
 | **Rivedere sulla tela le schermate 19–23** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.5 |
 | **La migrazione `cose_da_portare` non è nell'elenco delle versioni del server** | Applicata il 3 ottobre 2026 dall'editor SQL di Supabase, che non la registra: lo schema c'è e le 9 prove di `supabase/tests/liste.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003170049` | Da registrare, o da lasciare scritto qui |
@@ -110,7 +110,7 @@ La fase 2.1 (chi c'è, inviti e inviti in sospeso, togliere qualcuno e passare i
 |---|---|---|
 | **La migrazione `partecipanti` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: le funzioni ci sono e le 9 prove di `supabase/tests/partecipanti.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004093000` | Da registrare, o da lasciare scritto qui |
 | **Eliminare un viaggio** | Chi è responsabile ed è da solo non può uscire: il viaggio resterebbe senza nessuno. Per un'idea c'è l'archivio; per un viaggio definito che non si farà, oggi non c'è niente | Da decidere |
-| **Avvisare chi viene tolto** | Oggi lo scopre aprendo l'app: l'elenco dei viaggi lo dice. Una notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **Avvisare chi viene tolto** | Oggi lo scopre aprendo l'app: l'elenco dei viaggi lo dice. Una notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche dal server |
 | **`primo_contributo_invitato` guarda il ruolo di adesso** | Dopo un passaggio di ruolo chi ha creato il viaggio risulta partecipante: se non aveva mai aggiunto niente, il suo primo contributo conterebbe come quello di un invitato. Il caso è raro (chi crea un viaggio di solito ci mette qualcosa), e distinguerlo vorrebbe un campo in più sulla partecipazione | Se i numeri di H3 lo mostrano |
 | **Rivedere sulla tela le schermate 29–33** | Disegnate e costruite insieme il 4 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 2.1 |
 
@@ -121,7 +121,7 @@ La fase 2.2 (due versioni della stessa cosa: tappa, spesa, voce, date del viaggi
 | Voce | Perché aspetta | Quando |
 |---|---|---|
 | **La migrazione `chi_ha_scritto` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: colonne e trigger ci sono, le righe di prima hanno preso l'autore, e le 7 prove di `supabase/tests/conflitti.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004150000` | Da registrare, o da lasciare scritto qui |
-| **La notifica «Due versioni»** per chi esce prima di scegliere | Oggi chiudendo si torna al foglio, con quello che si era scritto; chiudendo anche il foglio la propria versione si perde, come per ogni foglio lasciato a metà. La notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **La notifica «Due versioni»** per chi esce prima di scegliere | Oggi chiudendo si torna al foglio, con quello che si era scritto; chiudendo anche il foglio la propria versione si perde, come per ogni foglio lasciato a metà. La notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche dal server |
 | **«Tienile tutte e due» per le note** | Le note oggi non si riscrivono: non possono trovarsi in due versioni | Con le note scritte a mano |
 | **Rivedere sulla tela le schermate 34–36 e 88** | 34–36 disegnate prima, 88 (una tolta) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.2 |
 
@@ -134,7 +134,7 @@ La fase 2.3 (chi ha pagato e per chi, importi diversi, la propria parte, i saldi
 | **La migrazione `divisione_spese` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: `rimborso`, le regole sulle quote, `registra_spesa` e `cambia_spesa` ci sono, e le 10 prove di `supabase/tests/divisione.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004170000` | Da registrare, o da lasciare scritto qui |
 | **Un rimborso in una valuta diversa da quella di chi lo vede** | «Li ho ricevuti» registra il rimborso nella valuta di chi lo riceve. Chi vede le spese in un'altra valuta lo converte con il suo tasso: il saldo si chiude esatto per chi riceve, al centesimo di cambio per gli altri | Se la beta lo mostra |
 | **«Sono due spese» vale solo su quel telefono** | È una risposta all'avviso, non un dato del viaggio. Sull'altro telefono della stessa persona l'avviso torna una volta | Se dà fastidio |
-| **Il foglio della spesa dice «Salva», la tela «Registra»** | Il pulsante c'era già dalla 1.4; nel foglio degli importi diversi è «Registra» come sulla tela | Da decidere con la tela |
+| ~~**Il foglio della spesa dice «Salva», la tela «Registra»**~~ | Allineato alla tela il 16 ottobre 2026: una spesa nuova si registra, una che c'era si salva, come già nel foglio degli importi diversi | ✅ |
 | **Rivedere sulla tela le schermate 37–41 e 89** | 37–41 disegnate prima, 89 (saldi visti da chi dà, rimborsi già fatti) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.3 |
 
 ### Rimasto fuori dalla 2.4
@@ -146,7 +146,7 @@ La fase 2.4 (la lista del viaggio e la propria, chi porta cosa, spostare una voc
 | ~~**La migrazione `lista_del_viaggio` va applicata**~~ | Applicata dall'editor SQL e provata il 4 ottobre 2026 (`supabase/tests/lista_del_viaggio.sql`, tutte «ok»). La versione `20261004200000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
 | **Il foglio della voce ha quante ed «Elimina la voce»**, che il disegno 43 non mostra | Il foglio è quello della 1.5 (tela, 21) con «Chi la porta?» e lo spostamento: la tela li dice nella nota, non nel disegno | Da decidere con la tela |
 | **«Ho capito» sulle voci tornate libere vale su quel telefono** | È la risposta a un avviso, come «Sono due spese». L'avviso sparisce comunque appena qualcuno prende quelle voci | Se dà fastidio |
-| **Chi porta una voce assegnata da un altro non lo sa** | Se Marco scrive che la crema la porta Sara, Sara lo vede solo aprendo la lista. Dirglielo è delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| **Chi porta una voce assegnata da un altro non lo sa** | Se Marco scrive che la crema la porta Sara, Sara lo vede solo aprendo la lista. Dirglielo è delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche dal server |
 | **Una voce presa su un altro telefono non chiude il benvenuto qui** | La copia sa chi porta una voce, non chi l'ha scelto: Sara a cui Marco ha dato la crema non ha ancora contribuito. Il benvenuto si chiude al prossimo contributo, o con la × | Se dà fastidio |
 | **Rivedere sulla tela le schermate 42–44** | Disegnate prima, costruite il 4 ottobre 2026 | Prima di chiudere la 2.4 |
 
@@ -156,7 +156,7 @@ La fase 3.1 (la schermata «Adesso»: la tappa di adesso con «Fatta» e «Salta
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Il promemoria di fine giornata** (09, regola 11) | Se restano tappe non marcate l'app lo ricorda una volta sola: è una notifica locale, dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche |
+| ~~**Il promemoria di fine giornata**~~ (09, regola 11) | Fatto il 16 ottobre 2026, una volta per giorno | ✅ Notifiche, prima parte |
 | **Due cose che la tela non disegna** | Il pulsante in alto che apre tutto il viaggio (la tela 45 non ha un'uscita verso il viaggio) e «Per oggi è tutto», quando le tappe di oggi sono tutte segnate (fatto nella forma della giornata libera, 47) | Da disegnare sulla tela |
 | **«Adesso» si apre da solo solo all'avvio** | Chi lascia l'app aperta da ieri e la riprende la ritrova dov'era; il viaggio che comincia oggi si apre al prossimo avvio | Se la beta lo chiede |
 | **Rivedere sulla tela le schermate 45–49** | Disegnate prima, costruite il 4 ottobre 2026 | Prima di chiudere la 3.1 |
@@ -184,7 +184,7 @@ La fase 3.3 (la copia che riscarica solo quello che serve, «Prima di partire» 
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **La notifica poco prima della partenza** con quello che manca (14-notifiche) | Il giro di controllo si vede aprendo il viaggio; ricordarlo a chi non lo apre è una notifica | Con le notifiche |
+| ~~**La notifica poco prima della partenza**~~ con quello che manca (14-notifiche) | Fatta il 16 ottobre 2026; toccandola si apre Prima di partire | ✅ Notifiche, prima parte |
 | **«Prima di partire» solo da due giorni prima** | Chi parte per un posto senza rete fra una settimana prepara il viaggio comunque: la copia è già intera, e aprendolo si aggiorna. Il giro di controllo prima non si vede | Se la beta lo chiede |
 | **Le mappe scaricabili** | La preparazione scarica i dati, non i riquadri: senza rete la mappa non c'è, restano gli indirizzi da aprire nelle Mappe del telefono (08, regola 6; ADR-006) | Se H4 lo chiede |
 | **I viaggi finiti fra un'apertura e l'altra** | Non si riscaricano all'apertura dell'app: un rimborso registrato da un altro dopo il ritorno si vede aprendo il viaggio, o le spese da lì | Se dà fastidio |
@@ -198,8 +198,8 @@ La fase 3.4 (le regole della verifica, «sul posto» confrontato sul telefono e 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
 | ~~**Applicare la migrazione `sul_posto`**~~ | Applicata dall'editor SQL e provata il 6 ottobre 2026 (`supabase/tests/sul_posto.sql`, tutte «ok»). La versione `20261006090000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
-| **Scrivere `viaggio.verificato`, e i traguardi** | La verifica si calcola alla chiusura: è la 4.1, con il riepilogo e l'evento `viaggio_chiuso` | Fase 4.1 |
-| **La deroga nella copia locale** | `verifica_per_deroga` sta sul server; l'app la leggerà quando chiude il viaggio | Fase 4.1 |
+| ~~**Scrivere `viaggio.verificato`, e i traguardi**~~ | Fatto nella 4.1, con la verifica di ciascuno | ✅ Fase 4.1 |
+| ~~**La deroga nella copia locale**~~ | Fatto nella 4.1: `verifica_per_deroga` è nella copia | ✅ Fase 4.1 |
 | **Vicino a un confine il paese può sbagliare** | Il paese di un punto è quello della città più vicina dell'elenco: a Ginevra si può risultare in Francia. Per le mete-città conta la distanza, non il paese | Se la beta lo mostra |
 | **50 km dal centro** | Abbastanza per la periferia e l'aeroporto; poco per un parco nazionale scritto come città | Se la beta lo mostra |
 | **Rivedere sulla tela le schermate 58 e 59** | Disegnate il 4 ottobre 2026, costruite il 6 ottobre: la domanda «quando chiederla» è decisa (decisioni) | Prima di chiudere la 3.4 |
@@ -213,7 +213,7 @@ La fase 4.1 (la chiusura da sola e a mano, la verifica scritta per ciascuno, il 
 |---|---|---|
 | ~~**Applicare la migrazione `chiusura`**~~ | Applicata dall'editor SQL e provata il 6 ottobre 2026 (`supabase/tests/chiusura.sql`, tutte «ok»). La versione `20261006120000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
 | ~~**«Guarda il passaporto»** nel riepilogo (tela, 60 e 61)~~ | Costruito con la 4.2 | ✅ |
-| **Il promemoria a un anno** («un anno fa eri a Lisbona», 10, regola 9) | È una notifica | Con le notifiche |
+| ~~**Il promemoria a un anno**~~ («un anno fa eri a Lisbona», 10, regola 9) | Fatto il 16 ottobre 2026: un anno dopo l'ultimo giorno, porta al riepilogo | ✅ Notifiche, prima parte |
 | **Quali traguardi** | La prima serie è quella della tela (decisioni). Si rivede con i numeri: se quasi nessuno li prende, la leva è aiutare a segnare le tappe | Dopo la fase interna |
 | **Un viaggio chiuso per sbaglio** | Non si riapre: chi è responsabile lo chiude solo dopo una conferma che dice cosa succede | Se capita |
 | **Rivedere sulla tela le schermate 60–63, 93 e 94** | 60–63 disegnate il 4 ottobre, 93 e 94 il 6 ottobre 2026, costruite il 6 ottobre | Prima di chiudere la 4.1 |
@@ -228,7 +228,7 @@ La fase 4.2 (il profilo con i suoi numeri, il passaporto, il mappamondo con i co
 | **Grattare su due telefoni** | Che cosa si è grattato si ricorda sul telefono: chi ha due telefoni gratta lo stesso paese su entrambi, nel mese in cui resta da grattare | Se capita |
 | **Avvicinare il globo**, e le città come punti | Il globo è grande quanto lo schermo e i confini sono semplificati per quella grandezza (ADR-005): avvicinandolo servirebbero confini più fini | Se la beta lo chiede |
 | ~~**«Aggiungi un viaggio passato»** nel passaporto (tela, 65 e 67)~~ | Costruito con la 4.3 | ✅ |
-| **La parte pubblica e le notifiche nel profilo** (tela, 64) | Arrivano con le loro fasi | Fase 5.3, notifiche |
+| ~~**La parte pubblica e le notifiche nel profilo**~~ (tela, 64) | La parte pubblica con la 5.3; «Notifiche», sotto la valuta, il 16 ottobre 2026 | ✅ |
 | **Una città con due nomi** | Il mappamondo conta le città per nome: «Cracovia» e «Kraków» scritte a mano sarebbero due. Dall'elenco si sceglie sempre lo stesso nome | Se capita |
 | **Rivedere sulla tela le schermate 64–66 e 95–97** | 64–66 disegnate il 4 ottobre, 95–97 il 6 ottobre, costruite il 6 ottobre 2026 | Prima di chiudere la 4.2 |
 
@@ -240,7 +240,7 @@ La fase 4.3 (i viaggi passati: aggiungerli, cambiarli, toglierli; il biglietto t
 |---|---|---|
 | ~~**Applicare la migrazione `viaggi_passati`**~~ | Applicata dall'editor SQL e provata l'8 ottobre 2026 (`supabase/tests/viaggi_passati.sql`, tutte «ok»). La versione `20261006150000` non è registrata in `schema_migrations`, come le altre applicate a mano | ✅ |
 | **Un viaggio passato fatto insieme** | È di chi lo aggiunge: ognuno aggiunge il suo, e non ci si invita nessuno | Se la beta lo chiede |
-| **I numeri del profilo pubblico** | Nel profilo personale «Viaggi» conta anche i viaggi passati (tela, 64). Quando il profilo diventa pubblico (5.3), un numero che si mostra agli altri deve dire quanti sono verificati e quanti dichiarati: un traguardo verificato e uno dichiarato non devono somigliarsi | Fase 5.3 |
+| **I numeri del profilo pubblico** | In parte con la 5.3: i traguardi vengono solo dai viaggi verificati, e sul profilo un viaggio aggiunto a mano è il biglietto bianco tratteggiato; il numero «viaggi» però li conta insieme | Se la beta lo chiede |
 | **Rimettere dentro un archivio scaricato** | È la reimportazione, premium (modello di business): un'altra cosa rispetto ad aggiungere un viaggio a mano | Fase 6 |
 | **Rivedere sulla tela le schermate 67 e 98** | 67 disegnata il 4 ottobre, 98 il 6 ottobre, costruite il 6 ottobre 2026 | Prima di chiudere la 4.3 |
 
@@ -254,7 +254,7 @@ U.1 (i tuoi dati e chiudere l'account: scaricarli in un file JSON, chiudere l'ac
 | **Revocare il token di Apple chiudendo l'account** | Lo store lo chiede a chi offre l'accesso con Apple: chiudendo, il server revoca il token con l'API di Apple, che vuole una chiave privata e quindi una funzione sul server, non l'app. Oggi l'accesso con Apple non c'è ancora | Con l'accesso con Apple (prerequisiti) |
 | **Un secondo telefono con lo stesso account** | La chiusura svuota il telefono da cui si chiude. Un altro telefono perde l'accesso al primo rinnovo della sessione, ma la sua copia e i suoi documenti restano finché non si esce | Se capita |
 | **Rimettere dentro i dati scaricati** | È la reimportazione, premium (modello di business) | Fase 6 |
-| **La lapide nella parte pubblica** | Un profilo chiuso non deve comparire in ricerca, collegamenti e messaggi: oggi la parte pubblica non c'è | Fase 5.3 |
+| ~~**La lapide nella parte pubblica**~~ | Fatto con la 5.3 e la 5.4: chi chiude l'account non compare in ricerca e profili, e nelle conversazioni diventa «Account chiuso» | ✅ Fasi 5.3, 5.4 |
 | **Rivedere sulla tela le schermate 99–102** | Disegnate il 6 ottobre, costruite e allineate al codice il 7 ottobre 2026 (versione 39) | Prima di chiudere U.1 |
 
 ### Rimasto fuori da U.2
@@ -263,9 +263,9 @@ U.2 (la chiave di Geoapify sul server, nella funzione `mappe`, e il tetto per pe
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Applicare la migrazione `tetto_mappe`** | `supabase/migrations/20261008090000_tetto_mappe.sql`: il conto, `consuma_mappe`, i numeri in `configurazione`, la pulizia settimanale. Si applica dall'editor SQL e si prova con `supabase/tests/tetto_mappe.sql`; la versione non finirà in `schema_migrations` | Prima di pubblicare la funzione |
-| **Una chiave nuova di Geoapify, sul server** | La chiave di prima è stata in ogni app compilata: se ne crea una nuova per il server (segreto `GEOAPIFY_CHIAVE` delle funzioni di Supabase) e la vecchia si cancella da Geoapify, con `app/chiavi.json` | Prima di pubblicare la funzione |
-| **Pubblicare la funzione `mappe`** | `supabase functions deploy mappe --project-ref nhdgxlynnudwkmxrrokp --no-verify-jwt`: l'accesso lo controlla `consuma_mappe`, non il gateway. Senza la funzione l'app nuova non ha mappa | Prima di installare l'app nuova |
+| ~~**Applicare la migrazione `tetto_mappe`**~~ | Applicata dall'utente l'8 ottobre 2026 | ✅ |
+| **Cancellare la vecchia chiave di Geoapify** | Quella nuova è sul server dall'8 ottobre 2026 (segreto `GEOAPIFY_CHIAVE`). Resta da cancellare la vecchia su Geoapify, che è stata in ogni app compilata, e con lei `app/chiavi.json` | Appena possibile |
+| ~~**Pubblicare la funzione `mappe`**~~ | Pubblicata l'8 ottobre 2026 | ✅ |
 | **I numeri del tetto** | 2000 riquadri, 150 ricerche, 60 percorsi per persona, viaggio e giorno sono stimati: si correggono in `configurazione` guardando `consumo_mappe` (e i suoi `fermati`) della fase interna | Dopo la fase interna |
 | **Il limite di tutta l'app** | Il piano gratuito di Geoapify dà 3000 crediti al giorno per tutti; una persona al tetto ne usa 710. Quando i viaggiatori di uno stesso giorno lo avvicinano serve un piano a pagamento | Quando la beta lo avvicina |
 | **Account moltiplicati** | Il tetto è per persona: chi crea molti account e molti viaggi ne ha molti. Non costa soldi (il piano è senza carta), ma consuma i crediti di tutti. Se capita, un tetto per tutta l'app nella stessa funzione | Se capita |
@@ -345,15 +345,15 @@ I collegamenti e i messaggi (chiedere con un messaggio breve, accettare e rifiut
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Applicare la migrazione `collegamenti_e_messaggi`** | Dall'editor SQL, come le altre. Prima provata su un Postgres locale (PGlite) con tutte le migrazioni e le prove: 18 su 18 | Prima di installare la 5.4 sul telefono |
-| **La prova `collegamenti_e_messaggi.sql` sul server** | Gira dentro un blocco che si annulla; sul server ci sono anche le persone vere, e la prova guarda solo le sue | Subito dopo la migrazione |
-| **Le notifiche** | Un messaggio o una richiesta arrivano solo con Trolley aperta, e la schermata lo dice. Le notifiche sono il capitolo 14, con un servizio esterno dietro un'interfaccia | Con le notifiche |
-| **Realtime al posto delle domande ripetute** | La conversazione aperta chiede ogni 5 secondi, Collegamenti e Messaggi ogni 15 mentre li si guarda: con la beta va bene | Con le notifiche, o con molte più persone |
+| ~~**Applicare la migrazione `collegamenti_e_messaggi`**~~ | Applicata dall'utente | ✅ |
+| ~~**La prova `collegamenti_e_messaggi.sql` sul server**~~ | Passata | ✅ |
+| **Le notifiche** | Un messaggio o una richiesta arrivano solo con Trolley aperta, e la schermata lo dice. Le notifiche sono il capitolo 14, con un servizio esterno dietro un'interfaccia | Con le notifiche dal server |
+| **Realtime al posto delle domande ripetute** | La conversazione aperta chiede ogni 5 secondi, Collegamenti e Messaggi ogni 15 mentre li si guarda: con la beta va bene | Con le notifiche dal server, o con molte più persone |
 | **Per quanto si tengono i messaggi** | Finché uno dei due vede la conversazione, senza un limite di tempo: è la parte di P6 ancora aperta | Con la revisione legale |
 | **Un numero su Community nella barra** | Chi non apre «Viaggiatori» non sa che ha un messaggio. La tela non lo disegna | Se le persone non si accorgono dei messaggi |
 | **Le conversazioni senza rete** | Non restano sul telefono, come tutta la parte pubblica. Se H4 dicesse che le persone le cercano offline, sarebbe una copia nuova da proteggere | Se H4 lo chiede |
 | **`compagni` sa solo dei viaggi sul telefono** | Lo dice la copia, che ha le partecipazioni dei propri viaggi: chi è stato in un viaggio lasciato prima che il telefono lo scaricasse non risulta | Se i numeri di H7 sembrano strani |
-| **«Chiudi l'account» non dice delle conversazioni** | La schermata conta viaggi e documenti; che le conversazioni restano agli altri con «Account chiuso» lo dice l'informativa. Una riga in più va disegnata sulla tela | Con la revisione dell'informativa |
+| ~~**«Chiudi l'account» non dice delle conversazioni**~~ | Fatto il 16 ottobre 2026 (tela, 101, versione 53): con la rete conta le conversazioni e dice che restano a chi le aveva, con «Account chiuso», e che i collegamenti si cancellano. Con il profilo pubblico spento le conversazioni sono nascoste e non si contano: lo dice l'informativa | ✅ |
 | **Rivedere sulla tela 76–78 e 111–116** | Ridisegnate il 10 ottobre 2026 e costruite il 15. «Richiesta inviata» e «Chiedi di nuovo» sul profilo sono il pulsante della 73 con un'altra etichetta, senza una tavola loro | Prima di chiudere la 5.4 |
 
 ### Rimasto fuori dalla 5.5
@@ -362,13 +362,26 @@ Chi c'è in città (la scheda in «Viaggiatori», «Quando sarai a Porto» prima
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Applicare la migrazione `presenza_in_citta`** | Dall'editor SQL, come le altre. Prima provata su un Postgres locale (PGlite) con tutte le migrazioni e le prove: 19 su 19; la nuova si accorge se manca il controllo del «sul posto» o se esce la data di fine | Prima di installare la 5.5 sul telefono |
-| **La prova `presenza_in_citta.sql` sul server** | Gira dentro un blocco che si annulla | Subito dopo la migrazione |
+| ~~**Applicare la migrazione `presenza_in_citta`**~~ | Applicata dall'utente il 16 ottobre 2026 | ✅ |
+| ~~**La prova `presenza_in_citta.sql` sul server**~~ | Passata, 9 su 9 | ✅ |
 | **Il «sul posto» è una barriera, non una prova** | Resta il rischio medio R1 della valutazione: chi falsifica la posizione o chiama il server senza l'app accende la presenza ovunque. La misura dopo è App Attest, con il programma sviluppatori | Se succede |
 | **I posti piccoli** (C3, domanda C-5) | Nessuna soglia di abitanti: in un paese di pochi vicoli chi c'è davvero può trovare l'altra persona | Alla prima segnalazione che riguarda la presenza in un posto piccolo |
-| **«È arrivato qualcuno a Porto»** | Senza notifiche, chi arriva compare solo a chi guarda la schermata | Con le notifiche (14), se servono |
+| **«È arrivato qualcuno a Porto»** | Senza notifiche, chi arriva compare solo a chi guarda la schermata | Con le notifiche dal server (14), se servono |
 | **Le copie di sicurezza** | Cambiando piano di Supabase le righe cancellate restano nelle copie per sette giorni: l'informativa lo deve dire (C-3) | Con il cambio di piano |
 | **Rivedere sulla tela 79–81, 117 e 118** | Ridisegnate e costruite il 16 ottobre 2026 (versione 48) | Prima di chiudere la 5.5 |
+
+### Rimasto fuori dalle notifiche (prima parte)
+
+I promemoria che il telefono si programma da solo (prima di partire, tappe da segnare, idee che scadono, un anno fa; il foglio del permesso quando un viaggio prende le date; «Notifiche» nel profilo, una per una) sono costruiti il 16 ottobre 2026 ([ADR-012](tecnico/adr/012-notifiche-locali.md)). Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Le notifiche dal server** (push): novità nei viaggi raggruppate, «Due versioni», collegamenti e messaggi, chi viene tolto, la voce assegnata da un altro, «è arrivato qualcuno a Porto», «la parte pubblica è disponibile» | Le manda il server quando succede qualcosa sul telefono di un altro: vogliono APNs, quindi il programma sviluppatori di Apple. Si aggiungono dietro l'interfaccia `Notifiche`, e tornano nel foglio 82 e nelle righe di 83 | Con il programma sviluppatori |
+| **Provarle sull'iPhone** | Le prove le fanno con un telefono finto: sul telefono vero vanno visti il permesso, una notifica che arriva con l'app chiusa e una toccata che apre il posto giusto, anche ad app spenta | Prima di chiudere le notifiche |
+| **Una notifica dice com'era la copia quando è stata programmata** | Se un compagno spunta la crema sul suo telefono e il nostro non apre l'app prima delle 18, «Mancano 3 cose» è vecchio di una. Aprendo l'app si corregge. Con le push, o con l'aggiornamento in sottofondo di iOS, si potrebbe ricalcolare prima | Se qualcuno lo segnala |
+| **Il fuso orario** | Si programma l'istante delle 18 del telefono in quel momento: chi vola a New York riceve il promemoria della sera all'ora di Milano finché non apre l'app, che lo rimette a posto | Se qualcuno lo segnala |
+| **Android** | Desugaring, ricevitori e permesso sono nel progetto, ma un telefono Android non l'ha mai provato | Con Android |
+| **Rivedere sulla tela 82–84, 119 e 120** | Ridisegnate e costruite il 16 ottobre 2026 (versione 50): gli orari, «Non ora» per un mese e l'anniversario sull'ultimo giorno sono proposte | Prima di chiudere le notifiche |
 
 ### Impianto di sicurezza del matching — stima
 
@@ -440,4 +453,4 @@ La grafica viene dalla tela "Trolley — design dell'app", stile «Biglietti» (
 | **Foto della destinazione sul biglietto** | La tela attacca una piccola foto, storta, sulla carta d'imbarco del viaggio in corso. Serve un fornitore di immagini (licenza, attribuzione, costo), dietro un'interfaccia come gli altri servizi esterni ([04](tecnico/04-integrazioni.md)). Intanto il biglietto vive senza: il codice di tre lettere basta a riconoscerlo | Da scegliere il fornitore |
 | **Tema scuro** | La tela è solo chiara, e l'app pure: col telefono in scuro resta chiara | Quando la tela disegna lo scuro |
 | **Le schermate delle fasi 2.2–6 sono disegnate, non ancora riviste** | Disegnate il 4 ottobre 2026 sulla tela (34–87, una fila per fase, più le notifiche) perché le correzioni arrivino prima di costruire. Ogni fila ha una nota arancione con le scelte e le domande aperte (per esempio: i rimborsi nei saldi, quali traguardi, «cosa ti piace» nel profilo pubblico). Quando si costruisce una fase si rilegge la sua fila: l'utente può averla corretta | Prima di costruire ciascuna fase |
-| **Community nella barra in basso** | La tela la ha; nell'app la barra mostra solo le sezioni che esistono (Viaggi, Mappa, +, Profilo). «Mappa» c'è dalla 3.2 | Con la fase 5 |
+| ~~**Community nella barra in basso**~~ | Fatto nella 5.3: la barra la mostra quando c'è la parte pubblica | ✅ Fase 5.3 |
