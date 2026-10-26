@@ -556,6 +556,47 @@ Le prime migliorie grafiche, chieste dall'utente il 17 ottobre 2026 dopo averla 
 - **L'icona del passaporto** è un libretto con il mondo in copertina, disegnato dall'app. Il biglietto resta l'icona del codice d'invito.
 - **Nessun evento** (07, regola 2): cambiare sezione vuol dire andare da un posto all'altro, non è una funzione, e nessuna soglia lo chiede. Il passaporto resta la cartolina e si conta solo quando si apre senza rete («Badge e mappamondo digitale»).
 
+### Gli orari delle tappe e la linea del tempo (26 ottobre 2026)
+
+Provando l'app, l'utente non voleva più le tappe «a pila»: le voleva sparse su una giornata dalle 0 alle 24 secondo l'orario, e voleva le regole per due tappe alla stessa ora o che si sovrappongono, «tutte, definite e poi costruite». Le regole sono in [04](../prodotto/04-itinerario.md), «Gli orari» (19–30). Tela, 127–131.
+
+- **Le sovrapposizioni sono vietate, con le proposte** (scelto dall'utente fra «vietate» e «permesse con avviso»): una tappa non si mette sopra un'altra, e l'app propone l'orario libero più vicino, di spostare in avanti le tappe dopo, di accorciarla, un altro giorno, o di togliere qualcosa. Il programma è uno solo, anche in gruppo; le tappe in parallelo restano fuori.
+- **Ogni tappa ha un orario, sempre proposto** (scelto dall'utente fra «sempre» e «facoltativo»): subito dopo l'ultima tappa del giorno, o nel primo spazio libero dalle 9. Le tappe che arrivano senza ora si mettono in fila da sole, con l'orario «proposto». Sul server `ora_inizio` resta facoltativo: le tappe di prima non si riscrivono.
+- **La giornata è la linea del tempo**, al posto di «Percorso» ed «Elenco»: le ore a sinistra, le tappe come blocchi alti quanto durano, lo spazio libero vuoto, la linea di adesso il giorno stesso. Si apre all'altezza della prima tappa, o di adesso. La strada fra le tappe resta nella mappa del giorno, «Adesso» tiene il suo percorso.
+- **L'ordine è quello degli orari**: riordinare l'elenco trascinando non c'è più. Si trascina la tappa sulla linea, a passi di cinque minuti; dove non può stare diventa rossa e, lasciata, torna al suo posto. Le proposte compaiono nel foglio della tappa, non durante il trascinamento: lì basta vedere il rosso.
+- **I passi**: cinque minuti per l'orario (come il selettore), un quarto d'ora per la durata (come prima), un quarto d'ora toccando lo spazio vuoto. La prima ora proposta, le 9, e l'ordine delle proposte sono di Claude: dirlo se non vanno.
+- **Il server non fa rispettare gli orari**, come non faceva rispettare la capienza (CLAUDE.md, regola 4): due salvataggi quasi insieme possono sovrapporsi, e la giornata lo mostra in rosso come una tappa arrivata senza rete.
+- **Si misura** quando una tappa non entra, e che cosa si sceglie (`tappa_non_entrata`, 07): se la regola fa rinunciare ad aggiungere tappe, H2 lo deve sapere.
+
+### Eliminare un viaggio (26 ottobre 2026)
+
+Il punto aperto «per un viaggio definito che non si farà, oggi non c'è niente» (2.1). L'utente: «ovviamente si può eliminare un viaggio, e l'eliminazione rimuove tutte le cose collegate». Regola in [02](../prodotto/02-il-viaggio.md), 13. Tela, 132–133.
+
+- **Solo se ci sei soltanto tu** (scelto dall'utente fra «il responsabile, per tutti», «il responsabile, sempre» e «solo se sei da solo»). Con altri dentro il pulsante c'è, spento, e dice perché.
+- **In qualunque stato**, anche chiuso: «niente si cancella» (02, regola 11; 10, regola 8) diventa «niente si cancella da solo».
+- **Si cancella tutto**, sul server in una volta (`elimina_viaggio`, con la stessa `privato.cancella_viaggio` della chiusura dell'account), e sul telefono la copia e i propri documenti. La conferma conta prima giorni, tappe, spese e documenti; dice se ci sono spese di chi è uscito.
+- **Dove**: in fondo al viaggio, sotto «Invita qualcuno», e in «Chi c'è», al posto di «Esci dal viaggio», che chi è da solo non ha.
+- **Si misura** (`viaggio_eliminato`, con lo stato e i giorni dalla creazione): un viaggio creato e poi buttato resta un `viaggio_creato`, e H2 e H5 lo devono poter togliere.
+
+### Il budget (26 ottobre 2026)
+
+Il punto aperto «budget di massima allo stato idea» (06, regola 1). L'utente lo vuole, e «una sorta di budgeting, per vedere visivamente lo stato attuale delle spese». Regole in [06](../prodotto/06-spese.md), 12–17. Tela, 134–136.
+
+- **Tutti e due** (scelto dall'utente fra «del viaggio», «personale» e «tutti e due»): un budget del viaggio, che vedono tutti e che chiunque partecipi può cambiare, e uno di ciascuno, che vede solo lui. Da soli c'è solo quello del viaggio.
+- **Il budget di massima dell'idea è lo stesso budget del viaggio**: messo da idea, resta quando arrivano le date.
+- **Il confronto**: il viaggio con il totale, ciascuno con la propria parte. La tacca di «dove dovresti essere oggi» divide il budget per i giorni, e le spese di prima di partire contano subito.
+- **Dove sta**: il budget del viaggio sul server, `viaggio.budget_importo` e `budget_valuta`, senza due versioni (è un numero, non un testo, e vince l'ultimo). Quello di ciascuno **solo sul suo telefono**, come le scelte delle notifiche: «lo vede solo lui» lo garantisce il telefono, non una regola di accesso, e non c'è niente da esportare o cancellare sul server. Cambiando telefono si rimette. Scelta di Claude nel costruirlo: dirlo se lo si vuole anche sugli altri telefoni.
+- **Si misura** (`budget_impostato`, di chi e in che stato del viaggio): se il budget di massima è un motivo in più per definire un'idea (H5). Mai l'importo.
+
+### La barra che segue il dito, la grattata più viva (26 ottobre 2026)
+
+Seconde migliorie grafiche, chieste dall'utente: «animazioni stile iOS 27, il pallino che sposto fluido e che scorra insieme al dito», e «la grattata più animata, con il feedback aptico». Tela, 137–138.
+
+- **La pillola si trascina**: tenendo il dito sulla barra e scorrendo, la pillola lo segue, un po' più grande, e si allunga sul nome della voce che ha sotto; a ogni voce nuova un tocco leggero del telefono. Lasciando, va sulla voce più vicina con una molla e la sezione cambia; il «+» si attraversa ma non si sceglie così. Un tocco fa la stessa corsa, con la molla al posto della curva. Con «Riduci movimento», niente molla e niente allungamento.
+- **La grattata**: la patina luccica prima che la si tocchi, perdendo pezzi d'argento dove passa il dito, che cadono; il telefono vibra piano mentre si gratta, più spesso quanto più si scopre. Scoperto il paese, la patina salta via, il paese si gonfia e torna, e un anello di cobalto si allarga; il telefono dà il colpo pieno. Con «Riduci movimento», niente pezzi né anello, il paese compare.
+- **Android** resta allineato a iOS: stessi gesti e stesse animazioni, finché non c'è un telefono per provarlo.
+- **Nessun evento**: cambiare sezione e grattare non ne hanno (07).
+
 ## Ricordo e traguardi
 
 ### Badge e mappamondo digitale

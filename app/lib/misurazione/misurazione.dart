@@ -87,6 +87,19 @@ abstract final class Eventi {
   /// fra le due sono quelle vere (07, sostenibilità della moderazione).
   static const segnalazioneRicevuta = 'segnalazione_ricevuta';
   static const segnalazioneGestita = 'segnalazione_gestita';
+
+  /// Una tappa che non sta dove la si voleva (04, «Gli orari»): perché, e che
+  /// cosa si è scelto. Se la regola fa rinunciare ad aggiungere, H2 lo deve
+  /// sapere.
+  static const tappaNonEntrata = 'tappa_non_entrata';
+
+  /// Un viaggio eliminato da chi ci era rimasto solo (02, regola 13): H2 e H5
+  /// devono poter togliere i viaggi creati e poi buttati.
+  static const viaggioEliminato = 'viaggio_eliminato';
+
+  /// Un budget messo, cambiato o tolto, del viaggio o di sé (06, regole
+  /// 12–17), e in che stato era il viaggio: H5. Mai l'importo.
+  static const budgetImpostato = 'budget_impostato';
 }
 
 class Misurazione {

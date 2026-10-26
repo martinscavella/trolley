@@ -860,10 +860,7 @@ class _Vista {
   late final List<_Sulla> _tutte = [
     for (final (i, g) in giorni.indexed)
       for (final s in tappeSullaMappa(
-        tappe: [
-          for (final t in tappe)
-            if (t.giornoId == g.id) t,
-        ],
+        tappe: [for (final c in tappeDelGiorno(g, tappe)) c.tappa],
         statoDi: (t) => t.statoTappa,
         postoDi: (t) => t.posto,
         conProssima: oggi && g.id == giorno?.id,
@@ -896,12 +893,10 @@ class _Vista {
   late final Map<String, Orario> orari = () {
     final g = giorno;
     if (g == null) return const <String, Orario>{};
-    final delG = [for (final s in delGiorno) s.tappa];
-    final o = orariDellaGiornata(
-      inizioGiornata: g.finestra.inizio,
-      tappe: [for (final t in delG) (ora: t.ora, durata: t.durata)],
-    );
-    return {for (final (i, t) in delG.indexed) t.id: o[i]};
+    return {
+      for (final c in tappeDelGiorno(g, tappe))
+        c.tappa.id: (inizio: c.inizio, fine: c.fine),
+    };
   }();
 }
 

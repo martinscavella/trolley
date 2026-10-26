@@ -484,10 +484,10 @@ class _VistaAdesso extends StatelessWidget {
   /// Quanti gesti fatti senza rete aspettano di partire.
   final int inCoda;
 
-  List<Tappa> _del(Giorno? g) => [
-    for (final t in tappe)
-      if (g != null && t.giornoId == g.id) t,
-  ];
+  /// Le tappe di un giorno in ordine d'orario (04, regola 25).
+  List<Tappa> _del(Giorno? g) => g == null
+      ? const []
+      : [for (final c in tappeDelGiorno(g, tappe)) c.tappa];
 
   Future<void> _apriTappa(BuildContext context, {Tappa? tappa}) =>
       apriFoglio<String>(
@@ -504,9 +504,12 @@ class _VistaAdesso extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final delGiorno = _del(giorno);
+    final ore = giorno == null
+        ? const <String, Duration>{}
+        : {for (final c in tappeDelGiorno(giorno!, tappe)) c.tappa.id: c.inizio};
     final stato = cosaSuccedeAdesso<Tappa>(
       tappe: delGiorno,
-      oraDi: (t) => t.ora,
+      oraDi: (t) => ore[t.id],
       durataDi: (t) => t.durata,
       daFare: (t) => t.statoTappa == StatoTappa.daFare,
       inizioGiornata: giorno?.finestra.inizio ?? Duration.zero,
@@ -631,10 +634,7 @@ class _VistaAdesso extends StatelessWidget {
 
   /// `9:00 · e altre 3 tappe, fino alle 16:00`.
   static String _riassuntoDelGiorno(Giorno giorno, List<Tappa> tappe) {
-    final orari = orariDellaGiornata(
-      inizioGiornata: giorno.finestra.inizio,
-      tappe: [for (final t in tappe) (ora: t.ora, durata: t.durata)],
-    );
+    final orari = tappeDelGiorno(giorno, tappe);
     final altre = tappe.length - 1;
     return [
       ora(orari.first.inizio),
@@ -1018,14 +1018,9 @@ class _VistaGiorno extends StatelessWidget {
         ),
       );
     }
-    final delGiorno = [
-      for (final t in tappe)
-        if (t.giornoId == g.id) t,
-    ];
-    final orari = orariDellaGiornata(
-      inizioGiornata: g.finestra.inizio,
-      tappe: [for (final t in delGiorno) (ora: t.ora, durata: t.durata)],
-    );
+    final collocate = tappeDelGiorno(g, tappe);
+    final delGiorno = [for (final c in collocate) c.tappa];
+    final orari = [for (final c in collocate) (inizio: c.inizio, fine: c.fine)];
     final prossima = oggi
         ? delGiorno.where((t) => t.statoTappa == StatoTappa.daFare).firstOrNull
         : null;

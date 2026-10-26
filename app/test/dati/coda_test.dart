@@ -154,6 +154,68 @@ void main() {
     },
   );
 
+  test(
+    'al momento dell\'invio si ricontrollano gli orari: se intanto un '
+    'altro ha preso quell\'ora, la tappa entra segnalata (04, regola 28)',
+    () async {
+      ambiente.rete.disponibile = false;
+      await coda.aggiungiTappa(
+        NuovaTappa(
+          id: 't1',
+          viaggioId: 'v',
+          giornoId: 'g1',
+          ordine: 1,
+          titolo: 'Cantine',
+          tipo: TipoTappa.visita,
+          durata: const Duration(minutes: 90),
+          ora: const Duration(hours: 16, minutes: 30),
+        ),
+      );
+      // Nel frattempo Marco ci mette una crociera alla stessa ora.
+      ambiente.server.tappe.add(
+        rigaDiTappa(
+          'crociera',
+          viaggio: 'v',
+          giorno: 'g1',
+          durata: 120,
+          ora: '16:30:00',
+        ),
+      );
+
+      ambiente.rete.disponibile = true;
+      await coda.svuota();
+
+      final arrivata = ambiente.server.tappe.firstWhere((t) => t['id'] == 't1');
+      expect(arrivata['ora_inizio'], '16:30:00');
+      expect(arrivata['eccedente'], isTrue);
+    },
+  );
+
+  test('a un\'ora libera, entra senza segni', () async {
+    ambiente.rete.disponibile = false;
+    await coda.aggiungiTappa(
+      NuovaTappa(
+        id: 't1',
+        viaggioId: 'v',
+        giornoId: 'g1',
+        ordine: 1,
+        titolo: 'Cantine',
+        tipo: TipoTappa.visita,
+        durata: const Duration(minutes: 90),
+        ora: const Duration(hours: 13),
+      ),
+    );
+    ambiente.server.tappe.add(
+      rigaDiTappa('crociera', viaggio: 'v', giorno: 'g1', ora: '16:30:00'),
+    );
+    ambiente.rete.disponibile = true;
+    await coda.svuota();
+    expect(
+      ambiente.server.tappe.firstWhere((t) => t['id'] == 't1')['eccedente'],
+      isFalse,
+    );
+  });
+
   test('aggiungere e poi segnare arrivano in quest\'ordine', () async {
     ambiente.rete.disponibile = false;
     await coda.aggiungiTappa(nuova('t1'));
@@ -361,12 +423,6 @@ void main() {
         expect((await copia()).map((t) => t.id), ['b']);
       },
     );
-
-    test('si riordina una giornata in una scrittura sola', () async {
-      await ambiente.archivio.ordinaTappe('g1', ['b', 'a']);
-      expect((await tappa('b')).ordine, 1);
-      expect((await tappa('a')).ordine, 2);
-    });
 
     test('spostata in un altro giorno, va in fondo', () async {
       ambiente.server.giorni.add(

@@ -11,6 +11,7 @@ Sapere quanto si sta spendendo mentre lo si spende, e alla fine sapere chi deve 
 - **Spese del viaggio** — elenco, totale, totale proprio
 - **Nuova spesa** — importo, valuta, chi ha pagato, chi partecipa
 - **Saldi** — chi deve cosa a chi, con il minor numero possibile di movimenti
+- **Budget** — quanto si pensava di spendere, e a che punto si è
 
 ---
 
@@ -27,6 +28,17 @@ Sapere quanto si sta spendendo mentre lo si spende, e alla fine sapere chi deve 
 9. **I saldi si calcolano riducendo il numero di movimenti**: se tre persone si devono qualcosa a giro, si propone il giro più corto.
 10. **Chi esce dal viaggio lascia le sue spese dov'erano.** I saldi restano calcolati come prima: sparire non cancella un debito.
 11. **Le spese proprie sono sempre visibili a chi le ha registrate**, in qualunque piano. Le statistiche aggregate sono invece una funzione premium individuale.
+
+### Il budget
+
+Chiesto dall'utente il 26 ottobre 2026, «per vedere visivamente lo stato attuale delle spese», con un budget del viaggio e uno di ciascuno ([decisioni](../decisioni/prodotto.md#il-budget-26-ottobre-2026)).
+
+12. **Un viaggio può avere un budget**: un importo in una valuta, quanto si pensa di spendere in tutto, insieme. Allo stato idea è il **budget di massima** (regola 1); quando il viaggio prende le date resta, e diventa il metro delle spese. Lo mette e lo cambia chiunque partecipi, come le date; lasciato vuoto, non c'è.
+13. **Ognuno può avere anche il suo**, che vede solo lui: quanto vuole spendere della sua parte. Sta solo sul suo telefono, e si mette anche senza rete. In un viaggio in cui si è da soli c'è solo quello del viaggio, perché sarebbe la stessa cosa.
+14. **Il budget del viaggio si confronta con il totale delle spese, quello di ciascuno con la propria parte** — non con quello che ha pagato: chi anticipa la cena per tutti non ha speso di più. I rimborsi non contano: chiudono un conto, non sono una spesa.
+15. **Si vede a colpo d'occhio.** Una barra di quanto è speso sul budget, con la tacca di **dove si dovrebbe essere oggi**: il budget diviso per i giorni del viaggio, per quelli già cominciati, più le spese fatte prima di partire, che contano tutte subito. Sotto, quanto resta e quanto fa al giorno per i giorni che restano, e una colonna per giorno contro la quota del giorno. Oltre la tacca lo dice; oltre il budget la barra diventa rossa e dice di quanto. Prima di partire mostra quanto fa al giorno; finito il viaggio, com'è andata.
+16. **Si mostra nella valuta della persona**, con l'ultimo tasso noto come le spese (regola 6). Se il budget è in un'altra valuta lo si dice; le spese senza tasso restano fuori dal conto, e si dice quante sono.
+17. **Si legge senza rete; mettere, cambiare e togliere quello del viaggio la richiedono**, come correggere una spesa (regola 7). Il proprio no: è sul telefono.
 
 ---
 
@@ -47,4 +59,5 @@ Sapere quanto si sta spendendo mentre lo si spende, e alla fine sapere chi deve 
 
 - Pagamenti dentro l'app o collegamento a sistemi di pagamento
 - Lettura automatica degli scontrini
-- Categorie di spesa con analisi: le statistiche premium restano un riepilogo, non uno strumento di contabilità
+- Categorie di spesa con analisi: le statistiche premium restano un riepilogo, non uno strumento di contabilità. Il budget è uno solo per tutto il viaggio, non per categoria
+- Avvisi quando ci si avvicina al budget: ci vogliono le notifiche da un altro telefono ([14](14-notifiche.md))

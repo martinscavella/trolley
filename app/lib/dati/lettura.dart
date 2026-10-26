@@ -3,11 +3,13 @@
 /// traducono, in un posto solo.
 library;
 
+import '../dominio/budget.dart';
 import '../dominio/calendario.dart';
 import '../dominio/documenti.dart';
 import '../dominio/giornate.dart';
 import '../dominio/liste.dart';
 import '../dominio/mappa.dart';
+import '../dominio/orari.dart';
 import '../dominio/periodo.dart';
 import '../dominio/presenza.dart';
 import '../dominio/ricordo.dart';
@@ -19,6 +21,13 @@ import 'database.dart';
 import 'destinazioni.dart';
 
 extension LetturaViaggio on Viaggio {
+  /// Il budget del viaggio, se c'è (06, regola 12).
+  Budget? get budget {
+    final (importo, valuta) = (budgetImporto, budgetValuta);
+    if (importo == null || valuta == null) return null;
+    return Budget(centesimiDa(importo), valuta);
+  }
+
   DateTime? get inizio => leggiData(dataInizio);
   DateTime? get fine => leggiData(dataFine);
   Duration? get arrivo => leggiOra(oraArrivo);
@@ -154,6 +163,32 @@ extension LetturaTappa on Tappa {
   /// nell'itinerario ma non sulla mappa (08, casi limite).
   Coordinate? get posto => coordinate(lat, lon);
 }
+
+/// Le tappe di [giorno] al loro posto sulla linea del tempo, in ordine
+/// d'orario: ognuna all'ora scelta, o a quella proposta se non ne ha una (04,
+/// regole 25 e 27). [tappe] sono quelle del viaggio, nell'ordine della copia.
+List<Collocata<Tappa>> tappeDelGiorno(Giorno giorno, Iterable<Tappa> tappe) =>
+    colloca(giorno.finestra, [
+      for (final t in tappe)
+        if (t.giornoId == giorno.id) (tappa: t, ora: t.ora, durata: t.durata),
+    ]);
+
+/// Le tappe di [giorno] come pezzi di giornata già presi, senza [tranne]: le
+/// altre con cui una tappa non deve sovrapporsi.
+List<Occupato<Tappa>> occupatiDel(
+  Giorno giorno,
+  Iterable<Tappa> tappe, {
+  String? tranne,
+}) => [
+  for (final c in tappeDelGiorno(giorno, tappe))
+    if (c.tappa.id != tranne)
+      Occupato(
+        c.tappa,
+        inizio: c.inizio,
+        durata: c.durata,
+        segnata: c.tappa.statoTappa.segnata,
+      ),
+];
 
 extension LetturaDocumento on Documento {
   FormatoDocumento get formatoDocumento => FormatoDocumento.leggi(formato);

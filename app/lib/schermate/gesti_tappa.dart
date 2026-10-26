@@ -9,13 +9,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../aspetto/elementi.dart';
+import '../aspetto/formati.dart';
+import '../aspetto/striscia.dart';
+import '../aspetto/tavolozza.dart';
+import '../aspetto/tipi.dart';
 import '../dati/coda.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
+import '../dominio/calendario.dart';
+import '../dominio/giornate.dart';
+import '../dominio/orari.dart';
 import '../dominio/tappe.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
+import 'due_versioni.dart';
 
 /// Aggiunge delle tappe al viaggio: nella copia subito, al server appena c'è
 /// rete (02 §2). Una dal foglio della tappa, tante da un itinerario incollato:
@@ -161,5 +169,62 @@ Future<int> svuotaLeTappe(
   } on ErroreTrolley catch (e) {
     if (context.mounted) mostraMessaggio(context, e.messaggio, errore: true);
     return 0;
+  }
+}
+
+/// I pezzi della striscia di un giorno, ai loro orari (tela, 127): fatte in
+/// verde, le altre col colore del tipo, in rosso quelle fuori posto.
+List<PezzoStriscia> pezziDelGiorno(
+  FinestraGiorno finestra,
+  List<Collocata<Tappa>> collocate,
+) {
+  final fuori = conflitti(finestra, collocate);
+  return [
+    for (final c in collocate)
+      PezzoStriscia(
+        c.durata,
+        c.tappa.statoTappa == StatoTappa.completata
+            ? Colori.verde
+            : coloreTipo(c.tappa.tipoTappa),
+        inizio: c.inizio,
+        rosso: fuori.contains(c.tappa),
+      ),
+  ];
+}
+
+/// Perché una tappa non può stare a quell'ora, in poche parole: per la
+/// linea del tempo mentre la si trascina (tela, 130).
+String problemaInBreve(ProblemaOrario<Tappa> p) => switch (p) {
+  Sovrapposta(:final con) when con.length == 1 =>
+    'si sovrappone a «${con.single.chi.titolo}»',
+  Sovrapposta() => 'si sovrappone a due tappe',
+  PrimaDellInizio(:final inizio) => 'prima dell\'arrivo, alle ${ora(inizio)}',
+  DopoLaFine(:final fine) when fine >= fineGiornata => 'oltre mezzanotte',
+  DopoLaFine(:final fine) => 'dopo la partenza, alle ${ora(fine)}',
+};
+
+/// Sposta una tappa a un'altra ora, e se serve in un altro giorno: con la
+/// sua versione, e se qualcuno l'ha cambiata intanto si sceglie fra le due
+/// (02 §4). Richiede la rete.
+Future<bool> spostaLaTappa(
+  BuildContext context,
+  Tappa tappa,
+  Duration inizio, {
+  String? giornoId,
+}) async {
+  final archivio = Servizi.of(context).archivio;
+  try {
+    final scelta = await salvaOScegli(
+      context,
+      () => archivio.modificaTappa(tappa, {
+        'ora_inizio': scriviOra(inizio),
+        if (giornoId != null && giornoId != tappa.giornoId)
+          'giorno_id': giornoId,
+      }),
+    );
+    return scelta != null;
+  } on ErroreTrolley catch (e) {
+    if (context.mounted) mostraMessaggio(context, e.messaggio, errore: true);
+    return false;
   }
 }

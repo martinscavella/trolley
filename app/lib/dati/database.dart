@@ -73,6 +73,11 @@ class Viaggi extends Table with RigaCopiata {
   BoolColumn get verificaPerDeroga =>
       boolean().withDefault(const Constant(false))();
   TextColumn get creatoIl => text()();
+
+  /// Il budget del viaggio, se c'è (06, regola 12): l'importo come lo dà il
+  /// server, e la sua valuta. Allo stato idea è il budget di massima.
+  TextColumn get budgetImporto => text().nullable()();
+  TextColumn get budgetValuta => text().nullable()();
 }
 
 @DataClassName('Partecipazione')
@@ -422,8 +427,9 @@ class DatabaseLocale extends _$DatabaseLocale {
   /// 9 (fase 3.4): le partecipazioni sanno chi è stato sul posto.
   /// 10 (fase 4.1): la verifica di ciascuno, la deroga, i traguardi.
   /// 11 (fase 4.3): i giorni che si ricordano di un viaggio passato.
+  /// 12 (26 ottobre 2026): il budget del viaggio.
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [
@@ -492,6 +498,10 @@ class DatabaseLocale extends _$DatabaseLocale {
       }
       if (da >= 2 && da < 11) {
         await _aggiungiSeManca(m, viaggi, viaggi.giorniRicordati);
+      }
+      if (da >= 2 && da < 12) {
+        await _aggiungiSeManca(m, viaggi, viaggi.budgetImporto);
+        await _aggiungiSeManca(m, viaggi, viaggi.budgetValuta);
       }
     },
   );

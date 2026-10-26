@@ -49,7 +49,7 @@ La fase 1.2 (tappe: durata, ordine, stato, la coda per aggiungerle e segnarle se
 | ~~**Copia delle tappe solo di oggi e domani**~~ (01, "Dove vive ogni entità") | Deciso nella 3.3: i viaggi non finiti stanno interi, perché pesano pochi byte e le schermate leggono dalla copia; è selettivo che cosa si riscarica e quando ([02](tecnico/02-sincronizzazione-e-offline.md), [decisioni](decisioni/prodotto.md)) | ✅ Fase 3.3 |
 | **Togliere il segno di eccedente** da una tappa | Il segno resta sulla riga; la giornata lo mostra solo finché sfora davvero, quindi sistemata la giornata sparisce dalla vista | Se servirà a qualcosa |
 | **Spostare una tappa trascinandola in un altro giorno** | Oggi si sposta dal foglio della tappa, scegliendo il giorno; trascinare vale dentro la giornata | Se la beta lo chiede |
-| **La capienza di una giornata intera è di 24 ore** | È la regola scritta (01): in mezzo, giornata intera. Ma con 24 ore il "non entra" capita quasi solo il primo e l'ultimo giorno. Se si vuole che il tetto morda, serve una finestra di veglia (per esempio 8–22) | Da decidere |
+| ~~**La capienza di una giornata intera è di 24 ore**~~ | Superato il 26 ottobre 2026 dagli orari (04, regole 19–30): la giornata è una linea del tempo dalle 0 alle 24, ogni tappa ha la sua ora e non si sovrappone, e quello che morde è lo spazio libero dove la si vuole, non la somma | ✅ Gli orari |
 
 ### Rimasto fuori dalla 1.3
 
@@ -70,10 +70,10 @@ La fase 1.4 (spese: valuta predefinita, tasso di cambio, ultimo valore noto offl
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Budget di massima allo stato idea** (06, regola 1) | Non è nel piano di costruzione: è un'altra cosa rispetto alle spese | Da decidere |
+| ~~**Budget di massima allo stato idea**~~ (06, regola 1) | Fatto il 26 ottobre 2026, con il budget del viaggio e quello di ciascuno (06, regole 12–17) | ✅ Il budget |
 | **Statistiche aggregate delle spese** (06, regola 11) | Funzione premium individuale | Fase 6 |
 | **Rivedere sulla tela le schermate 15–18** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.4 |
-| **La migrazione `spese_e_tassi` non è nell'elenco delle versioni del server** | È stata applicata dall'editor SQL di Supabase, che non la registra: lo schema c'è, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003090000` | Da registrare, o da lasciare scritto qui |
+| ~~**La migrazione `spese_e_tassi` non è nell'elenco delle versioni del server**~~ | È stata applicata dall'editor SQL di Supabase, che non la registra: lo schema c'è, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003090000` | ✅ Registrata il 26 ottobre 2026, con le altre applicate dall'editor SQL |
 
 ### Rimasto fuori dalla 1.5
 
@@ -86,7 +86,7 @@ La fase 1.5 (cose da portare: la propria lista, anche nelle idee, spuntabile sen
 | ~~**Notifica prima della partenza con le cose non spuntate**~~ (14-notifiche) | Fatta il 16 ottobre 2026: «Prima di partire», due giorni prima alle 18, solo se manca qualcosa | ✅ Notifiche, prima parte |
 | **Liste suggerite e modelli da riusare** (05, cosa resta fuori) | Fuori dal perimetro | Da decidere |
 | **Rivedere sulla tela le schermate 19–23** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.5 |
-| **La migrazione `cose_da_portare` non è nell'elenco delle versioni del server** | Applicata il 3 ottobre 2026 dall'editor SQL di Supabase, che non la registra: lo schema c'è e le 9 prove di `supabase/tests/liste.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003170049` | Da registrare, o da lasciare scritto qui |
+| ~~**La migrazione `cose_da_portare` non è nell'elenco delle versioni del server**~~ | Applicata il 3 ottobre 2026 dall'editor SQL di Supabase, che non la registra: lo schema c'è e le 9 prove di `supabase/tests/liste.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003170049` | ✅ Registrata il 26 ottobre 2026, con le altre applicate dall'editor SQL |
 
 ### Rimasto fuori dalla 1.6
 
@@ -100,7 +100,7 @@ La fase 1.6 (l'itinerario con un assistente: richiesta da copiare, risposta inco
 | **Leggere la risposta senza rete** | La nota va salvata prima di leggere, e salvare richiede la rete. Chi incolla di solito è appena stato sull'assistente, quindi online | Se H4 lo chiede |
 | **La generazione nativa** | Dipende dalla regola asimmetrica: si costruisce se `prompt_esportato` e `incollato_riuscito` dicono che il giro viene fatto | Dopo la beta |
 | **Rivedere sulla tela le schermate 24–28** | Disegnate e costruite insieme il 3 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 1.6 |
-| **La migrazione `itinerario_incollato` non è nell'elenco delle versioni del server** | Applicata dall'editor SQL di Supabase, che non la registra: lo schema c'è e le 6 prove di `supabase/tests/note.sql` passano (verificato il 4 ottobre 2026), la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003174945` | Da registrare, o da lasciare scritto qui |
+| ~~**La migrazione `itinerario_incollato` non è nell'elenco delle versioni del server**~~ | Applicata dall'editor SQL di Supabase, che non la registra: lo schema c'è e le 6 prove di `supabase/tests/note.sql` passano (verificato il 4 ottobre 2026), la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261003174945` | ✅ Registrata il 26 ottobre 2026, con le altre applicate dall'editor SQL |
 
 ### Rimasto fuori dalla 2.1
 
@@ -108,8 +108,8 @@ La fase 2.1 (chi c'è, inviti e inviti in sospeso, togliere qualcuno e passare i
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **La migrazione `partecipanti` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: le funzioni ci sono e le 9 prove di `supabase/tests/partecipanti.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004093000` | Da registrare, o da lasciare scritto qui |
-| **Eliminare un viaggio** | Chi è responsabile ed è da solo non può uscire: il viaggio resterebbe senza nessuno. Per un'idea c'è l'archivio; per un viaggio definito che non si farà, oggi non c'è niente | Da decidere |
+| ~~**La migrazione `partecipanti` non è nell'elenco delle versioni del server**~~ | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: le funzioni ci sono e le 9 prove di `supabase/tests/partecipanti.sql` passano, la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004093000` | ✅ Registrata il 26 ottobre 2026, con le altre applicate dall'editor SQL |
+| ~~**Eliminare un viaggio**~~ | Fatto il 26 ottobre 2026: lo elimina chi ci è rimasto da solo, con tutto quello che contiene (02, regola 13) | ✅ Eliminare un viaggio |
 | **Avvisare chi viene tolto** | Oggi lo scopre aprendo l'app: l'elenco dei viaggi lo dice. Una notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche dal server |
 | **`primo_contributo_invitato` guarda il ruolo di adesso** | Dopo un passaggio di ruolo chi ha creato il viaggio risulta partecipante: se non aveva mai aggiunto niente, il suo primo contributo conterebbe come quello di un invitato. Il caso è raro (chi crea un viaggio di solito ci mette qualcosa), e distinguerlo vorrebbe un campo in più sulla partecipazione | Se i numeri di H3 lo mostrano |
 | **Rivedere sulla tela le schermate 29–33** | Disegnate e costruite insieme il 4 ottobre 2026; l'utente non le ha ancora viste | Prima di chiudere la 2.1 |
@@ -120,7 +120,7 @@ La fase 2.2 (due versioni della stessa cosa: tappa, spesa, voce, date del viaggi
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **La migrazione `chi_ha_scritto` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: colonne e trigger ci sono, le righe di prima hanno preso l'autore, e le 7 prove di `supabase/tests/conflitti.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004150000` | Da registrare, o da lasciare scritto qui |
+| ~~**La migrazione `chi_ha_scritto` non è nell'elenco delle versioni del server**~~ | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: colonne e trigger ci sono, le righe di prima hanno preso l'autore, e le 7 prove di `supabase/tests/conflitti.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004150000` | ✅ Registrata il 26 ottobre 2026, con le altre applicate dall'editor SQL |
 | **La notifica «Due versioni»** per chi esce prima di scegliere | Oggi chiudendo si torna al foglio, con quello che si era scritto; chiudendo anche il foglio la propria versione si perde, come per ogni foglio lasciato a metà. La notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche dal server |
 | **«Tienile tutte e due» per le note** | Le note oggi non si riscrivono: non possono trovarsi in due versioni | Con le note scritte a mano |
 | **Rivedere sulla tela le schermate 34–36 e 88** | 34–36 disegnate prima, 88 (una tolta) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.2 |
@@ -131,7 +131,7 @@ La fase 2.3 (chi ha pagato e per chi, importi diversi, la propria parte, i saldi
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **La migrazione `divisione_spese` non è nell'elenco delle versioni del server** | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: `rimborso`, le regole sulle quote, `registra_spesa` e `cambia_spesa` ci sono, e le 10 prove di `supabase/tests/divisione.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004170000` | Da registrare, o da lasciare scritto qui |
+| ~~**La migrazione `divisione_spese` non è nell'elenco delle versioni del server**~~ | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: `rimborso`, le regole sulle quote, `registra_spesa` e `cambia_spesa` ci sono, e le 10 prove di `supabase/tests/divisione.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004170000` | ✅ Registrata il 26 ottobre 2026, con le altre applicate dall'editor SQL |
 | **Un rimborso in una valuta diversa da quella di chi lo vede** | «Li ho ricevuti» registra il rimborso nella valuta di chi lo riceve. Chi vede le spese in un'altra valuta lo converte con il suo tasso: il saldo si chiude esatto per chi riceve, al centesimo di cambio per gli altri | Se la beta lo mostra |
 | **«Sono due spese» vale solo su quel telefono** | È una risposta all'avviso, non un dato del viaggio. Sull'altro telefono della stessa persona l'avviso torna una volta | Se dà fastidio |
 | ~~**Il foglio della spesa dice «Salva», la tela «Registra»**~~ | Allineato alla tela il 16 ottobre 2026: una spesa nuova si registra, una che c'era si salva, come già nel foglio degli importi diversi | ✅ |
@@ -394,6 +394,19 @@ Il logo, l'icona dell'app e l'avvio animato del kit sono nell'app dal 16 ottobre
 | **Il blu del marchio e il cobalto** | Il marchio è #3049D3, la tela #2B4ACB | Quando lo decide l'utente |
 | **L'icona a tema di Android** | Il kit non ha la variante monocromatica | Con Android |
 | **Il sito** | `sito/` non ha ancora il logo né l'icona nella scheda del browser | Quando si pubblica il sito |
+
+### Rimasto fuori dagli orari, dall'eliminare e dal budget
+
+Costruiti il 26 ottobre 2026 ([decisioni](decisioni/prodotto.md#gli-orari-delle-tappe-e-la-linea-del-tempo-26-ottobre-2026); tela, 127–138). Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Le due migrazioni del 26 ottobre** | `elimina_viaggio` e `budget`, provate su PGlite con le loro prove (`elimina_viaggio.sql`, `budget.sql`, due mutanti presi). Finché non ci sono sul server, eliminare un viaggio e mettere il budget del viaggio rispondono con un errore | Da applicare |
+| **Trascinare una tappa in un altro giorno** | Sulla linea del tempo si sposta dentro la giornata; per cambiare giorno c'è il foglio della tappa (anche la voce di sopra, della 1.2) | Se la beta lo chiede |
+| **Il server non fa rispettare gli orari** | Due salvataggi quasi insieme possono sovrapporsi: la giornata lo mostra in rosso, come una tappa arrivata senza rete. Farlo rispettare al server vorrebbe dire le regole di dominio in due posti (CLAUDE.md, regola 4) | Se capita davvero |
+| **Il budget di ciascuno è su un telefono solo** | Sta nelle impostazioni del telefono: cambiando telefono, o con due telefoni, si rimette | Se la beta lo chiede |
+| **Avvisi del budget** | «Siete a metà budget a metà viaggio» sarebbe una notifica locale possibile, ma le spese degli altri arrivano solo aprendo l'app | Con le notifiche dal server |
+| **La prima ora proposta, le 9, e l'ordine delle proposte** | Scelte di Claude scrivendo le regole (04, regole 19 e 22) | Da confermare guardando la tela, 128–129 |
 
 ### Rimasto fuori dalle sezioni
 

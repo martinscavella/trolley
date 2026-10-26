@@ -4,12 +4,20 @@
 /// cobalto. I confini sono quelli veri (dati/confini.dart); la proiezione è
 /// ortografica, la Terra vista da lontano. Senza rete e senza fornitori
 /// (ADR-005).
+///
+/// La grattata è viva (tela, 138): la patina luccica prima che la si tocchi,
+/// dove passa il dito si stacca a pezzi d'argento che cadono, e il telefono
+/// vibra piano, più fitto quanto più si scopre. Scoperto il paese, la patina
+/// salta via, il paese si gonfia e torna, un anello di cobalto si allarga, e
+/// il telefono dà il colpo pieno. Con «Riduci movimento» niente pezzi, luce
+/// né anello: il paese compare, con lo stesso colpo.
 library;
 
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/physics.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -85,6 +93,20 @@ Coordinate _baricentro(Float32List punti) {
   }
   final l = sqrt(x * x + y * y + z * z);
   return (lat: asin(z / l) * 180 / pi, lon: atan2(y, x) * 180 / pi);
+}
+
+/// Un pezzo di patina staccato dal dito: cade, gira, e sparisce.
+class _Briciola {
+  _Briciola(this.dove, this.velocita, this.giro, this.colore, this.lato);
+
+  Offset dove;
+  Offset velocita;
+  double giro;
+  final Color colore;
+  final double lato;
+
+  /// Quanto gli resta, da 1 a 0.
+  double vita = 1;
 }
 
 /// Il paese da grattare, e da dove lo si gratta: il globo ci si avvicina
@@ -169,6 +191,27 @@ class _MappamondoState extends State<Mappamondo> with TickerProviderStateMixin {
   /// La patina che se ne va, quando il paese è scoperto.
   late final _scopri = AnimationController(vsync: this, duration: Ritmo.medio);
 
+  /// La luce che passa sulla patina, finché non la si tocca.
+  late final _luce = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  );
+
+  /// Il paese che si gonfia e l'anello che si allarga, scoperto.
+  late final _festa = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 750),
+  );
+
+  /// I pezzi di patina che cadono, mossi da un ticker solo finché ce n'è.
+  final _briciole = <_Briciola>[];
+  late final Ticker _caduta = createTicker(_cadono);
+  Duration _ultimoPasso = Duration.zero;
+  final _caso = Random();
+
+  /// L'ultima vibrazione mentre si gratta: non più spesso di così.
+  DateTime _vibrato = DateTime(0);
+
   _Patina? _patina;
 
   /// Dove è passato il dito, un tratto per ogni volta che si appoggia.
@@ -223,6 +266,9 @@ class _MappamondoState extends State<Mappamondo> with TickerProviderStateMixin {
     _comparso.dispose();
     _entrata.dispose();
     _scopri.dispose();
+    _luce.dispose();
+    _festa.dispose();
+    _caduta.dispose();
     super.dispose();
   }
 
@@ -235,6 +281,8 @@ class _MappamondoState extends State<Mappamondo> with TickerProviderStateMixin {
     _celle = const [];
     _finito = false;
     _scopri.value = 0;
+    _festa.value = 0;
+    _briciole.clear();
     final paese = widget.daGrattare;
     if (paese == null) {
       _patina = null;
@@ -318,6 +366,7 @@ class _MappamondoState extends State<Mappamondo> with TickerProviderStateMixin {
           if (forma.contains(Offset(x, y))) Offset(x, y),
     ];
     setState(() => _celle = celle.isEmpty ? [b.center] : celle);
+    if (!movimentoRidotto(context)) _luce.repeat();
   }
 
   bool get _sulPaese =>
@@ -325,18 +374,84 @@ class _MappamondoState extends State<Mappamondo> with TickerProviderStateMixin {
 
   void _appoggia(DragStartDetails d) {
     if (!_sulPaese) return;
+    _luce.stop();
     setState(() => _tratti.add([d.localPosition]));
     _gratta(d.localPosition, d.localPosition);
   }
 
   void _gratta(Offset da, Offset a) {
     final raggio = _dito / 2 + _passo * 0.3;
+    var nuove = 0;
     for (var i = 0; i < _celle.length; i++) {
       if (!_scoperte.contains(i) && _dalTratto(_celle[i], da, a) <= raggio) {
         _scoperte.add(i);
+        nuove++;
       }
     }
+    if (nuove > 0) {
+      _staccaPezzi(a, min(2 + nuove, 6));
+      _vibraGrattando();
+    }
     if (_scoperte.length >= _celle.length * _basta) _finisci();
+  }
+
+  /// Più si scopre, più il telefono vibra fitto: da una volta ogni 110
+  /// millesimi a una ogni 40.
+  void _vibraGrattando() {
+    final scoperto = _scoperte.length / max(_celle.length * _basta, 1);
+    final ogni = Duration(
+      milliseconds: (110 - 70 * scoperto.clamp(0, 1)).round(),
+    );
+    final adesso = DateTime.now();
+    if (adesso.difference(_vibrato) < ogni) return;
+    _vibrato = adesso;
+    HapticFeedback.selectionClick();
+  }
+
+  /// [quanti] pezzi d'argento che si staccano da [dove] e cadono.
+  void _staccaPezzi(Offset dove, int quanti, {double forza = 1}) {
+    if (movimentoRidotto(context)) return;
+    const colori = [
+      Colori.argento,
+      Colori.foschia,
+      Colori.terra,
+      Colori.bianco,
+    ];
+    for (var i = 0; i < quanti; i++) {
+      final angolo = -pi / 2 + (_caso.nextDouble() - 0.5) * pi * 1.4;
+      final v = (60 + _caso.nextDouble() * 140) * forza;
+      _briciole.add(
+        _Briciola(
+          dove +
+              Offset(_caso.nextDouble() * 10 - 5, _caso.nextDouble() * 10 - 5),
+          Offset(cos(angolo) * v, sin(angolo) * v),
+          _caso.nextDouble() * pi,
+          colori[_caso.nextInt(colori.length)],
+          3 + _caso.nextDouble() * 4,
+        ),
+      );
+    }
+    if (!_caduta.isActive) {
+      _ultimoPasso = Duration.zero;
+      _caduta.start();
+    }
+  }
+
+  void _cadono(Duration trascorso) {
+    final dt = (trascorso - _ultimoPasso).inMicroseconds / 1e6;
+    _ultimoPasso = trascorso;
+    if (dt <= 0) return;
+    setState(() {
+      for (final b in _briciole) {
+        b
+          ..velocita += Offset(0, 900 * dt)
+          ..dove += b.velocita * dt
+          ..giro += 8 * dt
+          ..vita -= dt / 0.8;
+      }
+      _briciole.removeWhere((b) => b.vita <= 0);
+    });
+    if (_briciole.isEmpty) _caduta.stop();
   }
 
   static double _dalTratto(Offset p, Offset a, Offset b) {
@@ -351,11 +466,26 @@ class _MappamondoState extends State<Mappamondo> with TickerProviderStateMixin {
     final paese = _patina?.paese;
     if (_finito || paese == null) return;
     _finito = true;
-    HapticFeedback.mediumImpact();
+    _luce.stop();
+    // Il colpo pieno, e un tocco leggero subito dopo: fatto.
+    HapticFeedback.heavyImpact();
+    Future<void>.delayed(
+      const Duration(milliseconds: 140),
+      HapticFeedback.lightImpact,
+    );
     if (movimentoRidotto(context)) {
       _scopri.value = 1;
       widget.onScoperto?.call(paese);
     } else {
+      // La patina salta via a pezzi, da tutto il paese.
+      for (final i in [
+        for (var i = 0; i < _celle.length; i++) i,
+      ]..shuffle(_caso)) {
+        if (_scoperte.contains(i)) continue;
+        _staccaPezzi(_celle[i], 1, forza: 1.6);
+        if (_briciole.length > 60) break;
+      }
+      _festa.forward(from: 0);
       _scopri.forward().then((_) => widget.onScoperto?.call(paese));
     }
   }
@@ -413,7 +543,7 @@ class _MappamondoState extends State<Mappamondo> with TickerProviderStateMixin {
           onPanUpdate: _trascina,
           onPanEnd: _lascia,
           child: AnimatedBuilder(
-            animation: Listenable.merge([_comparso, _scopri]),
+            animation: Listenable.merge([_comparso, _scopri, _luce, _festa]),
             builder: (context, _) => CustomPaint(
               size: Size.square(_lato),
               painter: _Globo(
@@ -426,6 +556,9 @@ class _MappamondoState extends State<Mappamondo> with TickerProviderStateMixin {
                 patina: _patina,
                 tratti: _tratti,
                 scoperto: _scopri.value,
+                luce: _luce.isAnimating ? _luce.value : null,
+                festa: _festa.value,
+                briciole: _briciole,
               ),
             ),
           ),
@@ -446,6 +579,9 @@ class _Globo extends CustomPainter {
     required this.patina,
     required this.tratti,
     required this.scoperto,
+    this.luce,
+    this.festa = 0,
+    this.briciole = const [],
   });
 
   final Confini? confini;
@@ -464,6 +600,13 @@ class _Globo extends CustomPainter {
 
   /// Quanto se n'è andata la patina, da 0 a 1.
   final double scoperto;
+
+  /// Dove sta la luce che passa sulla patina, da 0 a 1; `null` se non passa.
+  final double? luce;
+
+  /// Il paese scoperto che si gonfia e l'anello che si allarga, da 0 a 1.
+  final double festa;
+  final List<_Briciola> briciole;
 
   /// I meridiani e i paralleli ogni 30 gradi, con un punto ogni 3.
   static final _reticolo = [
@@ -553,6 +696,7 @@ class _Globo extends CustomPainter {
       final forma = p == null ? null : formaPatina(confini, p, o, c, grande);
       if (p != null && forma != null) {
         if (p.gettone) canvas.drawPath(forma, pieno);
+        if (festa > 0 && festa < 1) _disegnaFesta(canvas, forma, pieno);
         if (scoperto < 1) _disegnaPatina(canvas, forma);
         canvas.drawPath(forma, bordo..strokeWidth = p.gettone ? 3 : 1.5);
       }
@@ -567,6 +711,51 @@ class _Globo extends CustomPainter {
           ..strokeWidth = 2
           ..color = Colori.cenere,
       );
+    // I pezzi cadono anche fuori dal globo.
+    for (final b in briciole) {
+      canvas
+        ..save()
+        ..translate(b.dove.dx, b.dove.dy)
+        ..rotate(b.giro)
+        ..drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(
+              center: Offset.zero,
+              width: b.lato,
+              height: b.lato * 0.6,
+            ),
+            const Radius.circular(1),
+          ),
+          Paint()..color = b.colore.withValues(alpha: b.vita.clamp(0.0, 1.0)),
+        )
+        ..restore();
+    }
+  }
+
+  /// Scoperto: il paese si gonfia e torna, e un anello di cobalto si allarga
+  /// e sfuma.
+  void _disegnaFesta(Canvas canvas, Path forma, Paint pieno) {
+    final b = forma.getBounds();
+    final centro = b.center;
+    // Su e giù: in cima a un terzo della festa, poi torna.
+    final gonfio = 1 + 0.14 * sin(pi * (festa * 1.4).clamp(0.0, 1.0));
+    canvas
+      ..save()
+      ..translate(centro.dx, centro.dy)
+      ..scale(gonfio)
+      ..translate(-centro.dx, -centro.dy)
+      ..drawPath(forma, pieno)
+      ..restore();
+    final raggio =
+        b.longestSide / 2 * (1 + 1.2 * Curves.easeOut.transform(festa));
+    canvas.drawCircle(
+      centro,
+      raggio,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5 * (1 - festa)
+        ..color = Colori.cobalto.withValues(alpha: 0.7 * (1 - festa)),
+    );
   }
 
   /// La patina d'argento a righe sopra il paese, tolta dove è passato il
@@ -596,6 +785,24 @@ class _Globo extends CustomPainter {
         Offset(b.left + d, b.bottom),
         Offset(b.left + d + b.height, b.top),
         righe,
+      );
+    }
+    // La luce che passa di sbieco, finché non la si tocca.
+    final l = luce;
+    if (l != null) {
+      final x = b.left - b.width * 0.6 + l * b.width * 2.2;
+      final fascia = Rect.fromLTWH(x, b.top, b.width * 0.5, b.height);
+      canvas.drawRect(
+        b,
+        Paint()
+          ..shader = LinearGradient(
+            colors: [
+              Colori.bianco.withValues(alpha: 0),
+              Colori.bianco.withValues(alpha: 0.75),
+              Colori.bianco.withValues(alpha: 0),
+            ],
+            transform: const GradientRotation(-0.4),
+          ).createShader(fascia),
       );
     }
     final via = Paint()

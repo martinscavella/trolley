@@ -19,6 +19,7 @@ import '../dominio/liste.dart';
 import '../dominio/stato_viaggio.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'elimina_viaggio.dart';
 import 'cose.dart';
 import 'documenti.dart';
 import 'foglio_documento.dart';
@@ -485,7 +486,12 @@ class _SchermataPartecipantiState extends State<SchermataPartecipanti> {
               ],
             ],
             // Chi è responsabile ed è da solo non esce: il viaggio resterebbe
-            // senza nessuno (03, casi limite).
+            // senza nessuno (03, casi limite). Lo può eliminare (02, regola
+            // 13).
+            if (responsabile && altri.isEmpty) ...[
+              const SizedBox(height: 16),
+              PulsanteEliminaViaggio(viaggio: viaggio),
+            ],
             if (!responsabile || altri.isNotEmpty) ...[
               const SizedBox(height: 26),
               PulsanteGrande(

@@ -14,6 +14,7 @@ import 'package:drift/drift.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../dominio/budget.dart';
 import '../dominio/calendario.dart';
 import '../dominio/chiusura_account.dart';
 import '../dominio/conflitti.dart';
@@ -22,6 +23,7 @@ import '../dominio/liste.dart';
 import '../dominio/periodo.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
+import '../dominio/valute.dart';
 import 'coda.dart';
 import 'conflitti.dart';
 import 'database.dart';
@@ -1420,6 +1422,7 @@ class Archivio {
               '$_preparato$viaggioId',
               '$_sulPosto$viaggioId',
               '$_riepilogoVisto$viaggioId',
+              '$_budgetPersonale$viaggioId',
             ]),
           ))
           .go();
@@ -1696,6 +1699,79 @@ class Archivio {
     await _togliDallaCopia(viaggioId);
   }
 
+  // ─── Il budget ──────────────────────────────────────────────────────────
+
+  static const _budgetPersonale = 'budget_personale:';
+
+  /// Mette, cambia o toglie il budget del viaggio (06, regole 12 e 17):
+  /// chiunque partecipi, con la rete. Non ha due versioni: vince l'ultimo.
+  Future<void> cambiaBudget(String viaggioId, Budget? budget) async {
+    final righe = await _alServer(
+      () => _server
+          .from('viaggio')
+          .update({
+            'budget_importo': budget == null
+                ? null
+                : importoPerIlServer(budget.centesimi),
+            'budget_valuta': budget?.valuta,
+          })
+          .eq('id', viaggioId)
+          .select(),
+    );
+    if (righe.isEmpty) return;
+    await _db
+        .into(_db.viaggi)
+        .insertOnConflictUpdate(_viaggio(righe.single, DateTime.now().toUtc()));
+  }
+
+  /// Il budget di ciascuno (06, regola 13) sta solo su questo telefono, come
+  /// le scelte delle notifiche: lo vede solo chi lo mette.
+  Stream<Budget?> osservaBudgetPersonale(String viaggioId) =>
+      (_db.select(_db.impostazioni)
+            ..where((i) => i.chiave.equals('$_budgetPersonale$viaggioId')))
+          .watchSingleOrNull()
+          .map((r) => Budget.leggi(r?.valore));
+
+  Future<void> mettiBudgetPersonale(String viaggioId, Budget? budget) async {
+    final chiave = '$_budgetPersonale$viaggioId';
+    if (budget == null) {
+      await (_db.delete(
+        _db.impostazioni,
+      )..where((i) => i.chiave.equals(chiave))).go();
+      return;
+    }
+    await _db
+        .into(_db.impostazioni)
+        .insertOnConflictUpdate(
+          ImpostazioniCompanion.insert(chiave: chiave, valore: budget.scritto),
+        );
+  }
+
+  /// Elimina un viaggio in cui si è rimasti da soli (02, regola 13): sul
+  /// server con tutto quello che contiene, poi dalla copia, traguardi
+  /// compresi. Prima parte la coda, così il server non riceve dopo cose di un
+  /// viaggio che non c'è più. I documenti sul telefono li toglie chi chiama,
+  /// dopo il sì del server.
+  Future<void> eliminaViaggio(String viaggioId) async {
+    await coda.svuota();
+    await _sullaPartecipazione(
+      () => _server.rpc<dynamic>(
+        'elimina_viaggio',
+        params: {'p_viaggio': viaggioId},
+      ),
+      messaggi: const {
+        CodiciServer.nonDaSolo:
+            'Nel viaggio è entrato qualcun altro: per eliminarlo devi '
+            'restare da solo.',
+        CodiciServer.nonTrovato: 'Non fai già più parte di questo viaggio.',
+      },
+    );
+    await _togliDallaCopia(viaggioId);
+    await (_db.delete(
+      _db.traguardi,
+    )..where((t) => t.viaggioId.equals(viaggioId))).go();
+  }
+
   /// Toglie qualcuno dal viaggio: solo chi ne è responsabile (03, regola 6).
   /// Il server ritira anche i link d'invito ancora validi.
   Future<void> togliPartecipante(String viaggioId, String utenteId) async {
@@ -1800,24 +1876,6 @@ class Archivio {
   /// Sposta una tappa in fondo a un altro giorno del viaggio.
   Future<void> spostaTappa(Tappa tappa, {required String giornoId}) =>
       modificaTappa(tappa, {'giorno_id': giornoId});
-
-  /// Riordina le tappe di un giorno: [ids] nell'ordine voluto. Non porta la
-  /// versione: due persone che riordinano la stessa giornata non sono un
-  /// conflitto da mostrare, vince l'ultima.
-  Future<void> ordinaTappe(String giornoId, List<String> ids) async {
-    await coda.svuota();
-    final righe = await _alServer(
-      () => _server.rpc<List<dynamic>>(
-        'ordina_tappe',
-        params: {'p_giorno': giornoId, 'p_tappe': ids},
-      ),
-    );
-    await _db.transaction(() async {
-      for (final r in righe) {
-        await coda.nellaCopia(r as Map<String, dynamic>);
-      }
-    });
-  }
 
   // ─── Spese: le scritture che richiedono la rete ──────────────────────────
 
@@ -2563,6 +2621,8 @@ class Archivio {
         giorniRicordati: Value(r['giorni_ricordati'] as int?),
         verificaPerDeroga: Value((r['verifica_per_deroga'] as bool?) ?? false),
         creatoIl: r['creato_il'] as String,
+        budgetImporto: Value(r['budget_importo']?.toString()),
+        budgetValuta: Value(r['budget_valuta'] as String?),
       );
 
   PartecipazioniCompanion _partecipazione(

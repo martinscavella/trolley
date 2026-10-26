@@ -20,14 +20,17 @@ import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
+import '../dominio/orari.dart';
 import '../dominio/partenza.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'budget.dart';
 import 'cose.dart';
 import 'date_viaggio.dart';
 import 'documenti.dart';
+import 'elimina_viaggio.dart';
 import 'gesti_chiusura.dart';
 import 'gesti_partecipanti.dart';
 import 'gesti_tappa.dart';
@@ -156,6 +159,13 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                     .entra(context, ritardo: Ritmo.passo),
                 SezioneChiCe(viaggioId: viaggio.id)
                     .entra(context, ritardo: Ritmo.passo),
+                // Il budget di massima dell'idea (06, regola 1; tela, 136).
+                if (!stato.haGiorni) ...[
+                  const SizedBox(height: 28),
+                  SezioneBudgetIdea(
+                    viaggio: viaggio,
+                  ).entra(context, ritardo: Ritmo.passo),
+                ],
                 if (!stato.haGiorni) _DocumentiInAttesa(viaggioId: viaggio.id),
                 if (stato.haGiorni) ...[
                   const SizedBox(height: 28),
@@ -203,6 +213,8 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                   ),
                 ).entra(context, ritardo: Ritmo.passo * 4),
                 PulsanteChiudiViaggio(viaggio: viaggio),
+                // Solo se ci sei soltanto tu (02, regola 13; tela, 133).
+                PulsanteEliminaViaggio(viaggio: viaggio),
               ],
             ),
           ),
@@ -593,10 +605,7 @@ class _GiorniState extends State<_Giorni> {
                   _RigaGiorno(
                     giorno: g.finestra,
                     oggi: g.finestra.data == oggi,
-                    tappe: [
-                      for (final t in tutte)
-                        if (t.giornoId == g.id) t,
-                    ],
+                    tappe: tappeDelGiorno(g, tutte),
                     onTap: () => apri<void>(
                       context,
                       SchermataGiornata(
@@ -694,7 +703,9 @@ class _RigaGiorno extends StatelessWidget {
 
   final FinestraGiorno giorno;
   final bool oggi;
-  final List<Tappa> tappe;
+
+  /// Le tappe del giorno al loro posto.
+  final List<Collocata<Tappa>> tappe;
   final VoidCallback onTap;
 
   @override
@@ -702,15 +713,19 @@ class _RigaGiorno extends StatelessWidget {
     final d = giorno.data;
     final libero = tempoLibero(
       capienza: giorno.capienza,
-      durateMinuti: tappe.map((t) => t.durataStimataMin),
+      durateMinuti: tappe.map((c) => c.tappa.durataStimataMin),
     );
+    final fuori = conflitti(giorno, tappe).isNotEmpty;
     final quante = tappe.isEmpty
         ? 'Nessuna tappa · ${durataBreve(giorno.capienza)} libere'
         : [
             quanti(tappe.length, 'tappa', 'tappe'),
-            libero.isNegative
-                ? 'sfora di ${durataBreve(-libero)}'
-                : 'restano ${durataBreve(libero)}',
+            if (libero.isNegative)
+              'sfora di ${durataBreve(-libero)}'
+            else if (fuori)
+              'tappe da sistemare'
+            else
+              'restano ${durataBreve(libero)}',
           ].join(' · ');
     final finestra = oggi
         ? 'Oggi, ${finestraDelGiorno(giorno)}'
@@ -768,24 +783,19 @@ class _RigaGiorno extends StatelessWidget {
                     const SizedBox(height: 8),
                     StrisciaGiornata(
                       capienza: giorno.capienza,
-                      pezzi: [
-                        for (final t in tappe)
-                          PezzoStriscia(
-                            t.durata,
-                            t.statoTappa == StatoTappa.completata
-                                ? Colori.verde
-                                : coloreTipo(t.tipoTappa),
-                          ),
-                      ],
+                      daOra: giorno.inizio,
+                      pezzi: pezziDelGiorno(giorno, tappe),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       quante,
                       style: Testi.didascalia.copyWith(
-                        color: libero.isNegative
+                        color: libero.isNegative || fuori
                             ? Colori.pericolo
                             : Colori.grafite,
-                        fontWeight: libero.isNegative ? FontWeight.w600 : null,
+                        fontWeight: libero.isNegative || fuori
+                            ? FontWeight.w600
+                            : null,
                       ),
                     ),
                   ],

@@ -13,12 +13,13 @@ void main() {
     double larghezza = 350,
     bool community = false,
     double scala = 1,
+    ValueChanged<String>? scelta,
   }) {
     VoceBarra voce(String nome, IconData icona) => VoceBarra(
       icona: icona,
       etichetta: nome,
       attiva: nome == attiva,
-      onTap: () {},
+      onTap: () => scelta?.call(nome),
     );
     return MaterialApp(
       home: MediaQuery(
@@ -37,7 +38,7 @@ void main() {
                     simbolo: (colore) => SimboloPassaporto(colore: colore),
                     etichetta: 'Passaporto',
                     attiva: attiva == 'Passaporto',
-                    onTap: () {},
+                    onTap: () => scelta?.call('Passaporto'),
                   ),
                   if (community) voce('Community', Icons.group_outlined),
                 ],
@@ -130,5 +131,53 @@ void main() {
     expect(p.left, greaterThanOrEqualTo(dentro.left));
     expect(p.right, lessThanOrEqualTo(dentro.right));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('la pillola segue il dito: lasciata, va sulla voce più vicina '
+      'e la sezione cambia', (tester) async {
+    final scelte = <String>[];
+    await tester.pumpWidget(barra('Viaggi', scelta: scelte.add));
+    final daViaggi = pillola(tester);
+
+    final dito = await tester.startGesture(
+      tester.getCenter(find.byIcon(Icons.luggage_outlined)),
+    );
+    final passaporto = tester.getCenter(find.byType(SimboloPassaporto));
+    final passi = 10;
+    final tratto =
+        (passaporto - tester.getCenter(find.byIcon(Icons.luggage_outlined))) /
+        passi.toDouble();
+    for (var i = 0; i < passi ~/ 2; i++) {
+      await dito.moveBy(tratto);
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    // A metà strada la pillola è col dito, e più grande: la lente.
+    final aMeta = pillola(tester);
+    expect(aMeta.center.dx, greaterThan(daViaggi.center.dx + 40));
+    expect(aMeta.height, greaterThan(daViaggi.height));
+    expect(scelte, isEmpty);
+
+    for (var i = 0; i < passi ~/ 2; i++) {
+      await dito.moveBy(tratto);
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await dito.up();
+    await tester.pumpAndSettle();
+    expect(scelte, ['Passaporto']);
+  });
+
+  testWidgets('trascinata e riportata sulla voce di partenza, non cambia '
+      'niente', (tester) async {
+    final scelte = <String>[];
+    await tester.pumpWidget(barra('Viaggi', scelta: scelte.add));
+    final partenza = tester.getCenter(find.byIcon(Icons.luggage_outlined));
+    final dito = await tester.startGesture(partenza);
+    await dito.moveBy(const Offset(60, 0));
+    await tester.pump();
+    await dito.moveBy(const Offset(-60, 0));
+    await tester.pump();
+    await dito.up();
+    await tester.pumpAndSettle();
+    expect(scelte, isEmpty);
   });
 }

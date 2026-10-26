@@ -598,6 +598,36 @@ class ServerFinto {
         mia['stato'] = 'uscito';
         _liberaVoci(_corpo(r)['p_viaggio'], idDiProva);
         return http.Response('', 204);
+      case 'POST /rest/v1/rpc/elimina_viaggio':
+        final viaggio = _corpo(r)['p_viaggio'] as String;
+        final mia = _partecipazione(viaggio, idDiProva);
+        if (mia == null || mia['stato'] != 'attivo') {
+          return _errore('TR404', 'non partecipi');
+        }
+        final altri = partecipazioni.where(
+          (p) =>
+              p['viaggio_id'] == viaggio &&
+              p['utente_id'] != idDiProva &&
+              p['stato'] == 'attivo',
+        );
+        if (altri.isNotEmpty) return _errore('TR413', 'non sei da solo');
+        bool delViaggio(Map<String, Object?> riga) =>
+            riga['viaggio_id'] == viaggio;
+        viaggi.removeWhere((v) => v['id'] == viaggio);
+        for (final elenco in [
+          giorni,
+          partecipazioni,
+          tappe,
+          spese,
+          quote,
+          voci,
+          note,
+          traguardi,
+          inviti,
+        ]) {
+          elenco.removeWhere(delViaggio);
+        }
+        return http.Response('', 204);
       case 'POST /rest/v1/rpc/rimuovi_partecipante':
       case 'POST /rest/v1/rpc/passa_il_ruolo':
         final c = _corpo(r);
@@ -1024,12 +1054,14 @@ class ServerFinto {
           return risposta(const []);
         }
         final valori = _corpo(r);
-        if (valori['versione'] != viaggio['versione']) {
+        // Come aggiorna_riga: senza la versione si scrive su quella che c'è.
+        if (valori.containsKey('versione') &&
+            valori['versione'] != viaggio['versione']) {
           return _errore('TR409', 'versione superata');
         }
         viaggio
           ..addAll(valori)
-          ..['versione'] = (valori['versione']! as int) + 1
+          ..['versione'] = (viaggio['versione']! as int) + 1
           ..['modificato_da'] = idDiProva;
         return risposta([viaggio]);
       case 'POST /rest/v1/invito':

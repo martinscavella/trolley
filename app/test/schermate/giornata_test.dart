@@ -76,21 +76,43 @@ void main() {
         () => ambiente.db.select(ambiente.db.codaScrittura).get(),
       ))!;
 
-  testWidgets('la giornata mostra le sue tappe in ordine, e quanto è piena', (
-    tester,
-  ) async {
+  /// Il cerchio che segna una tappa, a sinistra del suo titolo.
+  Offset cerchioDi(WidgetTester tester, String titolo) =>
+      tester.getTopLeft(find.text(titolo)) + const Offset(-22, 8);
+
+  testWidgets('la giornata mette le tappe ai loro orari, in ordine d\'ora, e '
+      'dice quanto è piena', (tester) async {
     await viaggio(
       tester,
       tappe: [
+        // Prima nell'ordine, ma alle 15: viene dopo.
         rigaDiTappa(
           'b',
           viaggio: 'v',
           giorno: 'g2',
-          ordine: 2,
           titolo: 'Pranzo al Mercado do Bolhão',
           tipo: 'pasto',
+          ora: '15:00:00',
         ),
-        rigaDiTappa('a', viaggio: 'v', giorno: 'g2', titolo: 'Livraria Lello'),
+        rigaDiTappa(
+          'c',
+          viaggio: 'v',
+          giorno: 'g2',
+          ordine: 2,
+          titolo: 'Ponte Dom Luís I',
+          tipo: 'passeggiata',
+          durata: 60,
+          ora: '09:00:00',
+        ),
+        // Senza orario: si mette nel primo spazio dopo quella che la
+        // precede, il Ponte.
+        rigaDiTappa(
+          'a',
+          viaggio: 'v',
+          giorno: 'g2',
+          ordine: 3,
+          titolo: 'Livraria Lello',
+        ),
       ],
     );
     await ambiente.monta(
@@ -99,14 +121,21 @@ void main() {
     );
 
     expect(find.text('GIORNO 2 DI 3'), findsOneWidget);
-    expect(find.text('3 h su 24 h'), findsOneWidget);
-    expect(find.text('Restano 21 h liberi.'), findsOneWidget);
-    final primo = tester.getTopLeft(find.text('Livraria Lello')).dy;
-    final secondo = tester
+    expect(find.text('4 h su 24 h'), findsOneWidget);
+    expect(find.text('Restano 20 h liberi.'), findsOneWidget);
+    final ponte = tester.getTopLeft(find.text('Ponte Dom Luís I')).dy;
+    final lello = tester.getTopLeft(find.text('Livraria Lello')).dy;
+    final pranzo = tester
         .getTopLeft(find.text('Pranzo al Mercado do Bolhão'))
         .dy;
-    expect(primo, lessThan(secondo));
-    expect(find.text('Pasto · 1 h 30'), findsOneWidget);
+    // Un'ora è alta 64 punti: Lello un'ora dopo il Ponte, il pranzo sei.
+    expect(lello - ponte, closeTo(64, 3));
+    expect(pranzo - ponte, closeTo(6 * 64, 3));
+    expect(
+      find.text('Visita · 10:00–11:30 · orario proposto'),
+      findsOneWidget,
+    );
+    expect(find.text('Pasto · 15:00–16:30'), findsOneWidget);
     // Prima della partenza non si segna niente, e lo si dice.
     expect(
       find.textContaining('si segnano dal primo giorno del viaggio'),
@@ -114,9 +143,32 @@ void main() {
     );
   });
 
-  testWidgets('senza rete una tappa si aggiunge lo stesso: compare subito, '
-      'dice che partirà con la rete, e il gesto si misura', (tester) async {
+  testWidgets('il primo giorno, prima dell\'arrivo, la giornata è chiusa', (
+    tester,
+  ) async {
     await viaggio(tester);
+    await ambiente.monta(
+      tester,
+      const SchermataGiornata(viaggioId: 'v', giornoId: 'g1'),
+    );
+    expect(find.text('Arrivi alle 10:00'), findsOneWidget);
+  });
+
+  testWidgets('senza rete una tappa si aggiunge lo stesso, all\'ora '
+      'proposta: compare subito, dice che partirà con la rete, e il gesto si '
+      'misura', (tester) async {
+    await viaggio(
+      tester,
+      tappe: [
+        rigaDiTappa(
+          'a',
+          viaggio: 'v',
+          giorno: 'g2',
+          titolo: 'Livraria Lello',
+          ora: '09:00:00',
+        ),
+      ],
+    );
     ambiente.rete.disponibile = false;
     await ambiente.monta(
       tester,
@@ -129,31 +181,38 @@ void main() {
       find.text('Proposta per una visita: correggila se serve.'),
       findsOneWidget,
     );
+    // Subito dopo l'ultima.
+    expect(find.text('10:30'), findsOneWidget);
+    expect(
+      find.textContaining('Subito dopo «Livraria Lello»: finisce alle 12:00'),
+      findsOneWidget,
+    );
     await tester.enterText(find.byType(TextField).first, 'Torre dei Clérigos');
     await tester.pump();
     await tester.tap(find.text('Museo'));
     await tester.pump();
     expect(find.text('2 h'), findsOneWidget);
+    expect(find.textContaining('finisce alle 12:30'), findsOneWidget);
     await tester.tap(pulsante('Aggiungi'));
     await aspetta(tester);
 
     expect(find.text('Nuova tappa'), findsNothing);
     expect(find.text('Torre dei Clérigos'), findsOneWidget);
     expect(find.textContaining('parte con la rete'), findsOneWidget);
-    expect(ambiente.server.tappe, isEmpty);
+    expect(ambiente.server.tappe, hasLength(1));
     final op = (await inCoda(tester)).single;
     expect(op.gesto, GestoOffline.aggiungiTappa);
     final carico = jsonDecode(op.carico) as Map<String, dynamic>;
     expect(carico['titolo'], 'Torre dei Clérigos');
     expect(carico['tipo'], 'museo');
     expect(carico['durata_stimata_min'], 120);
+    expect(carico['ora_inizio'], '10:30:00');
     expect(carico['giorno_id'], 'g2');
 
     final eventi = await ambiente.eventi(tester);
     expect(eventi.map((e) => e.nome), [
       // Aprire la giornata senza rete si conta (H4).
       'apertura_senza_rete',
-      'primo_elemento_aggiunto',
       'funzione_usata_nel_viaggio',
     ]);
     expect(jsonDecode(eventi.first.proprieta), {
@@ -164,12 +223,12 @@ void main() {
     for (final e in eventi) {
       expect(e.proprieta, isNot(contains('Torre')));
     }
-    expect(jsonDecode(eventi[1].proprieta), containsPair('tipo', 'tappa'));
   });
 
-  testWidgets('una tappa che non entra non si aggiunge: si dice quanto manca '
+  testWidgets('una tappa che si sovrappone non si aggiunge: si dice con chi, '
       'e si propone cosa fare', (tester) async {
-    // L'ultimo giorno ha 18 ore, e ce ne sono già 17.
+    // L'ultimo giorno ha 18 ore, e la crociera ne prende 17 dalla
+    // mezzanotte: non resta un buco per un'ora e mezza.
     await viaggio(
       tester,
       tappe: [
@@ -180,6 +239,7 @@ void main() {
           titolo: 'Crociera sul Douro',
           tipo: 'escursione',
           durata: 17 * 60,
+          ora: '00:00:00',
         ),
       ],
     );
@@ -191,26 +251,43 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Cena a Ribeira');
     await tester.pump();
 
-    expect(find.textContaining('Non entra in'), findsOneWidget);
+    expect(
+      find.textContaining('Alle 00:00 c\'è già «Crociera sul Douro»'),
+      findsOneWidget,
+    );
     expect(find.textContaining('ne mancano 30 min'), findsOneWidget);
-    expect(find.text('Non entra nella giornata'), findsOneWidget);
-    expect(find.text('Accorciala a 1 h'), findsOneWidget);
-    expect(find.textContaining('Mettila '), findsOneWidget);
-
-    await tester.ensureVisible(find.text('Accorciala a 1 h'));
+    expect(
+      find.text('Si sovrappone a «Crociera sul Douro»'),
+      findsOneWidget,
+    );
+    // Il giorno prima è libero, alla stessa ora.
+    final altroGiorno = find.textContaining('alle 00:00').last;
+    await tester.ensureVisible(altroGiorno);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Accorciala a 1 h'));
+    await tester.tap(altroGiorno);
     await tester.pump();
-    expect(find.text('Non entra nella giornata'), findsNothing);
+    expect(
+      find.text('Si sovrappone a «Crociera sul Douro»'),
+      findsNothing,
+    );
     await tester.tap(pulsante('Aggiungi'));
     await aspetta(tester);
 
-    expect(find.text('Cena a Ribeira'), findsOneWidget);
-    expect(find.text('La giornata è piena.'), findsOneWidget);
+    final aggiunta = ambiente.server.tappe.firstWhere(
+      (t) => t['titolo'] == 'Cena a Ribeira',
+    );
+    expect(aggiunta['giorno_id'], 'g2');
+    final evento = (await ambiente.eventi(
+      tester,
+    )).where((e) => e.nome == 'tappa_non_entrata').single;
+    expect(jsonDecode(evento.proprieta), {
+      'motivo': 'piena',
+      'scelta': 'altro_giorno',
+    });
   });
 
   testWidgets('durante il viaggio una tappa si segna con un tocco sul suo '
-      'punto, e conta per la verifica', (tester) async {
+      'cerchio, e conta per la verifica', (tester) async {
     ambiente.server
       ..viaggi.add(
         rigaViaggio('v', stato: 'definito', inizio: fra(-1), fine: fra(1)),
@@ -227,6 +304,7 @@ void main() {
           viaggio: 'v',
           giorno: 'oggi',
           titolo: 'Livraria Lello',
+          ora: '00:30:00',
         ),
         rigaDiTappa(
           'b',
@@ -235,6 +313,7 @@ void main() {
           ordine: 2,
           titolo: 'Ponte Dom Luís I',
           tipo: 'passeggiata',
+          ora: '23:00:00',
         ),
       ]);
     await tester.runAsync(ambiente.archivio.aggiornaCopia);
@@ -244,16 +323,18 @@ void main() {
     );
 
     expect(find.text('OGGI · GIORNO 2 DI 3'), findsOneWidget);
-    expect(find.text('Prossima'), findsOneWidget);
+    await tester.dragUntilVisible(
+      find.text('Livraria Lello'),
+      find.byType(Scrollable).first,
+      const Offset(0, 300),
+    );
+    expect(find.textContaining('la prossima'), findsOneWidget);
 
-    await tester.tap(find.text('1'));
+    await tester.tapAt(cerchioDi(tester, 'Livraria Lello'));
     await tester.pumpAndSettle();
 
     expect(ambiente.server.tappe.first['stato'], 'completata');
     expect(ambiente.server.tappe.first['marcata_durante_il_viaggio'], isTrue);
-    expect(find.text('Visita · 1 h 30 · fatta'), findsOneWidget);
-    // La prossima adesso è la seconda.
-    expect(find.text('Prossima'), findsOneWidget);
     final eventi = await ambiente.eventi(tester);
     expect(eventi.single.nome, 'tappa_marcata');
     expect(
@@ -262,7 +343,7 @@ void main() {
     );
   });
 
-  testWidgets('prima della partenza toccare un punto apre la tappa', (
+  testWidgets('prima della partenza il cerchio non segna: la tappa si apre', (
     tester,
   ) async {
     await viaggio(
@@ -276,7 +357,7 @@ void main() {
       const SchermataGiornata(viaggioId: 'v', giornoId: 'g2'),
     );
 
-    await tester.tap(find.text('1'));
+    await tester.tapAt(cerchioDi(tester, 'Livraria Lello'));
     await tester.pumpAndSettle();
 
     expect(find.text('La tappa'), findsOneWidget);
@@ -365,18 +446,93 @@ void main() {
     expect(find.text('Livraria Lello, presto'), findsOneWidget);
   });
 
-  testWidgets('in elenco le tappe hanno il loro segno, e senza rete non si '
-      'riordinano', (tester) async {
+  /// Tiene premuto il titolo di una tappa e lo trascina di [ore].
+  Future<void> trascina(WidgetTester tester, String titolo, double ore) async {
+    final dito = await tester.startGesture(
+      tester.getCenter(find.text(titolo)),
+    );
+    await tester.pump(const Duration(milliseconds: 700));
+    for (var i = 0; i < 8; i++) {
+      await dito.moveBy(Offset(0, ore * 64 / 8));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await dito.up();
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('una tappa si sposta trascinandola sulla linea del tempo', (
+    tester,
+  ) async {
     await viaggio(
       tester,
       tappe: [
-        rigaDiTappa('a', viaggio: 'v', giorno: 'g2', titolo: 'Livraria Lello'),
+        rigaDiTappa(
+          'a',
+          viaggio: 'v',
+          giorno: 'g2',
+          titolo: 'Livraria Lello',
+          ora: '09:00:00',
+        ),
+      ],
+    );
+    await ambiente.monta(
+      tester,
+      const SchermataGiornata(viaggioId: 'v', giornoId: 'g2'),
+    );
+
+    await trascina(tester, 'Livraria Lello', 2);
+    await aspetta(tester);
+
+    expect(ambiente.server.tappe.single['ora_inizio'], '11:00:00');
+    expect(find.text('Visita · 11:00–12:30'), findsOneWidget);
+  });
+
+  testWidgets('trascinata sopra un\'altra, torna al suo posto', (tester) async {
+    await viaggio(
+      tester,
+      tappe: [
+        rigaDiTappa(
+          'a',
+          viaggio: 'v',
+          giorno: 'g2',
+          titolo: 'Livraria Lello',
+          ora: '09:00:00',
+        ),
         rigaDiTappa(
           'b',
           viaggio: 'v',
           giorno: 'g2',
           ordine: 2,
-          titolo: 'Ponte Dom Luís I',
+          titolo: 'Pranzo',
+          tipo: 'pasto',
+          ora: '11:00:00',
+        ),
+      ],
+    );
+    await ambiente.monta(
+      tester,
+      const SchermataGiornata(viaggioId: 'v', giornoId: 'g2'),
+    );
+
+    await trascina(tester, 'Livraria Lello', 2);
+    await aspetta(tester);
+
+    expect(ambiente.server.tappe.first['ora_inizio'], '09:00:00');
+    expect(find.text('Visita · 09:00–10:30'), findsOneWidget);
+  });
+
+  testWidgets('senza rete una tappa non si sposta, e lo si dice', (
+    tester,
+  ) async {
+    await viaggio(
+      tester,
+      tappe: [
+        rigaDiTappa(
+          'a',
+          viaggio: 'v',
+          giorno: 'g2',
+          titolo: 'Livraria Lello',
+          ora: '09:00:00',
         ),
       ],
     );
@@ -386,14 +542,12 @@ void main() {
       const SchermataGiornata(viaggioId: 'v', giornoId: 'g2'),
     );
 
-    await tester.tap(find.text('Elenco'));
-    await tester.pumpAndSettle();
+    await trascina(tester, 'Livraria Lello', 2);
 
-    expect(find.text('Livraria Lello'), findsOneWidget);
-    expect(find.text('Ponte Dom Luís I'), findsOneWidget);
     expect(
-      find.text('Per cambiare l\'ordine serve la connessione.'),
+      find.text('Per spostare una tappa serve la connessione.'),
       findsOneWidget,
     );
+    expect(ambiente.server.tappe.single['ora_inizio'], '09:00:00');
   });
 }

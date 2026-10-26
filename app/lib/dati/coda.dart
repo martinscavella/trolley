@@ -18,6 +18,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../dominio/calendario.dart';
 import '../dominio/giornate.dart';
+import '../dominio/orari.dart';
 import '../dominio/mappa.dart';
 import '../dominio/tappe.dart';
 import '../dominio/valute.dart';
@@ -426,9 +427,10 @@ class Coda {
     },
   );
 
-  /// La capienza si ricontrolla su quello che c'è adesso sul server: se nel
-  /// frattempo altri hanno riempito la giornata, la tappa entra lo stesso ma
-  /// segnalata come eccedente (02 §2). Rimandata, non si duplica.
+  /// La capienza e gli orari si ricontrollano su quello che c'è adesso sul
+  /// server: se nel frattempo altri hanno riempito la giornata, o preso il
+  /// suo orario, la tappa entra lo stesso ma segnalata come eccedente (02 §2;
+  /// 04, regola 28). Rimandata, non si duplica.
   Future<void> _inviaTappa(Map<String, dynamic> carico) async {
     final id = carico['id'] as String;
     final giornoId = carico['giorno_id'] as String;
@@ -440,7 +442,7 @@ class Coda {
             .eq('id', giornoId),
         await _server
             .from('tappa')
-            .select('durata_stimata_min')
+            .select('id, durata_stimata_min, ora_inizio, ordine, creato_il')
             .eq('giorno_id', giornoId)
             .isFilter('eliminato_il', null)
             .neq('id', id),
@@ -452,11 +454,40 @@ class Coda {
       final capienza =
           (leggiOra(giorno['finestra_fine'] as String?) ?? fineGiornata) -
           (leggiOra(giorno['finestra_inizio'] as String?) ?? inizioGiornata);
-      eccedente = !entraNellaGiornata(
-        capienza: capienza,
-        durateMinuti: [for (final t in altre) t['durata_stimata_min'] as int],
-        nuovaMinuti: carico['durata_stimata_min'] as int,
+      final finestra = FinestraGiorno(
+        data: DateTime.utc(2000),
+        inizio: leggiOra(giorno['finestra_inizio'] as String?) ?? inizioGiornata,
+        fine: leggiOra(giorno['finestra_fine'] as String?) ?? fineGiornata,
       );
+      final ordinate = [...altre]
+        ..sort((a, b) {
+          final perOrdine = (a['ordine'] as int).compareTo(b['ordine'] as int);
+          return perOrdine != 0
+              ? perOrdine
+              : '${a['creato_il']}'.compareTo('${b['creato_il']}');
+        });
+      final collocate = colloca(finestra, [
+        for (final t in ordinate)
+          (
+            tappa: t['id'] as String,
+            ora: leggiOra(t['ora_inizio'] as String?),
+            durata: Duration(minutes: t['durata_stimata_min'] as int),
+          ),
+        (
+          tappa: id,
+          ora: leggiOra(carico['ora_inizio'] as String?),
+          durata: Duration(minutes: carico['durata_stimata_min'] as int),
+        ),
+      ]);
+      eccedente =
+          !entraNellaGiornata(
+            capienza: capienza,
+            durateMinuti: [
+              for (final t in altre) t['durata_stimata_min'] as int,
+            ],
+            nuovaMinuti: carico['durata_stimata_min'] as int,
+          ) ||
+          conflitti(finestra, collocate).contains(id);
     }
     final scritte = await _alServer(
       () => _server

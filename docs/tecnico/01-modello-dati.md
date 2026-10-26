@@ -49,6 +49,7 @@ Le cose che possono trovarsi in due versioni — viaggio, tappa, spesa, voce di 
 | `creatore_id` | Uno solo, sempre presente |
 | `importato` | Viaggio passato inserito come ricordo (fase 4.3). Nasce con `aggiungi_viaggio_passato` e non cambia più |
 | `giorni_ricordati` | Solo per un viaggio importato: quanti giorni è durato, da 1 a 365, se la persona se lo ricorda |
+| `budget_importo`, `budget_valuta` | Il budget del viaggio (06, regola 12), tutti e due o nessuno; allo stato idea è il budget di massima. Lo cambia chiunque partecipi, senza due versioni. Il budget di ciascuno non è qui: sta solo sul suo telefono (`impostazione`, `budget_personale:<viaggio>`) |
 | `verificato`, `verifica_per_deroga` | `verificato`: verificato per almeno uno di chi partecipa, lo scrive solo `segna_verifica` (fase 4.1). `verifica_per_deroga` la scrive solo chi gestisce il progetto. Mai dichiarati dall'app |
 
 **Invarianti**
@@ -79,11 +80,11 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 | `giorno_id`, `ordine` | |
 | `titolo`, `luogo_nome`, `lat`, `lon` | Senza coordinate la tappa esiste ma non compare sulla mappa |
 | `durata_stimata_min` | Precompilata, sempre modificabile |
-| `ora_inizio` | Opzionale |
+| `ora_inizio` | Sul server resta facoltativo; l'app la scrive sempre, proposta (04, regola 19). Una tappa che non ce l'ha — da prima del 26 ottobre 2026, o incollata senza ora — si mette in fila da sola sulla linea del tempo (`dominio/orari.dart`) |
 | `stato` | `da_fare` · `completata` · `saltata` |
 | `marcata_il`, `marcata_durante_il_viaggio` | Il secondo è ciò che conta per la verifica |
 
-**Invariante**: la somma delle `durata_stimata_min` delle tappe di un giorno non supera la capienza di quel giorno. È l'unica regola dell'app che **rifiuta** un inserimento.
+**Invarianti**: la somma delle `durata_stimata_min` delle tappe di un giorno non supera la capienza di quel giorno; due tappe dello stesso giorno non si sovrappongono, e ognuna sta dentro la finestra del giorno (04, «Gli orari»). Sono le regole dell'app che **rifiutano** un inserimento, e le fa rispettare l'app: il server no. Una tappa arrivata senza rete che le rompe entra con `eccedente`, e la giornata la mostra in rosso.
 
 ### `partecipazione`
 

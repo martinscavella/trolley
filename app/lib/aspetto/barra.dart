@@ -4,12 +4,21 @@
 ///
 /// È una sola per tutte le sezioni (ADR-013): quando la voce attiva cambia,
 /// la pillola bianca scivola dalla voce di prima alla nuova e si allunga sul
-/// suo nome, mentre quella di prima torna icona (tela, 126).
+/// suo nome, mentre quella di prima torna icona (tela, 126). Ci arriva con
+/// una molla, con un piccolo rimbalzo.
+///
+/// Come la barra di iOS, la pillola si trascina (tela, 137): col dito sulla
+/// barra cresce un poco, come una lente, lo segue senza scatti e si allunga
+/// sul nome della voce che ha sotto, con un tocco leggero del telefono a ogni
+/// voce. Lasciando, va sulla voce più vicina e la sezione cambia; il «+» si
+/// attraversa ma non si sceglie così.
 library;
 
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
+import 'package:flutter/services.dart';
 
 import 'movimento.dart';
 import 'tavolozza.dart';
@@ -68,14 +77,28 @@ const _fraIconaENome = 8.0;
 /// Il minimo fra un tasto e l'altro, anche con un nome lungo.
 const _fraTasti = 4.0;
 
+/// La molla della pillola: arriva in un terzo di secondo, con un rimbalzo
+/// appena.
+const _molla = SpringDescription(mass: 1, stiffness: 520, damping: 33);
+
 class _BarraPrincipaleState extends State<BarraPrincipale>
-    with SingleTickerProviderStateMixin {
-  /// La corsa della pillola, da dov'era a dove va.
-  late final _corsa = AnimationController(
-    vsync: this,
-    duration: Ritmo.medio,
-    value: 1,
-  );
+    with TickerProviderStateMixin {
+  /// La corsa della pillola, da dov'era a dove va: da 0 a 1, con la molla
+  /// che passa un poco oltre e torna.
+  late final _corsa = AnimationController.unbounded(vsync: this, value: 1);
+
+  /// La lente: quanto è cresciuta la pillola sotto il dito.
+  late final _lente = AnimationController(vsync: this, duration: Ritmo.breve);
+
+  /// Dove sta il dito, come posto fra le voci (il «+» compreso): 1,5 è a
+  /// metà fra la seconda e la terza. `null` se non si trascina.
+  double? _dito;
+
+  /// La voce più vicina al dito, per il tocco del telefono quando cambia.
+  int? _vicina;
+
+  /// Il centro di ogni posto all'ultimo disegno: dal punto del dito al posto.
+  List<double> _centri = const [];
 
   /// La voce dove va la pillola.
   late String? _arrivo = _attiva(widget);
@@ -97,20 +120,87 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
     super.didUpdateWidget(vecchia);
     final nuova = _attiva(widget);
     if (nuova == _arrivo) return;
+    _parti(nuova);
+  }
+
+  /// La pillola parte da dov'è verso [arrivo].
+  void _parti(String? arrivo) {
     _apertePrima = _aperte;
     _pillolaPrima = _pillola;
-    _arrivo = nuova;
+    _arrivo = arrivo;
     if (movimentoRidotto(context) || _pillolaPrima == null) {
       _corsa.value = 1;
     } else {
-      _corsa.forward(from: 0);
+      _corsa.animateWith(SpringSimulation(_molla, 0, 1, 0));
     }
   }
 
   @override
   void dispose() {
     _corsa.dispose();
+    _lente.dispose();
     super.dispose();
+  }
+
+  List<VoceBarra?> get _voci => [...widget.prima, null, ...widget.dopo];
+
+  /// Il posto sotto il punto [x] della barra, fra i centri dei posti.
+  double _posto(double x) {
+    final c = _centri;
+    if (c.isEmpty) return 0;
+    if (x <= c.first) return 0;
+    for (var i = 0; i < c.length - 1; i++) {
+      if (x <= c[i + 1]) return i + (x - c[i]) / (c[i + 1] - c[i]);
+    }
+    return c.length - 1.0;
+  }
+
+  /// La voce più vicina a un posto: il «+» non si sceglie.
+  int _voceVicina(double posto) {
+    final voci = _voci;
+    var migliore = 0;
+    var distanza = double.infinity;
+    for (final (i, v) in voci.indexed) {
+      if (v == null) continue;
+      final d = (i - posto).abs();
+      if (d < distanza) (migliore, distanza) = (i, d);
+    }
+    return migliore;
+  }
+
+  void _appoggia(DragStartDetails d) {
+    _corsa.stop();
+    final posto = _posto(d.localPosition.dx);
+    setState(() {
+      _dito = posto;
+      _vicina = _voceVicina(posto);
+    });
+    if (!movimentoRidotto(context)) _lente.forward();
+    HapticFeedback.selectionClick();
+  }
+
+  void _scorri(DragUpdateDetails d) {
+    if (_dito == null) return;
+    final posto = _posto(d.localPosition.dx);
+    final vicina = _voceVicina(posto);
+    if (vicina != _vicina) HapticFeedback.selectionClick();
+    setState(() {
+      _dito = posto;
+      _vicina = vicina;
+    });
+  }
+
+  void _lascia() {
+    final dito = _dito;
+    if (dito == null) return;
+    final voce = _voci[_voceVicina(dito)]!;
+    setState(() => _dito = null);
+    _lente.reverse();
+    _parti(voce.etichetta);
+    if (!voce.attiva) {
+      HapticFeedback.lightImpact();
+      voce.onTap();
+    }
   }
 
   @override
@@ -129,16 +219,24 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
       ],
     ),
     child: LayoutBuilder(
-      builder: (context, vincoli) => AnimatedBuilder(
-        animation: _corsa,
-        builder: (context, _) => _tasti(context, vincoli.maxWidth),
+      builder: (context, vincoli) => GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragStart: _appoggia,
+        onHorizontalDragUpdate: _scorri,
+        onHorizontalDragEnd: (_) => _lascia(),
+        onHorizontalDragCancel: _lascia,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_corsa, _lente]),
+          builder: (context, _) => _tasti(context, vincoli.maxWidth),
+        ),
       ),
     ),
   );
 
   Widget _tasti(BuildContext context, double larghezza) {
-    final t = Ritmo.curva.transform(_corsa.value);
-    final voci = [...widget.prima, null, ...widget.dopo];
+    final t = _corsa.value;
+    final voci = _voci;
+    final dito = _dito;
     final scala = MediaQuery.textScalerOf(context);
 
     // Quanto cresce ogni voce quando è aperta: il nome e il margine. La voce
@@ -158,14 +256,20 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
       return piena.clamp(0, massimo < 0 ? 0 : massimo);
     }
 
-    double aperta(VoceBarra v) => lerpDouble(
-      _apertePrima[v.etichetta] ?? 0,
-      v.etichetta == _arrivo ? 1 : 0,
-      t,
-    )!;
+    // Col dito, è aperta la voce che ha sotto, e a metà strada mezza l'una e
+    // mezza l'altra; altrimenti si va da com'era a dove arriva.
+    double aperta(int i, VoceBarra v) => dito != null
+        ? (1 - (i - dito).abs()).clamp(0.0, 1.0)
+        : lerpDouble(
+            _apertePrima[v.etichetta] ?? 0,
+            v.etichetta == _arrivo ? 1 : 0,
+            t,
+          )!.clamp(0.0, 1.0);
 
     final crescite = [for (final v in voci) v == null ? 0.0 : crescita(v)];
-    final aperture = [for (final v in voci) v == null ? 0.0 : aperta(v)];
+    final aperture = [
+      for (final (i, v) in voci.indexed) v == null ? 0.0 : aperta(i, v),
+    ];
     final larghezze = [
       for (final (i, _) in voci.indexed) _lato + crescite[i] * aperture[i],
     ];
@@ -179,15 +283,26 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
       x += l + spazio;
     }
 
-    final i = voci.indexWhere((v) => v?.etichetta == _arrivo);
-    final dove = i < 0
-        ? null
-        : Rect.fromLTWH(sinistre[i], 0, larghezze[i], _lato);
-    final pillola = dove == null
-        ? null
-        : _pillolaPrima == null
-        ? dove
-        : Rect.lerp(_pillolaPrima, dove, t);
+    _centri = [
+      for (final (j, l) in larghezze.indexed) sinistre[j] + l / 2,
+    ];
+    Rect posto(int j) => Rect.fromLTWH(sinistre[j], 0, larghezze[j], _lato);
+
+    final Rect? pillola;
+    if (dito != null) {
+      // Sotto il dito, fra un posto e l'altro.
+      final da = dito.floor().clamp(0, voci.length - 1);
+      final a = dito.ceil().clamp(0, voci.length - 1);
+      pillola = Rect.lerp(posto(da), posto(a), dito - da);
+    } else {
+      final i = voci.indexWhere((v) => v?.etichetta == _arrivo);
+      final dove = i < 0 ? null : posto(i);
+      pillola = dove == null
+          ? null
+          : _pillolaPrima == null
+          ? dove
+          : Rect.lerp(_pillolaPrima, dove, t);
+    }
     _aperte = {
       for (final (j, v) in voci.indexed)
         if (v != null) v.etichetta: aperture[j],
@@ -199,11 +314,25 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
       children: [
         if (pillola != null)
           Positioned.fromRect(
-            rect: pillola,
-            child: const DecoratedBox(
+            // La lente: un poco più grande, sollevata sulla barra.
+            rect: pillola.inflate(4 * _lente.value),
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 color: Colori.bianco,
-                borderRadius: BorderRadius.all(Radius.circular(_lato / 2)),
+                borderRadius: BorderRadius.circular(
+                  _lato / 2 + 4 * _lente.value,
+                ),
+                boxShadow: _lente.value == 0
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: 0.35 * _lente.value,
+                          ),
+                          blurRadius: 22,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
               ),
             ),
           ),

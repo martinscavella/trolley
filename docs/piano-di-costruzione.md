@@ -115,6 +115,7 @@ Non erano una fase del piano: finite le notifiche, l'utente rivede l'app sul tel
 | | Cosa |
 |---|---|
 | G.1 | **Le sezioni**: una barra sola che resta ferma, con la voce bianca che scivola; il Passaporto come sezione; profilo e impostazioni dall'avatar in alto a destra ([decisioni](decisioni/prodotto.md#le-sezioni-la-barra-e-il-profilo-17-ottobre-2026), [ADR-013](tecnico/adr/013-le-sezioni.md); tela, 122–126). 17 ottobre 2026 |
+| G.2 | **Gli orari, eliminare, il budget, la barra col dito**: la giornata come linea del tempo dalle 0 alle 24, con le regole degli orari e delle sovrapposizioni ([04](prodotto/04-itinerario.md), regole 19–30); eliminare un viaggio in cui si è da soli ([02](prodotto/02-il-viaggio.md), regola 13); il budget del viaggio e di ciascuno ([06](prodotto/06-spese.md), regole 12–17); la pillola della barra che segue il dito e la grattata più viva ([decisioni](decisioni/prodotto.md#gli-orari-delle-tappe-e-la-linea-del-tempo-26-ottobre-2026); tela, 127–138). 26 ottobre 2026 |
 
 ---
 

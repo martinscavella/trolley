@@ -33,6 +33,9 @@ abstract final class CodiciServer {
   /// Chi è responsabile del viaggio esce solo dopo aver passato il ruolo.
   static const primaPassaIlRuolo = 'TR412';
 
+  /// Un viaggio lo elimina solo chi ci è rimasto da solo (02, regola 13).
+  static const nonDaSolo = 'TR413';
+
   /// Il viaggio non è in corso: sul posto si è solo mentre si viaggia.
   static const nonInCorso = 'TR422';
 

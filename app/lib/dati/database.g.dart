@@ -708,6 +708,28 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _budgetImportoMeta = const VerificationMeta(
+    'budgetImporto',
+  );
+  @override
+  late final GeneratedColumn<String> budgetImporto = GeneratedColumn<String>(
+    'budget_importo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _budgetValutaMeta = const VerificationMeta(
+    'budgetValuta',
+  );
+  @override
+  late final GeneratedColumn<String> budgetValuta = GeneratedColumn<String>(
+    'budget_valuta',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -728,6 +750,8 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
     giorniRicordati,
     verificaPerDeroga,
     creatoIl,
+    budgetImporto,
+    budgetValuta,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -886,6 +910,24 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
     } else if (isInserting) {
       context.missing(_creatoIlMeta);
     }
+    if (data.containsKey('budget_importo')) {
+      context.handle(
+        _budgetImportoMeta,
+        budgetImporto.isAcceptableOrUnknown(
+          data['budget_importo']!,
+          _budgetImportoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('budget_valuta')) {
+      context.handle(
+        _budgetValutaMeta,
+        budgetValuta.isAcceptableOrUnknown(
+          data['budget_valuta']!,
+          _budgetValutaMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -967,6 +1009,14 @@ class $ViaggiTable extends Viaggi with TableInfo<$ViaggiTable, Viaggio> {
         DriftSqlType.string,
         data['${effectivePrefix}creato_il'],
       )!,
+      budgetImporto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}budget_importo'],
+      ),
+      budgetValuta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}budget_valuta'],
+      ),
     );
   }
 
@@ -1005,6 +1055,11 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
   /// il progetto.
   final bool verificaPerDeroga;
   final String creatoIl;
+
+  /// Il budget del viaggio, se c'è (06, regola 12): l'importo come lo dà il
+  /// server, e la sua valuta. Allo stato idea è il budget di massima.
+  final String? budgetImporto;
+  final String? budgetValuta;
   const Viaggio({
     required this.id,
     required this.versione,
@@ -1024,6 +1079,8 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     this.giorniRicordati,
     required this.verificaPerDeroga,
     required this.creatoIl,
+    this.budgetImporto,
+    this.budgetValuta,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1064,6 +1121,12 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     }
     map['verifica_per_deroga'] = Variable<bool>(verificaPerDeroga);
     map['creato_il'] = Variable<String>(creatoIl);
+    if (!nullToAbsent || budgetImporto != null) {
+      map['budget_importo'] = Variable<String>(budgetImporto);
+    }
+    if (!nullToAbsent || budgetValuta != null) {
+      map['budget_valuta'] = Variable<String>(budgetValuta);
+    }
     return map;
   }
 
@@ -1105,6 +1168,12 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
           : Value(giorniRicordati),
       verificaPerDeroga: Value(verificaPerDeroga),
       creatoIl: Value(creatoIl),
+      budgetImporto: budgetImporto == null && nullToAbsent
+          ? const Value.absent()
+          : Value(budgetImporto),
+      budgetValuta: budgetValuta == null && nullToAbsent
+          ? const Value.absent()
+          : Value(budgetValuta),
     );
   }
 
@@ -1138,6 +1207,8 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       giorniRicordati: serializer.fromJson<int?>(json['giorniRicordati']),
       verificaPerDeroga: serializer.fromJson<bool>(json['verificaPerDeroga']),
       creatoIl: serializer.fromJson<String>(json['creatoIl']),
+      budgetImporto: serializer.fromJson<String?>(json['budgetImporto']),
+      budgetValuta: serializer.fromJson<String?>(json['budgetValuta']),
     );
   }
   @override
@@ -1164,6 +1235,8 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
       'giorniRicordati': serializer.toJson<int?>(giorniRicordati),
       'verificaPerDeroga': serializer.toJson<bool>(verificaPerDeroga),
       'creatoIl': serializer.toJson<String>(creatoIl),
+      'budgetImporto': serializer.toJson<String?>(budgetImporto),
+      'budgetValuta': serializer.toJson<String?>(budgetValuta),
     };
   }
 
@@ -1186,6 +1259,8 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     Value<int?> giorniRicordati = const Value.absent(),
     bool? verificaPerDeroga,
     String? creatoIl,
+    Value<String?> budgetImporto = const Value.absent(),
+    Value<String?> budgetValuta = const Value.absent(),
   }) => Viaggio(
     id: id ?? this.id,
     versione: versione ?? this.versione,
@@ -1213,6 +1288,10 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
         : this.giorniRicordati,
     verificaPerDeroga: verificaPerDeroga ?? this.verificaPerDeroga,
     creatoIl: creatoIl ?? this.creatoIl,
+    budgetImporto: budgetImporto.present
+        ? budgetImporto.value
+        : this.budgetImporto,
+    budgetValuta: budgetValuta.present ? budgetValuta.value : this.budgetValuta,
   );
   Viaggio copyWithCompanion(ViaggiCompanion data) {
     return Viaggio(
@@ -1256,6 +1335,12 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
           ? data.verificaPerDeroga.value
           : this.verificaPerDeroga,
       creatoIl: data.creatoIl.present ? data.creatoIl.value : this.creatoIl,
+      budgetImporto: data.budgetImporto.present
+          ? data.budgetImporto.value
+          : this.budgetImporto,
+      budgetValuta: data.budgetValuta.present
+          ? data.budgetValuta.value
+          : this.budgetValuta,
     );
   }
 
@@ -1279,7 +1364,9 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
           ..write('verificato: $verificato, ')
           ..write('giorniRicordati: $giorniRicordati, ')
           ..write('verificaPerDeroga: $verificaPerDeroga, ')
-          ..write('creatoIl: $creatoIl')
+          ..write('creatoIl: $creatoIl, ')
+          ..write('budgetImporto: $budgetImporto, ')
+          ..write('budgetValuta: $budgetValuta')
           ..write(')'))
         .toString();
   }
@@ -1304,6 +1391,8 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
     giorniRicordati,
     verificaPerDeroga,
     creatoIl,
+    budgetImporto,
+    budgetValuta,
   );
   @override
   bool operator ==(Object other) =>
@@ -1326,7 +1415,9 @@ class Viaggio extends DataClass implements Insertable<Viaggio> {
           other.verificato == this.verificato &&
           other.giorniRicordati == this.giorniRicordati &&
           other.verificaPerDeroga == this.verificaPerDeroga &&
-          other.creatoIl == this.creatoIl);
+          other.creatoIl == this.creatoIl &&
+          other.budgetImporto == this.budgetImporto &&
+          other.budgetValuta == this.budgetValuta);
 }
 
 class ViaggiCompanion extends UpdateCompanion<Viaggio> {
@@ -1348,6 +1439,8 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
   final Value<int?> giorniRicordati;
   final Value<bool> verificaPerDeroga;
   final Value<String> creatoIl;
+  final Value<String?> budgetImporto;
+  final Value<String?> budgetValuta;
   final Value<int> rowid;
   const ViaggiCompanion({
     this.id = const Value.absent(),
@@ -1368,6 +1461,8 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     this.giorniRicordati = const Value.absent(),
     this.verificaPerDeroga = const Value.absent(),
     this.creatoIl = const Value.absent(),
+    this.budgetImporto = const Value.absent(),
+    this.budgetValuta = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ViaggiCompanion.insert({
@@ -1389,6 +1484,8 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     this.giorniRicordati = const Value.absent(),
     this.verificaPerDeroga = const Value.absent(),
     required String creatoIl,
+    this.budgetImporto = const Value.absent(),
+    this.budgetValuta = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        versione = Value(versione),
@@ -1417,6 +1514,8 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     Expression<int>? giorniRicordati,
     Expression<bool>? verificaPerDeroga,
     Expression<String>? creatoIl,
+    Expression<String>? budgetImporto,
+    Expression<String>? budgetValuta,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1439,6 +1538,8 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
       if (giorniRicordati != null) 'giorni_ricordati': giorniRicordati,
       if (verificaPerDeroga != null) 'verifica_per_deroga': verificaPerDeroga,
       if (creatoIl != null) 'creato_il': creatoIl,
+      if (budgetImporto != null) 'budget_importo': budgetImporto,
+      if (budgetValuta != null) 'budget_valuta': budgetValuta,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1462,6 +1563,8 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     Value<int?>? giorniRicordati,
     Value<bool>? verificaPerDeroga,
     Value<String>? creatoIl,
+    Value<String?>? budgetImporto,
+    Value<String?>? budgetValuta,
     Value<int>? rowid,
   }) {
     return ViaggiCompanion(
@@ -1484,6 +1587,8 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
       giorniRicordati: giorniRicordati ?? this.giorniRicordati,
       verificaPerDeroga: verificaPerDeroga ?? this.verificaPerDeroga,
       creatoIl: creatoIl ?? this.creatoIl,
+      budgetImporto: budgetImporto ?? this.budgetImporto,
+      budgetValuta: budgetValuta ?? this.budgetValuta,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1547,6 +1652,12 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
     if (creatoIl.present) {
       map['creato_il'] = Variable<String>(creatoIl.value);
     }
+    if (budgetImporto.present) {
+      map['budget_importo'] = Variable<String>(budgetImporto.value);
+    }
+    if (budgetValuta.present) {
+      map['budget_valuta'] = Variable<String>(budgetValuta.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1574,6 +1685,8 @@ class ViaggiCompanion extends UpdateCompanion<Viaggio> {
           ..write('giorniRicordati: $giorniRicordati, ')
           ..write('verificaPerDeroga: $verificaPerDeroga, ')
           ..write('creatoIl: $creatoIl, ')
+          ..write('budgetImporto: $budgetImporto, ')
+          ..write('budgetValuta: $budgetValuta, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9785,6 +9898,8 @@ typedef $$ViaggiTableCreateCompanionBuilder = ViaggiCompanion Function({
   Value<int?> giorniRicordati,
   Value<bool> verificaPerDeroga,
   required String creatoIl,
+  Value<String?> budgetImporto,
+  Value<String?> budgetValuta,
   Value<int> rowid,
 });
 typedef $$ViaggiTableUpdateCompanionBuilder = ViaggiCompanion Function({
@@ -9806,6 +9921,8 @@ typedef $$ViaggiTableUpdateCompanionBuilder = ViaggiCompanion Function({
   Value<int?> giorniRicordati,
   Value<bool> verificaPerDeroga,
   Value<String> creatoIl,
+  Value<String?> budgetImporto,
+  Value<String?> budgetValuta,
   Value<int> rowid,
 });
 
@@ -9905,6 +10022,16 @@ class $$ViaggiTableFilterComposer
 
   ColumnFilters<String> get creatoIl => $composableBuilder(
     column: $table.creatoIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get budgetImporto => $composableBuilder(
+    column: $table.budgetImporto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get budgetValuta => $composableBuilder(
+    column: $table.budgetValuta,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10007,6 +10134,16 @@ class $$ViaggiTableOrderingComposer
     column: $table.creatoIl,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get budgetImporto => $composableBuilder(
+    column: $table.budgetImporto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get budgetValuta => $composableBuilder(
+    column: $table.budgetValuta,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ViaggiTableAnnotationComposer
@@ -10093,6 +10230,16 @@ class $$ViaggiTableAnnotationComposer
 
   GeneratedColumn<String> get creatoIl =>
       $composableBuilder(column: $table.creatoIl, builder: (column) => column);
+
+  GeneratedColumn<String> get budgetImporto => $composableBuilder(
+    column: $table.budgetImporto,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get budgetValuta => $composableBuilder(
+    column: $table.budgetValuta,
+    builder: (column) => column,
+  );
 }
 
 class $$ViaggiTableTableManager
@@ -10141,6 +10288,8 @@ class $$ViaggiTableTableManager
                 Value<int?> giorniRicordati = const Value.absent(),
                 Value<bool> verificaPerDeroga = const Value.absent(),
                 Value<String> creatoIl = const Value.absent(),
+                Value<String?> budgetImporto = const Value.absent(),
+                Value<String?> budgetValuta = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ViaggiCompanion(
                 id: id,
@@ -10161,6 +10310,8 @@ class $$ViaggiTableTableManager
                 giorniRicordati: giorniRicordati,
                 verificaPerDeroga: verificaPerDeroga,
                 creatoIl: creatoIl,
+                budgetImporto: budgetImporto,
+                budgetValuta: budgetValuta,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10183,6 +10334,8 @@ class $$ViaggiTableTableManager
                 Value<int?> giorniRicordati = const Value.absent(),
                 Value<bool> verificaPerDeroga = const Value.absent(),
                 required String creatoIl,
+                Value<String?> budgetImporto = const Value.absent(),
+                Value<String?> budgetValuta = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ViaggiCompanion.insert(
                 id: id,
@@ -10203,6 +10356,8 @@ class $$ViaggiTableTableManager
                 giorniRicordati: giorniRicordati,
                 verificaPerDeroga: verificaPerDeroga,
                 creatoIl: creatoIl,
+                budgetImporto: budgetImporto,
+                budgetValuta: budgetValuta,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

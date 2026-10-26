@@ -120,7 +120,9 @@ void main() {
 
     expect(find.text('Fissa le date'), findsNothing);
     expect(find.textContaining('serve la connessione'), findsOneWidget);
-    expect(find.text(motivoSenzaRete), findsOneWidget); // l'invito
+    await tester.scrollUntilVisible(find.text('Invita qualcuno'), 300);
+    // L'invito, ed eliminare il viaggio.
+    expect(find.text(motivoSenzaRete), findsWidgets);
   });
 
   testWidgets('fissare le date di un\'idea la fa diventare in programma, e '

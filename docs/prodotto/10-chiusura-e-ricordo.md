@@ -24,7 +24,7 @@ Far sì che un viaggio lasci qualcosa invece di svanire. È la fase su cui poggi
 5. **Il mappamondo si gratta con qualunque viaggio chiuso**, verificato o no, importato compreso. È il ricordo, non il merito.
 6. **I viaggi importati sono marcati visibilmente come tali**, ovunque compaiano. Un traguardo verificato e uno dichiarato non devono somigliarsi: è quel segno a proteggere il valore di entrambi.
 7. **Traguardi e mappamondo non sono mai limitati dal piano.** Un profilo di viaggiatore mutilato dal gratuito non sarebbe esponibile.
-8. **Niente si cancella.** Un viaggio chiuso resta per sempre, in qualunque piano.
+8. **Niente si cancella da solo.** Un viaggio chiuso resta per sempre, in qualunque piano. Lo elimina solo chi ci è rimasto da solo, se lo vuole ([02](02-il-viaggio.md), regola 13).
 9. **A un anno dalla chiusura arriva un promemoria gentile** — "un anno fa eri a Lisbona" — che intercetta la persona nel momento in cui sta ripensando a partire.
 
 ---

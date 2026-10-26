@@ -20,6 +20,7 @@ import '../dominio/spese.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'budget.dart';
 import 'due_versioni.dart';
 import 'foglio_spesa.dart';
 import 'problemi_coda.dart';
@@ -516,6 +517,12 @@ class _SchermataSpeseState extends State<SchermataSpese> {
                 conto: conto,
                 rete: rete,
               ).entra(context, ritardo: Ritmo.passo),
+            // A che punto siete col budget (06, regole 12–17; tela, 134).
+            const SizedBox(height: 10),
+            PannelloBudget(
+              viaggio: viaggio,
+              conto: conto,
+            ).entra(context, ritardo: Ritmo.passo),
             if (conto.diviso &&
                 (conto.spese.isNotEmpty || conto.rimborsi.isNotEmpty)) ...[
               const SizedBox(height: 10),

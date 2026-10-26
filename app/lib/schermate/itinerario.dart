@@ -21,6 +21,7 @@ import '../dati/destinazioni.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
 import '../dominio/itinerario.dart';
+import '../dominio/orari.dart';
 import '../dominio/tappe.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
@@ -888,6 +889,12 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
         for (final t in tappe)
           if (t.giornoId == g.id) t.ordine,
       ]);
+      final dove = _doveVanno(
+        g,
+        tappe,
+        abbinato.perGiorno[i],
+        {...scelte[i]}..removeAll(doppioni[i]),
+      );
       for (final (j, p) in abbinato.perGiorno[i].indexed) {
         if (!scelte[i].contains(j) || doppioni[i].contains(j)) continue;
         final posto = p.posto;
@@ -900,7 +907,7 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
             titolo: p.titolo,
             tipo: p.tipo,
             durata: p.durata,
-            ora: p.ora,
+            ora: dove[j]?.ora ?? p.ora,
             luogo: p.luogo,
             posto: posto != null && postoPlausibile(posto, vicinoA: centro)
                 ? posto
@@ -1107,6 +1114,7 @@ class _GiornoProposto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final f = giorno.finestra;
+    final dove = _doveVanno(giorno, esistenti, proposte, scelte);
     final occupato = Duration(
       minutes: [for (final j in scelte) proposte[j].durata.inMinutes]
           .fold(0, (a, b) => a + b),
@@ -1147,14 +1155,15 @@ class _GiornoProposto extends StatelessWidget {
           const SizedBox(height: 8),
           StrisciaGiornata(
             capienza: f.capienza,
+            daOra: f.inizio,
             pezzi: [
-              for (final t in esistenti)
-                PezzoStriscia(t.durata, coloreTipo(t.tipoTappa)),
+              ...pezziDelGiorno(f, tappeDelGiorno(giorno, esistenti)),
               for (final j in scelte.toList()..sort())
                 PezzoStriscia(
                   proposte[j].durata,
                   coloreTipo(proposte[j].tipo),
                   tratteggiato: true,
+                  inizio: dove[j]?.ora,
                 ),
             ],
           ),
@@ -1162,6 +1171,8 @@ class _GiornoProposto extends StatelessWidget {
           for (final (j, p) in proposte.indexed)
             _Proposta(
               proposta: p,
+              alle: dove[j]?.ora ?? p.ora,
+              spostata: dove[j]?.spostata ?? false,
               scelta: scelte.contains(j),
               giaCe: doppioni.contains(j),
               // Fuori, e senza posto: lo si dice prima che la si tocchi.
@@ -1194,6 +1205,8 @@ class _GiornoProposto extends StatelessWidget {
 class _Proposta extends StatelessWidget {
   const _Proposta({
     required this.proposta,
+    required this.alle,
+    required this.spostata,
     required this.scelta,
     required this.nonEntra,
     required this.onTap,
@@ -1201,6 +1214,11 @@ class _Proposta extends StatelessWidget {
   });
 
   final TappaProposta proposta;
+
+  /// A che ora va: quella dell'assistente, o il primo spazio libero dopo se
+  /// era già presa (e allora è [spostata]).
+  final Duration? alle;
+  final bool spostata;
   final bool scelta;
 
   /// C'è già nel giorno: si mostra, ma non si aggiunge di nuovo.
@@ -1213,18 +1231,20 @@ class _Proposta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = proposta;
-    final dettaglio = [
-      if (p.tipo != null) nomeTipo(p.tipo!),
-      durataBreve(p.durata),
-      ?p.luogo,
-    ].join(' · ');
+    final dettaglio = spostata && scelta
+        ? 'Alle ${ora(p.ora!)} c\'è già un\'altra tappa: va alle ${ora(alle!)}'
+        : [
+            if (p.tipo != null) nomeTipo(p.tipo!),
+            durataBreve(p.durata),
+            ?p.luogo,
+          ].join(' · ');
     return Semantics(
       checked: scelta,
       child: Premibile(
         onTap: onTap,
         scala: 0.98,
         etichetta: [
-          ?(p.ora == null ? null : ora(p.ora!)),
+          ?(alle == null ? null : ora(alle!)),
           p.titolo,
           dettaglio,
           giaCe
@@ -1265,7 +1285,7 @@ class _Proposta extends StatelessWidget {
                   SizedBox(
                     width: 48,
                     child: Text(
-                      p.ora == null ? '' : ora(p.ora!),
+                      alle == null ? '' : ora(alle!),
                       style: Testi.numero.copyWith(
                         fontSize: 13,
                         color: scelta ? Colori.inchiostro : Colori.piombo,
@@ -1394,4 +1414,19 @@ class IngressoItinerario extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Dove vanno le proposte [scelte] di un giorno, fra le tappe che ci sono
+/// già (04, casi limite): per indice della proposta.
+Map<int, ({Duration ora, bool spostata})> _doveVanno(
+  Giorno giorno,
+  List<Tappa> tappe,
+  List<TappaProposta> proposte,
+  Set<int> scelte,
+) {
+  final indici = scelte.toList()..sort();
+  final dove = collocaNuove(giorno.finestra, occupatiDel(giorno, tappe), [
+    for (final j in indici) (ora: proposte[j].ora, durata: proposte[j].durata),
+  ]);
+  return {for (final (k, j) in indici.indexed) j: dove[k]};
 }

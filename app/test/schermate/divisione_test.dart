@@ -303,6 +303,8 @@ void main() {
       find.textContaining('3 minuti prima della tua', findRichText: true),
       findsOneWidget,
     );
+    await tester.ensureVisible(find.text('Sono due spese'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sono due spese'));
     await aspetta(tester);
     expect(
