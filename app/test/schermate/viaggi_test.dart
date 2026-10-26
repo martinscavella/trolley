@@ -55,10 +55,11 @@ void main() {
     expect(find.text('Idee'), findsOneWidget);
     expect(find.text('Lisbona'), findsOneWidget);
     expect(find.text('Oslo'), findsNothing);
+    // In alto, l'avatar del profilo e delle impostazioni (tela, 122).
+    expect(find.bySemanticsLabel('Profilo e impostazioni'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Archivio'), 300);
     expect(find.text('Archivio'), findsOneWidget);
     expect(find.text('1 idea'), findsOneWidget);
-    expect(find.bySemanticsLabel('Nuovo viaggio'), findsOneWidget);
   });
 
   testWidgets('senza rete l\'elenco dice che è la copia, e quanto è vecchia', (

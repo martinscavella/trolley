@@ -8,6 +8,7 @@ import 'package:trolley/dominio/calendario.dart';
 import 'package:trolley/schermate/impostazioni.dart';
 import 'package:trolley/schermate/mappamondo.dart';
 import 'package:trolley/schermate/passaporto.dart';
+import 'package:trolley/schermate/traguardi.dart';
 import 'package:trolley/schermate/viaggi.dart';
 import 'package:trolley/schermate/viaggio.dart';
 
@@ -95,24 +96,43 @@ void main() {
         jsonDecode(e.proprieta) as Map<String, dynamic>,
   ];
 
-  testWidgets('il profilo conta i viaggi chiusi, i paesi e le città, e porta '
-      'al passaporto e al mappamondo', (tester) async {
+  testWidgets('il passaporto conta i viaggi chiusi, i paesi e le città, e '
+      'porta al mappamondo e ai traguardi (tela, 123)', (tester) async {
+    await viaggi(tester);
+    await ambiente.monta(tester, const SchermataPassaporto());
+    await aspetta(tester);
+
+    expect(find.bySemanticsLabel('Viaggi: 3'), findsOneWidget);
+    expect(find.bySemanticsLabel('Paesi: 2'), findsOneWidget);
+    expect(find.bySemanticsLabel('Città: 3'), findsOneWidget);
+    // Il mappamondo si vede già, piccolo, con i paesi grattati.
+    expect(find.text('2 paesi · 3 città'), findsOneWidget);
+    final globo = tester.widget<Mappamondo>(find.byType(Mappamondo));
+    expect(globo.grattati, {'PT', 'JP'});
+    expect(find.text('nessuno'), findsOneWidget); // traguardi
+
+    await tester.tap(find.text('Mappamondo'));
+    await aspetta(tester);
+    expect(find.byType(SchermataMappamondo), findsOneWidget);
+    await tester.tap(find.byTooltip('Indietro'));
+    await aspetta(tester);
+
+    await tester.tap(find.text('Traguardi'));
+    await aspetta(tester);
+    expect(find.byType(SchermataTraguardi), findsOneWidget);
+  });
+
+  testWidgets('il profilo non ha più il passaporto: il nome, la valuta, le '
+      'impostazioni', (tester) async {
     await viaggi(tester);
     await ambiente.monta(tester, const SchermataImpostazioni());
     await aspetta(tester);
 
     expect(find.text('Giulia'), findsOneWidget);
-    expect(find.bySemanticsLabel('Viaggi: 3'), findsOneWidget);
-    expect(find.bySemanticsLabel('Paesi: 2'), findsOneWidget);
-    expect(find.bySemanticsLabel('Città: 3'), findsOneWidget);
-    expect(find.text('3 viaggi'), findsOneWidget);
-    expect(find.text('2 paesi'), findsOneWidget);
-    expect(find.text('nessuno'), findsOneWidget); // traguardi
     expect(find.text('Euro'), findsOneWidget);
-
-    await tester.tap(find.text('Passaporto'));
-    await aspetta(tester);
-    expect(find.byType(SchermataPassaporto), findsOneWidget);
+    expect(find.text('Passaporto'), findsNothing);
+    expect(find.text('Mappamondo'), findsNothing);
+    expect(find.text('Traguardi'), findsNothing);
   });
 
   testWidgets('il passaporto: per anno, dal più recente, con il timbro dove '
@@ -121,7 +141,7 @@ void main() {
     await ambiente.monta(tester, const SchermataPassaporto());
     await aspetta(tester);
 
-    expect(find.textContaining('3 viaggi, dal più recente'), findsOneWidget);
+    expect(find.bySemanticsLabel('Viaggi: 3'), findsOneWidget);
     expect(find.text('$anno'), findsOneWidget);
     expect(find.text('${anno - 1}'), findsOneWidget);
     expect(find.text('Porto'), findsOneWidget);
@@ -299,17 +319,18 @@ void main() {
       await tester.pump(const Duration(seconds: 4));
     });
 
-    testWidgets('il profilo dice quanti paesi sono da grattare', (
+    testWidgets('il passaporto dice quanti paesi sono da grattare', (
       tester,
     ) async {
       await nuovo(tester);
-      await ambiente.monta(tester, const SchermataImpostazioni());
+      await ambiente.monta(tester, const SchermataPassaporto());
       await aspetta(tester);
-      expect(find.text('1 da grattare'), findsOneWidget);
+      expect(find.text('1 paese da grattare'), findsOneWidget);
 
       await tester.runAsync(() => ambiente.archivio.segnaPaeseScoperto('JP'));
       await aspetta(tester);
-      expect(find.text('2 paesi'), findsOneWidget);
+      expect(find.text('1 paese da grattare'), findsNothing);
+      expect(find.textContaining('2 paesi'), findsOneWidget);
     });
   });
 
@@ -355,7 +376,11 @@ void main() {
       await ambiente.monta(tester, const SchermataPassaporto());
       await aspetta(tester);
 
-      expect(find.textContaining('5 viaggi, dal più recente'), findsOneWidget);
+      // Contano nei numeri del passaporto.
+      expect(find.bySemanticsLabel('Viaggi: 5'), findsOneWidget);
+      expect(find.bySemanticsLabel('Paesi: 4'), findsOneWidget);
+      expect(find.bySemanticsLabel('Città: 5'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Atene'), 200);
       expect(find.text('PRIMA DI TROLLEY'), findsOneWidget);
       expect(find.text('agosto 2019 · 5 giorni'), findsOneWidget);
       expect(find.text('estate 2015 · aggiunto a mano'), findsOneWidget);
@@ -367,12 +392,6 @@ void main() {
           tester.getTopLeft(find.text(t)).dy,
       ];
       expect(y, [...y]..sort());
-
-      await ambiente.monta(tester, const SchermataImpostazioni());
-      await aspetta(tester);
-      expect(find.bySemanticsLabel('Viaggi: 5'), findsOneWidget);
-      expect(find.bySemanticsLabel('Paesi: 4'), findsOneWidget);
-      expect(find.bySemanticsLabel('Città: 5'), findsOneWidget);
     });
 
     testWidgets('se ne aggiunge uno: dove, mese e anno, i giorni se ci si '

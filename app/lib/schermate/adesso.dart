@@ -30,9 +30,7 @@ import 'documenti.dart';
 import 'gesti_spesa.dart';
 import 'gesti_tappa.dart';
 import 'giornata.dart';
-import 'mappa.dart';
 import 'permesso_posizione.dart';
-import 'sezioni.dart';
 import 'spese.dart';
 import 'tappa.dart';
 import 'viaggio.dart';
@@ -88,7 +86,7 @@ enum _Vista { adesso, oggi, domani }
 /// quanto, il documento di questo momento; una spesa con un tocco e
 /// l'importo, una tappa in più. Si legge dalla copia, e tutto quello che si
 /// fa da qui sono gesti che funzionano senza rete (09, regole 3 e 4).
-class SchermataAdesso extends StatefulWidget {
+class SchermataAdesso extends StatefulWidget with ConLaBarra {
   const SchermataAdesso({
     super.key,
     required this.viaggioId,
@@ -96,6 +94,9 @@ class SchermataAdesso extends StatefulWidget {
   });
 
   final String viaggioId;
+
+  @override
+  String? get viaggioInVista => viaggioId;
 
   /// L'ora di adesso; le prove la fissano.
   final DateTime Function() orologio;
@@ -286,28 +287,6 @@ class _SchermataAdessoState extends State<SchermataAdesso>
               apri<void>(context, SchermataViaggio(viaggioId: viaggio.id)),
         ),
       ],
-      inBasso: BarraDelleSezioni(
-        prima: [
-          VoceBarra(
-            icona: icona(
-              ios: CupertinoIcons.briefcase,
-              android: Icons.luggage_outlined,
-            ),
-            etichetta: 'Viaggi',
-            attiva: true,
-            onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
-          ),
-          VoceBarra(
-            icona: icona(
-              ios: CupertinoIcons.globe,
-              android: Icons.public_rounded,
-            ),
-            etichetta: 'Mappa',
-            onTap: () =>
-                apri<void>(context, SchermataMappa(viaggioId: viaggio.id)),
-          ),
-        ],
-      ),
       corpo: Builder(
         builder: (context) => ListView(
           padding: EdgeInsets.fromLTRB(
@@ -1368,7 +1347,7 @@ class _Tasto extends StatelessWidget {
 
 /// Due viaggi in corso: quale apri (09, casi limite; tela, 49). La scelta vale
 /// fino a sera; domani si richiede.
-class SchermataDueViaggi extends StatelessWidget {
+class SchermataDueViaggi extends StatelessWidget with ConLaBarra {
   const SchermataDueViaggi({
     super.key,
     required this.viaggi,

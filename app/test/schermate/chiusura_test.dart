@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trolley/aspetto/barra.dart';
 import 'package:trolley/aspetto/elementi.dart';
 import 'package:trolley/dominio/calendario.dart';
 import 'package:trolley/schermate/giornata.dart';
-import 'package:trolley/schermate/impostazioni.dart';
 import 'package:trolley/schermate/passaporto.dart';
+import 'package:trolley/schermate/riepilogo.dart';
 import 'package:trolley/schermate/traguardi.dart';
+import 'package:trolley/schermate/sezioni.dart';
 import 'package:trolley/schermate/viaggi.dart';
 import 'package:trolley/schermate/viaggio.dart';
 
@@ -91,7 +93,7 @@ void main() {
   testWidgets('il giorno dopo la fine, aprendo l\'app il viaggio si chiude e '
       'il riepilogo si apre: verificato, con i traguardi', (tester) async {
     await viaggio(tester);
-    await ambiente.monta(tester, SchermataViaggi(onCodice: (_) {}));
+    await ambiente.monta(tester, SchermataSezioni(onCodice: (_) {}));
     await aspetta(tester);
 
     expect(ambiente.server.viaggi.single['stato'], 'chiuso');
@@ -108,12 +110,18 @@ void main() {
     expect(find.text('In compagnia'), findsOneWidget);
     expect(find.text('Organizzare'), findsOneWidget);
 
-    // Dal riepilogo al passaporto (tela, 60), dove il viaggio c'è già.
+    // Dal riepilogo alla sezione Passaporto (tela, 60 e 123), dove il
+    // viaggio c'è già.
     await tester.scrollUntilVisible(pulsante('Guarda il passaporto'), 200);
     await tester.tap(pulsante('Guarda il passaporto'));
     await aspetta(tester);
+    expect(find.byType(SchermataRiepilogo), findsNothing);
     expect(find.byType(SchermataPassaporto), findsOneWidget);
-    expect(find.textContaining('1 viaggio, dal più recente'), findsOneWidget);
+    expect(find.bySemanticsLabel('Viaggi: 1'), findsOneWidget);
+    expect(
+      tester.widget<BarraPrincipale>(find.byType(BarraPrincipale)).dopo.first,
+      isA<VoceBarra>().having((v) => v.attiva, 'attiva', isTrue),
+    );
 
     final eventi = [
       for (final e in await ambiente.eventi(tester))
@@ -223,7 +231,7 @@ void main() {
   });
 
   testWidgets('i traguardi: presi, e da prendere con quanto manca; dal '
-      'profilo', (tester) async {
+      'passaporto', (tester) async {
     await viaggio(tester);
     ambiente.server.traguardi.add({
       'id': 'tr1',
@@ -234,7 +242,7 @@ void main() {
     ambiente.server.partecipazioni.first['verificato'] = true;
     await tester.runAsync(ambiente.archivio.aggiornaCopia);
 
-    await ambiente.monta(tester, const SchermataImpostazioni());
+    await ambiente.monta(tester, const SchermataPassaporto());
     await aspetta(tester);
     expect(find.text('1 preso'), findsOneWidget);
     await tester.tap(find.text('Traguardi'));

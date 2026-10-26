@@ -35,3 +35,4 @@ Le decisioni architetturali che vale la pena motivare per iscritto vivono in `ad
 - [**ADR-010** — Itinerario incollato: il formato del ritorno, la nota, l'elenco dei modelli](adr/010-itinerario-incollato.md) ✅
 - [**ADR-011** — La verifica del numero di telefono](adr/011-verifica-del-telefono.md) ✅
 - [**ADR-012** — Le notifiche, prima parte: i promemoria programmati dal telefono](adr/012-notifiche-locali.md) ✅
+- [**ADR-013** — Le sezioni: una barra sola, una pila per sezione](adr/013-le-sezioni.md) ✅

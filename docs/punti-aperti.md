@@ -395,6 +395,17 @@ Il logo, l'icona dell'app e l'avvio animato del kit sono nell'app dal 16 ottobre
 | **L'icona a tema di Android** | Il kit non ha la variante monocromatica | Con Android |
 | **Il sito** | `sito/` non ha ancora il logo né l'icona nella scheda del browser | Quando si pubblica il sito |
 
+### Rimasto fuori dalle sezioni
+
+La barra sola che resta, il Passaporto come sezione e il profilo dall'avatar sono costruiti il 17 ottobre 2026 ([decisioni](decisioni/prodotto.md#le-sezioni-la-barra-e-il-profilo-17-ottobre-2026), [ADR-013](tecnico/adr/013-le-sezioni.md); tela, 122–126). Restano:
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Le tavole di prima hanno ancora la barra vecchia** | Sulla tela le schermate disegnate prima del 17 ottobre mostrano «Profilo» in fondo alla barra, e la 64 il profilo col passaporto. La nota n28 dice di leggerle come la 122; ridisegnarle tutte non cambia niente da costruire | Se l'utente vuole la tela in ordine |
+| **Android** | Indietro dalla sezione torna a Viaggi, e le prove lo controllano, ma un telefono Android non l'ha mai provato, né con il gesto predittivo | Con Android |
+| **L'archivio di un'idea apre il viaggio sopra la barra** | L'archivio è una schermata di lavoro, e un'idea aperta da lì si apre sopra la barra invece che nella sezione. Per tornare alla sezione basta Indietro | Se qualcuno lo segnala |
+| **Il mappamondo dal riepilogo** | «Grattalo sul mappamondo», dal riepilogo, apre il mappamondo sopra il riepilogo, senza barra: è una deviazione, e Indietro torna al riepilogo | Se qualcuno lo segnala |
+
 ### Impianto di sicurezza del matching — stima
 
 Il matching è nella prima release, e con esso una lista di lavori che prima erano "dopo". Questa è la stima, per una persona sola su iOS.

@@ -54,7 +54,7 @@ Rivedendo la tela, l'utente l'ha trovata "troppo da app standard di iPhone": lis
 - **Colori con un compito ciascuno**: inchiostro (`#15192B`) per il testo e i pulsanti principali; cobalto (`#2B4ACB`) per i viaggi definiti e quello che è attivo; giallo (`#FFCF4A`) solo per le idee; verde (`#1F5F4A`) solo per le tappe fatte; rosso (`#B42318`) per quello che non entra. Sono in `aspetto/tavolozza.dart`.
 - **Caratteri**: Unbounded per titoli, codici e numeri (variabile, il peso con `fontVariations`), DM Sans per il testo, con il grassetto aggiunto. Bricolage Grotesque esce dall'app.
 - **Il biglietto è per i viaggi e le idee, e basta** (`aspetto/biglietto.dart`): la carta d'imbarco con il codice di tre lettere della destinazione («?» se non c'è) e la matrice con date e persone; l'idea come biglietto giallo. Il resto sono schede pulite, senza dentelli.
-- **La barra in basso** è una pillola d'inchiostro che galleggia, con la voce attiva bianca e il "+" giallo (`aspetto/barra.dart`).
+- **La barra in basso** è una pillola d'inchiostro che galleggia, con la voce attiva bianca e il "+" giallo (`aspetto/barra.dart`). Dal 17 ottobre 2026 è una sola per tutte le sezioni, e la voce bianca scivola da una sezione all'altra ([ADR-013](013-le-sezioni.md)).
 - **Il motivo ricorrente è il percorso a punti collegati**: nell'accesso, nel profilo, e con la 1.2 nella giornata, che diventa un percorso di tappe numerate. È uno schema dell'ordine della giornata, non una mappa: la mappa vera arriva con la 3.2.
 - **Restano componenti di sistema** i dialoghi, i fogli di azioni, i selettori di data e ora e gli interruttori: su iOS 26 e successivi hanno il Liquid Glass vero, ed è l'unico vetro dell'app.
 

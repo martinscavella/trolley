@@ -21,6 +21,7 @@ import 'con_la_rete.dart';
 import 'notifiche.dart';
 import 'scelta_destinazione.dart';
 import 'scelta_periodo.dart';
+import 'sezioni.dart';
 import 'viaggio.dart';
 
 /// Un viaggio nuovo: dove, e poi le date **oppure** un periodo
@@ -81,11 +82,13 @@ class _SchermataNuovoViaggioState extends State<SchermataNuovoViaggio> {
         'durata_prevista_giorni': programma?.durataGiorni,
       });
       HapticFeedback.mediumImpact();
-      unawaited(
-        navigatore.pushReplacement(
-          rotta<void>(SchermataViaggio(viaggioId: id)),
-        ),
-      );
+      // Il viaggio nuovo si apre nella sezione Viaggi, con la barra.
+      final viaggio = SchermataViaggio(viaggioId: id);
+      if (SchermataSezioni.aperta case final sezioni?) {
+        sezioni.apriNeiViaggi(viaggio);
+      } else {
+        unawaited(navigatore.pushReplacement(rotta<void>(viaggio)));
+      }
       // Un viaggio con le date: è il momento dei promemoria (tela, 82).
       if (programma != null) {
         await proponiLeNotifiche(navigatore, citta: destinazione.citta);

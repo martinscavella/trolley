@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../aspetto/barra.dart';
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/mappamondo.dart';
@@ -20,13 +21,37 @@ import '../servizi.dart';
 import 'con_la_rete.dart';
 
 /// Dove guarda il globo di chi non ha ancora un viaggio chiuso: l'Europa.
-const _europa = (lat: 42.0, lon: 12.0);
+const centroSenzaViaggi = (lat: 42.0, lon: 12.0);
+
+/// Dove sta un paese sul globo: il suo punto nell'elenco, o quello di una
+/// città del viaggio per i paesi che l'elenco tiene dentro un altro (la
+/// Martinica). Senza l'elenco, ancora da caricare, nessuno.
+Map<String, Coordinate> puntiDeiPaesi(
+  ElencoDestinazioni? elenco,
+  List<Meta> mete,
+) {
+  if (elenco == null) return const {};
+  final punti = <String, Coordinate>{};
+  for (final m in mete) {
+    final paese = m.paese;
+    if (paese == null || punti.containsKey(paese)) continue;
+    final d = elenco.trova(paese: paese);
+    final c =
+        coordinate(d?.lat, d?.lon) ??
+        switch (elenco.trova(citta: m.citta, paese: paese)) {
+          final citta? => coordinate(citta.lat, citta.lon),
+          null => null,
+        };
+    if (c != null) punti[paese] = c;
+  }
+  return punti;
+}
 
 /// Il mappamondo (10, regola 5; tela, 66): i paesi e le città di ogni viaggio
 /// chiuso, verificato o no — è il ricordo, non il merito. Il globo si gira
 /// col dito, e toccando un paese ci si gira da soli. Si legge dalla copia, e
 /// i confini sono nell'app (ADR-005): funziona anche senza rete.
-class SchermataMappamondo extends StatefulWidget {
+class SchermataMappamondo extends StatefulWidget with ConLaBarra {
   const SchermataMappamondo({super.key});
 
   @override
@@ -77,28 +102,6 @@ class _SchermataMappamondoState extends State<SchermataMappamondo> {
     await Servizi.of(context).archivio.segnaPaeseScoperto(paese);
   }
 
-  /// Dove sta un paese sul globo: il suo punto nell'elenco, o quello di una
-  /// città del viaggio per i paesi che l'elenco tiene dentro un altro (la
-  /// Martinica).
-  Map<String, Coordinate> _punti(List<Meta> mete) {
-    final elenco = _elenco;
-    if (elenco == null) return const {};
-    final punti = <String, Coordinate>{};
-    for (final m in mete) {
-      final paese = m.paese;
-      if (paese == null || punti.containsKey(paese)) continue;
-      final d = elenco.trova(paese: paese);
-      final c =
-          coordinate(d?.lat, d?.lon) ??
-          switch (elenco.trova(citta: m.citta, paese: paese)) {
-            final citta? => coordinate(citta.lat, citta.lon),
-            null => null,
-          };
-      if (c != null) punti[paese] = c;
-    }
-    return punti;
-  }
-
   @override
   Widget build(BuildContext context) => StreamBuilder<Set<String>>(
     stream: _scoperti,
@@ -110,7 +113,7 @@ class _SchermataMappamondoState extends State<SchermataMappamondo> {
         final visite = visiteDi(viaggi);
         final paesi = paesiGrattati(mete);
         final citta = cittaGrattate(mete);
-        final punti = _punti(mete);
+        final punti = puntiDeiPaesi(_elenco, mete);
         // Finché non si sa che cosa è già scoperto, non si chiede di grattare.
         final daScoprire = scoperti.hasData
             ? daGrattare(visite, scoperti: scoperti.data!, oggi: DateTime.now())
@@ -119,7 +122,7 @@ class _SchermataMappamondoState extends State<SchermataMappamondo> {
         final centro =
             punti[_guardato] ??
             (paesi.isEmpty ? null : punti[paesi.first]) ??
-            _europa;
+            centroSenzaViaggi;
         final appena = _appena;
         final mq = MediaQuery.of(context);
         return Pagina(
@@ -213,7 +216,7 @@ class _SchermataMappamondoState extends State<SchermataMappamondo> {
                         20,
                         12,
                         20,
-                        mq.padding.bottom + 32,
+                        BarraPrincipale.ingombro + mq.padding.bottom,
                       ),
                       children: [
                         if (paesi.isNotEmpty) ...[

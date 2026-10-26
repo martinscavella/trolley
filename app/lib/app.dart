@@ -17,7 +17,7 @@ import 'schermate/accesso.dart';
 import 'schermate/benvenuto.dart';
 import 'schermate/notifiche.dart';
 import 'schermate/nuovo_profilo.dart';
-import 'schermate/viaggi.dart';
+import 'schermate/sezioni.dart';
 import 'schermate/viaggio.dart';
 import 'servizi.dart';
 
@@ -189,9 +189,14 @@ class _TrolleyAppState extends State<TrolleyApp> {
         'gia_dentro': giaDentro,
       });
       unawaited(_servizi.misurazione.invia());
-      _navigatore.currentState
-        ?..popUntil((r) => r.isFirst)
-        ..push(rotta<void>(SchermataViaggio(viaggioId: viaggioId)));
+      final pagina = SchermataViaggio(viaggioId: viaggioId);
+      if (SchermataSezioni.aperta case final sezioni?) {
+        sezioni.apriNeiViaggi(pagina);
+      } else {
+        _navigatore.currentState
+          ?..popUntil((r) => r.isFirst)
+          ..push(rotta<void>(pagina));
+      }
     } on ErroreTrolley catch (e) {
       // Senza rete l'invito resta in attesa e si riprova al prossimo ingresso;
       // un codice sbagliato invece si scarta, e la persona lo sa.
@@ -240,7 +245,7 @@ class _TrolleyAppState extends State<TrolleyApp> {
               invitoInAttesa: invitoInAttesa,
               onCreato: _entra,
             ),
-            _Fase.pronto => SchermataViaggi(
+            _Fase.pronto => SchermataSezioni(
               onCodice: (codice) => _riceviInvito(codice, ViaInvito.codice),
             ),
             _Fase.errore => SchermataSenzaRete(onRiprova: _valutaFase),

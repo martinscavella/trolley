@@ -30,7 +30,6 @@ import 'con_la_rete.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
 import 'permesso_posizione.dart';
-import 'sezioni.dart';
 import 'tappa.dart';
 
 /// La mappa del viaggio (08-mappa.md; tela, 50–55): le tappe di un giorno
@@ -48,9 +47,20 @@ class SchermataMappa extends StatefulWidget {
     required this.viaggioId,
     this.giornoId,
     this.orologio = DateTime.now,
+    this.richiesta = 0,
+    this.inSezione = false,
   });
 
   final String viaggioId;
+
+  /// Quante volte la sezione Mappa ha chiesto un viaggio: a ogni richiesta
+  /// la mappa torna su [viaggioId], anche se dall'alto se n'era scelto un
+  /// altro (ADR-013).
+  final int richiesta;
+
+  /// La mappa è la sezione Mappa, sotto la barra: le schede in basso le
+  /// lasciano il posto. Aperta dalla giornata, la barra non c'è.
+  final bool inSezione;
 
   /// Il giorno da mostrare; se manca, oggi o il più vicino.
   final String? giornoId;
@@ -105,6 +115,24 @@ class _SchermataMappaState extends State<SchermataMappa> {
   void initState() {
     super.initState();
     _giornoId = widget.giornoId;
+  }
+
+  @override
+  void didUpdateWidget(SchermataMappa vecchia) {
+    super.didUpdateWidget(vecchia);
+    final chiesto =
+        widget.viaggioId != vecchia.viaggioId ||
+        widget.richiesta != vecchia.richiesta;
+    if (!chiesto || widget.viaggioId == _viaggioId) return;
+    unawaited(
+      registraConsumo(
+        _servizi.misurazione,
+        _servizi.mappe,
+        viaggioId: _viaggioId,
+        prima: _prima,
+      ),
+    );
+    _mostra(widget.viaggioId);
   }
 
   @override
@@ -247,9 +275,16 @@ class _SchermataMappaState extends State<SchermataMappa> {
 
   // Un viaggio nuovo è una mappa nuova: niente dati di due viaggi insieme,
   // nemmeno per un attimo.
+  //
+  // Ritoccando «Mappa» nella barra si rifà l'inquadratura.
   @override
-  Widget build(BuildContext context) =>
-      KeyedSubtree(key: ValueKey(_viaggioId), child: _costruisci(context));
+  Widget build(BuildContext context) => TornaInCima(
+    alRitocco: () => setState(() {
+      _inquadrata = null;
+      _scelta = null;
+    }),
+    child: KeyedSubtree(key: ValueKey(_viaggioId), child: _costruisci(context)),
+  );
 
   Widget _costruisci(BuildContext context) => StreamBuilder<Viaggio?>(
     stream: _viaggio,
@@ -433,6 +468,8 @@ class _SchermataMappaState extends State<SchermataMappa> {
     );
 
     final inBasso = mq.padding.bottom > 0 ? mq.padding.bottom - 6 : 20.0;
+    // Nella sezione, sopra la barra.
+    final sopra = widget.inSezione ? inBasso + 64 + 16 : inBasso;
     return Scaffold(
       backgroundColor: _fondoCarta,
       body: Stack(
@@ -472,7 +509,7 @@ class _SchermataMappaState extends State<SchermataMappa> {
             Positioned(
               left: 20,
               right: 20,
-              bottom: inBasso + 64 + 16,
+              bottom: sopra,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -487,12 +524,6 @@ class _SchermataMappaState extends State<SchermataMappa> {
                   ),
                 ],
               ),
-            ),
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: inBasso,
-              child: _barra(vista),
             ),
           ] else
             Positioned(
@@ -569,28 +600,6 @@ class _SchermataMappaState extends State<SchermataMappa> {
     return null;
   }
 
-  Widget _barra(_Vista vista) => BarraDelleSezioni(
-    prima: [
-      VoceBarra(
-        icona: icona(
-          ios: CupertinoIcons.briefcase,
-          android: Icons.luggage_outlined,
-        ),
-        etichetta: 'Viaggi',
-        onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
-      ),
-      VoceBarra(
-        icona: icona(ios: CupertinoIcons.globe, android: Icons.public_rounded),
-        etichetta: 'Mappa',
-        attiva: true,
-        onTap: () => setState(() {
-          _inquadrata = null;
-          _scelta = null;
-        }),
-      ),
-    ],
-  );
-
   // ─── Senza la mappa: gli indirizzi ───────────────────────────────────────
 
   /// L'elenco delle tappe con i loro indirizzi: quando la mappa non c'è
@@ -628,13 +637,14 @@ class _SchermataMappaState extends State<SchermataMappa> {
         else if (!rete)
           const SeiOffline(),
       ],
-      inBasso: _barra(vista),
       corpo: ListView(
         padding: EdgeInsets.fromLTRB(
           20,
           mq.padding.top,
           20,
-          BarraPrincipale.ingombro + mq.padding.bottom,
+          widget.inSezione
+              ? BarraPrincipale.ingombro + mq.padding.bottom
+              : mq.padding.bottom + 32,
         ),
         children: [
           const TitoloPagina('Mappa'),

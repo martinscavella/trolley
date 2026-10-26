@@ -33,13 +33,11 @@ import 'gesti_partecipanti.dart';
 import 'gesti_tappa.dart';
 import 'giornata.dart';
 import 'itinerario.dart';
-import 'mappa.dart';
 import 'note.dart';
 import 'partecipanti.dart';
 import 'prima_di_partire.dart';
 import 'problemi_coda.dart';
 import 'scelta_periodo.dart';
-import 'sezioni.dart';
 import 'spese.dart';
 import 'tappa.dart';
 
@@ -47,10 +45,13 @@ import 'tappa.dart';
 /// idea c'è il periodo e l'invito a fissare le date; da definito ci sono le
 /// date e i giorni, ciascuno con il suo tempo. Si legge dalla copia locale,
 /// anche senza rete.
-class SchermataViaggio extends StatefulWidget {
+class SchermataViaggio extends StatefulWidget with ConLaBarra {
   const SchermataViaggio({super.key, required this.viaggioId});
 
   final String viaggioId;
+
+  @override
+  String? get viaggioInVista => viaggioId;
 
   @override
   State<SchermataViaggio> createState() => _SchermataViaggioState();
@@ -123,28 +124,6 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
         }
         final stato = viaggio.statoA(DateTime.now());
         return Pagina(
-          inBasso: BarraDelleSezioni(
-            prima: [
-              VoceBarra(
-                icona: icona(
-                  ios: CupertinoIcons.briefcase,
-                  android: Icons.luggage_outlined,
-                ),
-                etichetta: 'Viaggi',
-                attiva: true,
-                onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
-              ),
-              VoceBarra(
-                icona: icona(
-                  ios: CupertinoIcons.globe,
-                  android: Icons.public_rounded,
-                ),
-                etichetta: 'Mappa',
-                onTap: () =>
-                    apri<void>(context, SchermataMappa(viaggioId: viaggio.id)),
-              ),
-            ],
-          ),
           corpo: Builder(
             builder: (context) => ListView(
               padding: EdgeInsets.fromLTRB(

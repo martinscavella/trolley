@@ -29,7 +29,6 @@ import 'gesti_chiusura.dart';
 import 'impostazioni.dart';
 import 'nuovo_viaggio.dart';
 import 'partecipanti.dart';
-import 'sezioni.dart';
 import 'viaggio.dart';
 
 /// I propri viaggi, divisi per stato: in corso, in programma, idee, conclusi.
@@ -191,61 +190,11 @@ class _SchermataViaggiState extends State<SchermataViaggi>
     }
   }
 
-  /// "Altro": l'archivio delle idee e le impostazioni.
-  Future<void> _altro() async {
-    final archivio = Servizi.of(context).archivio;
-    final archiviate =
-        (await archivio.osservaViaggiInElenco(archiviati: true).first).length;
-    if (!mounted) return;
-    await scegliAzione(context, [
-      AzioneMenu(
-        archiviate == 0
-            ? 'Archivio delle idee'
-            : 'Archivio delle idee ($archiviate)',
-        () => apri<void>(context, const SchermataArchivio()),
-      ),
-      AzioneMenu(
-        'Impostazioni',
-        () => apri<void>(context, const SchermataImpostazioni()),
-      ),
-    ]);
-  }
-
   @override
   Widget build(BuildContext context) {
     final servizi = Servizi.of(context);
     final oggi = DateTime.now();
     return Pagina(
-      inBasso: BarraDelleSezioni(
-        prima: [
-          VoceBarra(
-            icona: icona(
-              ios: CupertinoIcons.briefcase,
-              android: Icons.luggage_outlined,
-            ),
-            etichetta: 'Viaggi',
-            attiva: true,
-            onTap: () => _scorrimento.hasClients
-                ? _scorrimento.animateTo(
-                    0,
-                    duration: movimentoRidotto(context)
-                        ? Duration.zero
-                        : Ritmo.medio,
-                    curve: Ritmo.curva,
-                  )
-                : null,
-          ),
-          VoceBarra(
-            icona: icona(
-              ios: CupertinoIcons.globe,
-              android: Icons.public_rounded,
-            ),
-            etichetta: 'Mappa',
-            onTap: () => apriLaMappa(context),
-          ),
-        ],
-        onAggiungi: _nuovoViaggio,
-      ).entra(context, ritardo: Ritmo.lungo, da: 40),
       corpo: StreamBuilder<List<ViaggioInElenco>>(
         stream: servizi.archivio.osservaViaggiInElenco(),
         builder: (context, snapshot) {
@@ -279,10 +228,7 @@ class _SchermataViaggiState extends State<SchermataViaggi>
                   8,
                 ),
                 sliver: SliverToBoxAdapter(
-                  child: _Intestazione(
-                    onCodice: _inserisciCodice,
-                    onAltro: _altro,
-                  ),
+                  child: _Intestazione(onCodice: _inserisciCodice),
                 ),
               ),
               SliverToBoxAdapter(child: _SenzaRete(viaggi: viaggi ?? const [])),
@@ -366,9 +312,13 @@ class _SchermataViaggiState extends State<SchermataViaggi>
             ],
           );
 
-          return suIOS
-              ? elenco
-              : RefreshIndicator(onRefresh: _aggiorna, child: elenco);
+          // Ritoccando «Viaggi» nella barra si torna in cima.
+          return TornaInCima(
+            controllo: _scorrimento,
+            child: suIOS
+                ? elenco
+                : RefreshIndicator(onRefresh: _aggiorna, child: elenco),
+          );
         },
       ),
     );
@@ -402,11 +352,13 @@ class _SchermataViaggiState extends State<SchermataViaggi>
   }
 }
 
+/// Il titolo, il codice d'invito e l'avatar che apre il profilo e le
+/// impostazioni (tela, 122). L'archivio delle idee è la voce in fondo
+/// all'elenco.
 class _Intestazione extends StatelessWidget {
-  const _Intestazione({required this.onCodice, required this.onAltro});
+  const _Intestazione({required this.onCodice});
 
   final VoidCallback onCodice;
-  final VoidCallback onAltro;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -430,14 +382,7 @@ class _Intestazione extends StatelessWidget {
         onPressed: onCodice,
       ),
       const SizedBox(width: 8),
-      PulsanteTondo(
-        icona: icona(
-          ios: CupertinoIcons.ellipsis_vertical,
-          android: Icons.more_vert,
-        ),
-        etichetta: 'Altro',
-        onPressed: onAltro,
-      ),
+      const PulsanteProfilo(),
     ],
   ).entra(context, da: 8);
 }

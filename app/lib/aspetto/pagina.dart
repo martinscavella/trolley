@@ -59,7 +59,7 @@ class Pagina extends StatelessWidget {
                       top: mq.padding.top + (conBarra ? altezzaBarra : 8),
                     ),
                   ),
-                  child: corpo,
+                  child: TornaInCima(child: corpo),
                 ),
               ),
               if (conBarra)
@@ -113,9 +113,12 @@ class PulsanteIndietro extends StatelessWidget {
 
 /// Apre [foglio] dal basso sopra la schermata di prima, che resta visibile
 /// sotto un velo d'inchiostro. Si chiude trascinandolo giù o toccando fuori.
+/// Sta sopra la barra delle sezioni anche quando lo si apre da una di loro
+/// (ADR-013).
 Future<T?> apriFoglio<T>(BuildContext context, Widget foglio) =>
     showModalBottomSheet<T>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: const Color(0x00000000),
@@ -312,6 +315,7 @@ Future<void> scegliAzione(
         )
       : await showModalBottomSheet<AzioneMenu>(
           context: context,
+          useRootNavigator: true,
           builder: (contesto) => SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -336,4 +340,73 @@ Future<void> scegliAzione(
           ),
         );
   scelta?.onTap();
+}
+
+/// Il segnale di una sezione quando si ritocca la sua voce nella barra, con
+/// la sezione già sulla sua pagina (ADR-013): la pagina torna in cima.
+class Ritocco extends InheritedWidget {
+  const Ritocco({super.key, required this.segnale, required super.child});
+
+  final Listenable segnale;
+
+  static Listenable? di(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<Ritocco>()?.segnale;
+
+  @override
+  bool updateShouldNotify(Ritocco vecchio) => segnale != vecchio.segnale;
+}
+
+/// Al [Ritocco] della sua sezione riporta in cima [controllo], o quello che
+/// scorre nella pagina; con [alRitocco] fa quello. Ogni [Pagina] ne ha uno.
+class TornaInCima extends StatefulWidget {
+  const TornaInCima({
+    super.key,
+    this.controllo,
+    this.alRitocco,
+    required this.child,
+  });
+
+  final ScrollController? controllo;
+  final VoidCallback? alRitocco;
+  final Widget child;
+
+  @override
+  State<TornaInCima> createState() => _TornaInCimaState();
+}
+
+class _TornaInCimaState extends State<TornaInCima> {
+  Listenable? _segnale;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final segnale = Ritocco.di(context);
+    if (segnale == _segnale) return;
+    _segnale?.removeListener(_ritoccata);
+    _segnale = segnale?..addListener(_ritoccata);
+  }
+
+  @override
+  void dispose() {
+    _segnale?.removeListener(_ritoccata);
+    super.dispose();
+  }
+
+  void _ritoccata() {
+    if (widget.alRitocco case final fai?) {
+      fai();
+      return;
+    }
+    final controllo =
+        widget.controllo ?? PrimaryScrollController.maybeOf(context);
+    if (controllo == null || !controllo.hasClients) return;
+    controllo.animateTo(
+      0,
+      duration: movimentoRidotto(context) ? Duration.zero : Ritmo.medio,
+      curve: Ritmo.curva,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

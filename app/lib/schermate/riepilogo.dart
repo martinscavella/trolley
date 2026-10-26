@@ -22,6 +22,7 @@ import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'mappamondo.dart';
 import 'passaporto.dart';
+import 'sezioni.dart';
 import 'spese.dart';
 import 'traguardi.dart';
 
@@ -232,8 +233,11 @@ class _SchermataRiepilogoState extends State<SchermataRiepilogo> {
                   ios: CupertinoIcons.tickets,
                   android: Icons.confirmation_number_outlined,
                 ),
-                onPressed: () =>
-                    apri<void>(context, const SchermataPassaporto()),
+                // La sezione Passaporto, se c'è (ADR-013).
+                onPressed: () => switch (SchermataSezioni.aperta) {
+                  final sezioni? => sezioni.apriLaSezione(Sezione.passaporto),
+                  null => apri<void>(context, const SchermataPassaporto()),
+                },
               ).entra(context, ritardo: Ritmo.passo * 3),
             ],
           ),

@@ -74,10 +74,13 @@ class TitoloSezione extends StatelessWidget {
 
 /// Il titolo grande di una schermata, in cima ai contenuti.
 class TitoloPagina extends StatelessWidget {
-  const TitoloPagina(this.testo, {super.key, this.sottotitolo});
+  const TitoloPagina(this.testo, {super.key, this.sottotitolo, this.accanto});
 
   final String testo;
   final String? sottotitolo;
+
+  /// Sulla riga del titolo, a destra: i pulsanti di una sezione (tela, 123).
+  final Widget? accanto;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -85,12 +88,19 @@ class TitoloPagina extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(
-          header: true,
-          child: Text(
-            testo,
-            style: Testi.titoloGrande.copyWith(color: Colori.inchiostro),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(
+                  testo,
+                  style: Testi.titoloGrande.copyWith(color: Colori.inchiostro),
+                ),
+              ),
+            ),
+            if (accanto != null) ...[const SizedBox(width: 12), accanto!],
+          ],
         ),
         if (sottotitolo != null) ...[
           const SizedBox(height: 12),

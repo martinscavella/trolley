@@ -8,7 +8,7 @@ import 'package:trolley/schermate/community.dart';
 import 'package:trolley/schermate/profilo_altrui.dart';
 import 'package:trolley/schermate/profilo_pubblico.dart';
 import 'package:trolley/schermate/scelta_destinazione.dart';
-import 'package:trolley/schermate/viaggi.dart';
+import 'package:trolley/schermate/sezioni.dart';
 import 'package:trolley/schermate/viaggi_sul_profilo.dart';
 
 import '../aiuti.dart';
@@ -113,7 +113,7 @@ void main() {
       tester,
     ) async {
       await ambiente.accedi(tester: tester);
-      await ambiente.monta(tester, SchermataViaggi(onCodice: (_) {}));
+      await ambiente.monta(tester, SchermataSezioni(onCodice: (_) {}));
       await aspetta(tester);
       expect(find.bySemanticsLabel('Community'), findsNothing);
 

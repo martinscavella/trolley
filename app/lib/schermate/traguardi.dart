@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../aspetto/barra.dart';
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/movimento.dart';
@@ -149,7 +150,7 @@ class GrigliaMedaglie extends StatelessWidget {
 /// «Traguardi» (tela, 62): presi e da prendere, con quanto manca. Si
 /// prendono solo con i viaggi verificati; non scadono e non dipendono dal
 /// piano (10, regola 7). Si legge dalla copia, anche senza rete.
-class SchermataTraguardi extends StatefulWidget {
+class SchermataTraguardi extends StatefulWidget with ConLaBarra {
   const SchermataTraguardi({super.key});
 
   @override
@@ -216,7 +217,8 @@ class _SchermataTraguardiState extends State<SchermataTraguardi> {
                   20,
                   MediaQuery.paddingOf(context).top,
                   20,
-                  MediaQuery.paddingOf(context).bottom + 32,
+                  BarraPrincipale.ingombro +
+                      MediaQuery.paddingOf(context).bottom,
                 ),
                 children: [
                   const TitoloPagina(
@@ -266,27 +268,4 @@ class _SchermataTraguardiState extends State<SchermataTraguardi> {
       ),
     );
   }
-}
-
-/// La riga «Traguardi · 3 presi» del profilo (tela, 64).
-class RigaTraguardi extends StatelessWidget {
-  const RigaTraguardi({super.key});
-
-  @override
-  Widget build(BuildContext context) => StreamBuilder<List<TraguardoPreso>>(
-    stream: Servizi.of(context).archivio.osservaTraguardi(),
-    builder: (context, presi) {
-      final n = presi.data?.length ?? 0;
-      return RigaScheda(
-        simbolo: iconaTraguardo(Traguardo.primoViaggioVerificato),
-        titolo: 'Traguardi',
-        valore: n == 0
-            ? 'nessuno'
-            : n == 1
-            ? '1 preso'
-            : '$n presi',
-        onTap: () => apri<void>(context, const SchermataTraguardi()),
-      );
-    },
-  );
 }

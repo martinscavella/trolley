@@ -108,6 +108,16 @@ Non erano una fase del piano: il capitolo [14](prodotto/14-notifiche.md) si cost
 
 ---
 
+## Le migliorie grafiche
+
+Non erano una fase del piano: finite le notifiche, l'utente rivede l'app sul telefono e dice dove migliorarla. Ogni miglioria si disegna prima sulla tela, si scrive fra le decisioni e poi si costruisce.
+
+| | Cosa |
+|---|---|
+| G.1 | **Le sezioni**: una barra sola che resta ferma, con la voce bianca che scivola; il Passaporto come sezione; profilo e impostazioni dall'avatar in alto a destra ([decisioni](decisioni/prodotto.md#le-sezioni-la-barra-e-il-profilo-17-ottobre-2026), [ADR-013](tecnico/adr/013-le-sezioni.md); tela, 122–126). 17 ottobre 2026 |
+
+---
+
 ## Fase 6 — Monetizzazione
 
 Non nell'MVP. Si accende quando i numeri di H1 dicono quali funzioni le persone valutano davvero, perché è quello che decide cosa sta dietro il pagamento.

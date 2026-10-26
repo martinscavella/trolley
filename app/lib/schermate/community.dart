@@ -43,7 +43,7 @@ import 'presenza.dart';
 import 'profilo_altrui.dart';
 import 'profilo_pubblico.dart';
 import 'scelta_destinazione.dart';
-import 'sezioni.dart';
+import 'impostazioni.dart';
 import 'viaggiatori.dart';
 
 class SchermataCommunity extends StatefulWidget {
@@ -275,10 +275,6 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
 
   @override
   Widget build(BuildContext context) => Pagina(
-    inBasso: BarraDelleSezioni(
-      prima: [voceViaggi(context), voceMappa(context)],
-      attiva: SezioneDopo.community,
-    ),
     corpo: Builder(
       builder: (context) => FutureBuilder<_Io?>(
         future: _io,
@@ -297,7 +293,7 @@ class _SchermataCommunityState extends State<SchermataCommunity> {
             padding: padding,
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             children: [
-              const TitoloPagina('Viaggiatori'),
+              const TitoloPagina('Viaggiatori', accanto: PulsanteProfilo()),
               ...switch (dati) {
                 null when letto.hasError => _senzaLettura(letto.error),
                 null => _nonCe(),

@@ -16,6 +16,7 @@ import '../servizi.dart';
 import 'giornata.dart';
 import 'prima_di_partire.dart';
 import 'riepilogo.dart';
+import 'sezioni.dart';
 import 'viaggio.dart';
 
 /// Le righe di «Notifiche», nell'ordine della tela (83).
@@ -442,6 +443,10 @@ void apriDaNotifica(NavigatorState navigatore, DovePorta dove) {
     TipoNotifica.unAnnoFa => SchermataRiepilogo(viaggioId: id),
     _ => SchermataViaggio(viaggioId: id),
   };
+  if (SchermataSezioni.aperta case final sezioni?) {
+    sezioni.apriNeiViaggi(pagina);
+    return;
+  }
   navigatore
     ..popUntil((r) => r.isFirst)
     ..push(rotta<void>(pagina));

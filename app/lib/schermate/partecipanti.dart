@@ -23,6 +23,7 @@ import 'cose.dart';
 import 'documenti.dart';
 import 'foglio_documento.dart';
 import 'gesti_partecipanti.dart';
+import 'sezioni.dart';
 import 'spese.dart';
 
 /// Chi c'è (03-partecipanti-e-inviti.md, "Partecipanti"; tela, 30–32): chi
@@ -318,7 +319,11 @@ class _SchermataPartecipantiState extends State<SchermataPartecipanti> {
     });
     if (!uscito) return;
     final contesto = navigatore.overlay?.context;
-    navigatore.popUntil((r) => r.isFirst);
+    if (SchermataSezioni.aperta case final sezioni?) {
+      sezioni.tornaAiViaggi();
+    } else {
+      navigatore.popUntil((r) => r.isFirst);
+    }
     if (contesto != null && contesto.mounted) {
       mostraMessaggio(
         contesto,

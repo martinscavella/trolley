@@ -145,12 +145,16 @@ abstract final class RitmoPagine {
 
 /// Una pagina dell'app, con il passaggio di [RitmoPagine].
 class RottaTrolley<T> extends PageRoute<T> {
-  RottaTrolley({required this.builder, this.trascinabile = true});
+  RottaTrolley({required this.builder, this.trascinabile = true, this.pagina});
 
   final WidgetBuilder builder;
 
   /// Si torna indietro trascinando dal bordo sinistro (solo su iOS).
   final bool trascinabile;
+
+  /// La pagina che porta, per chi vuole sapere che cosa c'è in cima a una
+  /// pila (ADR-013).
+  final Widget? pagina;
 
   @override
   Duration get transitionDuration => RitmoPagine.avanti;
@@ -477,4 +481,92 @@ class _TornaIndietroState extends State<_TornaIndietro> {
       ],
     );
   }
+}
+
+// ─── Il passaggio fra le sezioni ─────────────────────────────────────────────
+
+/// Una sezione sotto la barra (ADR-013; tela, 126). Quando diventa quella
+/// attiva compare sfumando e salendo di poco; quando lascia il posto sfuma
+/// via, poi resta viva ma ferma: senza animazioni, senza tocchi, fuori da
+/// VoiceOver. Non scorre di lato: le sezioni non sono pagine una dopo
+/// l'altra.
+class PassaggioSezione extends StatefulWidget {
+  const PassaggioSezione({
+    super.key,
+    required this.attiva,
+    required this.child,
+  });
+
+  final bool attiva;
+  final Widget child;
+
+  /// Di quanto sale la sezione che arriva.
+  static const salita = 12.0;
+
+  @override
+  State<PassaggioSezione> createState() => _PassaggioSezioneState();
+}
+
+class _PassaggioSezioneState extends State<PassaggioSezione>
+    with SingleTickerProviderStateMixin {
+  late final _comparsa = AnimationController(
+    vsync: this,
+    duration: Ritmo.medio,
+    reverseDuration: Ritmo.breve,
+    value: widget.attiva ? 1 : 0,
+  );
+
+  @override
+  void didUpdateWidget(PassaggioSezione vecchio) {
+    super.didUpdateWidget(vecchio);
+    if (widget.attiva == vecchio.attiva) return;
+    if (movimentoRidotto(context)) {
+      _comparsa.value = widget.attiva ? 1 : 0;
+    } else if (widget.attiva) {
+      _comparsa.forward(from: 0);
+    } else {
+      _comparsa.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _comparsa.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _comparsa,
+    builder: (context, figlio) {
+      final v = _comparsa.value;
+      final arriva = widget.attiva;
+      return Offstage(
+        offstage: !arriva && v == 0,
+        child: TickerMode(
+          enabled: arriva,
+          child: IgnorePointer(
+            ignoring: !arriva,
+            child: ExcludeSemantics(
+              excluding: !arriva,
+              child: Opacity(
+                opacity: arriva ? Curves.easeOut.transform(v) : v,
+                child: Transform.translate(
+                  offset: Offset(
+                    0,
+                    arriva
+                        ? (1 - Ritmo.curva.transform(v)) *
+                              PassaggioSezione.salita
+                        : 0,
+                  ),
+                  child: figlio,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    child: widget.child,
+  );
 }

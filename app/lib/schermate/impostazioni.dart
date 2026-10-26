@@ -14,25 +14,57 @@ import '../aspetto/testi.dart';
 import '../configurazione.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
-import '../dati/lettura.dart';
 import '../dati/pagine.dart';
 import '../dominio/parte_pubblica.dart';
-import '../dominio/ricordo.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'i_tuoi_dati.dart';
-import 'mappamondo.dart';
 import 'notifiche.dart';
 import 'pagine_del_sito.dart';
-import 'passaporto.dart';
 import 'persone_bloccate.dart';
 import 'profilo_pubblico.dart';
 import 'scelta_valuta.dart';
 import 'segnalazioni.dart';
-import 'traguardi.dart';
 
-/// Il profilo, la misurazione, l'uscita.
+/// L'avatar in alto a destra delle sezioni (tela, 122): apre il profilo e
+/// le impostazioni.
+class PulsanteProfilo extends StatefulWidget {
+  const PulsanteProfilo({super.key});
+
+  @override
+  State<PulsanteProfilo> createState() => _PulsanteProfiloState();
+}
+
+class _PulsanteProfiloState extends State<PulsanteProfilo> {
+  late Stream<Utente?> _profilo;
+  bool _avviato = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_avviato) return;
+    _avviato = true;
+    _profilo = Servizi.of(context).archivio.osservaProfilo();
+  }
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<Utente?>(
+    stream: _profilo,
+    builder: (context, profilo) => Premibile(
+      onTap: () => apri<void>(context, const SchermataImpostazioni()),
+      scala: 0.92,
+      etichetta: 'Profilo e impostazioni',
+      child: ExcludeSemantics(
+        child: Avatar(nome: profilo.data?.nome ?? '', dimensione: 44),
+      ),
+    ),
+  );
+}
+
+/// Il profilo e le impostazioni (tela, 124), dall'avatar delle sezioni: il
+/// nome, la parte pubblica, la valuta e le notifiche, la privacy, l'uscita.
+/// Il passaporto, il mappamondo e i traguardi stanno nella loro sezione.
 class SchermataImpostazioni extends StatefulWidget {
   const SchermataImpostazioni({super.key});
 
@@ -166,10 +198,6 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
               },
             ),
             const SizedBox(height: 18),
-            const _Ricordo(),
-            const SizedBox(height: 8),
-            const RigaTraguardi().entra(context, ritardo: Ritmo.passo * 3),
-            const SizedBox(height: 18),
             const _PartePubblica(),
             const EtichettaSezione('Impostazioni'),
             StreamBuilder<Utente?>(
@@ -293,117 +321,6 @@ class _SchermataImpostazioniState extends State<SchermataImpostazioni> {
       ),
     );
   }
-}
-
-/// I numeri del ricordo e le due righe che ci portano (tela, 64): quanti
-/// viaggi, paesi e città, il passaporto e il mappamondo. Dalla copia.
-class _Ricordo extends StatelessWidget {
-  const _Ricordo();
-
-  @override
-  Widget build(BuildContext context) {
-    final archivio = Servizi.of(context).archivio;
-    return StreamBuilder<Set<String>>(
-      stream: archivio.osservaPaesiScoperti(),
-      builder: (context, scoperti) =>
-          StreamBuilder<List<(Partecipazione, Viaggio)>>(
-            stream: archivio.osservaMieiViaggi(),
-            builder: (context, letti) {
-              final viaggi = delPassaporto(
-                letti.data ?? const [],
-                DateTime.now(),
-              );
-              final mete = meteDi(viaggi);
-              final paesi = paesiGrattati(mete).length;
-              final citta = cittaGrattate(mete).length;
-              final daScoprire = scoperti.hasData
-                  ? daGrattare(
-                      visiteDi(viaggi),
-                      scoperti: scoperti.data!,
-                      oggi: DateTime.now(),
-                    ).length
-                  : 0;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      for (final (i, (etichetta, n)) in [
-                        ('Viaggi', viaggi.length),
-                        ('Paesi', paesi),
-                        ('Città', citta),
-                      ].indexed) ...[
-                        if (i > 0) const SizedBox(width: 10),
-                        Expanded(child: _Numero(etichetta, n)),
-                      ],
-                    ],
-                  ).entra(context, ritardo: Ritmo.passo),
-                  const SizedBox(height: 14),
-                  RigaScheda(
-                    simbolo: icona(
-                      ios: CupertinoIcons.tickets,
-                      android: Icons.confirmation_number_outlined,
-                    ),
-                    titolo: 'Passaporto',
-                    valore: quanti(viaggi.length, 'viaggio', 'viaggi'),
-                    onTap: () =>
-                        apri<void>(context, const SchermataPassaporto()),
-                  ).entra(context, ritardo: Ritmo.passo * 2),
-                  const SizedBox(height: 8),
-                  RigaScheda(
-                    simbolo: icona(
-                      ios: CupertinoIcons.globe,
-                      android: Icons.public_rounded,
-                    ),
-                    titolo: 'Mappamondo',
-                    valore: daScoprire > 0
-                        ? '$daScoprire da grattare'
-                        : quanti(paesi, 'paese', 'paesi'),
-                    onTap: () =>
-                        apri<void>(context, const SchermataMappamondo()),
-                  ).entra(context, ritardo: Ritmo.passo * 2),
-                ],
-              );
-            },
-          ),
-    );
-  }
-}
-
-class _Numero extends StatelessWidget {
-  const _Numero(this.etichetta, this.n);
-
-  final String etichetta;
-  final int n;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    label: '$etichetta: $n',
-    child: ExcludeSemantics(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-        decoration: BoxDecoration(
-          color: Colori.bianco,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              etichetta.toUpperCase(),
-              style: Testi.sezione.copyWith(color: Colori.grafite),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '$n',
-              style: Testi.titoli(20).copyWith(color: Colori.inchiostro),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 /// La parte pubblica nel profilo (5.1; tela, 103): il profilo pubblico, chi
