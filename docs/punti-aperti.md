@@ -395,6 +395,16 @@ Il logo, l'icona dell'app e l'avvio animato del kit sono nell'app dal 16 ottobre
 | **L'icona a tema di Android** | Il kit non ha la variante monocromatica | Con Android |
 | **Il sito** | `sito/` non ha ancora il logo né l'icona nella scheda del browser | Quando si pubblica il sito |
 
+### Le prossime, chieste dall'utente il 26 ottobre 2026
+
+Da fare dopo G.2, non subito. Ognuna si disegna prima sulla tela.
+
+| Voce | Cosa ha detto l'utente | Quando |
+|---|---|---|
+| **Le note scritte a mano** | «Ok»: una nota del viaggio scritta da sé (il codice del wifi, il treno delle 15:20), non solo dalle risposte incollate. La tabella c'è già (`origine = 'scritta'`); mancano la schermata e cambiarne il testo, con le due versioni come per le voci (vedi «Rimasto fuori dalla 1.6») | Prossime |
+| **La barra più morbida** | La pillola che segue il dito «mi sembra troppo meccanica, vorrei qualcosa più smooth»: meno a scatti fra una voce e l'altra, più fluida, più vicina a iOS | Prossime |
+| **Il mappamondo da rifare** | La grattata va bene, ma il mappamondo «mi sembra ancorato allo stile di 30 anni fa»: un aspetto nuovo, nel linguaggio della tela | Prossime |
+
 ### Rimasto fuori dagli orari, dall'eliminare e dal budget
 
 Costruiti il 26 ottobre 2026 ([decisioni](decisioni/prodotto.md#gli-orari-delle-tappe-e-la-linea-del-tempo-26-ottobre-2026); tela, 127–138). Restano:
