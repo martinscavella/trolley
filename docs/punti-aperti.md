@@ -411,7 +411,7 @@ Costruiti il 26 ottobre 2026 ([decisioni](decisioni/prodotto.md#gli-orari-delle-
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Le due migrazioni del 26 ottobre** | `elimina_viaggio` e `budget`, provate su PGlite con le loro prove (`elimina_viaggio.sql`, `budget.sql`, due mutanti presi). Finché non ci sono sul server, eliminare un viaggio e mettere il budget del viaggio rispondono con un errore | Da applicare |
+| ~~**Le due migrazioni del 26 ottobre**~~ | `elimina_viaggio` e `budget`, applicate dall'utente il 27 ottobre 2026, registrate fra le versioni del server; le prove `elimina_viaggio.sql` (5) e `budget.sql` (4) passano sul server | ✅ |
 | **Trascinare una tappa in un altro giorno** | Sulla linea del tempo si sposta dentro la giornata; per cambiare giorno c'è il foglio della tappa (anche la voce di sopra, della 1.2) | Se la beta lo chiede |
 | **Il server non fa rispettare gli orari** | Due salvataggi quasi insieme possono sovrapporsi: la giornata lo mostra in rosso, come una tappa arrivata senza rete. Farlo rispettare al server vorrebbe dire le regole di dominio in due posti (CLAUDE.md, regola 4) | Se capita davvero |
 | **Il budget di ciascuno è su un telefono solo** | Sta nelle impostazioni del telefono: cambiando telefono, o con due telefoni, si rimette | Se la beta lo chiede |
