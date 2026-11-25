@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/aspetto/elementi.dart';
+import 'package:trolley/aspetto/pagina.dart';
 import 'package:trolley/dati/acquisizione.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dominio/calendario.dart';
@@ -272,7 +273,13 @@ void main() {
       find.textContaining('Stai vedendo la copia sul telefono, aggiornata'),
       findsOneWidget,
     );
+    // «Salta» chiede (tela, 154): senza rete si salta soltanto.
     await tester.tap(find.text('Salta'));
+    await aspetta(tester);
+    expect(find.text('Salta «Livraria Lello»?'), findsOneWidget);
+    expect(find.textContaining('Senza rete non si sposta.'), findsOneWidget);
+    expect(find.text('Serve la rete'), findsNWidgets(3));
+    await tester.tap(pulsante('Saltala e basta'));
     await aspetta(tester);
 
     expect((await inCoda(tester)).single.gesto, GestoOffline.marcaTappa);
@@ -284,6 +291,119 @@ void main() {
     final apertura = (await eventi(tester))
         .singleWhere((e) => e.$1 == 'apertura_senza_rete');
     expect(apertura.$2, {'schermata': 'adesso', 'mancante': null});
+  });
+
+  group('«Salta» chiede: rimandala o saltala e basta (04, 31–33)', () {
+    testWidgets('più tardi oggi: nel primo spazio libero dopo il suo posto, '
+        'e torna da fare; si conta', (tester) async {
+      await viaggio(tester, tappe: giornata);
+      await adesso(tester, alle(11, 5));
+
+      await tester.tap(find.text('Salta'));
+      await aspetta(tester);
+      expect(find.text('Salta «Livraria Lello»?'), findsOneWidget);
+      // Lello finiva alle 11:30; fino alle 15 ci sono la torre e la cena.
+      expect(find.text('Alle 15:00 · lì è libero'), findsOneWidget);
+      await tester.tap(find.text('Più tardi oggi'));
+      await aspetta(tester);
+
+      final lello = ambiente.server.tappe.firstWhere((t) => t['id'] == 'lello');
+      expect(lello['ora_inizio'], '15:00:00');
+      expect(lello['giorno_id'], 'g2');
+      expect(lello['stato'], 'da_fare');
+      expect(find.text('Rimandata a più tardi, alle 15:00.'), findsOneWidget);
+      final rimandata = (await eventi(tester))
+          .singleWhere((e) => e.$1 == 'tappa_rimandata');
+      expect(rimandata.$2, {
+        'viaggio_id': 'v',
+        'quando': 'oggi',
+        'da': 'salta',
+        'durante_il_viaggio': true,
+      });
+      expect(
+        (await eventi(tester)).where((e) => e.$1 == 'tappa_marcata'),
+        isEmpty,
+      );
+    });
+
+    testWidgets('domani: all\'orario proposto del giorno dopo', (tester) async {
+      await viaggio(tester, tappe: giornata);
+      await adesso(tester, alle(11, 5));
+
+      await tester.tap(find.text('Salta'));
+      await aspetta(tester);
+      // Dietro il foglio c'è anche la scheda «Domani» di «Adesso».
+      await tester.tap(
+        find.descendant(of: find.byType(Foglio), matching: find.text('Domani')),
+      );
+      await aspetta(tester);
+
+      final lello = ambiente.server.tappe.firstWhere((t) => t['id'] == 'lello');
+      expect(lello['giorno_id'], 'g3');
+      expect(lello['ora_inizio'], '09:00:00');
+      final rimandata = (await eventi(tester))
+          .singleWhere((e) => e.$1 == 'tappa_rimandata');
+      expect(rimandata.$2['quando'], 'domani');
+    });
+
+    testWidgets('un altro giorno: l\'elenco dei giorni da oggi in poi, '
+        'all\'orario proposto', (tester) async {
+      await viaggio(tester, tappe: giornata);
+      await adesso(tester, alle(11, 5));
+
+      await tester.tap(find.text('Salta'));
+      await aspetta(tester);
+      await tester.tap(find.text('Un altro giorno'));
+      await aspetta(tester);
+
+      expect(find.text('Quando la rimandi?'), findsOneWidget);
+      // Ieri non c'è: si rimanda solo in avanti.
+      expect(find.text('Alle 15:00'), findsOneWidget);
+      expect(find.text('Alle 09:00'), findsOneWidget);
+      await tester.tap(find.text('Alle 09:00'));
+      await aspetta(tester);
+
+      final lello = ambiente.server.tappe.firstWhere((t) => t['id'] == 'lello');
+      expect(lello['giorno_id'], 'g3');
+      final rimandata = (await eventi(tester))
+          .singleWhere((e) => e.$1 == 'tappa_rimandata');
+      expect(rimandata.$2['quando'], 'altro_giorno');
+    });
+
+    testWidgets('saltala e basta: il segno di sempre, che conta per la '
+        'verifica', (tester) async {
+      await viaggio(tester, tappe: giornata);
+      await adesso(tester, alle(11, 5));
+
+      await tester.tap(find.text('Salta'));
+      await aspetta(tester);
+      await tester.tap(pulsante('Saltala e basta'));
+      await aspetta(tester);
+
+      final lello = ambiente.server.tappe.firstWhere((t) => t['id'] == 'lello');
+      expect(lello['stato'], 'saltata');
+      expect(lello['ora_inizio'], '10:30:00');
+      final eventi_ = await eventi(tester);
+      expect(eventi_.where((e) => e.$1 == 'tappa_marcata'), hasLength(1));
+      expect(eventi_.where((e) => e.$1 == 'tappa_rimandata'), isEmpty);
+    });
+
+    testWidgets('chiuso il foglio senza scegliere, non cambia niente', (
+      tester,
+    ) async {
+      await viaggio(tester, tappe: giornata);
+      await adesso(tester, alle(11, 5));
+
+      await tester.tap(find.text('Salta'));
+      await aspetta(tester);
+      await tester.tap(find.text('Annulla'));
+      await aspetta(tester);
+
+      final lello = ambiente.server.tappe.firstWhere((t) => t['id'] == 'lello');
+      expect(lello['stato'], 'da_fare');
+      expect(lello['ora_inizio'], '10:30:00');
+      expect(await inCoda(tester), isEmpty);
+    });
   });
 
   testWidgets('una spesa costa un tocco più l\'importo: in euro, oggi, pagata '

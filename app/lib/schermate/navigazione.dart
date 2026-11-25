@@ -22,6 +22,7 @@ import '../dominio/tappe.dart';
 import '../servizi.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
+import 'salta.dart';
 
 /// La navigazione verso una tappa, dentro Trolley (08-mappa.md, regola 2;
 /// tela, 51): il percorso a piedi sulla mappa, l'indicazione grande in alto,
@@ -215,12 +216,17 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
       _FoglioArrivo(titolo: widget.tappa.titolo, segnabili: segnabili),
     );
     if (scelta == null || !mounted) return;
-    await segnaLaTappa(
-      context,
-      viaggio: widget.viaggio,
-      tappa: widget.tappa,
-      stato: scelta,
-    );
+    if (scelta == StatoTappa.saltata) {
+      // Chiede se rimandarla o saltarla e basta (tela, 152).
+      await saltaLaTappa(context, viaggio: widget.viaggio, tappa: widget.tappa);
+    } else {
+      await segnaLaTappa(
+        context,
+        viaggio: widget.viaggio,
+        tappa: widget.tappa,
+        stato: scelta,
+      );
+    }
     if (mounted) Navigator.of(context).pop();
   }
 

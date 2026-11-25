@@ -28,6 +28,7 @@ import '../dominio/testo.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'salta.dart';
 import 'due_versioni.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
@@ -502,6 +503,17 @@ class _SchermataTappaState extends State<SchermataTappa> {
     }
   }
 
+  /// Il foglio per rimandarla; spostata, questo foglio non ha più l'orario
+  /// giusto, e si chiude.
+  Future<void> _rimandala() async {
+    final rimandata = await rimandaLaTappa(
+      context,
+      viaggio: widget.viaggio,
+      tappa: widget.tappa!,
+    );
+    if (rimandata && mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _segna(StatoTappa stato) async {
     setState(() => _stato = stato);
     await segnaLaTappa(
@@ -767,6 +779,28 @@ class _SchermataTappaState extends State<SchermataTappa> {
                   ),
               ],
             ),
+            // Una saltata si rimanda anche dopo (04, regola 33; tela, 155).
+            if (_stato == StatoTappa.saltata) ...[
+              const SizedBox(height: 14),
+              Avviso(
+                fondo: Colori.cobaltoChiaro,
+                colore: Colori.cobalto,
+                icona: icona(
+                  ios: CupertinoIcons.arrow_counterclockwise,
+                  android: Icons.replay_rounded,
+                ),
+                inizio: 'Ci vuoi ancora andare?',
+                testo:
+                    'Rimandala: torna da fare, più tardi oggi o in un altro '
+                    'giorno.',
+                azioni: [
+                  PulsantePiccolo(
+                    etichetta: 'Rimandala',
+                    onPressed: _inCorso ? null : _rimandala,
+                  ),
+                ],
+              ),
+            ],
           ],
           if (tappa != null) ...[
             const SizedBox(height: 20),

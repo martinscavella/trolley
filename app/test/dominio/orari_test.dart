@@ -377,4 +377,109 @@ void main() {
       );
     });
   });
+
+  group('rimandare una tappa saltata (04, 31–33)', () {
+    AltroGiorno<String, String> giorno(
+      String nome,
+      FinestraGiorno f, [
+      List<Occupato<String>> occupati = const [],
+    ]) => (giorno: nome, finestra: f, occupati: occupati);
+
+    test('oggi il primo spazio libero da adesso in poi, gli altri giorni '
+        'l\'orario proposto', () {
+      final rimandi = doveRimandare<String, String>(
+        giorni: [
+          giorno('sabato', sabato, [
+            o('lello', h(10, 30), h(1)),
+            o('torre', h(12), h(1, 30)),
+          ]),
+          giorno('domenica', domenica, [o('ribeira', h(10), h(2))]),
+        ],
+        adesso: DateTime(2026, 10, 11, 10, 42),
+        durata: h(1),
+      );
+      expect([for (final r in rimandi) r.giorno], ['sabato', 'domenica']);
+      // Alle 10:42 il primo buco di un'ora comincia alle 13:30, dopo la torre.
+      expect(rimandi.first.oggi, isTrue);
+      expect(rimandi.first.ora, h(13, 30));
+      // Domenica: subito dopo l'ultima tappa del giorno.
+      expect(rimandi.last.oggi, isFalse);
+      expect(rimandi.last.ora, h(12));
+    });
+
+    test('i giorni passati non ci sono: si rimanda solo in avanti', () {
+      final rimandi = doveRimandare<String, String>(
+        giorni: [
+          giorno('domenica', domenica),
+          giorno('venerdì', venerdi),
+          giorno('sabato', sabato),
+        ],
+        adesso: DateTime(2026, 10, 11, 9),
+        durata: h(1),
+      );
+      expect([for (final r in rimandi) r.giorno], ['sabato', 'domenica']);
+    });
+
+    test(
+      'oggi non si torna indietro: l\'ora libera è sul passo, da adesso',
+      () {
+        final rimandi = doveRimandare<String, String>(
+          giorni: [giorno('sabato', sabato)],
+          adesso: DateTime(2026, 10, 11, 16, 42),
+          durata: h(1),
+        );
+        expect(rimandi.single.ora, h(16, 45));
+      },
+    );
+
+    test('un giorno dove non entra resta, senza ora', () {
+      final rimandi = doveRimandare<String, String>(
+        giorni: [
+          // Si riparte alle 18 e dalle 9 è tutto preso.
+          giorno('domenica', domenica, [o('tutto', h(0), h(18))]),
+        ],
+        adesso: DateTime(2026, 10, 11, 9),
+        durata: h(1),
+      );
+      expect(rimandi.single.entra, isFalse);
+      expect(rimandi.single.ora, isNull);
+    });
+
+    test('oggi a sera tardi non entra più', () {
+      final rimandi = doveRimandare<String, String>(
+        giorni: [giorno('domenica', domenica)],
+        adesso: DateTime(2026, 10, 12, 17, 30),
+        durata: h(1),
+      );
+      // Si riparte alle 18: un'ora non ci sta più.
+      expect(rimandi.single.oggi, isTrue);
+      expect(rimandi.single.entra, isFalse);
+    });
+
+    test('prima del viaggio non c\'è un oggi: tutti i giorni all\'orario '
+        'proposto', () {
+      final rimandi = doveRimandare<String, String>(
+        giorni: [giorno('venerdì', venerdi), giorno('sabato', sabato)],
+        adesso: DateTime(2026, 10, 1, 20),
+        durata: h(1),
+      );
+      expect(rimandi.map((r) => r.oggi), everyElement(isFalse));
+      // Il primo giorno si arriva alle 10.
+      expect(rimandi.first.ora, h(10));
+      expect(rimandi.last.ora, h(9));
+    });
+    test('nel giorno in cui era, rimandare è più tardi: dalla fine del suo '
+        'posto', () {
+      // Saltata alle 10 una tappa delle 15: non si propone di metterla prima.
+      final rimandi = doveRimandare<String, String>(
+        giorni: [giorno('sabato', sabato), giorno('domenica', domenica)],
+        adesso: DateTime(2026, 10, 11, 10),
+        durata: h(1),
+        daDove: (data: DateTime.utc(2026, 10, 11), fine: h(16)),
+      );
+      expect(rimandi.first.ora, h(16));
+      // Gli altri giorni non c'entrano: l'orario proposto.
+      expect(rimandi.last.ora, h(9));
+    });
+  });
 }

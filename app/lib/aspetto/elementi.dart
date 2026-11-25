@@ -303,11 +303,16 @@ class RigaScheda extends StatelessWidget {
     this.valore,
     this.sottotitolo,
     this.pericolo = false,
+    this.suFoglio = false,
   });
 
   final IconData simbolo;
   final String titolo;
   final VoidCallback? onTap;
+
+  /// Dentro un foglio bianco: la riga grigia, l'icona cobalto in un quadrato
+  /// bianco (tela, 152).
+  final bool suFoglio;
 
   /// A destra: «9 viaggi», «Euro».
   final String? valore;
@@ -330,22 +335,26 @@ class RigaScheda extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           decoration: BoxDecoration(
-            color: Colori.bianco,
+            color: suFoglio ? Colori.foschia : Colori.bianco,
             borderRadius: BorderRadius.circular(18),
           ),
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: suFoglio ? 40 : 36,
+                height: suFoglio ? 40 : 36,
                 decoration: BoxDecoration(
-                  color: Colori.foschia,
-                  borderRadius: BorderRadius.circular(11),
+                  color: suFoglio ? Colori.bianco : Colori.foschia,
+                  borderRadius: BorderRadius.circular(suFoglio ? 12 : 11),
                 ),
                 child: Icon(
                   simbolo,
                   size: 22,
-                  color: pericolo ? Colori.pericolo : Colori.inchiostro,
+                  color: pericolo
+                      ? Colori.pericolo
+                      : suFoglio
+                      ? Colori.cobalto
+                      : Colori.inchiostro,
                 ),
               ),
               const SizedBox(width: 14),

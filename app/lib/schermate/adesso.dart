@@ -29,6 +29,7 @@ import 'con_la_rete.dart';
 import 'documenti.dart';
 import 'gesti_spesa.dart';
 import 'gesti_tappa.dart';
+import 'salta.dart';
 import 'giornata.dart';
 import 'permesso_posizione.dart';
 import 'spese.dart';
@@ -264,6 +265,7 @@ class _SchermataAdessoState extends State<SchermataAdesso>
         tappe: tappe,
         giorno: giornoOggi,
         oggi: true,
+        adesso: adesso,
       ),
       _Vista.domani => _VistaGiorno(
         viaggio: viaggio,
@@ -271,6 +273,7 @@ class _SchermataAdessoState extends State<SchermataAdesso>
         tappe: tappe,
         giorno: giornoDomani,
         oggi: false,
+        adesso: adesso,
       ),
     };
 
@@ -529,6 +532,7 @@ class _VistaAdesso extends StatelessWidget {
         if (corrente != null)
           _TappaDiAdesso(
             viaggio: viaggio,
+            adesso: adesso,
             tappa: corrente.tappa,
             orario: corrente.orario,
             puntualita: stato.puntualita!,
@@ -665,6 +669,7 @@ class _VistaAdesso extends StatelessWidget {
 class _TappaDiAdesso extends StatelessWidget {
   const _TappaDiAdesso({
     required this.viaggio,
+    required this.adesso,
     required this.tappa,
     required this.orario,
     required this.puntualita,
@@ -674,6 +679,9 @@ class _TappaDiAdesso extends StatelessWidget {
   });
 
   final Viaggio viaggio;
+
+  /// L'orologio di «Adesso», per il foglio di «Salta».
+  final DateTime adesso;
   final Tappa tappa;
   final Orario orario;
   final Puntualita puntualita;
@@ -766,7 +774,13 @@ class _TappaDiAdesso extends StatelessWidget {
                 child: _GestoTappa(
                   etichetta: 'Salta',
                   pieno: false,
-                  onTap: () => segna(StatoTappa.saltata),
+                  // Chiede se rimandarla o saltarla e basta (tela, 152).
+                  onTap: () => saltaLaTappa(
+                    context,
+                    viaggio: viaggio,
+                    tappa: tappa,
+                    adesso: adesso,
+                  ),
                 ),
               ),
             ],
@@ -1002,6 +1016,7 @@ class _VistaGiorno extends StatelessWidget {
     required this.tappe,
     required this.giorno,
     required this.oggi,
+    required this.adesso,
   });
 
   final Viaggio viaggio;
@@ -1009,6 +1024,9 @@ class _VistaGiorno extends StatelessWidget {
   final List<Tappa> tappe;
   final Giorno? giorno;
   final bool oggi;
+
+  /// L'orologio di «Adesso», per il foglio di «Salta».
+  final DateTime adesso;
 
   @override
   Widget build(BuildContext context) {
@@ -1091,12 +1109,14 @@ class _VistaGiorno extends StatelessWidget {
                   suggerimentoTocca: t.statoTappa == StatoTappa.daFare
                       ? 'segnarla fatta'
                       : 'riportarla da fare',
-                  onTieni: () => segna(
-                    t,
-                    t.statoTappa == StatoTappa.saltata
-                        ? StatoTappa.daFare
-                        : StatoTappa.saltata,
-                  ),
+                  onTieni: () => t.statoTappa == StatoTappa.saltata
+                      ? segna(t, StatoTappa.daFare)
+                      : saltaLaTappa(
+                          context,
+                          viaggio: viaggio,
+                          tappa: t,
+                          adesso: adesso,
+                        ),
                   suggerimentoTieni: t.statoTappa == StatoTappa.saltata
                       ? 'riportarla da fare'
                       : 'saltarla',

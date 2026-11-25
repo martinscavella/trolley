@@ -469,3 +469,69 @@ Duration? _accorcia<T>(
   }
   return null;
 }
+
+/// Un giorno dove rimandare una tappa saltata (04, regole 31–33), e a che
+/// ora ci andrebbe. Senza [ora] non entra così com'è.
+class Rimando<G> {
+  const Rimando({
+    required this.giorno,
+    required this.data,
+    required this.ora,
+    required this.oggi,
+  });
+
+  final G giorno;
+  final DateTime data;
+  final Duration? ora;
+
+  /// È il giorno di adesso: l'ora è la prima libera da adesso in poi.
+  final bool oggi;
+
+  bool get entra => ora != null;
+}
+
+/// Dove si può rimandare una tappa di [durata] (04, regola 32): i giorni del
+/// viaggio da oggi in poi, nell'ordine. Oggi, il primo spazio libero da
+/// [adesso] in poi; gli altri giorni, l'orario proposto (regola 19). Nel
+/// giorno [daDove] in cui la tappa era, rimandare è più tardi: si cerca dalla
+/// fine del suo posto. Nei [giorni] non c'è la tappa stessa. I giorni passati
+/// non ci sono: si rimanda solo in avanti.
+List<Rimando<G>> doveRimandare<G, T>({
+  required Iterable<AltroGiorno<G, T>> giorni,
+  required DateTime adesso,
+  required Duration durata,
+  ({DateTime data, Duration fine})? daDove,
+}) {
+  final oggi = soloData(adesso);
+  final ora = Duration(hours: adesso.hour, minutes: adesso.minute);
+  final dopo = [
+    for (final g in giorni)
+      if (!soloData(g.finestra.data).isBefore(oggi)) g,
+  ]..sort((a, b) => a.finestra.data.compareTo(b.finestra.data));
+  Rimando<G> rimando(AltroGiorno<G, T> g) {
+    final data = soloData(g.finestra.data);
+    final eOggi = data == oggi;
+    // Da dove si comincia a cercare: adesso, oggi; la fine del suo posto,
+    // nel giorno in cui era. Gli altri giorni, l'orario proposto.
+    Duration? da;
+    if (eOggi) da = ora;
+    if (daDove != null && soloData(daDove.data) == data) {
+      da = da == null || daDove.fine > da ? daDove.fine : da;
+    }
+    return Rimando(
+      giorno: g.giorno,
+      data: g.finestra.data,
+      oggi: eOggi,
+      ora: da == null
+          ? oraProposta(g.finestra, g.occupati, durata)
+          : _primoBuco(
+              g.finestra,
+              g.occupati,
+              durata,
+              da: alPasso(da > g.finestra.inizio ? da : g.finestra.inizio),
+            ),
+    );
+  }
+
+  return [for (final g in dopo) rimando(g)];
+}

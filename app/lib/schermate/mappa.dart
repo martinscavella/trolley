@@ -29,6 +29,7 @@ import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
+import 'salta.dart';
 import 'permesso_posizione.dart';
 import 'tappa.dart';
 
@@ -742,6 +743,10 @@ class _SchermataMappaState extends State<SchermataMappa> {
 
   Future<void> _segna(_Vista vista, Tappa tappa, StatoTappa stato) async {
     setState(() => _scelta = null);
+    // «Salta» chiede se rimandarla o saltarla e basta (tela, 152).
+    if (stato == StatoTappa.saltata) {
+      return saltaLaTappa(context, viaggio: vista.viaggio, tappa: tappa);
+    }
     await segnaLaTappa(
       context,
       viaggio: vista.viaggio,

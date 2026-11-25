@@ -131,10 +131,7 @@ void main() {
     // Un'ora è alta 64 punti: Lello un'ora dopo il Ponte, il pranzo sei.
     expect(lello - ponte, closeTo(64, 3));
     expect(pranzo - ponte, closeTo(6 * 64, 3));
-    expect(
-      find.text('Visita · 10:00–11:30 · orario proposto'),
-      findsOneWidget,
-    );
+    expect(find.text('Visita · 10:00–11:30 · orario proposto'), findsOneWidget);
     expect(find.text('Pasto · 15:00–16:30'), findsOneWidget);
     // Prima della partenza non si segna niente, e lo si dice.
     expect(
@@ -256,20 +253,14 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('ne mancano 30 min'), findsOneWidget);
-    expect(
-      find.text('Si sovrappone a «Crociera sul Douro»'),
-      findsOneWidget,
-    );
+    expect(find.text('Si sovrappone a «Crociera sul Douro»'), findsOneWidget);
     // Il giorno prima è libero, alla stessa ora.
     final altroGiorno = find.textContaining('alle 00:00').last;
     await tester.ensureVisible(altroGiorno);
     await tester.pumpAndSettle();
     await tester.tap(altroGiorno);
     await tester.pump();
-    expect(
-      find.text('Si sovrappone a «Crociera sul Douro»'),
-      findsNothing,
-    );
+    expect(find.text('Si sovrappone a «Crociera sul Douro»'), findsNothing);
     await tester.tap(pulsante('Aggiungi'));
     await aspetta(tester);
 
@@ -277,9 +268,9 @@ void main() {
       (t) => t['titolo'] == 'Cena a Ribeira',
     );
     expect(aggiunta['giorno_id'], 'g2');
-    final evento = (await ambiente.eventi(
-      tester,
-    )).where((e) => e.nome == 'tappa_non_entrata').single;
+    final evento = (await ambiente.eventi(tester))
+        .where((e) => e.nome == 'tappa_non_entrata')
+        .single;
     expect(jsonDecode(evento.proprieta), {
       'motivo': 'piena',
       'scelta': 'altro_giorno',
@@ -341,6 +332,88 @@ void main() {
       jsonDecode(eventi.single.proprieta),
       containsPair('durante_il_viaggio', true),
     );
+  });
+
+  testWidgets('una tappa saltata si rimanda dal suo foglio: domani, '
+      'all\'orario proposto, e torna da fare (04, regola 33)', (tester) async {
+    ambiente.server
+      ..viaggi.add(
+        rigaViaggio('v', stato: 'definito', inizio: fra(-1), fine: fra(1)),
+      )
+      ..partecipazioni.add(rigaPartecipazione('v'))
+      ..giorni.addAll([
+        rigaGiorno('v', fra(-1), '10:00:00', '24:00:00', id: 'g1'),
+        rigaGiorno('v', fra(0), '00:00:00', '24:00:00', id: 'oggi'),
+        rigaGiorno('v', fra(1), '00:00:00', '18:00:00', id: 'g3'),
+      ])
+      ..tappe.add(
+        rigaDiTappa(
+          'a',
+          viaggio: 'v',
+          giorno: 'g1',
+          titolo: 'Livraria Lello',
+          ora: '11:00:00',
+          stato: 'saltata',
+        ),
+      );
+    await tester.runAsync(ambiente.archivio.aggiornaCopia);
+    await ambiente.monta(
+      tester,
+      const SchermataGiornata(viaggioId: 'v', giornoId: 'g1'),
+    );
+    await tester.tap(find.text('Livraria Lello'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('La tappa'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Rimandala'),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(BottomSheet),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(find.textContaining('Ci vuoi ancora andare?'), findsOneWidget);
+    // Sopra i pulsanti in fondo al foglio, non sotto.
+    await tester.drag(
+      find
+          .descendant(
+            of: find.byType(BottomSheet),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rimandala'));
+    await aspetta(tester);
+
+    expect(find.text('Rimanda «Livraria Lello»'), findsOneWidget);
+    // Da una tappa già saltata non c'è «Saltala e basta».
+    expect(find.text('Saltala e basta'), findsNothing);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(Foglio).last,
+        matching: find.text('Domani'),
+      ),
+    );
+    await aspetta(tester);
+
+    final lello = ambiente.server.tappe.single;
+    expect(lello['giorno_id'], 'g3');
+    expect(lello['ora_inizio'], '09:00:00');
+    expect(lello['stato'], 'da_fare');
+    expect(find.text('La tappa'), findsNothing);
+    final rimandata = (await ambiente.eventi(tester))
+        .singleWhere((e) => e.nome == 'tappa_rimandata');
+    expect(jsonDecode(rimandata.proprieta), {
+      'viaggio_id': 'v',
+      'quando': 'domani',
+      'da': 'tappa',
+      'durante_il_viaggio': true,
+    });
   });
 
   testWidgets('prima della partenza il cerchio non segna: la tappa si apre', (
@@ -448,9 +521,7 @@ void main() {
 
   /// Tiene premuto il titolo di una tappa e lo trascina di [ore].
   Future<void> trascina(WidgetTester tester, String titolo, double ore) async {
-    final dito = await tester.startGesture(
-      tester.getCenter(find.text(titolo)),
-    );
+    final dito = await tester.startGesture(tester.getCenter(find.text(titolo)));
     await tester.pump(const Duration(milliseconds: 700));
     for (var i = 0; i < 8; i++) {
       await dito.moveBy(Offset(0, ore * 64 / 8));

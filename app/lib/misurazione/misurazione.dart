@@ -104,6 +104,11 @@ abstract final class Eventi {
   /// Una nota scritta a mano nel viaggio (tela, 139–140), e in che stato era
   /// il viaggio: dice se le note servono, e quando. Mai il testo.
   static const notaScritta = 'nota_scritta';
+
+  /// Una tappa saltata, o da saltare, rimandata a più tardi oggi, a domani o
+  /// a un altro giorno (04, regole 31–33): se le tappe saltate tornano nel
+  /// programma o si perdono. Mai la tappa, mai l'ora.
+  static const tappaRimandata = 'tappa_rimandata';
 }
 
 class Misurazione {

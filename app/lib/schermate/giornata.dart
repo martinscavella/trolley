@@ -27,6 +27,7 @@ import '../servizi.dart';
 import 'adesso.dart' show oraDelGiorno;
 import 'con_la_rete.dart';
 import 'gesti_tappa.dart';
+import 'salta.dart';
 import 'mappa.dart';
 import 'problemi_coda.dart';
 import 'tappa.dart';
@@ -160,6 +161,10 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
     Future<void> segna(String id, {required bool salta}) {
       final t = perId[id]!.tappa;
       final stato = t.statoTappa;
+      // Tenere premuto per saltarla chiede se rimandarla (tela, 152).
+      if (salta && stato != StatoTappa.saltata) {
+        return saltaLaTappa(context, viaggio: viaggio, tappa: t);
+      }
       return segnaLaTappa(
         context,
         viaggio: viaggio,

@@ -212,10 +212,15 @@ class Foglio extends StatelessWidget {
     required this.titolo,
     required this.children,
     this.inBasso,
+    this.indietro,
   });
 
   final String titolo;
   final List<Widget> children;
+
+  /// Un passo dentro il foglio: la freccia accanto al titolo torna a quello
+  /// di prima (tela, 153).
+  final VoidCallback? indietro;
 
   /// Le azioni in fondo, che restano visibili mentre i contenuti scorrono.
   final Widget? inBasso;
@@ -246,13 +251,42 @@ class Foglio extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 4),
-              child: Semantics(
-                header: true,
-                child: Text(
-                  titolo,
-                  style: Testi.titoloFoglio.copyWith(color: Colori.inchiostro),
-                ),
+              padding: EdgeInsets.fromLTRB(
+                indietro == null ? 24 : 12,
+                16,
+                24,
+                4,
+              ),
+              child: Row(
+                children: [
+                  if (indietro != null)
+                    Premibile(
+                      onTap: indietro,
+                      etichetta: 'Indietro',
+                      child: SizedBox.square(
+                        dimension: 44,
+                        child: Icon(
+                          icona(
+                            ios: CupertinoIcons.chevron_back,
+                            android: Icons.arrow_back,
+                          ),
+                          size: 22,
+                          color: Colori.inchiostro,
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        titolo,
+                        style: Testi.titoloFoglio.copyWith(
+                          color: Colori.inchiostro,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Flexible(
