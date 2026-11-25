@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cosa portano il backup e il passaggio al telefono nuovo, da Android 12
+  (ADR-008, 03-documenti-sul-dispositivo.md). Sostituisce le regole dello
+  scanner (cunning_document_scanner), di cui tiene l'esclusione.
+
+  Il backup su Google si ferma a 25 MB per app, e oltre non salva niente: i
+  documenti (files/documenti) restano fuori, o pochi passaporti fermerebbero
+  il backup di tutto il resto. Si fa solo se è cifrato sul telefono.
+
+  Il passaggio da telefono a telefono (cavo o vicinanza) non ha quel limite:
+  porta tutto, documenti compresi.
+
+  Le scansioni a metà dello scanner (external/Pictures) non vanno da nessuna
+  parte.
+-->
+<data-extraction-rules>
+    <cloud-backup disableIfNoEncryptionCapabilities="true">
+        <exclude domain="file" path="documenti" />
+        <exclude domain="external" path="Pictures/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="external" path="Pictures/" />
+    </device-transfer>
+</data-extraction-rules>

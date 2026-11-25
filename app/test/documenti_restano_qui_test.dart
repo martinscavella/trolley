@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/dati/database.dart';
+import 'package:trolley/dati/documenti.dart';
 
 /// I file che toccano i documenti.
 const _fileDeiDocumenti = [
@@ -25,9 +26,7 @@ final _importAmmessi = [
   RegExp(r'^package:drift/drift\.dart$'),
   RegExp(r'^package:uuid/uuid\.dart$'),
   RegExp(r'^package:file_picker/file_picker\.dart$'),
-  RegExp(
-    r'^package:cunning_document_scanner/cunning_document_scanner\.dart$',
-  ),
+  RegExp(r'^package:cunning_document_scanner/cunning_document_scanner\.dart$'),
   RegExp(
     r'^(\.\./dominio/(calendario|documenti)|acquisizione|database|errori|file_del_telefono)\.dart$',
   ),
@@ -99,18 +98,20 @@ void main() {
     }
   });
 
-  test('nessuno manda file al server: l\'app non usa il suo archivio di file',
-      () {
-    for (final file in Directory('lib').listSync(recursive: true)) {
-      if (file is! File || !file.path.endsWith('.dart')) continue;
-      final testo = file.readAsStringSync();
-      expect(
-        RegExp(r'\.storage\b|\.upload(Binary)?\(').hasMatch(testo),
-        isFalse,
-        reason: '${file.path} carica qualcosa sul server',
-      );
-    }
-  });
+  test(
+    'nessuno manda file al server: l\'app non usa il suo archivio di file',
+    () {
+      for (final file in Directory('lib').listSync(recursive: true)) {
+        if (file is! File || !file.path.endsWith('.dart')) continue;
+        final testo = file.readAsStringSync();
+        expect(
+          RegExp(r'\.storage\b|\.upload(Binary)?\(').hasMatch(testo),
+          isFalse,
+          reason: '${file.path} carica qualcosa sul server',
+        );
+      }
+    },
+  );
 
   test('il server non ha un posto dove metterli', () {
     for (final migrazione in Directory('../supabase/migrations').listSync()) {
@@ -128,5 +129,60 @@ void main() {
         reason: '${migrazione.path} tocca l\'archivio dei file del server',
       );
     }
+  });
+  test('su Android il backup su Google tiene fuori proprio la cartella dei '
+      'documenti, e il canale controlla quella', () {
+    const cartella = CartellaDocumenti.cartella;
+    const risorse = 'android/app/src/main/res/xml';
+    final manifesto = File('android/app/src/main/AndroidManifest.xml')
+        .readAsStringSync();
+    expect(
+      manifesto,
+      contains('android:dataExtractionRules="@xml/data_extraction_rules"'),
+    );
+    expect(
+      manifesto,
+      contains('android:fullBackupContent="@xml/backup_rules"'),
+    );
+    final esclusa = RegExp(
+      '<exclude\\s+domain="file"\\s+path="$cartella/?"\\s*/>',
+    );
+
+    // Da Android 12: fuori dal backup su Google, che si fa solo se cifrato.
+    final regole = File('$risorse/data_extraction_rules.xml')
+        .readAsStringSync();
+    final suGoogle = RegExp(r'<cloud-backup[^>]*>([\s\S]*?)</cloud-backup>')
+        .firstMatch(regole);
+    expect(suGoogle, isNotNull);
+    expect(
+      suGoogle!.group(0),
+      contains('disableIfNoEncryptionCapabilities="true"'),
+    );
+    expect(esclusa.hasMatch(suGoogle.group(1)!), isTrue);
+    // Il passaggio da telefono a telefono li porta.
+    final daTelefonoATelefono = RegExp(
+      r'<device-transfer[^>]*>([\s\S]*?)</device-transfer>',
+    ).firstMatch(regole);
+    expect(regole, contains('<device-transfer'));
+    expect(daTelefonoATelefono, isNotNull);
+    expect(esclusa.hasMatch(daTelefonoATelefono!.group(1)!), isFalse);
+    expect(daTelefonoATelefono.group(1), isNot(contains('<include')));
+    // Le scansioni a metà dello scanner non vanno da nessuna parte.
+    expect(suGoogle.group(1), contains('path="Pictures/"'));
+    expect(daTelefonoATelefono.group(1), contains('path="Pictures/"'));
+
+    // Fino ad Android 11.
+    expect(
+      esclusa.hasMatch(File('$risorse/backup_rules.xml').readAsStringSync()),
+      isTrue,
+    );
+
+    // Il canale controlla che il file stia nella stessa cartella.
+    expect(
+      File(
+        'android/app/src/main/kotlin/com/aionlabs/trolley/DocumentiDelTelefono.kt',
+      ).readAsStringSync(),
+      contains('const val CARTELLA = "$cartella"'),
+    );
   });
 }

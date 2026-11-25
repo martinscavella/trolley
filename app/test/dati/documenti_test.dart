@@ -119,7 +119,10 @@ void main() {
 
     test('un PDF con la password non entra, e non lascia niente', () async {
       telefono.erroreDelPdf = const ErroreTrolley('protetto da una password');
-      await expectLater(aggiungi('Estratto conto'), throwsA(isA<ErroreTrolley>()));
+      await expectLater(
+        aggiungi('Estratto conto'),
+        throwsA(isA<ErroreTrolley>()),
+      );
       expect(fileDentro(app), isEmpty);
       expect(await db.select(db.documenti).get(), isEmpty);
     });
@@ -133,9 +136,45 @@ void main() {
       expect(fileDentro(app), isEmpty);
       expect(await db.select(db.documenti).get(), isEmpty);
 
-      telefono.stato = const StatoFile(protezione: 'completa', nelBackup: false);
+      telefono.stato = const StatoFile(
+        protezione: 'completa',
+        nelBackup: false,
+      );
       await expectLater(aggiungi('Passaporto'), throwsA(isA<ErroreTrolley>()));
       expect(fileDentro(app), isEmpty);
+    });
+
+    test('su Android basta la memoria cifrata dell\'app, fuori dal backup '
+        'su Google', () async {
+      telefono.stato = const StatoFile(
+        protezione: 'dopo_il_primo_sblocco',
+        nelBackup: false,
+        android: true,
+      );
+      final documento = await aggiungi('Passaporto');
+      expect(documento.nome, 'Passaporto');
+      expect(fileDentro(app), hasLength(1));
+    });
+
+    test('su Android, senza cifratura o dentro il backup su Google, non si '
+        'salva', () async {
+      for (final stato in const [
+        StatoFile(protezione: 'nessuna', nelBackup: false, android: true),
+        StatoFile(
+          protezione: 'dopo_il_primo_sblocco',
+          nelBackup: true,
+          android: true,
+        ),
+      ]) {
+        telefono.stato = stato;
+        await expectLater(
+          aggiungi('Passaporto'),
+          throwsA(isA<ErroreTrolley>()),
+          reason: '$stato',
+        );
+        expect(fileDentro(app), isEmpty);
+        expect(await db.select(db.documenti).get(), isEmpty);
+      }
     });
 
     test('con il disco pieno lo dice in chiaro, e non resta un mezzo '
@@ -198,15 +237,13 @@ void main() {
     io = 'marco';
     await aggiungi('Di Marco');
 
-    expect(
-      (await documenti.osserva('v1').first).map((d) => d.nome),
-      ['Di Marco'],
-    );
+    expect((await documenti.osserva('v1').first).map((d) => d.nome), [
+      'Di Marco',
+    ]);
     io = 'giulia';
-    expect(
-      (await documenti.osserva('v1').first).map((d) => d.nome),
-      ['Di Giulia'],
-    );
+    expect((await documenti.osserva('v1').first).map((d) => d.nome), [
+      'Di Giulia',
+    ]);
     expect(await documenti.osservaQuanti().first, 2);
   });
 
@@ -252,23 +289,25 @@ void main() {
 
       expect(Directory('${app.path}/documenti/v1').existsSync(), isFalse);
       expect(fileDentro(app), [altro.percorsoLocale]);
-      expect(
-        (await db.select(db.documenti).get()).map((d) => d.nome),
-        ['Altro'],
-      );
+      expect((await db.select(db.documenti).get()).map((d) => d.nome), [
+        'Altro',
+      ]);
     });
   });
 
-  test('all\'avvio si buttano i file rimasti a metà, non i documenti', () async {
-    final doc = await aggiungi('Biglietto');
-    final meta = File('${app.path}/documenti/v1/rimasto.pdf.parziale')
-      ..writeAsStringSync('mezzo');
+  test(
+    'all\'avvio si buttano i file rimasti a metà, non i documenti',
+    () async {
+      final doc = await aggiungi('Biglietto');
+      final meta = File('${app.path}/documenti/v1/rimasto.pdf.parziale')
+        ..writeAsStringSync('mezzo');
 
-    await documenti.pulisci();
+      await documenti.pulisci();
 
-    expect(meta.existsSync(), isFalse);
-    expect(fileDentro(app), [doc.percorsoLocale]);
-  });
+      expect(meta.existsSync(), isFalse);
+      expect(fileDentro(app), [doc.percorsoLocale]);
+    },
+  );
 
   test('l\'anteprima della prima pagina si disegna una volta e resta in '
       'memoria', () async {

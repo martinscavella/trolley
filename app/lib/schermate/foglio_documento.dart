@@ -172,9 +172,8 @@ class _FoglioDocumentoState extends State<FoglioDocumento> {
           sorgente: _arrivato!,
         );
       } else {
-        await Servizi.of(
-          context,
-        ).documenti.modifica(documento, nome: nome, giornoId: giornoId, ora: alle);
+        await Servizi.of(context).documenti
+            .modifica(documento, nome: nome, giornoId: giornoId, ora: alle);
       }
       if (mounted) Navigator.of(context).pop();
     } on ErroreTrolley catch (e) {
@@ -370,10 +369,14 @@ class _FoglioDocumentoState extends State<FoglioDocumento> {
             android: Icons.smartphone_rounded,
           ),
           inizio: 'Resta solo su questo telefono.',
-          testo:
-              '${suIOS ? 'Il backup di iCloud' : 'Il backup del telefono'} lo '
-              'porta su quello nuovo; senza backup, se perdi il telefono lo '
-              'perdi. E se disinstalli Trolley se ne va con l\'app.',
+          // Su Android il backup su Google non li porta (ADR-008).
+          testo: suIOS
+              ? 'Il backup di iCloud lo porta su quello nuovo; senza backup, '
+                    'se perdi il telefono lo perdi. E se disinstalli Trolley '
+                    'se ne va con l\'app.'
+              : 'Il backup su Google non lo porta: sul telefono nuovo arriva '
+                    'solo se ci copi i dati da questo. Se perdi il telefono lo '
+                    'perdi, e se disinstalli Trolley se ne va con l\'app.',
         ),
       ],
     ];

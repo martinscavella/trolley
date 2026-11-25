@@ -42,7 +42,7 @@ class CartellaDocumenti {
   /// Protezione, pagine dei PDF, foto: le fa il telefono.
   final FileDelTelefono telefono;
 
-  /// La cartella dell'app che entra nel backup: su iOS, Application Support.
+  /// La cartella dell'app: su iOS Application Support, su Android files/.
   final Future<Directory> Function() _cartellaApp;
 
   /// Chi è entrato: ognuno vede solo i suoi.
@@ -102,9 +102,8 @@ class CartellaDocumenti {
     final chiave = '${documento.id}:$larghezza';
     final pronta = _anteprime.remove(chiave);
     if (pronta != null) return _anteprime[chiave] = pronta;
-    final nuova = file(documento).then(
-      (f) => telefono.pagina(f.path, indice: 0, larghezza: larghezza),
-    );
+    final nuova = file(documento)
+        .then((f) => telefono.pagina(f.path, indice: 0, larghezza: larghezza));
     _anteprime[chiave] = nuova;
     // Un'anteprima che non riesce si riprova la volta dopo.
     nuova.catchError((_) {
@@ -132,7 +131,9 @@ class CartellaDocumenti {
   }) async {
     final io = _io();
     if (io == null) {
-      throw const ErroreTrolley('Per aggiungere un documento serve l\'accesso.');
+      throw const ErroreTrolley(
+        'Per aggiungere un documento serve l\'accesso.',
+      );
     }
     final formato = sorgente.formato;
     if (formato == null) {
@@ -198,10 +199,8 @@ class CartellaDocumenti {
     required String nome,
     required String? giornoId,
     required Duration? ora,
-  }) =>
-      (_db.update(
-        _db.documenti,
-      )..where((d) => d.id.equals(documento.id))).write(
+  }) => (_db.update(_db.documenti)..where((d) => d.id.equals(documento.id)))
+      .write(
         DocumentiCompanion(
           nome: Value(nome.trim()),
           giornoId: Value(giornoId),
@@ -220,7 +219,9 @@ class CartellaDocumenti {
     } on FileSystemException catch (e) {
       throw erroreDelDisco(e);
     }
-    _anteprime.removeWhere((chiave, _) => chiave.startsWith('${documento.id}:'));
+    _anteprime.removeWhere(
+      (chiave, _) => chiave.startsWith('${documento.id}:'),
+    );
     await (_db.delete(
       _db.documenti,
     )..where((d) => d.id.equals(documento.id))).go();

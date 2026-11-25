@@ -15,7 +15,7 @@ Due proprietà vengono gratis dal sistema, e vanno **verificate invece che date 
 
 Se la verifica dicesse il contrario su una delle due piattaforme, la cifratura va aggiunta esplicitamente: è un requisito, non un vantaggio ereditato.
 
-**Verificato su iOS il 3 ottobre 2026** (iPhone 18 Pro, iOS 27.0.1, prove in `ios/RunnerTests`): ogni documento prende esplicitamente la classe `complete`, più forte di quella predefinita, e resta nel backup; l'app rilegge entrambe le cose a ogni salvataggio e rifiuta il documento se non tornano. Android: da verificare, e con ogni probabilità il backup automatico (25 MB per app) **non** li porta.
+**Verificato su iOS il 3 ottobre 2026** (iPhone 18 Pro, iOS 27.0.1, prove in `ios/RunnerTests`): ogni documento prende esplicitamente la classe `complete`, più forte di quella predefinita, e resta nel backup; l'app rilegge entrambe le cose a ogni salvataggio e rifiuta il documento se non tornano. **Android, scritto il 25 novembre 2026 e non ancora verificato su un telefono** ([ADR-008](adr/008-documenti-sul-telefono.md)): Android non ha una protezione per file, ma cifra la memoria dell'app con le chiavi della persona (cifratura per file, obbligatoria da Android 10). Il documento è cifrato con il codice di sblocco e si legge dal primo sblocco dopo l'accensione: è meno di `complete`, quanto la classe predefinita di iOS. L'app controlla che la cifratura ci sia e che il file stia nella memoria giusta, e rifiuta il documento altrimenti. Il backup su Google **non** li porta, per scelta: si ferma a 25 MB per app e oltre non salva niente, nemmeno il resto. Li porta il passaggio da telefono a telefono (Android 12 e successivi), e il foglio di un documento nuovo lo dice.
 
 ---
 

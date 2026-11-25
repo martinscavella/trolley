@@ -1,10 +1,12 @@
 /// Quello che il telefono fa sui file dei documenti e che Dart da solo non sa
 /// fare (ADR-008): proteggerli e dire com'è rimasto, leggere le pagine di un PDF
-/// in memoria, comprimere una foto. Su iOS è `DocumentiDelTelefono.swift`;
-/// nelle prove, un finto.
+/// in memoria, comprimere una foto. Su iOS è `DocumentiDelTelefono.swift`, su
+/// Android `DocumentiDelTelefono.kt`; nelle prove, un finto.
 ///
 /// Come il resto dei documenti, non parla con nessuno fuori dal telefono.
 library;
+
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 
@@ -12,20 +14,37 @@ import 'errori.dart';
 
 /// Com'è un file dopo averlo protetto.
 class StatoFile {
-  const StatoFile({required this.protezione, required this.nelBackup});
+  const StatoFile({
+    required this.protezione,
+    required this.nelBackup,
+    this.android = false,
+  });
 
   /// La classe di protezione: `completa` vuol dire cifrato con il codice di
-  /// sblocco e illeggibile a telefono bloccato.
+  /// sblocco e illeggibile a telefono bloccato; `dopo_il_primo_sblocco`
+  /// cifrato con il codice di sblocco, e leggibile dal primo sblocco dopo
+  /// l'accensione.
   final String protezione;
 
   /// Se il backup di sistema lo porta sul telefono nuovo.
   final bool nelBackup;
 
-  /// Quello che 03 chiede: cifrato, e nel backup.
-  bool get comeDeveEssere => protezione == 'completa' && nelBackup;
+  /// Se è un telefono Android, che non ha una protezione per file e il cui
+  /// backup su Google non può portarli (ADR-008).
+  final bool android;
+
+  /// Quello che 03 chiede. Su iOS: cifrato nella classe più forte, e nel
+  /// backup di iCloud. Su Android: nella memoria dell'app cifrata con le
+  /// chiavi della persona, e fuori dal backup su Google, che si fermerebbe a
+  /// 25 MB; al telefono nuovo lo porta il passaggio da telefono a telefono.
+  bool get comeDeveEssere => android
+      ? protezione == 'dopo_il_primo_sblocco' && !nelBackup
+      : protezione == 'completa' && nelBackup;
 
   @override
-  String toString() => 'StatoFile($protezione, nel backup: $nelBackup)';
+  String toString() =>
+      'StatoFile($protezione, nel backup: $nelBackup'
+      '${android ? ', Android' : ''})';
 }
 
 abstract interface class FileDelTelefono {
@@ -71,6 +90,7 @@ class FileDelTelefonoNativo implements FileDelTelefono {
     return StatoFile(
       protezione: stato['protezione'] as String? ?? 'nessuna',
       nelBackup: stato['nelBackup'] as bool? ?? false,
+      android: Platform.isAndroid,
     );
   }
 
@@ -112,7 +132,10 @@ class FileDelTelefonoNativo implements FileDelTelefono {
     }
   }
 
-  static Future<T> _chiama<T>(String metodo, Map<String, Object?> argomenti) async {
+  static Future<T> _chiama<T>(
+    String metodo,
+    Map<String, Object?> argomenti,
+  ) async {
     try {
       final risposta = await _canale.invokeMethod<T>(metodo, argomenti);
       if (risposta == null) throw const ErroreTrolley(_nonRiuscito);
@@ -120,7 +143,7 @@ class FileDelTelefonoNativo implements FileDelTelefono {
     } on PlatformException catch (e) {
       throw ErroreTrolley(_messaggi[e.code] ?? _nonRiuscito);
     } on MissingPluginException {
-      // Solo iOS ha il canale, per ora (punti-aperti.md, 1.3).
+      // iOS e Android hanno il canale; un altro sistema no.
       throw const ErroreTrolley(
         'Su questo telefono i documenti non funzionano ancora.',
       );

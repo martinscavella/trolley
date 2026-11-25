@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fino ad Android 11 la stessa regola vale per il backup e per il passaggio al
+  telefono nuovo: i documenti (files/documenti) restano fuori da tutti e due,
+  perché il backup su Google si ferma a 25 MB per app (ADR-008). Sostituisce
+  le regole dello scanner, di cui tiene l'esclusione delle scansioni a metà.
+-->
+<full-backup-content>
+    <exclude domain="file" path="documenti" />
+    <exclude domain="external" path="Pictures/" />
+</full-backup-content>

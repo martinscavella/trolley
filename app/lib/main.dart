@@ -35,8 +35,9 @@ Future<void> main() async {
   final supabase = Supabase.instance.client;
   final db = DatabaseLocale();
   final rete = ReteDelTelefono();
-  // I documenti stanno in Application Support: dentro il backup, mai visibile
-  // nell'app File (ADR-008).
+  // I documenti stanno in Application Support (su Android, files/): su iOS
+  // dentro il backup e mai visibili nell'app File, su Android fuori dal backup
+  // su Google ma nel passaggio al telefono nuovo (ADR-008).
   final documenti = CartellaDocumenti(
     db,
     telefono: const FileDelTelefonoNativo(),
