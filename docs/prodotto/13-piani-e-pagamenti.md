@@ -53,6 +53,10 @@ Da rifare con i numeri di H1: sono esempi, non l'elenco definitivo.
 
 ---
 
+### Le guide (25 novembre 2026)
+
+Per la CR-01 l'utente vuole, più avanti, testi di guide vere: in abbonamento o in pacchetti a parte, per esempio «Le chiese di Copenaghen». Sono un prodotto diverso dal pacchetto viaggio, e la regola 4 (solo prima del viaggio) non è pensata per loro: si decide nella fase 6. Fino ad allora la guida è la scheda scritta da un modello, gratuita ([09](09-durante-il-viaggio.md), regola 18).
+
 ## Casi limite
 
 | Situazione | Comportamento |

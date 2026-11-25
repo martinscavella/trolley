@@ -1,6 +1,6 @@
 # ADR-006 — Mappe, percorsi e il tetto alla spesa
 
-**Stato**: accettata. Il fornitore è **Geoapify**, scelto alla realizzazione (fase 3.2, 4 ottobre 2026)
+**Stato**: accettata. Il fornitore è **Geoapify**, scelto alla realizzazione (fase 3.2, 4 ottobre 2026). **Il 25 novembre 2026 l'utente ha scelto Google** (CR-06): alla costruzione il fornitore lo decide [ADR-014](014-google-maps-platform.md); l'interfaccia interna e il degradare con grazia restano validi.
 
 ## Contesto
 

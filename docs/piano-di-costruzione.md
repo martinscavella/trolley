@@ -120,6 +120,23 @@ Non erano una fase del piano: finite le notifiche, l'utente rivede l'app sul tel
 
 ---
 
+## Le richieste dopo Copenaghen
+
+Non erano nel piano: dopo il viaggio a Copenaghen, il 25 novembre 2026, l'utente ha portato otto richieste, decise una per una ([decisioni](decisioni/prodotto.md#le-richieste-dopo-copenaghen-25-novembre-2026)). Si costruiscono in quest'ordine, che segue le dipendenze: Google prima di tutto quello che usa mappe e luoghi, i tragitti prima di «Adesso». Ognuna si disegna prima sulla tela.
+
+| | Cosa |
+|---|---|
+| CR-04 | **Rimandare una tappa saltata**: «Salta» chiede «Rimandala» o «Saltala e basta» ([04](prodotto/04-itinerario.md), 31–33; tela, 152–155). 25 novembre 2026 |
+| CR-06 | **Google al posto di Geoapify**: mappa nativa, ricerca con il `place_id`, guida con il Navigation SDK, tetto unico alle quote gratuite ([ADR-014](tecnico/adr/014-google-maps-platform.md)). Prima, le verifiche nei [punti aperti](punti-aperti.md) |
+| CR-07 | **I tragitti e i mezzi**: un mezzo per tragitto, scelto dall'assistente o chiesto; il tragitto sulla linea del tempo; i mezzi pubblici a passi ([04](prodotto/04-itinerario.md), 34–39) |
+| CR-05 | **Adesso sa quando partire**, la notifica per partire e le notifiche localizzate ([09](prodotto/09-durante-il-viaggio.md), 13–17) |
+| CR-02 | **La mappa di dove sei** ([08](prodotto/08-mappa.md), 8) |
+| CR-03 | **Qui vicino e gli orari delle tappe** ([08](prodotto/08-mappa.md), 9–10) |
+| CR-01 | **La guida**: «Raccontamelo», una scheda scritta da un modello per luogo ([09](prodotto/09-durante-il-viaggio.md), 18) |
+| CR-08 | **Il viaggio raccontato**, in stile Wrapped, con le foto del telefono e i traguardi animati ([10](prodotto/10-chiusura-e-ricordo.md), 10–14) |
+
+---
+
 ## Fase 6 — Monetizzazione
 
 Non nell'MVP. Si accende quando i numeri di H1 dicono quali funzioni le persone valutano davvero, perché è quello che decide cosa sta dietro il pagamento.

@@ -399,6 +399,32 @@ Il logo, l'icona dell'app e l'avvio animato del kit sono nell'app dal 16 ottobre
 | **L'icona a tema di Android** | Il kit non ha la variante monocromatica | Con Android |
 | **Il sito** | `sito/` non ha ancora il logo né l'icona nella scheda del browser | Quando si pubblica il sito |
 
+### Le richieste dopo Copenaghen, 25 novembre 2026
+
+Otto richieste decise il 25 novembre 2026 ([decisioni](decisioni/prodotto.md#le-richieste-dopo-copenaghen-25-novembre-2026)), da costruire nell'ordine del [piano](piano-di-costruzione.md#le-richieste-dopo-copenaghen). Ognuna si disegna prima sulla tela.
+
+| Voce | Cosa ha chiesto l'utente | Quando |
+|---|---|---|
+| ~~**CR-04 · Rimandare una tappa saltata**~~ | Saltata una tappa, poterla rimettere più tardi o in un altro giorno ([04](prodotto/04-itinerario.md), 31–33). Costruita il 25 novembre 2026 (tela, 152–155): il foglio di «Salta» da «Adesso», dalla giornata, dalla mappa e dalla navigazione; «Rimandala» sul foglio di una tappa saltata; evento `tappa_rimandata` | ✅ 25 novembre 2026, da provare sul telefono |
+| **CR-06 · Google al posto di Geoapify** | Il tetto finito a Copenaghen; Google per mappa, ricerca, orari, tragitti e guida ([ADR-014](tecnico/adr/014-google-maps-platform.md)) | Dopo la CR-04 |
+| **CR-07 · I tragitti e i mezzi** | Tempi fra le tappe, con mezzi pubblici, bici, monopattino, auto, taxi ([04](prodotto/04-itinerario.md), 34–39) | Dopo Google |
+| **CR-05 · Adesso sa quando partire** | Non mostrare come imminente una tappa fra quattro ore; notifiche, anche dalla posizione ([09](prodotto/09-durante-il-viaggio.md), 13–17) | Dopo i tragitti |
+| **CR-02 · La mappa di dove sei** | La mappa sulla zona in cui si è ([08](prodotto/08-mappa.md), 8) | |
+| **CR-03 · Qui vicino e gli orari** | Locali vicini, aperti o chiusi, e gli orari ([08](prodotto/08-mappa.md), 9–10) | |
+| **CR-01 · La guida** | Storia e curiosità dei luoghi vicini ([09](prodotto/09-durante-il-viaggio.md), 18) | |
+| **CR-08 · Il viaggio raccontato** | Un riepilogo in stile Wrapped, con i traguardi animati ([10](prodotto/10-chiusura-e-ricordo.md), 10–14) | Per ultima |
+
+**Da verificare prima di costruire con Google** ([ADR-014](tecnico/adr/014-google-maps-platform.md)):
+
+| Voce | Perché conta | Quando |
+|---|---|---|
+| **Le condizioni EEA di Google Maps Platform**, sul testo | Il 25 novembre la pagina non si è lasciata leggere dagli strumenti automatici. Fonti indirette: i contenuti di Places (nomi, orari) non si mostrano con nessuna mappa, e le istruzioni delle Routes API nemmeno. Decide se «Qui vicino» resta un elenco, se il percorso a passi dei mezzi si può mostrare accanto alla mappa, e se la guida dentro Trolley con il Navigation SDK ci rientra. Da leggere a mano nel browser | Prima della CR-06 |
+| **Il prezzo del Navigation SDK** oltre le 1000 destinazioni al mese | Le fonti dicono 25 $ ogni 1000 o la metà: serve per il budget della demo | Prima della demo |
+| **Il Navigation SDK e i mezzi pubblici** | Per quanto se ne sa non li guida: per questo i mezzi sono un percorso a passi | Prima della CR-07 |
+| **Il plugin Flutter del Navigation SDK** | Com'è mantenuto, e se si possono disegnare i segni della tela | Prima della CR-06 |
+| **I contenuti di Google dati a un modello** | La scheda della guida (CR-01) si scrive da Wikipedia e dal nome del luogo finché non è chiaro se le condizioni lo permettono | Prima della CR-01 |
+| **Il budget della demo** | Per ora il tetto è unico per tutta l'app, alle quote gratuite: chi lo consuma lo consuma per tutti | Prima della demo |
+
 ### Le prossime, chieste dall'utente il 26 ottobre 2026
 
 Costruite il 1° novembre 2026 come G.3 ([decisioni](decisioni/prodotto.md#le-note-scritte-a-mano-la-barra-più-morbida-il-mappamondo-nuovo-1-novembre-2026); tela, 139–145).

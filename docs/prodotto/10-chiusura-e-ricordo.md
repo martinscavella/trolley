@@ -27,6 +27,16 @@ Far sì che un viaggio lasci qualcosa invece di svanire. È la fase su cui poggi
 8. **Niente si cancella da solo.** Un viaggio chiuso resta per sempre, in qualunque piano. Lo elimina solo chi ci è rimasto da solo, se lo vuole ([02](02-il-viaggio.md), regola 13).
 9. **A un anno dalla chiusura arriva un promemoria gentile** — "un anno fa eri a Lisbona" — che intercetta la persona nel momento in cui sta ripensando a partire.
 
+### Il viaggio raccontato
+
+Chiesto dall'utente dopo Copenaghen (CR-08, [decisioni](../decisioni/prodotto.md#le-richieste-dopo-copenaghen-25-novembre-2026)), da costruire.
+
+10. **Ogni viaggio chiuso ha il suo racconto**, in stile Wrapped: schermate che scorrono come le storie — i numeri del viaggio (giorni, tappe fatte, chilometri dai tragitti, il mezzo più usato, la spesa, i paesi e le città nuovi), i momenti, i traguardi, e una schermata finale. Si apre dal riepilogo di chiusura e dal viaggio nel passaporto.
+11. **I momenti sono foto del telefono**: con il permesso alle foto, Trolley ne propone alcune scattate nei giorni del viaggio e vicino alle tappe, e la persona le cambia. **Le foto non lasciano mai il telefono**, come i documenti ([03](../tecnico/03-documenti-sul-dispositivo.md)): né il server né la copia le conoscono. Senza permesso, i momenti vengono dal programma (la prima tappa, il giorno più pieno, la tappa più lontana).
+12. **I traguardi, con le loro animazioni, solo se il viaggio è verificato** (regola 4). Un viaggio non verificato ha il suo racconto senza quella schermata, e non si dice cosa mancava.
+13. **Si condivide**: l'ultima schermata diventa un'immagine verticale per le storie, che la persona manda dove vuole dal foglio di condivisione del telefono. Senza dati sensibili: niente importi esatti, orari, documenti o nomi degli altri; delle foto solo quelle scelte.
+14. **È gratuito**, come traguardi e mappamondo (regola 7).
+
 ---
 
 ## Casi limite
@@ -45,6 +55,6 @@ Far sì che un viaggio lasci qualcosa invece di svanire. È la fase su cui poggi
 
 ## Cosa resta fuori
 
-- Racconto elaborato del viaggio da mostrare agli altri: nell'MVP il passaporto è personale
-- Foto del viaggio
+- Il passaporto da mostrare agli altri: resta personale. Si condivide solo l'immagine del racconto (regola 13)
+- Le foto del viaggio dentro Trolley: il racconto le legge dal telefono e non le conserva (regola 11)
 - Traguardi a tempo o stagionali

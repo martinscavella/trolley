@@ -91,6 +91,13 @@ Il loro impianto di sicurezza (5.1) è già costruito, e resta spento finché la
 25. **App Store, linea guida 1.2** (contenuti delle persone): chiede di poter segnalare, bloccare, un contatto pubblicato, e «un modo per filtrare i contenuti inappropriati». La moderazione automatica è fuori di proposito ([12](../prodotto/12-sicurezza-e-moderazione.md)): i messaggi solo fra persone collegate, dopo un sì, bastano?
 26. **Le valutazioni d'impatto** per il matching e la presenza in città: le abbiamo scritte noi, in bozza, con l'impianto già costruito e i disegni delle schermate ancora da costruire. Bastano come forma e come contenuto, e chi le firma? Le loro domande sono dentro, P1–P9 e C-1–C-5.
 
+### Le richieste dopo Copenaghen (25 novembre 2026, da costruire)
+
+27. **Le notifiche localizzate.** Chi concede la posizione «sempre» riceve notifiche dalla posizione vera: l'ora di partire, l'arrivo a una tappa, un luogo vicino da farsi raccontare, i locali aperti all'ora dei pasti. Per due di queste la posizione esce dal telefono senza che la persona l'abbia appena chiesto: va al nostro server e a Google, arrotondata a circa 100 m, per calcolare un tragitto o cercare locali, e non si salva né finisce nei registri. Basta il permesso «sempre» del sistema, dopo una schermata che spiega, o serve un consenso a parte? Come si dichiara su App Store e Play Store? Serve una valutazione d'impatto, come per la presenza in città?
+28. **Google al posto di Geoapify** ([ADR-014](../tecnico/adr/014-google-maps-platform.md)): Google riceve dal server il testo cercato, i capi dei tragitti e la posizione arrotondata delle notifiche, e dal telefono, per la mappa e la guida, quello che i suoi SDK mandano da soli. È un responsabile del trattamento, o per gli SDK un titolare autonomo? Quali garanzie per il trasferimento fuori dall'UE?
+29. **La guida scritta da un modello** (CR-01): la scheda di un luogo la scrive un modello da Wikipedia e dal nome del luogo, si conserva per tutti e si può segnalare. Che cosa va detto alla persona (che è scritta da un modello, le fonti), e chi risponde di un errore? Dati personali non ne entrano.
+30. **Le foto nel racconto del viaggio** (CR-08): l'app legge le foto del telefono per proporre i momenti del viaggio, sul telefono, senza mandarle a nessuno; la persona condivide un'immagine fatta da lei. Basta il permesso alle foto del sistema? E nell'immagine condivisa possono esserci altre persone: serve un avviso?
+
 ---
 
 ## Dopo la revisione

@@ -28,7 +28,7 @@ Le decisioni architetturali che vale la pena motivare per iscritto vivono in `ad
 - [**ADR-003** — Backend](adr/003-backend.md) ✅
 - [**ADR-004** — Deep link differito](adr/004-deep-link-differito.md) ✅
 - [**ADR-005** — Dati geografici](adr/005-dati-geografici.md) ✅
-- [**ADR-006** — Mappe, percorsi e il tetto alla spesa](adr/006-mappe-e-percorsi.md) ✅ *(fornitore da confermare alla realizzazione)*
+- [**ADR-006** — Mappe, percorsi e il tetto alla spesa](adr/006-mappe-e-percorsi.md) ✅ *(Geoapify; il fornitore passa a Google con ADR-014)*
 - [**ADR-007** — Interfaccia: componenti di sistema e Liquid Glass](adr/007-interfaccia-e-liquid-glass.md) ✅
 - [**ADR-008** — Documenti sul telefono: dove, come si proteggono, come si leggono](adr/008-documenti-sul-telefono.md) ✅
 - [**ADR-009** — Tassi di cambio: chi li scarica, da dove, come si usano](adr/009-tassi-di-cambio.md) ✅
@@ -36,3 +36,4 @@ Le decisioni architetturali che vale la pena motivare per iscritto vivono in `ad
 - [**ADR-011** — La verifica del numero di telefono](adr/011-verifica-del-telefono.md) ✅
 - [**ADR-012** — Le notifiche, prima parte: i promemoria programmati dal telefono](adr/012-notifiche-locali.md) ✅
 - [**ADR-013** — Le sezioni: una barra sola, una pila per sezione](adr/013-le-sezioni.md) ✅
+- [**ADR-014** — Google Maps Platform al posto di Geoapify](adr/014-google-maps-platform.md) ✅ *(da costruire, CR-06)*

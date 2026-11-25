@@ -18,6 +18,8 @@ Ricordarsi di Trolley nei momenti giusti — che su un'app usata poche volte l'a
 | Richiesta di collegamento ricevuta o accettata | — | Sì |
 | Messaggio ricevuto da una persona collegata | — | Sì |
 | La parte pubblica è disponibile | Una volta, all'uscita della seconda ondata | — |
+| È ora di partire per la tappa dopo | "Parti fra 10 min per Nyhavn · 25 min a piedi", dal tragitto previsto ([09](09-durante-il-viaggio.md), regola 15). Da costruire | Sì |
+| Con la posizione «sempre»: l'ora di partire da dove sei, l'arrivo a una tappa, la guida vicino a un luogo, i locali aperti all'ora dei pasti | [09](09-durante-il-viaggio.md), regola 16. Da costruire | Sì, ognuna |
 
 ---
 
@@ -45,7 +47,7 @@ Ricordarsi di Trolley nei momenti giusti — che su un'app usata poche volte l'a
 
 ## Cosa resta fuori
 
-- Notifiche in base alla posizione
+- Notifiche in base alla posizione senza il permesso «sempre» (con quello, le quattro del capitolo 09, regola 16)
 - Email: nell'MVP si comunica solo dentro l'app e con le notifiche di sistema
 
 ---

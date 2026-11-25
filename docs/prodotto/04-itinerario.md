@@ -64,6 +64,25 @@ Chiesti dall'utente il 26 ottobre 2026, al posto delle tappe in fila: la giornat
 29. **Il primo e l'ultimo giorno**, prima dell'arrivo e dopo la partenza, la linea del tempo è chiusa e lo dice («Arrivi alle 10:00»). Se le date o gli orari cambiano, le tappe che non ci stanno più non si cancellano: restano in rosso, da sistemare (02, casi limite).
 30. **Toccando uno spazio libero** della linea del tempo si apre una tappa nuova a quell'ora, arrotondata al quarto d'ora; il pulsante «Aggiungi una tappa» usa l'orario proposto.
 
+
+### Rimandare una tappa saltata
+
+Chiesto dall'utente dopo Copenaghen (CR-04, [decisioni](../decisioni/prodotto.md#le-richieste-dopo-copenaghen-25-novembre-2026)).
+
+31. **«Salta» chiede cosa fare**: «Rimandala» oppure «Saltala e basta». Saltata e basta resta com'era: segnata, e conta per la verifica.
+32. **Rimandare propone tre posti**, con le regole degli orari: **più tardi oggi**, nel primo spazio libero da adesso in poi dove entra com'è; **domani**, all'orario proposto (regola 19); **un altro giorno**, scelto fra quelli del viaggio, all'orario proposto. Dove non entra si propone quello che la regola 22 propone. Rimandata, la tappa torna *da fare* al suo nuovo posto, e per la verifica va segnata di nuovo.
+33. **Rimandare è spostare**, quindi vuole la rete (regola 26): senza, «Rimandala» è spenta e dice perché, e si può solo saltarla. **Una tappa saltata si rimanda anche dopo**, dalla tappa, finché il viaggio non è chiuso. I gesti senza rete restano quattro.
+
+### I tragitti
+
+Chiesti dall'utente dopo Copenaghen (CR-07), da costruire con Google ([ADR-014](../tecnico/adr/014-google-maps-platform.md)).
+
+34. **Fra due tappe dello stesso giorno c'è un tragitto**, con un mezzo: a piedi, bici, mezzi pubblici, auto, monopattino o taxi. Il mezzo è del tragitto e vale per tutti: il programma è uno solo.
+35. **Il mezzo lo sceglie l'assistente** che scrive l'itinerario: il prompt che si copia lo chiede, e l'anteprima lo mostra ([ADR-010](../tecnico/adr/010-itinerario-incollato.md)). Quando manca — una tappa aggiunta a mano, un itinerario di prima — fra le due tappe compare **«Come ci vai?»** e sceglie la persona. Si cambia toccando il tragitto.
+36. **Sulla linea del tempo il tragitto si vede fra le due tappe**, con il mezzo e quanto dura. Se lo spazio libero è più corto, la striscia si colora e propone un mezzo più veloce o di spostare in avanti la tappa dopo (regola 22). **Non blocca niente**: le regole 19–30 restano quelle, e il tragitto non entra nella capienza né nelle sovrapposizioni.
+37. **Con i mezzi pubblici il tragitto è un percorso a passi**: a piedi fino alla fermata, la linea con l'ora e la direzione, quante fermate, dove scendere, a piedi fino alla tappa. Durante il viaggio segue la posizione e accende il passo in corso; le parti a piedi si guidano dentro Trolley ([08](08-mappa.md)).
+38. **Monopattino** ha i tempi e la guida della bici, più un tasto per le app di noleggio che il telefono ha. **Taxi** ha i tempi e la guida dell'auto, più un tasto per le app dei taxi. Nessun prezzo: nessuno lo dà senza un contratto.
+39. **Calcolare un tragitto vuole la rete**; l'ultimo calcolato resta leggibile senza. Scegliere il mezzo è cambiare il programma, e vuole la rete come cambiare una tappa.
 ---
 
 ## Casi limite
@@ -83,8 +102,8 @@ Chiesti dall'utente il 26 ottobre 2026, al posto delle tappe in fila: la giornat
 
 ## Cosa resta fuori
 
-- Chiamata diretta a un modello dall'app
+- Chiamata diretta a un modello dall'app per scrivere l'itinerario: per ora lo scrive l'assistente della persona. La generazione dentro l'app è una richiesta dell'utente (CR-07), da decidere
 - Suggerimenti automatici di attrazioni o percorsi ottimizzati
-- Tempi di spostamento calcolati fra una tappa e l'altra: la capienza somma le durate, non i trasferimenti. Sulla linea del tempo lo spostamento è lo spazio libero che si lascia fra due tappe
+- Il tragitto dentro la capienza e le sovrapposizioni: si vede e avvisa (regola 36), ma la capienza somma le durate delle tappe
 - Tappe in parallelo, per un gruppo che si divide: il programma è uno solo
 - Tappe che attraversano la mezzanotte

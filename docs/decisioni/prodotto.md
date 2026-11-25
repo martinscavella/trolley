@@ -618,6 +618,50 @@ Chieste dall'utente il 26 ottobre, dopo G.2; disegnate e costruite il 1° novemb
   - **Sempre puntini, con le bandiere** (lo stesso giorno, dopo averlo provato: «non mi piace che i pallini poi si trasformano nella nazione: o li teniamo sempre o mai»; tela, 147, 148, 151). Sempre gli stessi: da vicino non compaiono più le forme dei paesi, e i puntini crescono con la Terra, come un mosaico visto da vicino. Provati anche puntini più fitti avvicinandosi: l'utente non li ha voluti. Le forme restano solo sotto la patina da grattare, che si gratta via sui puntini. I puntini dei paesi visitati hanno i colori della loro bandiera, ciascuno quello del punto della bandiera che gli corrisponde; la bandiera viene dall'emoji del telefono, senza rete, e se il telefono non ce l'ha i puntini restano bianchi. La bandiera sventola: un'onda lenta la attraversa da sinistra a destra ogni 2,6 secondi, e dove passa i puntini si gonfiano, si schiariscono e si alzano appena; tutto il paese respira ogni 3,4 secondi, e ogni puntino ha attorno la sua luce. Il paese tenuto premuto ingrandisce e schiarisce i suoi puntini (un paese mai visto li accende di bianco), con l'anello bianco. Con «Riduci movimento» la bandiera sta ferma.
 - **Nessun evento** per la barra e il mappamondo (07, come prima).
 
+### Le richieste dopo Copenaghen (25 novembre 2026)
+
+Durante e dopo il viaggio a Copenaghen l'utente ha raccolto otto richieste (CR-01…CR-08), decise una per una il 25 novembre. Il motivo di fondo: il 21 novembre il tetto delle mappe si è esaurito a metà giornata (2000 riquadri, altri 1253 fermati: il 27% della quota gratuita di tutta l'app), e l'utente vuole un'app che accompagni la persona per tutto il giorno **senza mandarla fuori**. L'ordine di costruzione è nel [piano](../piano-di-costruzione.md), «Le richieste dopo Copenaghen». Cambiano scelte scritte: ognuna è segnata qui sotto.
+
+- **CR-06 · Google al posto di Geoapify** ([ADR-014](../tecnico/adr/014-google-maps-platform.md), che alla costruzione sostituisce ADR-006). L'utente ha chiesto Google fra i fornitori, dopo il confronto: è l'unico che ha insieme i mezzi pubblici con gli orari veri, gli orari di apertura e le descrizioni dei luoghi, e la sua mappa nativa sul telefono non si paga a visualizzazione.
+  - **La tappa tiene il `place_id` per sempre**, e le coordinate come copia da rinnovare entro 30 giorni: le condizioni di Google non permettono di tenerle di più. Era il motivo per cui ADR-006 l'aveva scartato.
+  - **La mappa è quella nativa di Google** (`google_maps_flutter`), al posto di `flutter_map`. I segni delle tappe si disegnano dai nostri widget in immagini.
+  - **La guida passo passo resta dentro Trolley**, con il Navigation SDK di Google: «la tendenza deve essere usare la mia app». Un tasto apre Google Maps o Mappe di Apple per chi preferisce. Il capitolo [08](../prodotto/08-mappa.md), regola 2, resta com'era.
+  - **Un tetto unico per tutta l'app, alle quote gratuite** (scelto dall'utente, «per ora»): una destinazione del Navigation SDK è un «portami lì» intero, e le prime 1000 al mese sono gratis per tutta l'app. Al tetto «Vai» passa a Google Maps. Il rischio, scritto: chi consuma il tetto lo consuma per tutti, che è quello che ADR-006 evitava con il tetto per persona. Per la demo si decide un budget.
+- **CR-07 · I tragitti e i mezzi** ([04](../prodotto/04-itinerario.md), regole 34–39).
+  - **Ogni tragitto ha il suo mezzo**: a piedi, bici, mezzi pubblici, auto, monopattino o taxi. Lo sceglie l'assistente che scrive l'itinerario (il prompt che si copia lo chiede, [ADR-010](../tecnico/adr/010-itinerario-incollato.md)); più avanti la generazione del viaggio dentro l'app. Senza, fra le due tappe compare «Come ci vai?» e sceglie la persona.
+  - **Fra due tappe si vede il tragitto**; se lo spazio libero non basta, la linea lo colora e propone un mezzo più veloce o di spostare la tappa dopo. **Non blocca niente**: le regole degli orari restano quelle.
+  - **I mezzi pubblici** sono un percorso a passi — a piedi fino alla fermata, la linea, l'ora, quante fermate, dove scendere — che segue la posizione: il passo in corso si accende. Le parti a piedi sono guidate dentro Trolley.
+  - **Monopattino**: tempi e guida come la bici, più un tasto per le app di noleggio installate. **Taxi**: tempi e guida in auto, più un tasto per le app dei taxi. Nessun contratto, nessun prezzo.
+  - **Durante il viaggio**, se con il mezzo scelto non si arriva in tempo, «Adesso» propone di cambiarlo.
+  - Cambia il capitolo 04, «Cosa resta fuori»: i tempi di spostamento fra le tappe ora ci sono. La chiamata diretta a un modello dall'app resta fuori finché non si decide la generazione del viaggio.
+- **CR-05 · Adesso sa quando partire** ([09](../prodotto/09-durante-il-viaggio.md), regole 13–17).
+  - **Una tappa è imminente quando è ora di partire** per arrivarci: l'inizio, meno il tragitto, meno un margine. Prima sta in piccolo, con quanto manca («Alle 15:00 · fra 3 h 20»), e in alto c'è il tempo libero.
+  - **Il tragitto si calcola da dove sei**, se c'è la posizione; senza, da quello fra le tappe.
+  - **Una notifica «Parti fra 10 minuti»**, programmata dal telefono dal tragitto previsto, che si spegne come gli altri promemoria.
+  - **Con la posizione «sempre»** (aggiunta dall'utente lo stesso giorno) partono le notifiche localizzate: l'ora di partire da dove sei, l'arrivo alla tappa («Segna fatta»), la guida vicino a un luogo, i locali aperti vicino all'ora dei pasti. Senza, restano quelle programmate. Cambia il capitolo 09, «Cosa resta fuori», e il 14.
+  - **La posizione esce dal telefono** per queste notifiche, solo verso il server e Google, solo per un tragitto o una ricerca di locali, arrotondata a circa 100 m, mai salvata e mai nei registri. Cambia il capitolo 08, regola 7. **È una domanda per l'avvocato** ([per la revisione](../legale/per-la-revisione.md), 27).
+- **CR-04 · Rimandare una tappa saltata** ([04](../prodotto/04-itinerario.md), regole 31–33).
+  - **«Salta» chiede cosa fare**: «Rimandala» — più tardi oggi, domani, o un altro giorno, con le proposte degli orari — oppure «Saltala e basta». Rimandata, torna da fare al suo nuovo posto.
+  - **Senza rete** si può solo saltarla: «Rimandala» è spenta e dice perché, come ogni spostamento (04, regola 26). I gesti senza rete restano quattro.
+  - **Una tappa saltata si può rimandare anche dopo**, dalla tappa stessa.
+  - **Costruita il 25 novembre** (tela, 152–155). Scelte di Claude nel disegnarla: le tre proposte in un foglio solo, senza un passo «Rimandala» prima; «Un altro giorno» come elenco dei giorni con l'orario già proposto; nel giorno in cui era, «più tardi» si cerca dalla fine del suo posto, così non la si rimette prima di quando era. Si misura `tappa_rimandata` (quando, da dove, durante il viaggio).
+- **CR-02 · La mappa di dove sei** ([08](../prodotto/08-mappa.md), regola 8). Durante il viaggio la mappa si apre su di te e sulla tappa dopo, con il tragitto disegnato; le altre tappe di oggi più piccole. Due tasti allargano a tutta la giornata o a tutto il viaggio.
+- **CR-03 · Qui vicino e gli orari** ([08](../prodotto/08-mappa.md), regole 9–10; [09](../prodotto/09-durante-il-viaggio.md)).
+  - **Un elenco «Qui vicino»**, in «Adesso» e sulla tappa: caffè, ristoranti, bar, con la distanza a piedi, aperto o chiuso e fino a che ora. Da uno: «Aggiungilo come tappa» o «Portami lì». **Non sulla mappa**: le condizioni europee di Google sembrano vietare di mostrare nomi e orari dei luoghi su una mappa (da verificare, [punti aperti](../punti-aperti.md)).
+  - **Gli orari delle tappe**: per le tappe dei prossimi sette giorni Trolley controlla se a quell'ora il posto è aperto, e se no lo dice sulla tappa con le proposte degli orari.
+  - Cambia il capitolo 08, «Cosa resta fuori»: i dati propri su luoghi e orari restano fuori, ma quelli del fornitore entrano.
+- **CR-01 · La guida** ([09](../prodotto/09-durante-il-viaggio.md), regola 18).
+  - **«Raccontamelo»** compare in «Adesso» entro circa 150 m da una tappa o da un'attrazione nota. La scheda — la storia, tre curiosità, cosa guardare — la scrive un modello **solo se la si tocca**, citando le fonti. Testo breve, con «Ascolta» che lo legge con la voce del telefono.
+  - **Una scheda per luogo, per tutti**: si conserva sul server legata al `place_id`, con «Segnala un errore», e si riscrive dopo sei mesi.
+  - È la prima chiamata a un modello: passa da una funzione del server, con un tetto per persona e il suo evento.
+  - **Più avanti, guide vere**: testi di guide, in abbonamento o in pacchetti a parte («Le chiese di Copenaghen»). Va deciso nella fase 6 ([13](../prodotto/13-piani-e-pagamenti.md)), dove la regola 4 oggi parla solo del pacchetto viaggio.
+- **CR-08 · Il viaggio raccontato, in stile Wrapped** ([10](../prodotto/10-chiusura-e-ricordo.md), regole 10–14).
+  - **Per ogni viaggio chiuso**, schermate a scorrimento come le storie: i numeri del viaggio, i momenti, i traguardi, una schermata finale.
+  - **Si condivide**: l'ultima schermata diventa un'immagine verticale per le storie, senza dati sensibili (niente spese esatte, orari o nomi di altri). Cambia il capitolo 10, «Cosa resta fuori».
+  - **I momenti sono foto del telefono**, scelte fra quelle scattate nei giorni e vicino alle tappe; la persona le cambia. **Non lasciano mai il telefono**, come i documenti; nell'immagine condivisa solo quelle scelte, e la condivide la persona.
+  - **I traguardi animati solo se il viaggio è verificato** (10, regola 4); agli altri non si dice cosa mancava.
+  - Gratuito, come traguardi e mappamondo (13, regola 7): scelta di Claude, dirlo se no.
+
 ## Ricordo e traguardi
 
 ### Badge e mappamondo digitale

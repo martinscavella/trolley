@@ -29,6 +29,18 @@
 11. **A fine giornata, se restano tappe non marcate, l'app lo ricorda una volta sola.**
 12. **Nessun limite commerciale tocca il viaggio in corso**, mai.
 
+### Dopo Copenaghen
+
+Chieste dall'utente il 25 novembre 2026 ([decisioni](../decisioni/prodotto.md#le-richieste-dopo-copenaghen-25-novembre-2026)), da costruire.
+
+13. **La tappa dopo è imminente quando è ora di partire per arrivarci** (CR-05): il suo inizio, meno il tragitto ([04](04-itinerario.md), regola 34), meno un margine di un quarto d'ora. Allora «Adesso» la mette in grande: «Parti fra 10 min · 25 min a piedi». Prima sta in piccolo, con quanto manca — «Alle 15:00 · fra 3 h 20» — e in cima c'è il tempo libero, non una tappa da fare come se fosse adesso.
+14. **Il tragitto si calcola da dove si è**, se il telefono ha la posizione: ricalcolato al massimo ogni dieci minuti, o dopo 300 m. Senza posizione o senza rete vale quello fra le tappe, già calcolato.
+15. **«Parti fra 10 minuti» è anche una notifica**, programmata dal telefono dal tragitto previsto: si spegne dal profilo come gli altri promemoria ([14](14-notifiche.md)).
+16. **Con la posizione «sempre» partono le notifiche localizzate**: l'ora di partire calcolata da dove si è; l'arrivo a una tappa, entro circa 50 m, con «Segna fatta»; «Sei vicino al Rosenborg · Raccontamelo» vicino a una tappa o a un'attrazione (regola 18); i locali aperti vicino, all'ora dei pasti, se la giornata non ne ha uno. Ognuna si spegne a parte. Senza quel permesso restano quelle programmate (regola 15), e non si insiste. La posizione esce dal telefono solo come dice il capitolo 08, regola 7.
+17. **Se con il mezzo scelto non si arriva in tempo**, «Adesso» propone il mezzo più veloce che ci arriva (CR-07). Non cambia niente da sola: il programma non si riorganizza mai da solo.
+18. **La guida** (CR-01): entro circa 150 m da una tappa o da un'attrazione nota, «Adesso» mostra «Sei vicino al Rosenborg · Raccontamelo». La scheda — la storia, tre curiosità, cosa guardare, con le fonti — la scrive un modello solo se la si tocca; si legge, o si ascolta con la voce del telefono. Ce n'è una per luogo, per tutti, con «Segnala un errore». Vuole la rete la prima volta; una scheda già aperta si rilegge senza.
+19. **«Qui vicino»** sta in «Adesso», nel tempo libero fra una tappa e l'altra ([08](08-mappa.md), regola 9).
+
 ---
 
 ## Casi limite
@@ -46,5 +58,5 @@
 ## Cosa resta fuori
 
 - Riorganizzazione automatica del programma in base ai ritardi
-- Notifiche basate sulla posizione
+- Notifiche basate sulla posizione **senza** il permesso «sempre»: con quello, sono le quattro della regola 16
 - Widget o complicazioni fuori dall'app
