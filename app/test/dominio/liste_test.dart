@@ -1,13 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/dominio/liste.dart';
 
-VoceDaPortare<String> voce(String id, {bool spuntata = false, int minuto = 0}) =>
-    VoceDaPortare(
-      voce: id,
-      id: id,
-      spuntata: spuntata,
-      creataIl: DateTime.utc(2026, 10, 3, 9, minuto),
-    );
+VoceDaPortare<String> voce(
+  String id, {
+  bool spuntata = false,
+  int minuto = 0,
+}) => VoceDaPortare(
+  voce: id,
+  id: id,
+  spuntata: spuntata,
+  creataIl: DateTime.utc(2026, 10, 3, 9, minuto),
+);
 
 List<String> nomi(List<VoceDaPortare<String>> voci) => [
   for (final v in voci) v.voce,
@@ -74,27 +77,33 @@ void main() {
       portaChi: porta,
       creataIl: DateTime.utc(2026, 10, 4, 9, minuto),
     );
-    final perChi = vociLasciate([
-      lasciata('ombrellone', da: 'luca', minuto: 2),
-      lasciata('crema', da: 'luca', minuto: 1),
-      lasciata('carte', da: 'sara', minuto: 3),
-      lasciata('adattatore', da: 'luca', porta: 'marco'),
-      lasciata('powerbank'),
-      lasciata('guida', da: 'sara', minuto: 4),
-    ], viste: {'guida'});
+    final perChi = vociLasciate(
+      [
+        lasciata('ombrellone', da: 'luca', minuto: 2),
+        lasciata('crema', da: 'luca', minuto: 1),
+        lasciata('carte', da: 'sara', minuto: 3),
+        lasciata('adattatore', da: 'luca', porta: 'marco'),
+        lasciata('powerbank'),
+        lasciata('guida', da: 'sara', minuto: 4),
+      ],
+      viste: {'guida'},
+    );
     expect(perChi, {
       'luca': ['crema', 'ombrellone'],
       'sara': ['carte'],
     });
   });
 
-  test('il testo di una voce: senza spazi ai lati, mai vuoto, mai una nota', () {
-    expect(testoVoce('  Passaporto '), 'Passaporto');
-    expect(testoVoce('   '), isNull);
-    expect(testoVoce(''), isNull);
-    expect(testoVoce('x' * lunghezzaMassimaVoce), hasLength(200));
-    expect(testoVoce('x' * (lunghezzaMassimaVoce + 1)), isNull);
-  });
+  test(
+    'il testo di una voce: senza spazi ai lati, mai vuoto, mai una nota',
+    () {
+      expect(testoVoce('  Passaporto '), 'Passaporto');
+      expect(testoVoce('   '), isNull);
+      expect(testoVoce(''), isNull);
+      expect(testoVoce('x' * lunghezzaMassimaVoce), hasLength(200));
+      expect(testoVoce('x' * (lunghezzaMassimaVoce + 1)), isNull);
+    },
+  );
 
   test('quante: da 1 a 99, come sul server', () {
     expect(quantitaValida(0), 1);
@@ -112,7 +121,11 @@ void main() {
       voce('spazzolino', spuntata: true, minuto: 3),
       voce('adattatore', minuto: 2),
     ]);
-    expect(nomi(lista.daMettere), ['passaporto', 'adattatore', 'caricabatterie']);
+    expect(nomi(lista.daMettere), [
+      'passaporto',
+      'adattatore',
+      'caricabatterie',
+    ]);
     expect(nomi(lista.inValigia), ['felpa', 'spazzolino']);
     expect(lista.tutte, 5);
     expect(lista.fatte, 2);
@@ -138,10 +151,10 @@ void main() {
   });
 
   test('una voce a cui si toglie la spunta resta un attimo in valigia', () {
-    final lista = ordinaVoci([
-      voce('felpa', minuto: 0),
-      voce('cuffie', spuntata: true, minuto: 1),
-    ], trattenute: {'felpa'});
+    final lista = ordinaVoci(
+      [voce('felpa', minuto: 0), voce('cuffie', spuntata: true, minuto: 1)],
+      trattenute: {'felpa'},
+    );
     expect(lista.daMettere, isEmpty);
     expect(nomi(lista.inValigia), ['felpa', 'cuffie']);
     expect(lista.fatte, 1);

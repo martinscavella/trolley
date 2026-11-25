@@ -7,6 +7,7 @@ import 'package:trolley/aspetto/pagina.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/errori.dart';
 import 'package:trolley/dominio/calendario.dart';
+import 'package:trolley/schermate/dettaglio_tappa.dart';
 import 'package:trolley/schermate/giornata.dart';
 
 import '../aiuti.dart';
@@ -75,6 +76,15 @@ void main() {
       (await tester.runAsync(
         () => ambiente.db.select(ambiente.db.codaScrittura).get(),
       ))!;
+
+  /// Tocca una tappa, che apre il suo dettaglio (tela, 156), e poi la
+  /// matita, che apre il foglio per cambiarla.
+  Future<void> apriModifica(WidgetTester tester, String titolo) async {
+    await tester.tap(find.text(titolo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Modifica'));
+    await tester.pumpAndSettle();
+  }
 
   /// Il cerchio che segna una tappa, a sinistra del suo titolo.
   Offset cerchioDi(WidgetTester tester, String titolo) =>
@@ -334,8 +344,10 @@ void main() {
     );
   });
 
-  testWidgets('una tappa saltata si rimanda dal suo foglio: domani, '
-      'all\'orario proposto, e torna da fare (04, regola 33)', (tester) async {
+  testWidgets('una tappa saltata si rimanda dal suo dettaglio: domani, '
+      'all\'orario proposto, e torna da fare (04, regola 33; tela, 157)', (
+    tester,
+  ) async {
     ambiente.server
       ..viaggi.add(
         rigaViaggio('v', stato: 'definito', inizio: fra(-1), fine: fra(1)),
@@ -363,30 +375,9 @@ void main() {
     );
     await tester.tap(find.text('Livraria Lello'));
     await tester.pumpAndSettle();
+    expect(find.byType(SchermataDettaglioTappa), findsOneWidget);
 
-    expect(find.text('La tappa'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Rimandala'),
-      200,
-      scrollable: find
-          .descendant(
-            of: find.byType(BottomSheet),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
     expect(find.textContaining('Ci vuoi ancora andare?'), findsOneWidget);
-    // Sopra i pulsanti in fondo al foglio, non sotto.
-    await tester.drag(
-      find
-          .descendant(
-            of: find.byType(BottomSheet),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-      const Offset(0, -200),
-    );
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Rimandala'));
     await aspetta(tester);
 
@@ -405,7 +396,6 @@ void main() {
     expect(lello['giorno_id'], 'g3');
     expect(lello['ora_inizio'], '09:00:00');
     expect(lello['stato'], 'da_fare');
-    expect(find.text('La tappa'), findsNothing);
     final rimandata = (await ambiente.eventi(tester))
         .singleWhere((e) => e.nome == 'tappa_rimandata');
     expect(jsonDecode(rimandata.proprieta), {
@@ -416,8 +406,9 @@ void main() {
     });
   });
 
-  testWidgets('segnata saltata dal suo foglio e subito rimandata, torna da '
-      'fare', (tester) async {
+  testWidgets('saltata e basta dal dettaglio, poi rimandata, torna da fare', (
+    tester,
+  ) async {
     ambiente.server
       ..viaggi.add(
         rigaViaggio('v', stato: 'definito', inizio: fra(-1), fine: fra(1)),
@@ -435,6 +426,7 @@ void main() {
           giorno: 'g1',
           titolo: 'Livraria Lello',
           ora: '11:00:00',
+          stato: 'da_fare',
         ),
       );
     await tester.runAsync(ambiente.archivio.aggiornaCopia);
@@ -444,24 +436,24 @@ void main() {
     );
     await tester.tap(find.text('Livraria Lello'));
     await tester.pumpAndSettle();
+    expect(find.byType(SchermataDettaglioTappa), findsOneWidget);
 
-    // Nello stesso foglio: «Saltata», poi «Rimandala».
-    final scorre = find
-        .descendant(
-          of: find.byType(BottomSheet),
-          matching: find.byType(Scrollable),
-        )
-        .first;
-    await tester.drag(scorre, const Offset(0, -300));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Saltata'));
+    // Il dettaglio di una tappa da fare: «Salta», «Saltala e basta».
+    await tester.tap(find.text('Salta'));
+    await aspetta(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(Foglio).last,
+        matching: find.text('Saltala e basta'),
+      ),
+    );
     await aspetta(tester);
     final nellaCopia = await tester.runAsync(
       () => ambiente.db.select(ambiente.db.tappe).getSingle(),
     );
     expect(nellaCopia!.stato, 'saltata');
-    await tester.drag(scorre, const Offset(0, -200));
-    await tester.pumpAndSettle();
+
+    // Il dettaglio è ancora aperto, e ora propone di rimandarla.
     await tester.tap(find.text('Rimandala'));
     await aspetta(tester);
     await tester.tap(
@@ -476,6 +468,44 @@ void main() {
     expect(lello['giorno_id'], 'g3');
     expect(lello['stato'], 'da_fare');
     expect(lello['marcata_il'], isNull);
+  });
+
+  testWidgets('dal dettaglio una tappa fatta si riporta da fare', (
+    tester,
+  ) async {
+    ambiente.server
+      ..viaggi.add(
+        rigaViaggio('v', stato: 'definito', inizio: fra(-1), fine: fra(1)),
+      )
+      ..partecipazioni.add(rigaPartecipazione('v'))
+      ..giorni.addAll([
+        rigaGiorno('v', fra(-1), '10:00:00', '24:00:00', id: 'g1'),
+        rigaGiorno('v', fra(0), '00:00:00', '24:00:00', id: 'oggi'),
+        rigaGiorno('v', fra(1), '00:00:00', '18:00:00', id: 'g3'),
+      ])
+      ..tappe.add(
+        rigaDiTappa(
+          'a',
+          viaggio: 'v',
+          giorno: 'g1',
+          titolo: 'Livraria Lello',
+          ora: '11:00:00',
+          stato: 'completata',
+        ),
+      );
+    await tester.runAsync(ambiente.archivio.aggiornaCopia);
+    await ambiente.monta(
+      tester,
+      const SchermataGiornata(viaggioId: 'v', giornoId: 'g1'),
+    );
+    await tester.tap(find.text('Livraria Lello'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SchermataDettaglioTappa), findsOneWidget);
+
+    expect(find.textContaining('Fatta.'), findsOneWidget);
+    await tester.tap(find.text('Riportala da fare'));
+    await aspetta(tester);
+    expect(ambiente.server.tappe.single['stato'], 'da_fare');
   });
 
   testWidgets('prima della partenza il cerchio non segna: la tappa si apre', (
@@ -495,8 +525,10 @@ void main() {
     await tester.tapAt(cerchioDi(tester, 'Livraria Lello'));
     await tester.pumpAndSettle();
 
-    expect(find.text('La tappa'), findsOneWidget);
-    expect(find.text('Com\'è andata?'), findsNothing);
+    // Il dettaglio, senza «Fatta» e «Salta»: il viaggio non è cominciato.
+    expect(find.byType(SchermataDettaglioTappa), findsOneWidget);
+    expect(find.text('Fatta'), findsNothing);
+    expect(find.text('Salta'), findsNothing);
     expect(await inCoda(tester), isEmpty);
   });
 
@@ -513,8 +545,7 @@ void main() {
       tester,
       const SchermataGiornata(viaggioId: 'v', giornoId: 'g2'),
     );
-    await tester.tap(find.text('Livraria Lello'));
-    await tester.pumpAndSettle();
+    await apriModifica(tester, 'Livraria Lello');
     await tester.enterText(
       find.byType(TextField).first,
       'Livraria Lello, presto',
@@ -564,8 +595,7 @@ void main() {
       tester,
       const SchermataGiornata(viaggioId: 'v', giornoId: 'g2'),
     );
-    await tester.tap(find.text('Livraria Lello'));
-    await tester.pumpAndSettle();
+    await apriModifica(tester, 'Livraria Lello');
     await tester.enterText(
       find.byType(TextField).first,
       'Livraria Lello, presto',

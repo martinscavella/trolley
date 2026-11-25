@@ -64,11 +64,21 @@ void main() {
     ];
 
     final documenti = <_Doc>[
-      (nome: 'Ritorno', giorno: 'g13', ora: const Duration(hours: 18), creato: 1),
+      (
+        nome: 'Ritorno',
+        giorno: 'g13',
+        ora: const Duration(hours: 18),
+        creato: 1,
+      ),
       (nome: 'Passaporto', giorno: null, ora: null, creato: 2),
       (nome: 'Museo', giorno: 'g11', ora: const Duration(hours: 10), creato: 3),
       (nome: 'Hotel', giorno: 'g10', ora: null, creato: 4),
-      (nome: 'Imbarco', giorno: 'g10', ora: const Duration(hours: 7), creato: 5),
+      (
+        nome: 'Imbarco',
+        giorno: 'g10',
+        ora: const Duration(hours: 7),
+        creato: 5,
+      ),
       (nome: 'Treno', giorno: 'g12', ora: const Duration(hours: 9), creato: 6),
     ];
 
@@ -104,14 +114,21 @@ void main() {
     });
 
     test('la vigilia, il primo giorno è domani', () {
-      expect(nomi(ordina(documenti, DateTime(2026, 10, 9, 22))).first,
-          'domani: Imbarco, Hotel');
+      expect(
+        nomi(ordina(documenti, DateTime(2026, 10, 9, 22))).first,
+        'domani: Imbarco, Hotel',
+      );
     });
 
     test('un documento di un giorno che non c\'è più vale per tutto il '
         'viaggio', () {
       final gruppi = ordina([
-        (nome: 'Vecchio', giorno: 'g09', ora: const Duration(hours: 8), creato: 1),
+        (
+          nome: 'Vecchio',
+          giorno: 'g09',
+          ora: const Duration(hours: 8),
+          creato: 1,
+        ),
       ], DateTime(2026, 10, 10));
       expect(nomi(gruppi), ['tuttoIlViaggio: Vecchio']);
     });

@@ -25,6 +25,7 @@ import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
 import '../servizi.dart';
 import 'adesso.dart' show oraDelGiorno;
+import 'dettaglio_tappa.dart';
 import 'con_la_rete.dart';
 import 'gesti_tappa.dart';
 import 'salta.dart';
@@ -138,18 +139,21 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
         : null;
     final perId = {for (final c in collocate) c.tappa.id: c};
 
+    // Una tappa che c'è apre il suo dettaglio (tela, 156); una nuova, il
+    // foglio.
     Future<void> apriTappa({Tappa? tappa, Duration? alle}) async {
-      final altroGiorno = await apriFoglio<String>(
-        context,
-        SchermataTappa(
-          viaggio: viaggio,
-          giorni: giorni,
-          tappe: tappe,
-          giornoId: tappa?.giornoId ?? widget.giornoId,
-          tappa: tappa,
-          ora: alle,
-        ),
-      );
+      final altroGiorno = tappa != null
+          ? await apriLaTappa(context, viaggio: viaggio, tappa: tappa)
+          : await apriFoglio<String>(
+              context,
+              SchermataTappa(
+                viaggio: viaggio,
+                giorni: giorni,
+                tappe: tappe,
+                giornoId: widget.giornoId,
+                ora: alle,
+              ),
+            );
       if (altroGiorno != null && altroGiorno != widget.giornoId && mounted) {
         await apri<void>(
           context,

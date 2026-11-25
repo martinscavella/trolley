@@ -36,13 +36,16 @@ void main() {
   Map<String, Object?> sulServer(String id) =>
       ambiente.server.voci.singleWhere((v) => v['id'] == id);
 
-  test('la copia porta le voci con quante, e si leggono anche senza rete', () async {
-    ambiente.rete.disponibile = false;
-    final voci = await mie();
-    expect(voci.map((v) => v.testo), ['Passaporto', 'Magliette']);
-    expect(voci.last.quantita, 5);
-    expect(voci.every((v) => !v.spuntata), isTrue);
-  });
+  test(
+    'la copia porta le voci con quante, e si leggono anche senza rete',
+    () async {
+      ambiente.rete.disponibile = false;
+      final voci = await mie();
+      expect(voci.map((v) => v.testo), ['Passaporto', 'Magliette']);
+      expect(voci.last.quantita, 5);
+      expect(voci.every((v) => !v.spuntata), isTrue);
+    },
+  );
 
   test('della copia si vedono la lista del viaggio e la propria, mai la '
       'personale di un altro', () async {
@@ -90,30 +93,33 @@ void main() {
       expect((await voce('passaporto')).versione, 2);
     });
 
-    test('spuntata e poi tolta: arrivano in ordine, e vince l\'ultima', () async {
-      ambiente.rete.disponibile = false;
-      for (final spuntata in [true, false]) {
-        await coda.spuntaVoce(
-          voceId: 'magliette',
-          viaggioId: 'v',
-          spuntata: spuntata,
-          testo: 'Magliette',
+    test(
+      'spuntata e poi tolta: arrivano in ordine, e vince l\'ultima',
+      () async {
+        ambiente.rete.disponibile = false;
+        for (final spuntata in [true, false]) {
+          await coda.spuntaVoce(
+            voceId: 'magliette',
+            viaggioId: 'v',
+            spuntata: spuntata,
+            testo: 'Magliette',
+          );
+        }
+        expect((await voce('magliette')).spuntata, isFalse);
+
+        ambiente.rete.disponibile = true;
+        await coda.svuota();
+
+        expect(sulServer('magliette')['spuntata'], isFalse);
+        expect(
+          ambiente.server.chiamate('PATCH', '/rest/v1/voce_lista').map(corpoDi),
+          [
+            {'spuntata': true},
+            {'spuntata': false},
+          ],
         );
-      }
-      expect((await voce('magliette')).spuntata, isFalse);
-
-      ambiente.rete.disponibile = true;
-      await coda.svuota();
-
-      expect(sulServer('magliette')['spuntata'], isFalse);
-      expect(
-        ambiente.server.chiamate('PATCH', '/rest/v1/voce_lista').map(corpoDi),
-        [
-          {'spuntata': true},
-          {'spuntata': false},
-        ],
-      );
-    });
+      },
+    );
 
     test('una copia riscaricata non perde la spunta ancora in coda', () async {
       ambiente.server.percorsi['PATCH /rest/v1/voce_lista'] = (_) async =>
@@ -147,7 +153,10 @@ void main() {
 
       final op = (await inCoda()).single;
       expect(op.messaDaParte, isTrue);
-      expect(Coda.cosaNonEArrivato(op), 'La spunta di «Passaporto» non è arrivata.');
+      expect(
+        Coda.cosaNonEArrivato(op),
+        'La spunta di «Passaporto» non è arrivata.',
+      );
       expect(op.ultimoErrore, contains('non c\'è sul server'));
       expect(Coda.voceDi(op), 'passaporto');
 
@@ -157,29 +166,36 @@ void main() {
   });
 
   group('aggiungere e cambiare, con la rete', () {
-    test('una voce nuova va nella lista personale, a nome di chi la scrive', () async {
-      final nuova = await ambiente.archivio.aggiungiVoce(
-        viaggioId: 'v',
-        testo: '  Adattatore tipo A ',
-        quantita: 2,
-      );
+    test(
+      'una voce nuova va nella lista personale, a nome di chi la scrive',
+      () async {
+        final nuova = await ambiente.archivio.aggiungiVoce(
+          viaggioId: 'v',
+          testo: '  Adattatore tipo A ',
+          quantita: 2,
+        );
 
-      final riga = ambiente.server.voci.last;
-      expect(riga['testo'], 'Adattatore tipo A');
-      expect(riga['quantita'], 2);
-      expect(riga['tipo'], 'personale');
-      expect(riga['proprietario_id'], idDiProva);
-      expect(riga['creato_da'], idDiProva);
-      expect(nuova.testo, 'Adattatore tipo A');
-      expect((await mie()).last.id, riga['id']);
-    });
+        final riga = ambiente.server.voci.last;
+        expect(riga['testo'], 'Adattatore tipo A');
+        expect(riga['quantita'], 2);
+        expect(riga['tipo'], 'personale');
+        expect(riga['proprietario_id'], idDiProva);
+        expect(riga['creato_da'], idDiProva);
+        expect(nuova.testo, 'Adattatore tipo A');
+        expect((await mie()).last.id, riga['id']);
+      },
+    );
 
     test('senza rete non si aggiunge, e lo dice', () async {
       ambiente.rete.disponibile = false;
       await expectLater(
         ambiente.archivio.aggiungiVoce(viaggioId: 'v', testo: 'Ombrello'),
         throwsA(
-          isA<ErroreTrolley>().having((e) => e.serveLaRete, 'serveLaRete', true),
+          isA<ErroreTrolley>().having(
+            (e) => e.serveLaRete,
+            'serveLaRete',
+            true,
+          ),
         ),
       );
       expect(await mie(), hasLength(2));

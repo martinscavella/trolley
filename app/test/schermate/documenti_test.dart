@@ -165,10 +165,14 @@ void main() {
     await ambiente.monta(tester, const SchermataDocumenti(viaggioId: 'v'));
 
     // Anche con l'elenco vuoto: non deve sembrare un errore.
-    expect(find.textContaining('Biglietti, prenotazioni, passaporto'),
-        findsOneWidget);
-    expect(find.textContaining('Solo tuoi, solo su questo telefono.'),
-        findsOneWidget);
+    expect(
+      find.textContaining('Biglietti, prenotazioni, passaporto'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Solo tuoi, solo su questo telefono.'),
+      findsOneWidget,
+    );
     expect(
       find.textContaining('Marco non li vedono, e i loro restano'),
       findsOneWidget,
@@ -190,14 +194,18 @@ void main() {
     // La scansione non ha un nome da proporre: si chiede.
     expect(find.text('Scansione · 2 pagine'), findsOneWidget);
     expect(find.text('Dagli un nome, per ritrovarlo'), findsOneWidget);
-    expect(find.textContaining('Resta solo su questo telefono.',
-        findRichText: true), findsOneWidget);
+    expect(
+      find.textContaining('Resta solo su questo telefono.', findRichText: true),
+      findsOneWidget,
+    );
     // Per tutto il viaggio non serve l'ora.
     expect(find.text('A che ora?'), findsNothing);
 
     await tester.enterText(find.byType(TextField), 'Carta d\'identità');
     await tester.pump();
-    await tester.tap(find.text(_giornoCorto(oggi.add(const Duration(days: 31)))));
+    await tester.tap(
+      find.text(_giornoCorto(oggi.add(const Duration(days: 31)))),
+    );
     await tester.pumpAndSettle();
     expect(find.text('A che ora?'), findsOneWidget);
 
@@ -218,7 +226,9 @@ void main() {
     expect(ambiente.telefono.protetti, hasLength(1));
 
     final eventi = await ambiente.eventi(tester);
-    final primo = eventi.singleWhere((e) => e.nome == 'primo_elemento_aggiunto');
+    final primo = eventi.singleWhere(
+      (e) => e.nome == 'primo_elemento_aggiunto',
+    );
     expect(jsonDecode(primo.proprieta), containsPair('tipo', 'documento'));
     final funzione = eventi.singleWhere(
       (e) => e.nome == 'funzione_usata_nel_viaggio',
@@ -245,8 +255,10 @@ void main() {
 
     // Dal file arriva anche il nome.
     expect(find.text('Carta imbarco'), findsOneWidget);
-    expect(find.textContaining('Resta solo su questo telefono.',
-        findRichText: true), findsNothing);
+    expect(
+      find.textContaining('Resta solo su questo telefono.', findRichText: true),
+      findsNothing,
+    );
   });
 
   testWidgets('senza rete tutto funziona lo stesso, e l\'apertura si conta', (

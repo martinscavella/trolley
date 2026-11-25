@@ -26,12 +26,12 @@ import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
+import 'dettaglio_tappa.dart';
 import 'con_la_rete.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
 import 'salta.dart';
 import 'permesso_posizione.dart';
-import 'tappa.dart';
 
 /// La mappa del viaggio (08-mappa.md; tela, 50–55): le tappe di un giorno
 /// nell'ordine del programma, numerate come nella giornata, o quelle di
@@ -763,17 +763,10 @@ class _SchermataMappaState extends State<SchermataMappa> {
         numero: sulla.numero,
       );
 
-  Future<void> _apriTappa(_Vista vista, Tappa tappa) => apri<void>(
-    context,
-    SchermataTappa(
-      viaggio: vista.viaggio,
-      giorni: vista.giorni,
-      tappe: vista.tappe,
-      giornoId: tappa.giornoId,
-      tappa: tappa,
-    ),
-    dalBasso: true,
-  );
+  // Il dettaglio della tappa (tela, 156), come da ovunque.
+  Future<void> _apriTappa(_Vista vista, Tappa tappa) async {
+    await apriLaTappa(context, viaggio: vista.viaggio, tappa: tappa);
+  }
 
   // ─── Le parole ───────────────────────────────────────────────────────────
 

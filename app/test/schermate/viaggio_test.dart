@@ -189,10 +189,10 @@ void main() {
     expect(find.text('Giorni'), findsOneWidget);
 
     final eventi = await ambiente.eventi(tester);
-    expect([for (final e in eventi) e.nome], [
-      'idea_definita',
-      'permesso_notifiche',
-    ]);
+    expect(
+      [for (final e in eventi) e.nome],
+      ['idea_definita', 'permesso_notifiche'],
+    );
     expect(
       jsonDecode(eventi.first.proprieta),
       containsPair('durata_prevista_giorni', 3),

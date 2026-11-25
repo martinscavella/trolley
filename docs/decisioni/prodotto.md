@@ -662,6 +662,17 @@ Durante e dopo il viaggio a Copenaghen l'utente ha raccolto otto richieste (CR-0
   - **I traguardi animati solo se il viaggio è verificato** (10, regola 4); agli altri non si dice cosa mancava.
   - Gratuito, come traguardi e mappamondo (13, regola 7): scelta di Claude, dirlo se no.
 
+### Il dettaglio della tappa (26 novembre 2026)
+
+Provando la CR-04 sull'iPhone l'utente non voleva che aprendo una tappa uscisse il foglio per cambiarla: «vorrei una sorta di schermata di dettaglio della tappa», con «un tasto edit che apre quella modale». Tela, 156–158.
+
+- **Si apre da ovunque** (scelto dall'utente fra «ovunque», «solo da Adesso» e «durante il viaggio»): «Adesso», «Oggi» e «Domani», la giornata, la mappa. Una tappa nuova apre il foglio come prima, e anche una da ricollocare, senza giorno: va sistemata.
+- **Dentro**: quando (giorno e orario), cosa e quanto dura; durante il viaggio «Fatta» e «Salta» (che chiede, tela 152); segnata, com'è andata, con «Riportala da fare», e da saltata «Rimandala» (157); dove, con «Portami lì» e «Apri in Mappe», o «Cerca il posto» se non è sulla mappa (158); il documento di quel momento, cioè dello stesso giorno con l'ora dentro la tappa; chi l'ha aggiunta.
+- **La matita in alto** apre il foglio di sempre, che ora serve solo a cambiarla: «Com'è andata?» è passato nel dettaglio.
+- **La mini mappa, la descrizione e la guida arrivano con Google** (scelto dall'utente: «dopo Google»): oggi una mappa costa a riquadro (ADR-006), con Google no (ADR-014). Il posto lo terranno il dettaglio e la CR-01.
+- **Il pulsante in alto a destra di «Adesso»** apre tutto il viaggio, e aveva il biglietto: lo stesso simbolo, nello stesso posto, che in «I tuoi viaggi» vuol dire «codice d'invito». Ora ha la valigia della sezione Viaggi.
+- **Nessun evento**: aprire una tappa è andare da un posto all'altro (07, regola 2). I gesti che ci sono dentro hanno i loro (`tappa_marcata`, `tappa_rimandata`).
+
 ## Ricordo e traguardi
 
 ### Badge e mappamondo digitale

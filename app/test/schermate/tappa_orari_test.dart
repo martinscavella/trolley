@@ -122,9 +122,9 @@ void main() {
       (t) => t['titolo'] == 'Torre dei Clérigos',
     );
     expect(aggiunta['ora_inizio'], '11:30:00');
-    final evento = (await ambiente.eventi(
-      tester,
-    )).where((e) => e.nome == 'tappa_non_entrata').single;
+    final evento = (await ambiente.eventi(tester))
+        .where((e) => e.nome == 'tappa_non_entrata')
+        .single;
     expect(jsonDecode(evento.proprieta), {
       'motivo': 'sovrapposta',
       'scelta': 'orario_libero',
@@ -169,9 +169,9 @@ void main() {
     // Chiuso tirandolo giù, o con Indietro.
     Navigator.of(tester.element(find.text('Nuova tappa'))).pop();
     await aspetta(tester);
-    final evento = (await ambiente.eventi(
-      tester,
-    )).where((e) => e.nome == 'tappa_non_entrata').single;
+    final evento = (await ambiente.eventi(tester))
+        .where((e) => e.nome == 'tappa_non_entrata')
+        .single;
     expect(jsonDecode(evento.proprieta), {
       'motivo': 'sovrapposta',
       'scelta': 'lasciata',

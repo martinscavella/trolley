@@ -9,6 +9,7 @@ import 'package:trolley/dati/database.dart';
 import 'package:trolley/dominio/calendario.dart';
 import 'package:trolley/dominio/tappe.dart';
 import 'package:trolley/schermate/adesso.dart';
+import 'package:trolley/schermate/dettaglio_tappa.dart';
 import 'package:trolley/schermate/viaggi.dart';
 
 import '../aiuti.dart';
@@ -291,6 +292,41 @@ void main() {
     final apertura = (await eventi(tester))
         .singleWhere((e) => e.$1 == 'apertura_senza_rete');
     expect(apertura.$2, {'schermata': 'adesso', 'mancante': null});
+  });
+
+  testWidgets('toccando la tappa si apre il suo dettaglio: quando, il '
+      'documento di quel momento, chi l\'ha aggiunta; si segna da lì', (
+    tester,
+  ) async {
+    await viaggio(tester, tappe: giornata);
+    await documento(
+      tester,
+      'Biglietto Lello',
+      giorno: 'g2',
+      ora: const Duration(hours: 10, minutes: 30),
+    );
+    await adesso(tester, alle(11, 5));
+
+    await tester.tap(find.text('Livraria Lello').first);
+    await aspetta(tester);
+
+    expect(find.byType(SchermataDettaglioTappa), findsOneWidget);
+    expect(find.textContaining('10:30–11:30'), findsOneWidget);
+    expect(find.text('Biglietto Lello'), findsOneWidget);
+    expect(find.text('Aggiunta da te'), findsOneWidget);
+    // Senza posto sulla mappa: si cerca da «Modifica».
+    expect(find.text('Cerca il posto'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(SchermataDettaglioTappa),
+        matching: find.text('Fatta'),
+      ),
+    );
+    await aspetta(tester);
+    final lello = ambiente.server.tappe.firstWhere((t) => t['id'] == 'lello');
+    expect(lello['stato'], 'completata');
+    expect(find.textContaining('Fatta.'), findsOneWidget);
   });
 
   group('«Salta» chiede: rimandala o saltala e basta (04, 31–33)', () {

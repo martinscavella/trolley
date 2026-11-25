@@ -317,11 +317,7 @@ void main() {
     final azione = CustomSemanticsAction.getIdentifier(
       const CustomSemanticsAction(label: 'Apri a tutto schermo'),
     );
-    nodo.owner!.performAction(
-      nodo.id,
-      SemanticsAction.customAction,
-      azione,
-    );
+    nodo.owner!.performAction(nodo.id, SemanticsAction.customAction, azione);
     await aspetta(tester);
     expect(find.byType(SchermataGlobo), findsOneWidget);
     expect(find.text('2 paesi · 3 città'), findsOneWidget);

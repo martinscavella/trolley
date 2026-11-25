@@ -101,15 +101,20 @@ void main() {
     expect(find.text('di 900,00\u00a0€'), findsOneWidget);
     // 900 per tre giorni: oggi e domani restano 390 l'uno.
     expect(
-      find.textContaining('Restano 780,00\u00a0€: 390,00\u00a0€ al giorno per oggi e '
-          'domani.'),
+      find.textContaining(
+        'Restano 780,00\u00a0€: 390,00\u00a0€ al giorno per oggi e '
+        'domani.',
+      ),
       findsOneWidget,
     );
     // Due giorni cominciati, 600 di ritmo: 480 sotto.
-    expect(find.textContaining('sotto il ritmo di 480,00\u00a0€'), findsOneWidget);
-    final evento = (await ambiente.eventi(
-      tester,
-    )).where((e) => e.nome == 'budget_impostato').single;
+    expect(
+      find.textContaining('sotto il ritmo di 480,00\u00a0€'),
+      findsOneWidget,
+    );
+    final evento = (await ambiente.eventi(tester))
+        .where((e) => e.nome == 'budget_impostato')
+        .single;
     expect(jsonDecode(evento.proprieta), {
       'di': 'viaggio',
       'stato': 'inCorso',
@@ -130,7 +135,10 @@ void main() {
     await scrivi(tester, '100');
     await tester.tap(pulsante('Salva'));
     await aspetta(tester);
-    expect(find.textContaining('Oltre il budget di 20,00\u00a0€.'), findsOneWidget);
+    expect(
+      find.textContaining('Oltre il budget di 20,00\u00a0€.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('il proprio budget si mette anche senza rete, resta sul '
@@ -193,7 +201,10 @@ void main() {
     );
     await tester.tap(find.text('Aggiungi un budget di massima'));
     await tester.pumpAndSettle();
-    expect(find.text('Quanto pensate di spendere, più o meno?'), findsOneWidget);
+    expect(
+      find.text('Quanto pensate di spendere, più o meno?'),
+      findsOneWidget,
+    );
     await scrivi(tester, '2500');
     await tester.tap(pulsante('Salva'));
     await aspetta(tester);

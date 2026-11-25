@@ -25,6 +25,7 @@ import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
 import '../dominio/valute.dart';
 import '../servizi.dart';
+import 'dettaglio_tappa.dart';
 import 'con_la_rete.dart';
 import 'documenti.dart';
 import 'gesti_spesa.dart';
@@ -280,10 +281,12 @@ class _SchermataAdessoState extends State<SchermataAdesso>
     return Pagina(
       sinistra: const SizedBox.shrink(),
       azioni: [
+        // La valigia della sezione Viaggi: il biglietto, in «I tuoi viaggi»,
+        // è il codice d'invito.
         PulsanteTondo(
           icona: icona(
-            ios: CupertinoIcons.tickets,
-            android: Icons.confirmation_number_outlined,
+            ios: CupertinoIcons.briefcase,
+            android: Icons.luggage_outlined,
           ),
           etichetta: 'Tutto il viaggio',
           onPressed: () =>
@@ -492,17 +495,19 @@ class _VistaAdesso extends StatelessWidget {
       ? const []
       : [for (final c in tappeDelGiorno(g, tappe)) c.tappa];
 
-  Future<void> _apriTappa(BuildContext context, {Tappa? tappa}) =>
-      apriFoglio<String>(
-        context,
-        SchermataTappa(
-          viaggio: viaggio,
-          giorni: giorni,
-          tappe: tappe,
-          giornoId: tappa?.giornoId ?? giorno?.id,
-          tappa: tappa,
-        ),
-      );
+  /// Una tappa che c'è apre il suo dettaglio (tela, 156); una nuova, il
+  /// foglio.
+  Future<void> _apriTappa(BuildContext context, {Tappa? tappa}) => tappa != null
+      ? apriLaTappa(context, viaggio: viaggio, tappa: tappa)
+      : apriFoglio<String>(
+          context,
+          SchermataTappa(
+            viaggio: viaggio,
+            giorni: giorni,
+            tappe: tappe,
+            giornoId: giorno?.id,
+          ),
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -1047,16 +1052,8 @@ class _VistaGiorno extends StatelessWidget {
         : null;
     Future<void> segna(Tappa t, StatoTappa stato) =>
         segnaLaTappa(context, viaggio: viaggio, tappa: t, stato: stato);
-    Future<void> apriTappa(Tappa t) => apriFoglio<String>(
-      context,
-      SchermataTappa(
-        viaggio: viaggio,
-        giorni: giorni,
-        tappe: tappe,
-        giornoId: t.giornoId,
-        tappa: t,
-      ),
-    );
+    Future<void> apriTappa(Tappa t) =>
+        apriLaTappa(context, viaggio: viaggio, tappa: t);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

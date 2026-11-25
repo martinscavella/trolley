@@ -12,6 +12,8 @@ import 'package:trolley/schermate/giornata.dart';
 import 'package:trolley/schermate/mappa.dart';
 import 'package:trolley/schermate/navigazione.dart';
 
+import 'package:trolley/schermate/dettaglio_tappa.dart';
+
 import '../aiuti.dart';
 
 /// La mappa (fase 3.2, 08-mappa.md; tela, 50–56): le tappe di oggi in
@@ -221,6 +223,11 @@ void main() {
       expect(find.text('Rua de São Filipe de Nery'), findsOneWidget);
 
       await tester.tap(find.text('Apri la tappa'));
+      await tester.pumpAndSettle();
+      // Il dettaglio della tappa (tela, 156); la matita apre il foglio.
+      expect(find.byType(SchermataDettaglioTappa), findsOneWidget);
+      expect(find.text('Portami lì'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Modifica'));
       await tester.pumpAndSettle();
       expect(find.text('La tappa'), findsOneWidget);
     });

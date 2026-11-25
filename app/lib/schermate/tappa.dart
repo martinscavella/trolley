@@ -28,7 +28,6 @@ import '../dominio/testo.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
-import 'salta.dart';
 import 'due_versioni.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
@@ -93,7 +92,6 @@ class _SchermataTappaState extends State<SchermataTappa> {
   late Duration _durata =
       widget.tappa?.durata ?? TipoTappa.visita.durataProposta;
   late String? _giornoId = _giornoValido(widget.giornoId);
-  late StatoTappa? _stato = widget.tappa?.statoTappa;
 
   /// A che ora comincia: quella della tappa, o la proposta.
   late Duration _ora = _oraIniziale();
@@ -503,34 +501,12 @@ class _SchermataTappaState extends State<SchermataTappa> {
     }
   }
 
-  /// Il foglio per rimandarla; spostata, questo foglio non ha più l'orario
-  /// giusto, e si chiude.
-  Future<void> _rimandala() async {
-    final rimandata = await rimandaLaTappa(
-      context,
-      viaggio: widget.viaggio,
-      tappa: widget.tappa!,
-    );
-    if (rimandata && mounted) Navigator.of(context).pop();
-  }
-
-  Future<void> _segna(StatoTappa stato) async {
-    setState(() => _stato = stato);
-    await segnaLaTappa(
-      context,
-      viaggio: widget.viaggio,
-      tappa: widget.tappa!,
-      stato: stato,
-    );
-  }
-
   @override
   Widget build(BuildContext context) => ConLaRete(
     builder: (context, rete) {
       final motivo = _motivo(rete);
       final g = _giorno;
       final tappa = widget.tappa;
-      final segnabili = tappeSegnabili(widget.viaggio.statoA(DateTime.now()));
       final problema = _problema;
       final proposte = g == null || problema == null
           ? null
@@ -760,48 +736,8 @@ class _SchermataTappaState extends State<SchermataTappa> {
               ],
             ),
           ],
-          if (tappa != null && segnabili) ...[
-            const SizedBox(height: 16),
-            const _Etichetta('Com\'è andata?'),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final (s, nome) in const [
-                  (StatoTappa.daFare, 'Da fare'),
-                  (StatoTappa.completata, 'Fatta'),
-                  (StatoTappa.saltata, 'Saltata'),
-                ])
-                  Gettone(
-                    etichetta: nome,
-                    scelto: _stato == s,
-                    onTap: () => _segna(s),
-                  ),
-              ],
-            ),
-            // Una saltata si rimanda anche dopo (04, regola 33; tela, 155).
-            if (_stato == StatoTappa.saltata) ...[
-              const SizedBox(height: 14),
-              Avviso(
-                fondo: Colori.cobaltoChiaro,
-                colore: Colori.cobalto,
-                icona: icona(
-                  ios: CupertinoIcons.arrow_counterclockwise,
-                  android: Icons.replay_rounded,
-                ),
-                inizio: 'Ci vuoi ancora andare?',
-                testo:
-                    'Rimandala: torna da fare, più tardi oggi o in un altro '
-                    'giorno.',
-                azioni: [
-                  PulsantePiccolo(
-                    etichetta: 'Rimandala',
-                    onPressed: _inCorso ? null : _rimandala,
-                  ),
-                ],
-              ),
-            ],
-          ],
+          // Com'è andata si dice dal dettaglio della tappa (tela, 156–157):
+          // questo foglio è per cambiarla.
           if (tappa != null) ...[
             const SizedBox(height: 20),
             PulsanteGrande(

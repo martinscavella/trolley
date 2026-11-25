@@ -38,12 +38,7 @@ void main() {
   Future<void> porto(WidgetTester tester, {bool conSara = false}) async {
     ambiente.server
       ..viaggi.add(
-        rigaViaggio(
-          'v',
-          stato: 'definito',
-          inizio: fra(30),
-          fine: fra(31),
-        ),
+        rigaViaggio('v', stato: 'definito', inizio: fra(30), fine: fra(31)),
       )
       ..partecipazioni.addAll([
         rigaPartecipazione('v'),
@@ -81,7 +76,10 @@ void main() {
     expect(find.text('Eliminare Porto?'), findsOneWidget);
     expect(find.textContaining('2 giorni', findRichText: true), findsOneWidget);
     expect(find.textContaining('2 spese', findRichText: true), findsOneWidget);
-    expect(find.textContaining('che è uscito', findRichText: true), findsOneWidget);
+    expect(
+      find.textContaining('che è uscito', findRichText: true),
+      findsOneWidget,
+    );
 
     await tester.tap(pulsante('Elimina il viaggio'));
     await tester.pumpAndSettle();
@@ -94,9 +92,9 @@ void main() {
       () => ambiente.archivio.osservaViaggio('v').first,
     );
     expect(copia, isNull);
-    final evento = (await ambiente.eventi(
-      tester,
-    )).where((e) => e.nome == 'viaggio_eliminato').single;
+    final evento = (await ambiente.eventi(tester))
+        .where((e) => e.nome == 'viaggio_eliminato')
+        .single;
     expect(jsonDecode(evento.proprieta), {
       'stato': 'definito',
       'giorni_dalla_creazione': isA<int>(),

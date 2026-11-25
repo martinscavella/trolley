@@ -10,7 +10,8 @@ Costruire il programma dei giorni. È la funzione con più attrito potenziale de
 
 - **Giorni** — l'elenco delle giornate con la loro capienza
 - **Giornata** — la linea del tempo dalle 0 alle 24, con le tappe ai loro orari
-- **Nuova tappa** — luogo, durata stimata, orario
+- **La tappa** — il suo dettaglio: quando, cosa, dove, il documento di quel momento; durante il viaggio si segna da qui. Si apre toccandola, da ovunque (tela, 156–158)
+- **Nuova tappa**, e **cambiare una tappa** — luogo, durata stimata, orario; dal dettaglio, con la matita
 - **Genera itinerario** — prepara il prompt, lo consegna, riceve indietro il risultato
 
 ---

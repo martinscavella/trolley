@@ -153,11 +153,7 @@ void main() {
     });
 
     test('sempre il debito più grande verso il credito più grande', () {
-      final passaggi = pareggia({
-        'giulia': 1840,
-        'sara': -1220,
-        'marco': -620,
-      });
+      final passaggi = pareggia({'giulia': 1840, 'sara': -1220, 'marco': -620});
       expect(passaggi, [
         const Passaggio(da: 'sara', a: 'giulia', centesimi: 1220),
         const Passaggio(da: 'marco', a: 'giulia', centesimi: 620),
