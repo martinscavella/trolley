@@ -103,6 +103,10 @@ Future<bool> _chiedi(
     archivio.osservaTappe(viaggio.id).first,
   ).wait;
   if (!context.mounted) return false;
+  // La tappa com'è adesso nella copia, non com'era quando chi chiama l'ha
+  // letta: dal foglio della tappa la si può aver appena segnata saltata, e
+  // rimandandola va riportata da fare.
+  tappa = tappe.where((t) => t.id == tappa.id).firstOrNull ?? tappa;
   final suo = giorni.where((g) => g.id == tappa.giornoId).firstOrNull;
   final dove = suo == null
       ? null

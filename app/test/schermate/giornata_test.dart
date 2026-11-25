@@ -416,6 +416,68 @@ void main() {
     });
   });
 
+  testWidgets('segnata saltata dal suo foglio e subito rimandata, torna da '
+      'fare', (tester) async {
+    ambiente.server
+      ..viaggi.add(
+        rigaViaggio('v', stato: 'definito', inizio: fra(-1), fine: fra(1)),
+      )
+      ..partecipazioni.add(rigaPartecipazione('v'))
+      ..giorni.addAll([
+        rigaGiorno('v', fra(-1), '10:00:00', '24:00:00', id: 'g1'),
+        rigaGiorno('v', fra(0), '00:00:00', '24:00:00', id: 'oggi'),
+        rigaGiorno('v', fra(1), '00:00:00', '18:00:00', id: 'g3'),
+      ])
+      ..tappe.add(
+        rigaDiTappa(
+          'a',
+          viaggio: 'v',
+          giorno: 'g1',
+          titolo: 'Livraria Lello',
+          ora: '11:00:00',
+        ),
+      );
+    await tester.runAsync(ambiente.archivio.aggiornaCopia);
+    await ambiente.monta(
+      tester,
+      const SchermataGiornata(viaggioId: 'v', giornoId: 'g1'),
+    );
+    await tester.tap(find.text('Livraria Lello'));
+    await tester.pumpAndSettle();
+
+    // Nello stesso foglio: «Saltata», poi «Rimandala».
+    final scorre = find
+        .descendant(
+          of: find.byType(BottomSheet),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.drag(scorre, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saltata'));
+    await aspetta(tester);
+    final nellaCopia = await tester.runAsync(
+      () => ambiente.db.select(ambiente.db.tappe).getSingle(),
+    );
+    expect(nellaCopia!.stato, 'saltata');
+    await tester.drag(scorre, const Offset(0, -200));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rimandala'));
+    await aspetta(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(Foglio).last,
+        matching: find.text('Domani'),
+      ),
+    );
+    await aspetta(tester);
+
+    final lello = ambiente.server.tappe.single;
+    expect(lello['giorno_id'], 'g3');
+    expect(lello['stato'], 'da_fare');
+    expect(lello['marcata_il'], isNull);
+  });
+
   testWidgets('prima della partenza il cerchio non segna: la tappa si apre', (
     tester,
   ) async {

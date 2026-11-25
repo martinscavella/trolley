@@ -399,7 +399,14 @@ void main() {
       expect(find.text('Ti va di scambiare due consigli?'), findsOneWidget);
       expect(find.text('COLLEGATI · 1'), findsOneWidget);
       expect(find.text('INVIATE · 2'), findsOneWidget);
-      expect(find.text('in attesa, da oggi'), findsOneWidget);
+      // Luca ha chiesto cinque minuti fa: poco dopo mezzanotte era ieri.
+      final ieri =
+          DateTime.now().subtract(const Duration(minutes: 5)).day !=
+          DateTime.now().day;
+      expect(
+        find.text(ieri ? 'in attesa, da ieri' : 'in attesa, da oggi'),
+        findsOneWidget,
+      );
       expect(find.text('non accettata'), findsOneWidget);
 
       await tester.tap(find.text('Accetta'));
