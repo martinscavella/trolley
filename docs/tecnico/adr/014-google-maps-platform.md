@@ -41,6 +41,24 @@ Da verificare sul testo prima di costruire ([punti aperti](../../punti-aperti.md
 4. **Il plugin Flutter del Navigation SDK** (`google_navigation_flutter`): com'è mantenuto, e se regge la tela.
 5. **Le condizioni sui contenuti di Places dati a un modello** (CR-01): la scheda della guida si scrive da Wikipedia e dal nome del luogo, non dal contenuto di Google, finché non è chiaro.
 
+## Le condizioni europee, lette il 26 novembre 2026
+
+Il testo delle condizioni non si legge dagli strumenti automatici, ma le pagine per sviluppatori che le spiegano sì ([Places](https://developers.google.com/maps/comms/eea/places), [Routes](https://developers.google.com/maps/comms/eea/routes), [domande frequenti](https://developers.google.com/maps/comms/eea/faq)). Valgono per un conto di fatturazione con indirizzo nello Spazio economico europeo, quindi per noi.
+
+- **Places**: tranne latitudine, longitudine e `place_id`, il contenuto di Places **non si usa con nessuna mappa**, nemmeno di Google: né sopra, né accanto, né in modo che si legga insieme. Senza mappa si può, negli usi permessi. L'eccezione è il Places UI Kit di Google, nativo, con l'aspetto di Google.
+- **Routes**: la descrizione e i passi di un percorso **non si usano con nessuna mappa**; senza mappa sì. Durata e distanza non sono nominate; la linea del percorso sulla mappa nemmeno.
+- **Navigation SDK**: la guida in tempo reale si può fare, con i requisiti di sicurezza di Google. Guida a piedi, in bici, in auto e in taxi; **non con i mezzi pubblici**. Il plugin Flutter (`google_navigation_flutter`) è alla 0.13, ancora beta, per Android dalla API 24 e iOS dalla 17.
+- **Mescolare fornitori** è permesso in Europa: il divieto di usare Google con mappe non Google è stato tolto. L'utente ha comunque scelto Google solo (sotto).
+
+## Scelte dell'utente, 26 novembre 2026
+
+- **Solo Google**, anche per i posti: proposto il misto (Google per mappa e guida, OpenStreetMap per i posti, che si conservano e si mostrano sulla mappa), l'utente ha scelto Google.
+- **Quindi sulla mappa solo il nostro**: il titolo della tappa, il suo numero, il suo colore, alle coordinate. Indirizzi, orari e descrizioni di Google stanno in schermate senza mappa.
+- **Il posto di una tappa cercato con Google** tiene il `place_id` e le coordinate (da rinnovare entro 30 giorni), non il nome né l'indirizzo: si chiedono a Google quando servono, con la rete. Le tappe di prima, con il posto di OpenStreetMap, tengono quello che hanno.
+- **Il dettaglio della tappa ha due schede**, «Info» (indirizzo, aperto o chiuso, orari, descrizione) e «Mappa» (la mini mappa), mai visibili insieme. Da confermare che due schede bastino a non essere «accanto» alla mappa: domanda per l'avvocato.
+- **I passi dei mezzi pubblici** stanno in una schermata loro, senza mappa; sulla mappa, se si può, solo la linea del percorso.
+- **«Qui vicino»** resta un elenco senza mappa (già deciso il 25 novembre).
+
 ## Conseguenze
 
 - **La mappa non si paga più a visualizzazione**: il problema di Copenaghen sparisce sul telefono. Restano a consumo i tragitti, le ricerche, gli orari e la guida.
