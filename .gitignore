@@ -22,3 +22,6 @@ build/
 *.p8
 *.p12
 *.mobileprovision
+
+# File temporanei della CLI di Supabase (progetto collegato, versioni)
+supabase/.temp/
