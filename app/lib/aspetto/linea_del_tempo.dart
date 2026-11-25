@@ -146,11 +146,11 @@ class _LineaDelTempoState extends State<LineaDelTempo> {
     super.dispose();
   }
 
-  static double _y(Duration d) => _margine + d.inMinutes / 60 * LineaDelTempo.ora;
+  static double _y(Duration d) =>
+      _margine + d.inMinutes / 60 * LineaDelTempo.ora;
 
-  static Duration _ora(double y) => Duration(
-    minutes: ((y - _margine) / LineaDelTempo.ora * 60).round(),
-  );
+  static Duration _ora(double y) =>
+      Duration(minutes: ((y - _margine) / LineaDelTempo.ora * 60).round());
 
   Duration _inizioDi(BloccoLinea b) =>
       b.id == _preso ? _a : _inViaggio[b.id] ?? b.inizio;
@@ -569,9 +569,7 @@ class _Blocco extends StatelessWidget {
     final tratteggiato =
         !rosso && (b.aspetto == AspettoBlocco.inCoda || b.proposto);
     final quando = '${ora(inizio)}–${ora(inizio + b.durata)}';
-    final descrizione = preso
-        ? [quando, ?problema].join(' · ')
-        : b.dettaglio;
+    final descrizione = preso ? [quando, ?problema].join(' · ') : b.dettaglio;
     final corto = b.durata < const Duration(minutes: 45);
 
     return Semantics(
@@ -600,9 +598,7 @@ class _Blocco extends StatelessWidget {
         onLongPressCancel: onLascia,
         child: CustomPaint(
           foregroundPainter: tratteggiato
-              ? _BordoTratteggiato(
-                  b.proposto ? Colori.cobalto : Colori.grafite,
-                )
+              ? _BordoTratteggiato(b.proposto ? Colori.cobalto : Colori.grafite)
               : null,
           child: AnimatedContainer(
             duration: Ritmo.breve,
@@ -613,9 +609,7 @@ class _Blocco extends StatelessWidget {
             decoration: BoxDecoration(
               color: fondo,
               borderRadius: BorderRadius.circular(14),
-              border: tratteggiato
-                  ? null
-                  : Border.all(color: bordo, width: 2),
+              border: tratteggiato ? null : Border.all(color: bordo, width: 2),
               boxShadow: preso
                   ? [
                       BoxShadow(
@@ -775,10 +769,7 @@ class _Cerchio extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onSegna,
       onLongPress: onSalta,
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: cerchio,
-      ),
+      child: Padding(padding: const EdgeInsets.all(4), child: cerchio),
     );
   }
 }

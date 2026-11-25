@@ -171,32 +171,33 @@ class _SchermataDocumentiState extends State<SchermataDocumenti> {
                 padding: const EdgeInsets.only(top: 18),
                 child: _Vuoto(onAggiungi: aggiungi),
               ).entra(context, ritardo: Ritmo.passo),
-            for (final (i, gruppo) in gruppi.indexed) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
-                child: Semantics(
-                  header: true,
-                  child: Text(
-                    titoloGruppo(gruppo.tipo, gruppo.data),
-                    style: Testi.sezione.copyWith(
-                      color: gruppo.tipo == TipoGruppo.oggi
-                          ? Colori.cobalto
-                          : Colori.grafite,
+            for (final (i, gruppo) in gruppi.indexed)
+              ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      titoloGruppo(gruppo.tipo, gruppo.data),
+                      style: Testi.sezione.copyWith(
+                        color: gruppo.tipo == TipoGruppo.oggi
+                            ? Colori.cobalto
+                            : Colori.grafite,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              for (final (j, d) in gruppo.documenti.indexed) ...[
-                if (j > 0) const SizedBox(height: 8),
-                RigaDocumento(
-                  documento: d,
-                  giornoUscito:
-                      d.giornoId != null &&
-                      !giorni.any((g) => g.id == d.giornoId),
-                  passato: gruppo.tipo == TipoGruppo.passato,
-                ),
-              ],
-            ].map((w) => w.entra(context, ritardo: Ritmo.passo * (i + 1))),
+                for (final (j, d) in gruppo.documenti.indexed) ...[
+                  if (j > 0) const SizedBox(height: 8),
+                  RigaDocumento(
+                    documento: d,
+                    giornoUscito:
+                        d.giornoId != null &&
+                        !giorni.any((g) => g.id == d.giornoId),
+                    passato: gruppo.tipo == TipoGruppo.passato,
+                  ),
+                ],
+              ].map((w) => w.entra(context, ritardo: Ritmo.passo * (i + 1))),
             if (compagni.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 18),
@@ -287,8 +288,11 @@ class RigaDocumento extends StatelessWidget {
     return Premibile(
       onTap: () => apriDocumento(context, d),
       scala: 0.98,
-      etichetta: [d.nome, dettaglio, if (alle != null) 'alle ${ora(alle)}']
-          .join(', '),
+      etichetta: [
+        d.nome,
+        dettaglio,
+        if (alle != null) 'alle ${ora(alle)}',
+      ].join(', '),
       child: ExcludeSemantics(
         child: Opacity(
           opacity: passato ? 0.6 : 1,
@@ -318,9 +322,7 @@ class RigaDocumento extends StatelessWidget {
                         dettaglio,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Testi.didascalia.copyWith(
-                          color: Colori.grafite,
-                        ),
+                        style: Testi.didascalia.copyWith(color: Colori.grafite),
                       ),
                     ],
                   ),
@@ -383,15 +385,17 @@ class _AnteprimaDocumentoState extends State<AnteprimaDocumento> {
     if (_di == d.id) return;
     _di = d.id;
     final documenti = Servizi.of(context).documenti;
-    final pixel =
-        (widget.larghezza * MediaQuery.devicePixelRatioOf(context)).round();
+    final pixel = (widget.larghezza * MediaQuery.devicePixelRatioOf(context))
+        .round();
     _immagine = d.formatoDocumento == FormatoDocumento.pdf
         ? documenti
               .anteprima(d, larghezza: pixel)
               .then<ImageProvider>((byte) => MemoryImage(byte))
-        : documenti.file(d).then<ImageProvider>(
-            (f) => ResizeImage(FileImage(f), width: pixel),
-          );
+        : documenti
+              .file(d)
+              .then<ImageProvider>(
+                (f) => ResizeImage(FileImage(f), width: pixel),
+              );
   }
 
   @override
@@ -441,8 +445,8 @@ class _AnteprimaFileState extends State<AnteprimaFile> {
 
   @override
   Widget build(BuildContext context) {
-    final pixel =
-        (widget.larghezza * MediaQuery.devicePixelRatioOf(context)).round();
+    final pixel = (widget.larghezza * MediaQuery.devicePixelRatioOf(context))
+        .round();
     if (widget.formato == FormatoDocumento.immagine) {
       return MiniaturaDocumento(
         immagine: ResizeImage(FileImage(File(widget.percorso)), width: pixel),

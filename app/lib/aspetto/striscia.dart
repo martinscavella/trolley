@@ -137,7 +137,12 @@ class _Pittore extends CustomPainter {
       final destra = ((inizio + p.durata - da).inMinutes * scala - _fessura)
           .clamp(0, size.width);
       if (destra <= sinistra) continue;
-      final r = Rect.fromLTRB(sinistra.toDouble(), 0, destra.toDouble(), size.height);
+      final r = Rect.fromLTRB(
+        sinistra.toDouble(),
+        0,
+        destra.toDouble(),
+        size.height,
+      );
       if (p.rosso) {
         _rosso(canvas, r, raggio);
       } else {

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trolley/dati/conflitti.dart';
 import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/errori.dart';
 
@@ -20,7 +21,19 @@ void main() {
         ),
       )
       ..partecipazioni.add(rigaPartecipazione('v'))
-      ..note.add(rigaDiNota('vecchia', viaggio: 'v'));
+      ..partecipazioni.add(
+        rigaPartecipazione('v', utente: 'marco', ruolo: 'partecipante'),
+      )
+      ..note.addAll([
+        rigaDiNota('vecchia', viaggio: 'v'),
+        rigaDiNota(
+          'wifi',
+          viaggio: 'v',
+          origine: 'scritta',
+          testo: 'Wifi\nAlfama_5G',
+          creatoIl: '2026-10-03T10:00:00Z',
+        ),
+      ]);
     await ambiente.accedi();
     await ambiente.archivio.aggiornaCopia();
   });
@@ -28,13 +41,118 @@ void main() {
   tearDown(() => ambiente.chiudi());
 
   Future<List<Nota>> note() => ambiente.archivio.osservaNote('v').first;
+  Future<Nota> nota(String id) async =>
+      (await note()).singleWhere((n) => n.id == id);
+  Map<String, Object?> sulServer(String id) =>
+      ambiente.server.note.singleWhere((n) => n['id'] == id);
+
+  /// Marco cambia la nota dal suo telefono.
+  void marcoCambia(String id, Map<String, Object?> valori) => sulServer(id)
+    ..addAll(valori)
+    ..['versione'] = (sulServer(id)['versione']! as int) + 1
+    ..['modificato_da'] = 'marco'
+    ..['modificato_il'] = '2036-10-04T16:42:00Z';
+
+  Future<Conflitto> conflittoDa(Future<void> scrittura) => scrittura.then(
+    (_) => fail('doveva trovare due versioni'),
+    onError: (Object e) => e as Conflitto,
+  );
 
   test('la copia porta le note del viaggio, e si leggono senza rete', () async {
     ambiente.rete.disponibile = false;
-    final [nota] = await note();
-    expect(nota.id, 'vecchia');
-    expect(nota.origine, 'incollata');
+    final vecchia = await nota('vecchia');
+    expect(vecchia.origine, 'incollata');
+    expect((await nota('wifi')).origine, 'scritta');
   });
+
+  test('una nota scritta a mano si salva come scritta', () async {
+    await ambiente.archivio.salvaNota(
+      viaggioId: 'v',
+      testo: 'Treno per Sintra\n15:20 da Rossio',
+    );
+    expect(ambiente.server.note.last['origine'], 'scritta');
+  });
+
+  test(
+    'cambiata, il testo nuovo va sul server con la versione vista',
+    () async {
+      await ambiente.archivio.cambiaNota(
+        await nota('wifi'),
+        '  Wifi\nAlfama_5G · casa-24  ',
+      );
+      final riga = sulServer('wifi');
+      expect(riga['testo'], 'Wifi\nAlfama_5G · casa-24');
+      expect(riga['versione'], 2);
+      expect((await nota('wifi')).testo, 'Wifi\nAlfama_5G · casa-24');
+    },
+  );
+
+  test(
+    'una risposta incollata non si cambia, e una nota non si svuota',
+    () async {
+      await expectLater(
+        ambiente.archivio.cambiaNota(await nota('vecchia'), 'Altro'),
+        throwsA(isA<ErroreTrolley>()),
+      );
+      await expectLater(
+        ambiente.archivio.cambiaNota(await nota('wifi'), '   '),
+        throwsA(isA<ErroreTrolley>()),
+      );
+      expect(ambiente.server.chiamate('PATCH', '/rest/v1/nota'), isEmpty);
+    },
+  );
+
+  test('se Marco l\'ha riscritta intanto, si mostrano le due versioni e non '
+      'si fondono', () async {
+    final vista = await nota('wifi');
+    marcoCambia('wifi', {'testo': 'Wifi\nAlfama_5G, router dietro la tv'});
+
+    final c = await conflittoDa(
+      ambiente.archivio.cambiaNota(vista, 'Wifi\nAlfama_5G · casa-24'),
+    );
+    expect(c.cosa, CosaInConflitto.nota);
+    expect(c.mia['testo'], 'Wifi\nAlfama_5G · casa-24');
+    expect(c.loro['testo'], 'Wifi\nAlfama_5G, router dietro la tv');
+    expect(c.autoreId, 'marco');
+    expect(c.possonoConvivere, isTrue);
+    // Finché non si sceglie, sul server resta quella di Marco, e la copia
+    // la mostra.
+    expect(sulServer('wifi')['testo'], 'Wifi\nAlfama_5G, router dietro la tv');
+    expect((await nota('wifi')).testo, 'Wifi\nAlfama_5G, router dietro la tv');
+
+    await ambiente.archivio.tieniLaTua(c);
+    expect(sulServer('wifi')['testo'], 'Wifi\nAlfama_5G · casa-24');
+  });
+
+  test('«tienile tutte e due»: quella di Marco resta, la propria diventa una '
+      'nota in più', () async {
+    final vista = await nota('wifi');
+    marcoCambia('wifi', {'testo': 'Wifi di Marco'});
+    final c = await conflittoDa(
+      ambiente.archivio.cambiaNota(vista, 'Wifi mio'),
+    );
+
+    await ambiente.archivio.tieniTutteEDue(c);
+    expect(sulServer('wifi')['testo'], 'Wifi di Marco');
+    final nuova = ambiente.server.note.last;
+    expect(nuova['testo'], 'Wifi mio');
+    expect(nuova['origine'], 'scritta');
+    expect(
+      (await note()).map((n) => n.testo),
+      containsAll(['Wifi mio', 'Wifi di Marco']),
+    );
+  });
+
+  test(
+    'togliendo una nota che Marco ha appena riscritto, prima la si vede',
+    () async {
+      final vista = await nota('wifi');
+      marcoCambia('wifi', {'testo': 'Wifi di Marco'});
+      final c = await conflittoDa(ambiente.archivio.togliNota(vista));
+      expect(c.laTogli, isTrue);
+      expect(sulServer('wifi')['eliminato_il'], isNull);
+    },
+  );
 
   test('una risposta incollata si salva com\'è, a nome di chi la incolla, e '
       'una sola volta', () async {
@@ -75,10 +193,9 @@ void main() {
   });
 
   test('tolta, esce dalle note ma resta marcata sul server', () async {
-    final [nota] = await note();
-    await ambiente.archivio.togliNota(nota);
-    expect(ambiente.server.note.single['eliminato_il'], isNotNull);
-    expect(await note(), isEmpty);
+    await ambiente.archivio.togliNota(await nota('vecchia'));
+    expect(sulServer('vecchia')['eliminato_il'], isNotNull);
+    expect((await note()).map((n) => n.id), ['wifi']);
   });
 
   test(

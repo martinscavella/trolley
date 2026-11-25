@@ -24,7 +24,10 @@ class MiniaturaDocumento extends StatelessWidget {
   Widget build(BuildContext context) {
     final segno = Center(
       child: Icon(
-        icona(ios: CupertinoIcons.doc_text, android: Icons.description_outlined),
+        icona(
+          ios: CupertinoIcons.doc_text,
+          android: Icons.description_outlined,
+        ),
         size: larghezza * 0.5,
         color: Colori.piombo,
       ),

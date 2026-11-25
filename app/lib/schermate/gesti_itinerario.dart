@@ -35,7 +35,9 @@ Future<bool> esportaLaRichiesta(
     await Clipboard.setData(ClipboardData(text: richiesta));
   }
   HapticFeedback.lightImpact();
-  await misurazione.registra(Eventi.promptEsportato, {'viaggio_id': viaggio.id});
+  await misurazione.registra(Eventi.promptEsportato, {
+    'viaggio_id': viaggio.id,
+  });
   unawaited(misurazione.invia());
   return true;
 }

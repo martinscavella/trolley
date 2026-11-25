@@ -215,7 +215,9 @@ class StatoSezioni extends State<SchermataSezioni> {
       stream: _community,
       builder: (context, community) {
         final conCommunity = community.data == true;
-        if (!conCommunity && _attiva == Sezione.community && community.hasData) {
+        if (!conCommunity &&
+            _attiva == Sezione.community &&
+            community.hasData) {
           // La parte pubblica non c'è più: si torna ai viaggi.
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) vaiA(Sezione.viaggi);
@@ -248,11 +250,8 @@ class StatoSezioni extends State<SchermataSezioni> {
                   left: 20,
                   right: 20,
                   bottom: mq.padding.bottom > 0 ? mq.padding.bottom - 6 : 20,
-                  child: _barra(conCommunity).entra(
-                    context,
-                    ritardo: Ritmo.lungo,
-                    da: 40,
-                  ),
+                  child: _barra(conCommunity)
+                      .entra(context, ritardo: Ritmo.lungo, da: 40),
                 ),
               ],
             ),
@@ -289,7 +288,10 @@ class StatoSezioni extends State<SchermataSezioni> {
         voce(
           Sezione.mappa,
           'Mappa',
-          icona: icona(ios: CupertinoIcons.globe, android: Icons.public_rounded),
+          icona: icona(
+            ios: CupertinoIcons.globe,
+            android: Icons.public_rounded,
+          ),
         ),
       ],
       dopo: [

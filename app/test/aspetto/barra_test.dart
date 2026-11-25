@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/aspetto/barra.dart';
@@ -110,6 +112,22 @@ void main() {
     expect(find.text('Mappa'), findsOneWidget);
   });
 
+  testWidgets('nella corsa la pillola si stira, perché il bordo davanti va '
+      'prima, e all\'arrivo torna della sua misura', (tester) async {
+    await tester.pumpWidget(barra('Viaggi'));
+    final partenza = pillola(tester);
+    await tester.pumpWidget(barra('Passaporto'));
+    var piuLarga = 0.0;
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      piuLarga = max(piuLarga, pillola(tester).width);
+    }
+    await tester.pumpAndSettle();
+    final arrivo = pillola(tester);
+    expect(piuLarga, greaterThan(max(partenza.width, arrivo.width) + 20));
+    expect(arrivo.height, partenza.height);
+  });
+
   testWidgets('con Riduci movimento la pillola ci va e basta', (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
@@ -139,6 +157,7 @@ void main() {
     await tester.pumpWidget(barra('Viaggi', scelta: scelte.add));
     final daViaggi = pillola(tester);
 
+    final nomeViaggi = tester.getTopLeft(find.text('Viaggi'));
     final dito = await tester.startGesture(
       tester.getCenter(find.byIcon(Icons.luggage_outlined)),
     );
@@ -151,7 +170,11 @@ void main() {
       await dito.moveBy(tratto);
       await tester.pump(const Duration(milliseconds: 16));
     }
-    // A metà strada la pillola è col dito, e più grande: la lente.
+    // A metà strada, fermo il dito, la lente lo raggiunge: è col dito, e più
+    // grande. I nomi intanto non si muovono: sotto il dito la barra sta ferma.
+    expect(find.text('Passaporto'), findsNothing);
+    expect(tester.getTopLeft(find.text('Viaggi')), nomeViaggi);
+    await tester.pump(const Duration(milliseconds: 300));
     final aMeta = pillola(tester);
     expect(aMeta.center.dx, greaterThan(daViaggi.center.dx + 40));
     expect(aMeta.height, greaterThan(daViaggi.height));

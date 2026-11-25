@@ -456,7 +456,8 @@ class Coda {
           (leggiOra(giorno['finestra_inizio'] as String?) ?? inizioGiornata);
       final finestra = FinestraGiorno(
         data: DateTime.utc(2000),
-        inizio: leggiOra(giorno['finestra_inizio'] as String?) ?? inizioGiornata,
+        inizio:
+            leggiOra(giorno['finestra_inizio'] as String?) ?? inizioGiornata,
         fine: leggiOra(giorno['finestra_fine'] as String?) ?? fineGiornata,
       );
       final ordinate = [...altre]

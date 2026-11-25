@@ -94,8 +94,8 @@ La fase 1.6 (l'itinerario con un assistente: richiesta da copiare, risposta inco
 
 | Voce | Perché aspetta | Quando |
 |---|---|---|
-| **Scrivere una nota a mano** (02, regola 2) | La tabella c'è (`origine = 'scritta'`); manca la schermata. Nella 1.6 le note nascono solo dalle risposte incollate | Da decidere |
-| **Cambiare il testo di una nota** | Il server lo permette, con la versione; l'app per ora la legge, la copia e la elimina | Con le note scritte a mano |
+| ~~**Scrivere una nota a mano** (02, regola 2)~~ | La tabella c'è (`origine = 'scritta'`); manca la schermata. Nella 1.6 le note nascono solo dalle risposte incollate | ✅ 1° novembre 2026 (02, regola 14) |
+| ~~**Cambiare il testo di una nota**~~ | Il server lo permette, con la versione; l'app per ora la legge, la copia e la elimina | ✅ Le scritte a mano, 1° novembre 2026; le incollate restano com'erano |
 | **Tempi di spostamento e orari che si accavallano** | L'anteprima somma le durate come la capienza (04, cosa resta fuori); due tappe proposte alla stessa ora entrano tutte e due | Se la beta lo chiede |
 | **Leggere la risposta senza rete** | La nota va salvata prima di leggere, e salvare richiede la rete. Chi incolla di solito è appena stato sull'assistente, quindi online | Se H4 lo chiede |
 | **La generazione nativa** | Dipende dalla regola asimmetrica: si costruisce se `prompt_esportato` e `incollato_riuscito` dicono che il giro viene fatto | Dopo la beta |
@@ -122,7 +122,7 @@ La fase 2.2 (due versioni della stessa cosa: tappa, spesa, voce, date del viaggi
 |---|---|---|
 | ~~**La migrazione `chi_ha_scritto` non è nell'elenco delle versioni del server**~~ | Applicata il 4 ottobre 2026 dall'editor SQL di Supabase, che non la registra: colonne e trigger ci sono, le righe di prima hanno preso l'autore, e le 7 prove di `supabase/tests/conflitti.sql` passano; la riga in `supabase_migrations.schema_migrations` no. Il file porta la versione `20261004150000` | ✅ Registrata il 26 ottobre 2026, con le altre applicate dall'editor SQL |
 | **La notifica «Due versioni»** per chi esce prima di scegliere | Oggi chiudendo si torna al foglio, con quello che si era scritto; chiudendo anche il foglio la propria versione si perde, come per ogni foglio lasciato a metà. La notifica è dell'insieme delle notifiche ([14](prodotto/14-notifiche.md)) | Con le notifiche dal server |
-| **«Tienile tutte e due» per le note** | Le note oggi non si riscrivono: non possono trovarsi in due versioni | Con le note scritte a mano |
+| ~~**«Tienile tutte e due» per le note**~~ | Le note oggi non si riscrivono: non possono trovarsi in due versioni | ✅ Con le note scritte a mano, 1° novembre 2026 |
 | **Rivedere sulla tela le schermate 34–36 e 88** | 34–36 disegnate prima, 88 (una tolta) disegnata e costruita il 4 ottobre 2026 | Prima di chiudere la 2.2 |
 
 ### Rimasto fuori dalla 2.3
@@ -397,13 +397,28 @@ Il logo, l'icona dell'app e l'avvio animato del kit sono nell'app dal 16 ottobre
 
 ### Le prossime, chieste dall'utente il 26 ottobre 2026
 
-Da fare dopo G.2, non subito. Ognuna si disegna prima sulla tela.
+Costruite il 1° novembre 2026 come G.3 ([decisioni](decisioni/prodotto.md#le-note-scritte-a-mano-la-barra-più-morbida-il-mappamondo-nuovo-1-novembre-2026); tela, 139–145).
 
 | Voce | Cosa ha detto l'utente | Quando |
 |---|---|---|
-| **Le note scritte a mano** | «Ok»: una nota del viaggio scritta da sé (il codice del wifi, il treno delle 15:20), non solo dalle risposte incollate. La tabella c'è già (`origine = 'scritta'`); mancano la schermata e cambiarne il testo, con le due versioni come per le voci (vedi «Rimasto fuori dalla 1.6») | Prossime |
-| **La barra più morbida** | La pillola che segue il dito «mi sembra troppo meccanica, vorrei qualcosa più smooth»: meno a scatti fra una voce e l'altra, più fluida, più vicina a iOS | Prossime |
-| **Il mappamondo da rifare** | La grattata va bene, ma il mappamondo «mi sembra ancorato allo stile di 30 anni fa»: un aspetto nuovo, nel linguaggio della tela | Prossime |
+| ~~**Le note scritte a mano**~~ | «Ok»: una nota del viaggio scritta da sé (il codice del wifi, il treno delle 15:20) | ✅ 1° novembre 2026 |
+| ~~**La barra più morbida**~~ | La pillola che segue il dito «mi sembra troppo meccanica, vorrei qualcosa più smooth» | ✅ 1° novembre 2026, da provare sul telefono |
+| ~~**Il mappamondo da rifare**~~ | Il mappamondo «mi sembra ancorato allo stile di 30 anni fa» | ✅ 1° novembre 2026, da provare sul telefono |
+
+### Rimasto fuori dalle note, dalla barra e dal mappamondo
+
+| Voce | Perché aspetta | Quando |
+|---|---|---|
+| **Rivedere sulla tela 139–151** | Disegnate e costruite insieme il 1° novembre 2026; 144 e 146–151 rifatte l'8 novembre | Prima di chiudere G.3 |
+| **Con VoiceOver la scheda di un paese non si raggiunge** | A tutto schermo un paese si sceglie col dito; con VoiceOver si apre il globo («Apri a tutto schermo», dall'8 novembre), ma i paesi si guardano dall'elenco del mappamondo piccolo | Prima della beta |
+| **Il globo a tutto schermo non segue le copie che cambiano** | Riceve i viaggi quando si apre: un viaggio chiuso mentre è aperto compare alla prossima apertura | Se capita davvero |
+| **Le molle della barra si giudicano col dito** | Le rigidità dei due bordi e della lente sono scelte di Claude, provate con le prove automatiche: la sensazione si giudica sull'iPhone | Dopo la prova dell'utente |
+| **Le note senza rete** | Scrivere una nota richiede la rete: non è uno dei quattro gesti offline (02 tecnico). Chi è in viaggio senza rete e vuole segnarsi il codice del wifi non può | Se H4 lo chiede |
+| **I puntini del mappamondo si calcolano sul telefono** | Dodicimila punti contro i confini, una volta, fuori dal filo dell'interfaccia, quando si apre il primo globo: sull'iPhone un attimo, su un telefono vecchio forse di più. Si potrebbero scrivere in `assets/` da `tool/genera_confini.dart` | Se si vede un ritardo |
+| **Le molle e il giro del mappamondo si giudicano col dito** | L'apertura sotto le dita, la molla che la finisce, il volo con l'arco, il giro piano e la bandiera che sventola (tela, 149–151) sono scelte di Claude, provate con le prove automatiche e con i fotogrammi resi dall'app | Dopo la prova dell'utente |
+| **Le bandiere con uno stemma si leggono poco** | Un paese piccolo ha pochi puntini: le strisce si riconoscono, uno stemma (il Portogallo) diventa un puntino di un altro colore. I paesi lontani dal loro contorno principale (la Sicilia, le isole) prendono il colore del bordo della bandiera | Se l'utente lo nota |
+| **Il globo che gira da solo ridisegna sempre** | A riposo il mappamondo gira piano, e lo schermo si ridisegna a ogni fotogramma finché è aperto. Sul telefono non pesa; si potrebbe fermare dopo un minuto senza dita | Se la batteria ne risente |
+| **Le città sul mappamondo** | La tavola 144 dice «15 città» ma il globo mostra i paesi: una città vista potrebbe essere un punto più luminoso | Se l'utente lo vuole |
 
 ### Rimasto fuori dagli orari, dall'eliminare e dal budget
 

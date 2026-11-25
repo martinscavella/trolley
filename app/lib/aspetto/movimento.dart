@@ -4,6 +4,8 @@
 /// (Android): con l'impostazione attiva le cose compaiono e basta.
 library;
 
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +28,49 @@ abstract final class Ritmo {
 
   static const curva = Curves.easeOutCubic;
   static const molla = Curves.easeOutBack;
+}
+
+/// Un punto che insegue un bersaglio che si muove, legato a lui da una molla:
+/// arriva senza scatti anche se il bersaglio cambia a metà strada, e si porta
+/// dietro la velocità che aveva. Lo usa la pillola della barra, un bordo per
+/// parte (tela, 143). [rigidita] dice quanto è svelto; [smorzamento] è 1 per
+/// arrivare senza passare oltre, meno per un rimbalzo appena.
+class Inseguitore {
+  Inseguitore(this.posizione);
+
+  double posizione;
+
+  /// In punti al secondo.
+  double velocita = 0;
+
+  /// Avanza di [dt] secondi verso [bersaglio]. A passi piccoli, perché una
+  /// molla rigida con un passo lungo esploderebbe.
+  void avanza(
+    double bersaglio,
+    double dt, {
+    required double rigidita,
+    double smorzamento = 1,
+  }) {
+    final attrito = 2 * smorzamento * sqrt(rigidita);
+    var resta = dt;
+    while (resta > 0) {
+      final passo = min(resta, 1 / 240);
+      velocita +=
+          (rigidita * (bersaglio - posizione) - attrito * velocita) * passo;
+      posizione += velocita * passo;
+      resta -= passo;
+    }
+  }
+
+  /// È arrivato, e fermo.
+  bool fermoSu(double bersaglio) =>
+      (posizione - bersaglio).abs() < 0.3 && velocita.abs() < 8;
+
+  /// Ci va e basta.
+  void salta(double bersaglio) {
+    posizione = bersaglio;
+    velocita = 0;
+  }
 }
 
 extension Movimento on Widget {

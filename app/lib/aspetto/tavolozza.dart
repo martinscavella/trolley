@@ -73,8 +73,32 @@ abstract final class Colori {
   /// L'icona sul fondo crema.
   static const ocra = Color(0xFF8A6A00);
 
-  /// Le terre non ancora grattate, sul mappamondo (tela, 66).
-  static const terra = Color(0xFFCDD2DE);
+  /// Il mappamondo di notte (tela, 144): la sfera, chiara dove la luce la
+  /// prende e buia sul bordo.
+  static const notteChiara = Color(0xFF2A3358);
+  static const notte = Color(0xFF1A2038);
+  static const notteBuia = Color(0xFF10142A);
+
+  /// La sfera dove è giorno (tela, 149): il blu della notte, schiarito dal
+  /// sole. Dove è notte resta il buio.
+  static const giornoSullaTerra = Color(0xFF34427E);
+
+  /// Le terre non ancora viste, da vicino, e il loro bordo.
+  static const terra = Color(0xFF2A3358);
+  static const confine = Color(0xFF3A4470);
+
+  /// Una terra non ancora vista, toccata (tela, 148).
+  static const terraScelta = Color(0xFF4A5687);
+
+  /// I puntini delle terre non ancora viste, da lontano.
+  static const puntino = Color(0xFFAEB8E0);
+
+  /// L'alone sotto i paesi visti, e il loro bordo da vicino.
+  static const alone = Color(0xFF3D5CE0);
+  static const cobaltoAcceso = Color(0xFF5470E6);
+
+  /// Il cobalto che si legge sul blu della notte: i codici dei paesi.
+  static const cobaltoNotte = Color(0xFF8EA2F0);
 
   /// La patina sopra un paese nuovo, da grattare col dito (tela, 95).
   static const argento = Color(0xFFB4BBC9);

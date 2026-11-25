@@ -347,9 +347,7 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
                 header: true,
                 child: Text(
                   nomeDelGiorno(finestra.data),
-                  style: Testi.titoloFoglio.copyWith(
-                    color: Colori.inchiostro,
-                  ),
+                  style: Testi.titoloFoglio.copyWith(color: Colori.inchiostro),
                 ),
               ).entra(context),
               const SizedBox(height: 14),
@@ -369,9 +367,7 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
                     adesso: oggi ? oraDelGiorno(adesso) : null,
                     blocchi: [for (final c in collocate) blocco(c)],
                     onApri: (id) => apriTappa(tappa: perId[id]!.tappa),
-                    onSegna: segnabili
-                        ? (id) => segna(id, salta: false)
-                        : null,
+                    onSegna: segnabili ? (id) => segna(id, salta: false) : null,
                     onSalta: segnabili ? (id) => segna(id, salta: true) : null,
                     problemaA: problemaA,
                     onSposta: rete

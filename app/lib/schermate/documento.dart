@@ -82,7 +82,9 @@ class _SchermataDocumentoState extends State<SchermataDocumento> {
     final file = await documenti.file(d);
     if (!await file.exists()) {
       if (c.mounted) {
-        unawaited(segnaAperturaSenzaRete(c, 'documento', mancante: 'documento'));
+        unawaited(
+          segnaAperturaSenzaRete(c, 'documento', mancante: 'documento'),
+        );
       }
       throw const _FileMancante();
     }
@@ -370,11 +372,8 @@ class _PaginaState extends State<_Pagina> {
       3000,
       (mq.size.width * mq.devicePixelRatio * 1.5).round(),
     );
-    _disegno = Servizi.of(context).documenti.telefono.pagina(
-      widget.file.path,
-      indice: widget.indice,
-      larghezza: larghezza,
-    );
+    _disegno = Servizi.of(context).documenti.telefono
+        .pagina(widget.file.path, indice: widget.indice, larghezza: larghezza);
   }
 
   @override
@@ -515,10 +514,7 @@ class _Puntini extends StatelessWidget {
   Widget build(BuildContext context) {
     final testo = 'Pagina ${attuale + 1} di $pagine';
     if (pagine > 8) {
-      return Text(
-        testo,
-        style: Testi.pillola.copyWith(color: Colori.bianco),
-      );
+      return Text(testo, style: Testi.pillola.copyWith(color: Colori.bianco));
     }
     return Semantics(
       label: testo,
@@ -533,9 +529,7 @@ class _Puntini extends StatelessWidget {
               width: i == attuale ? 18 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: Colori.bianco.withValues(
-                  alpha: i == attuale ? 1 : 0.35,
-                ),
+                color: Colori.bianco.withValues(alpha: i == attuale ? 1 : 0.35),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),

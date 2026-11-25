@@ -506,7 +506,10 @@ class _VistaAdesso extends StatelessWidget {
     final delGiorno = _del(giorno);
     final ore = giorno == null
         ? const <String, Duration>{}
-        : {for (final c in tappeDelGiorno(giorno!, tappe)) c.tappa.id: c.inizio};
+        : {
+            for (final c in tappeDelGiorno(giorno!, tappe))
+              c.tappa.id: c.inizio,
+          };
     final stato = cosaSuccedeAdesso<Tappa>(
       tappe: delGiorno,
       oraDi: (t) => ore[t.id],

@@ -138,8 +138,11 @@ List<GruppoDocumenti<D>> raggruppaDocumenti<D>({
     return creatoDi(a).compareTo(creatoDi(b));
   }
 
-  GruppoDocumenti<D> gruppo(TipoGruppo tipo, List<D> elenco, [DateTime? data]) =>
-      GruppoDocumenti(tipo, elenco..sort(confronta), data: data);
+  GruppoDocumenti<D> gruppo(
+    TipoGruppo tipo,
+    List<D> elenco, [
+    DateTime? data,
+  ]) => GruppoDocumenti(tipo, elenco..sort(confronta), data: data);
 
   final date = perData.keys.toList()..sort();
   return [

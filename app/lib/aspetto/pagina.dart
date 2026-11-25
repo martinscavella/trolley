@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'elementi.dart';
 import 'movimento.dart';
@@ -21,6 +22,8 @@ class Pagina extends StatelessWidget {
     this.sinistra,
     this.azioni = const [],
     this.inBasso,
+    this.notte = false,
+    this.titolo,
   });
 
   final Widget corpo;
@@ -34,6 +37,13 @@ class Pagina extends StatelessWidget {
   /// Quello che galleggia in basso: la barra principale.
   final Widget? inBasso;
 
+  /// Sul blu della notte, da un bordo all'altro, con la freccia bianca senza
+  /// riquadro: il mappamondo (tela, 144).
+  final bool notte;
+
+  /// Accanto alla freccia, in alto: il titolo della pagina (tela, 144).
+  final String? titolo;
+
   /// Quanto occupano i pulsanti in alto, sotto la barra di stato.
   static const altezzaBarra = 64.0;
 
@@ -42,14 +52,17 @@ class Pagina extends StatelessWidget {
     final mq = MediaQuery.of(context);
     final rotta = ModalRoute.of(context);
     final indietro = sinistra == null && (rotta?.canPop ?? false)
-        ? PulsanteIndietro(chiudi: rotta is PageRoute && rotta.fullscreenDialog)
+        ? PulsanteIndietro(
+            chiudi: rotta is PageRoute && rotta.fullscreenDialog,
+            minimale: notte,
+          )
         : null;
     final inAlto = sinistra ?? indietro;
-    final conBarra = inAlto != null || azioni.isNotEmpty;
-    return Stack(
+    final conBarra = inAlto != null || azioni.isNotEmpty || titolo != null;
+    final pagina = Stack(
       children: [
         Scaffold(
-          backgroundColor: Colori.nebbia,
+          backgroundColor: notte ? Colori.inchiostro : Colori.nebbia,
           body: Stack(
             children: [
               Positioned.fill(
@@ -70,7 +83,29 @@ class Pagina extends StatelessWidget {
                   child: Row(
                     children: [
                       ?inAlto,
-                      const Spacer(),
+                      if (titolo case final t?)
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: inAlto == null ? 4 : 8,
+                            ),
+                            child: Semantics(
+                              header: true,
+                              child: Text(
+                                t,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Testi.titoli(24).copyWith(
+                                  color: notte
+                                      ? Colori.bianco
+                                      : Colori.inchiostro,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        const Spacer(),
                       for (final (i, a) in azioni.indexed) ...[
                         if (i > 0) const SizedBox(width: 8),
                         a,
@@ -90,25 +125,60 @@ class Pagina extends StatelessWidget {
         ),
       ],
     );
+    return notte
+        ? AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle.light,
+            child: pagina,
+          )
+        : pagina;
   }
 }
 
 /// Il pulsante d'inchiostro per tornare indietro, o per chiudere una
 /// schermata salita dal basso.
 class PulsanteIndietro extends StatelessWidget {
-  const PulsanteIndietro({super.key, this.chiudi = false});
+  const PulsanteIndietro({
+    super.key,
+    this.chiudi = false,
+    this.minimale = false,
+  });
 
   final bool chiudi;
 
+  /// Solo il segno, bianco, senza riquadro: sul blu della notte (tela, 144).
+  final bool minimale;
+
   @override
-  Widget build(BuildContext context) => PulsanteTondo(
-    icona: chiudi
-        ? icona(ios: CupertinoIcons.xmark, android: Icons.close)
-        : icona(ios: CupertinoIcons.chevron_back, android: Icons.arrow_back),
-    etichetta: chiudi ? 'Chiudi' : 'Indietro',
-    scuro: true,
-    onPressed: () => Navigator.of(context).maybePop(),
-  );
+  Widget build(BuildContext context) => minimale
+      ? Premibile(
+          onTap: () => Navigator.of(context).maybePop(),
+          scala: 0.9,
+          etichetta: chiudi ? 'Chiudi' : 'Indietro',
+          child: SizedBox.square(
+            dimension: 44,
+            child: Icon(
+              chiudi
+                  ? icona(ios: CupertinoIcons.xmark, android: Icons.close)
+                  : icona(
+                      ios: CupertinoIcons.chevron_back,
+                      android: Icons.arrow_back,
+                    ),
+              size: 26,
+              color: Colori.bianco,
+            ),
+          ),
+        )
+      : PulsanteTondo(
+          icona: chiudi
+              ? icona(ios: CupertinoIcons.xmark, android: Icons.close)
+              : icona(
+                  ios: CupertinoIcons.chevron_back,
+                  android: Icons.arrow_back,
+                ),
+          etichetta: chiudi ? 'Chiudi' : 'Indietro',
+          scuro: true,
+          onPressed: () => Navigator.of(context).maybePop(),
+        );
 }
 
 /// Apre [foglio] dal basso sopra la schermata di prima, che resta visibile

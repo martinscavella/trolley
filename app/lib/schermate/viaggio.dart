@@ -162,9 +162,8 @@ class _SchermataViaggioState extends State<SchermataViaggio> {
                 // Il budget di massima dell'idea (06, regola 1; tela, 136).
                 if (!stato.haGiorni) ...[
                   const SizedBox(height: 28),
-                  SezioneBudgetIdea(
-                    viaggio: viaggio,
-                  ).entra(context, ritardo: Ritmo.passo),
+                  SezioneBudgetIdea(viaggio: viaggio)
+                      .entra(context, ritardo: Ritmo.passo),
                 ],
                 if (!stato.haGiorni) _DocumentiInAttesa(viaggioId: viaggio.id),
                 if (stato.haGiorni) ...[

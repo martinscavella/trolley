@@ -19,6 +19,7 @@ import '../dominio/mappa.dart';
 import '../dominio/ricordo.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'globo.dart';
 
 /// Dove guarda il globo di chi non ha ancora un viaggio chiuso: l'Europa.
 const centroSenzaViaggi = (lat: 42.0, lon: 12.0);
@@ -58,7 +59,8 @@ class SchermataMappamondo extends StatefulWidget with ConLaBarra {
   State<SchermataMappamondo> createState() => _SchermataMappamondoState();
 }
 
-class _SchermataMappamondoState extends State<SchermataMappamondo> {
+class _SchermataMappamondoState extends State<SchermataMappamondo>
+    with SingleTickerProviderStateMixin {
   late Stream<List<(Partecipazione, Viaggio)>> _miei;
   late Stream<Set<String>> _scoperti;
   ElencoDestinazioni? _elenco;
@@ -70,6 +72,19 @@ class _SchermataMappamondoState extends State<SchermataMappamondo> {
   /// Il paese appena scoperto, per dire quale è: «il tuo 7° paese».
   String? _appena;
   Timer? _dimentica;
+
+  /// Il globo piccolo e quello a tutto schermo, che parte dal suo posto e
+  /// ci torna (tela, 149). Uno solo si vede alla volta.
+  final _piccolo = GlobalKey<StatoMappamondo>();
+  final _grande = GlobalKey<StatoMappamondo>();
+  final _portale = OverlayPortalController();
+
+  /// Quanto è aperto quello grande: 0 al posto del piccolo, 1 a tutto
+  /// schermo. Può passare appena oltre, con le molle e con le dita.
+  late final _apertura = AnimationController.unbounded(vsync: this);
+  bool _aperto = false;
+  Disco? _da;
+  Coordinate? _centroAperto;
 
   @override
   void didChangeDependencies() {
@@ -88,7 +103,29 @@ class _SchermataMappamondoState extends State<SchermataMappamondo> {
   @override
   void dispose() {
     _dimentica?.cancel();
+    _apertura.dispose();
     super.dispose();
+  }
+
+  /// Il globo grande compare dove sta il piccolo, che si nasconde: da qui
+  /// lo muovono le dita, o la sua molla.
+  void _apri() {
+    if (_aperto) return;
+    final piccolo = _piccolo.currentState;
+    _da = piccolo?.disco;
+    _centroAperto = piccolo?.centroAttuale;
+    _apertura.value = 0;
+    setState(() => _aperto = true);
+    _portale.show();
+  }
+
+  /// Il globo grande è tornato al posto del piccolo: il piccolo ricompare
+  /// guardando dove guardava il grande.
+  void _chiuso() {
+    final dove = _grande.currentState?.centroAttuale;
+    _portale.hide();
+    setState(() => _aperto = false);
+    if (dove != null) _piccolo.currentState?.guarda(dove);
   }
 
   /// Il paese è scoperto, col dito o con «Scopri»: si ricorda su questo
@@ -105,152 +142,285 @@ class _SchermataMappamondoState extends State<SchermataMappamondo> {
   @override
   Widget build(BuildContext context) => StreamBuilder<Set<String>>(
     stream: _scoperti,
-    builder: (context, scoperti) => StreamBuilder<List<(Partecipazione, Viaggio)>>(
-      stream: _miei,
-      builder: (context, letti) {
-        final viaggi = delPassaporto(letti.data ?? const [], DateTime.now());
-        final mete = meteDi(viaggi);
-        final visite = visiteDi(viaggi);
-        final paesi = paesiGrattati(mete);
-        final citta = cittaGrattate(mete);
-        final punti = puntiDeiPaesi(_elenco, mete);
-        // Finché non si sa che cosa è già scoperto, non si chiede di grattare.
-        final daScoprire = scoperti.hasData
-            ? daGrattare(visite, scoperti: scoperti.data!, oggi: DateTime.now())
-            : const <String>[];
-        final ora = daScoprire.firstOrNull;
-        final centro =
-            punti[_guardato] ??
-            (paesi.isEmpty ? null : punti[paesi.first]) ??
-            centroSenzaViaggi;
-        final appena = _appena;
-        final mq = MediaQuery.of(context);
-        return Pagina(
-          corpo: Builder(
-            builder: (context) => Padding(
-              padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+    builder: (context, scoperti) =>
+        StreamBuilder<List<(Partecipazione, Viaggio)>>(
+          stream: _miei,
+          builder: (context, letti) {
+            final viaggi = delPassaporto(
+              letti.data ?? const [],
+              DateTime.now(),
+            );
+            final mete = meteDi(viaggi);
+            final visite = visiteDi(viaggi);
+            final paesi = paesiGrattati(mete);
+            final citta = cittaGrattate(mete);
+            final punti = puntiDeiPaesi(_elenco, mete);
+            // Finché non si sa che cosa è già scoperto, non si chiede di grattare.
+            final daScoprire = scoperti.hasData
+                ? daGrattare(
+                    visite,
+                    scoperti: scoperti.data!,
+                    oggi: DateTime.now(),
+                  )
+                : const <String>[];
+            final ora = daScoprire.firstOrNull;
+            final centro =
+                punti[_guardato] ??
+                (paesi.isEmpty ? null : punti[paesi.first]) ??
+                centroSenzaViaggi;
+            final appena = _appena;
+            final mq = MediaQuery.of(context);
+            final grattati = {
+              for (final p in paesi)
+                if (!daScoprire.contains(p)) p,
+            };
+            // Aperto, il globo sta sopra tutto, anche sopra la barra; indietro lo
+            // richiude, invece di lasciare la schermata.
+            return PopScope(
+              canPop: !_aperto,
+              onPopInvokedWithResult: (uscito, _) {
+                if (!uscito) _grande.currentState?.chiudi();
+              },
+              child: _pagina(
+                context,
+                paesi: paesi,
+                citta: citta,
+                visite: visite,
+                daScoprire: daScoprire,
+                ora: ora,
+                appena: appena,
+                centro: centro,
+                punti: punti,
+                grattati: grattati,
+                mq: mq,
+                globo: SchermataGlobo(
+                  globo: _grande,
+                  apertura: _apertura,
+                  da: _da,
+                  onChiuso: _chiuso,
+                  viaggi: viaggi,
+                  grattati: grattati,
+                  daScoprire: daScoprire.toSet(),
+                  punti: punti,
+                  centro: _centroAperto ?? centro,
+                  inOrdine: paesiInOrdine(visite),
+                  quanti: [
+                    quanti(paesi.length, 'paese', 'paesi'),
+                    if (citta.isNotEmpty)
+                      quanti(citta.length, 'città', 'città'),
+                  ].join(' · '),
+                ),
+              ),
+            );
+          },
+        ),
+  );
+
+  Widget _pagina(
+    BuildContext context, {
+    required List<String> paesi,
+    required List<Meta> citta,
+    required List<Visita> visite,
+    required List<String> daScoprire,
+    required String? ora,
+    required String? appena,
+    required Coordinate centro,
+    required Map<String, Coordinate> punti,
+    required Set<String> grattati,
+    required MediaQueryData mq,
+    required SchermataGlobo globo,
+  }) =>
+      // Tutto sul blu della notte, con il titolo accanto alla freccia
+      // (tela, 144).
+      Pagina(
+        notte: true,
+        titolo: 'Mappamondo',
+        corpo: Builder(
+          builder: (context) => Padding(
+            padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // I numeri stanno grandi sopra il globo (tela, 144).
+                if (paesi.isEmpty || ora != null)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: TitoloPagina(
-                      'Mappamondo',
-                      sottotitolo: paesi.isEmpty
-                          ? 'Si colora con i viaggi chiusi, verificati o no, '
-                                'e con quelli fatti prima di Trolley che '
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                    child: Text(
+                      paesi.isEmpty
+                          ? 'Si accende con i viaggi chiusi, verificati o '
+                                'no, e con quelli fatti prima di Trolley che '
                                 'aggiungi al passaporto.'
-                          : ora != null
-                          ? '${_quanti(paesi.length, citta.length)}. Un '
-                                'paese nuovo: grattalo col dito.'
-                          : '${_quanti(paesi.length, citta.length)}: ogni '
-                                'viaggio chiuso, verificato o no.',
+                          : 'Un paese nuovo: grattalo col dito.',
+                      style: Testi.secondario.copyWith(
+                        color: Colori.bianco.withValues(alpha: 0.7),
+                      ),
                     ).entra(context),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Pannello(
-                      raggio: 24,
-                      padding: EdgeInsets.fromLTRB(
-                        0,
-                        16,
-                        0,
-                        ora != null || appena != null ? 60 : 16,
-                      ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.center,
-                        children: [
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight: mq.size.height * 0.36,
-                            ),
-                            child: Center(
-                              child: Mappamondo(
-                                grattati: {
-                                  for (final p in paesi)
-                                    if (!daScoprire.contains(p)) p,
-                                },
-                                centro: centro,
-                                punti: punti,
-                                daGrattare: ora,
-                                onScoperto: _scoperto,
-                                etichetta: ora != null
-                                    ? 'Mappamondo: ${nomeDelPaese(ora) ?? ora} '
-                                          'da grattare'
-                                    : 'Mappamondo: '
-                                          '${quanti(paesi.length, 'paese visitato', 'paesi visitati')}',
+                Padding(
+                  // Le chiavi tengono il globo e il suo portale dove sono
+                  // quando sopra compare o sparisce una riga.
+                  key: const ValueKey('globo'),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      16,
+                      0,
+                      ora != null || appena != null ? 60 : 16,
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        Column(
+                          children: [
+                            if (paesi.isNotEmpty && ora == null)
+                              _Numeri(paesi: paesi.length, citta: citta.length),
+                            ConstrainedBox(
+                              key: const ValueKey('globo'),
+                              constraints: BoxConstraints(
+                                maxHeight: mq.size.height * 0.36,
                               ),
+                              child: Center(
+                                // Il globo a tutto schermo sta sopra tutto,
+                                // anche sopra la barra, e parte da qui.
+                                child: OverlayPortal(
+                                  controller: _portale,
+                                  overlayLocation:
+                                      OverlayChildLocation.rootOverlay,
+                                  overlayChildBuilder: (_) => globo,
+                                  child: Opacity(
+                                    // Aperto, il globo è quello a tutto
+                                    // schermo, che è partito da qui.
+                                    opacity: _aperto ? 0 : 1,
+                                    child: Mappamondo(
+                                      key: _piccolo,
+                                      grattati: grattati,
+                                      centro: centro,
+                                      punti: punti,
+                                      daGrattare: ora,
+                                      onScoperto: _scoperto,
+                                      giraDaSolo: true,
+                                      // Allargandolo con due dita cresce fino
+                                      // a tutto schermo, sotto le dita (tela,
+                                      // 149); col paese da grattare, il dito
+                                      // gratta.
+                                      onAllarga: (scala, spostamento) {
+                                        _apri();
+                                        _grande.currentState?.seguiDita(
+                                          scala,
+                                          spostamento,
+                                        );
+                                      },
+                                      onAllargaFine: (velocita) {
+                                        final grande = _grande.currentState;
+                                        if (grande == null) {
+                                          _chiuso();
+                                        } else {
+                                          grande.lasciaDita(velocita);
+                                        }
+                                      },
+                                      onApri: ora != null
+                                          ? null
+                                          : () {
+                                              _apri();
+                                              WidgetsBinding.instance
+                                                  .addPostFrameCallback(
+                                                    (_) => _grande.currentState
+                                                        ?.apri(),
+                                                  );
+                                            },
+                                      etichetta: ora != null
+                                          ? 'Mappamondo: ${nomeDelPaese(ora) ?? ora} '
+                                                'da grattare'
+                                          : 'Mappamondo: '
+                                                '${quanti(paesi.length, 'paese visitato', 'paesi visitati')}',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (paesi.isNotEmpty && ora == null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  'Giralo col dito · allargalo per entrarci',
+                                  style: Testi.didascalia.copyWith(
+                                    color: Colori.bianco.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (ora != null)
+                          Positioned(
+                            top: -4,
+                            right: 12,
+                            child: PulsantePiccolo(
+                              etichetta: 'Scopri',
+                              onPressed: () => _scoperto(ora),
                             ),
                           ),
-                          if (ora != null)
-                            Positioned(
-                              top: -4,
-                              right: 12,
-                              child: PulsantePiccolo(
-                                etichetta: 'Scopri',
-                                onPressed: () => _scoperto(ora),
-                              ),
-                            ),
-                          if (appena != null || ora != null)
-                            Positioned(
-                              bottom: -46,
-                              child: _Capsula(
-                                key: ValueKey(appena ?? ora),
-                                testo: appena != null
-                                    ? '${nomeDelPaese(appena) ?? appena}: il '
-                                          'tuo ${paesiInOrdine(visite).indexOf(appena) + 1}° '
-                                          'paese'
-                                    : '${nomeDelPaese(ora!) ?? ora}: grattalo '
-                                          'col dito',
-                                fatto: appena != null,
-                              ).sboccia(context),
-                            ),
-                        ],
-                      ),
-                    ).entra(context, ritardo: Ritmo.passo),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.fromLTRB(
-                        20,
-                        12,
-                        20,
-                        BarraPrincipale.ingombro + mq.padding.bottom,
-                      ),
-                      children: [
-                        if (paesi.isNotEmpty) ...[
-                          EtichettaSezione('Paesi · ${paesi.length}'),
-                          _Paesi(
-                            paesi: paesi,
-                            daScoprire: daScoprire.toSet(),
-                            onTap: (p) => setState(() => _guardato = p),
-                          ).entra(context, ritardo: Ritmo.passo * 2),
-                        ],
-                        if (citta.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          EtichettaSezione('Città · ${citta.length}'),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              [for (final c in citta) c.citta].join(', '),
-                              style: Testi.secondario.copyWith(
-                                color: Colori.grafite,
-                              ),
-                            ),
-                          ).entra(context, ritardo: Ritmo.passo * 3),
-                        ],
+                        if (appena != null || ora != null)
+                          Positioned(
+                            bottom: -46,
+                            child: _Capsula(
+                              key: ValueKey(appena ?? ora),
+                              testo: appena != null
+                                  ? '${nomeDelPaese(appena) ?? appena}: il '
+                                        'tuo ${paesiInOrdine(visite).indexOf(appena) + 1}° '
+                                        'paese'
+                                  : '${nomeDelPaese(ora!) ?? ora}: grattalo '
+                                        'col dito',
+                              fatto: appena != null,
+                            ).sboccia(context),
+                          ),
                       ],
                     ),
+                  ).entra(context, ritardo: Ritmo.passo),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      12,
+                      20,
+                      BarraPrincipale.ingombro + mq.padding.bottom,
+                    ),
+                    children: [
+                      if (paesi.isNotEmpty) ...[
+                        EtichettaSezione(
+                          'Paesi · ${paesi.length}',
+                          colore: _velato,
+                        ),
+                        _Paesi(
+                          paesi: paesi,
+                          daScoprire: daScoprire.toSet(),
+                          onTap: (p) => setState(() => _guardato = p),
+                        ).entra(context, ritardo: Ritmo.passo * 2),
+                      ],
+                      if (citta.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        EtichettaSezione(
+                          'Città · ${citta.length}',
+                          colore: _velato,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            [for (final c in citta) c.citta].join(', '),
+                            style: Testi.secondario.copyWith(color: _velato),
+                          ),
+                        ).entra(context, ritardo: Ritmo.passo * 3),
+                      ],
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        );
-      },
-    ),
-  );
+        ),
+      );
 
   static String _quanti(int paesi, int citta) => [
     quanti(paesi, 'paese', 'paesi'),
@@ -308,8 +478,8 @@ class RigaDaGrattare extends StatelessWidget {
   }
 }
 
-/// La capsula sotto il globo (tela, 95–97): che cosa grattare, d'inchiostro,
-/// e il paese appena scoperto, in cobalto.
+/// La capsula sotto il globo (tela, 95–97 e 145): che cosa grattare, bianca
+/// sul blu della notte, e il paese appena scoperto, in cobalto.
 class _Capsula extends StatelessWidget {
   const _Capsula({super.key, required this.testo, required this.fatto});
 
@@ -324,7 +494,7 @@ class _Capsula extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: fatto ? Colori.cobalto : Colori.inchiostro,
+          color: fatto ? Colori.cobalto : Colori.bianco,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -337,14 +507,14 @@ class _Capsula extends StatelessWidget {
                   android: Icons.touch_app_outlined,
                 ),
                 size: 18,
-                color: Colori.bianco,
+                color: Colori.inchiostro,
               ),
               const SizedBox(width: 8),
             ],
             Text(
               testo,
               style: Testi.secondario.copyWith(
-                color: Colori.bianco,
+                color: fatto ? Colori.bianco : Colori.inchiostro,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -354,6 +524,53 @@ class _Capsula extends StatelessWidget {
     ),
   );
 }
+
+/// In cima alla scheda del globo, grandi: quanti paesi e quante città
+/// (tela, 144).
+class _Numeri extends StatelessWidget {
+  const _Numeri({required this.paesi, required this.citta});
+
+  final int paesi;
+  final int citta;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget numero(int n, String cosa) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$n', style: Testi.codice(30).copyWith(color: Colori.bianco)),
+        const SizedBox(height: 4),
+        Text(
+          cosa,
+          style: Testi.didascalia.copyWith(
+            color: Colori.bianco.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+    return Semantics(
+      label: _SchermataMappamondoState._quanti(paesi, citta),
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
+          child: Row(
+            children: [
+              numero(paesi, paesi == 1 ? 'paese' : 'paesi'),
+              if (citta > 0) ...[
+                const SizedBox(width: 22),
+                numero(citta, 'città'),
+              ],
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Il testo secondario sul blu della notte.
+final _velato = Colori.bianco.withValues(alpha: 0.7);
 
 /// I paesi grattati, due per riga, dal più recente (tela, 66): il codice in
 /// cobalto e il nome. Toccandone uno il globo ci si gira.
@@ -393,7 +610,7 @@ class _Paesi extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                     decoration: BoxDecoration(
-                      color: Colori.bianco,
+                      color: Colori.bianco.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
@@ -403,7 +620,7 @@ class _Paesi extends StatelessWidget {
                           style: Testi.codice(15).copyWith(
                             color: daScoprire.contains(p)
                                 ? Colori.piombo
-                                : Colori.cobalto,
+                                : Colori.cobaltoNotte,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -416,7 +633,7 @@ class _Paesi extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: Testi.secondario.copyWith(
-                                  color: Colori.inchiostro,
+                                  color: Colori.bianco,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -424,7 +641,7 @@ class _Paesi extends StatelessWidget {
                                 Text(
                                   'da grattare',
                                   style: Testi.didascalia.copyWith(
-                                    color: Colori.grafite,
+                                    color: _velato,
                                     fontSize: 12,
                                   ),
                                 ),

@@ -100,6 +100,10 @@ abstract final class Eventi {
   /// Un budget messo, cambiato o tolto, del viaggio o di sé (06, regole
   /// 12–17), e in che stato era il viaggio: H5. Mai l'importo.
   static const budgetImpostato = 'budget_impostato';
+
+  /// Una nota scritta a mano nel viaggio (tela, 139–140), e in che stato era
+  /// il viaggio: dice se le note servono, e quando. Mai il testo.
+  static const notaScritta = 'nota_scritta';
 }
 
 class Misurazione {

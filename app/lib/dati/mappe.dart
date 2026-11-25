@@ -31,6 +31,9 @@ import '../dominio/navigazione.dart';
 import 'errori.dart';
 
 /// Un posto trovato cercando: dove mettere una tappa.
+/// Lo stile dei riquadri, lo stesso della funzione `mappe` (ADR-006).
+const stileRiquadri = 'klokantech-basic';
+
 class Luogo {
   const Luogo({
     required this.nome,
@@ -253,7 +256,10 @@ class MappeGeoapify implements Mappe {
   @override
   Widget riquadri(BuildContext context, {required String viaggioId}) =>
       TileLayer(
-        urlTemplate: '$indirizzo/riquadro/{z}/{x}/{y}{r}.png',
+        // Lo stile lo sceglie il server (funzione `mappe`): qui il suo nome
+        // serve solo a non riusare i riquadri salvati di quello di prima.
+        urlTemplate:
+            '$indirizzo/riquadro/{z}/{x}/{y}{r}.png?stile=$stileRiquadri',
         retinaMode: RetinaMode.isHighDensity(context),
         maxNativeZoom: 20,
         userAgentPackageName: 'com.aionlabs.trolley',

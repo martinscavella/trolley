@@ -2105,8 +2105,11 @@ class Archivio {
       throw const ErroreTrolley('Non c\'è niente da salvare.');
     }
     if (pulito.length > lunghezzaMassimaNota) {
-      throw const ErroreTrolley(
-        'Questo testo è troppo lungo per una nota: incolla solo l\'itinerario.',
+      throw ErroreTrolley(
+        origine == 'incollata'
+            ? 'Questo testo è troppo lungo per una nota: incolla solo '
+                  'l\'itinerario.'
+            : 'Questa nota è troppo lunga: dividila in due.',
       );
     }
     final id = const Uuid().v4();
@@ -2139,24 +2142,43 @@ class Archivio {
     )..where((n) => n.id.equals(id))).getSingle());
   }
 
-  /// Toglie una nota: si marca, non si cancella. Con la versione su cui la
-  /// persona ha deciso.
-  Future<void> togliNota(Nota nota) async {
-    final righe = await _alServer(
-      () => _server
-          .from('nota')
-          .update({
-            'eliminato_il': DateTime.now().toUtc().toIso8601String(),
-            'versione': nota.versione,
-          })
-          .eq('id', nota.id)
-          .select(),
-    );
-    if (righe.isEmpty) {
-      await aggiornaCopia(viaggioId: nota.viaggioId).catchError((_) {});
-      return;
+  /// Cambia il testo di una nota scritta a mano (tela, 141). Con la versione
+  /// che la persona ha visto: se qualcuno l'ha riscritta nel frattempo si
+  /// mostrano le due versioni, e due testi non si fondono mai (02 §3). La
+  /// risposta incollata di un assistente resta com'era.
+  Future<void> cambiaNota(Nota nota, String testo) async {
+    final pulito = testo.trim();
+    if (nota.origine != 'scritta') {
+      throw const ErroreTrolley('Una risposta incollata resta com\'era.');
     }
-    await _nellaCopiaNota(righe.single);
+    if (pulito.isEmpty) {
+      throw const ErroreTrolley('Una nota vuota non serve: eliminala.');
+    }
+    if (pulito.length > lunghezzaMassimaNota) {
+      throw const ErroreTrolley('Questa nota è troppo lunga: dividila in due.');
+    }
+    final riga = rigaDellaNota(nota);
+    await _conLaVersione(
+      _notaVersionata(nota.id),
+      riferimento: ritrattoNota(riga),
+      versione: nota.versione,
+      mia: ritrattoNota({...riga, 'testo': pulito}),
+    );
+  }
+
+  /// Toglie una nota: si marca, non si cancella. Con la versione su cui la
+  /// persona ha deciso: se intanto qualcuno l'ha riscritta, prima la guarda.
+  Future<void> togliNota(Nota nota) {
+    final riga = rigaDellaNota(nota);
+    return _conLaVersione(
+      _notaVersionata(nota.id),
+      riferimento: ritrattoNota(riga),
+      versione: nota.versione,
+      mia: ritrattoNota({
+        ...riga,
+        'eliminato_il': DateTime.now().toUtc().toIso8601String(),
+      }),
+    );
   }
 
   Future<void> _nellaCopiaNota(Map<String, dynamic> riga) async {
@@ -2184,11 +2206,18 @@ class Archivio {
   );
 
   /// «Tienile tutte e due»: quella del server resta com'è, e la propria
-  /// diventa una voce nuova, nella stessa lista dell'altra. Solo dove due
-  /// versioni possono convivere.
+  /// diventa una voce nuova, nella stessa lista dell'altra, o una nota in più.
+  /// Solo dove due versioni possono convivere.
   Future<void> tieniTutteEDue(Conflitto conflitto) async {
     if (!conflitto.possonoConvivere) {
       throw const ErroreTrolley('Qui si sceglie una delle due versioni.');
+    }
+    if (conflitto.cosa == CosaInConflitto.nota) {
+      await salvaNota(
+        viaggioId: conflitto.viaggioId,
+        testo: conflitto.mia['testo']! as String,
+      );
+      return;
     }
     final altra = await (_db.select(
       _db.vociLista,
@@ -2278,6 +2307,9 @@ class Archivio {
         CosaInConflitto.voce => (await (_db.select(
           _db.vociLista,
         )..where((t) => t.id.equals(id))).getSingleOrNull())?.viaggioId,
+        CosaInConflitto.nota => (await (_db.select(
+          _db.note,
+        )..where((t) => t.id.equals(id))).getSingleOrNull())?.viaggioId,
       };
 
   _Versionata _versionata(CosaInConflitto cosa, String id) => switch (cosa) {
@@ -2285,6 +2317,7 @@ class Archivio {
     CosaInConflitto.tappa => _tappaVersionata(id),
     CosaInConflitto.spesa => _spesaVersionata(id),
     CosaInConflitto.voce => _voceVersionata(id),
+    CosaInConflitto.nota => _notaVersionata(id),
   };
 
   /// La riga di una tabella del viaggio com'è adesso sul server, anche tolta.
@@ -2409,6 +2442,24 @@ class Archivio {
     ),
     nonCePiu:
         'Questa voce non c\'è più sul server. Ora vedi la lista com\'è adesso.',
+  );
+
+  _Versionata _notaVersionata(String id) => _Versionata(
+    cosa: CosaInConflitto.nota,
+    id: id,
+    ritratto: ritrattoNota,
+    rileggi: _rileggi('nota', id),
+    nellaCopia: _nellaCopiaNota,
+    scrivi: (mia, rif, versione) => _aggiornaRiga(
+      'nota',
+      id,
+      perIlServer(mia, campiDiversi(mia, rif)),
+      versione,
+      _nellaCopiaNota,
+    ),
+    nonCePiu:
+        'Questa nota non c\'è più sul server. Ora vedi le note come sono '
+        'adesso.',
   );
 
   /// Quando si parte. Si scrive con la funzione che porta il viaggio dove lo

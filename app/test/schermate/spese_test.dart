@@ -91,7 +91,7 @@ void main() {
 
     await tester.scrollUntilVisible(find.text('Registra una spesa'), 200);
     // Che non resti sotto la barra in basso.
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+    await tester.ensureVisible(find.text('Registra una spesa'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Registra una spesa'));
     await tester.pumpAndSettle();

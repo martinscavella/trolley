@@ -23,7 +23,11 @@ const chiave = Deno.env.get('GEOAPIFY_CHIAVE') ?? '';
 const server = Deno.env.get('SUPABASE_URL') ?? '';
 const chiavePubblica = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
-const stile = 'positron';
+// Colorato e morbido, come Mappe di iPhone: terra sabbia, acqua azzurra,
+// parchi verdi, strade bianche (scelto dall'utente il 1° novembre 2026; era
+// `positron`, grigio). L'app mette lo stesso nome nell'indirizzo dei riquadri,
+// perché la sua memoria non riusi quelli dello stile di prima.
+const stile = 'klokantech-basic';
 
 /// I parametri che si passano al fornitore, e nient'altro.
 const ammessi = {

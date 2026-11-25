@@ -130,9 +130,10 @@ class _SchermataTappaState extends State<SchermataTappa> {
       if (t.ora != null) return t.ora!;
       final collocata = g == null
           ? null
-          : tappeDelGiorno(g, widget.tappe)
-                .where((c) => c.tappa.id == t.id)
-                .firstOrNull;
+          : tappeDelGiorno(
+              g,
+              widget.tappe,
+            ).where((c) => c.tappa.id == t.id).firstOrNull;
       return collocata?.inizio ?? primaOraProposta;
     }
     return widget.ora ?? _proposta(g) ?? g?.finestra.inizio ?? primaOraProposta;
@@ -207,10 +208,7 @@ class _SchermataTappaState extends State<SchermataTappa> {
   /// blocca (regola 24).
   bool get _toccaIlPosto {
     final t = widget.tappa;
-    return t == null ||
-        _ora != _oraDiPrima ||
-        _durata != t.durata ||
-        _spostata;
+    return t == null || _ora != _oraDiPrima || _durata != t.durata || _spostata;
   }
 
   Duration _libero(Giorno g) => tempoLibero(

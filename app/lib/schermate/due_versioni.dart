@@ -34,7 +34,7 @@ enum SceltaVersione {
   /// Quella già salvata, che resta com'è.
   loro,
 
-  /// Tutte e due, come due cose distinte: solo per le voci.
+  /// Tutte e due, come due cose distinte: solo per le voci e le note.
   entrambe,
 }
 
@@ -65,7 +65,7 @@ Future<SceltaVersione?> salvaOScegli(
 /// salvata, con il bordo cobalto; sotto quella già salvata, con chi e quando.
 /// Quello che cambia è evidenziato. Si sceglie con un tocco, e non si mescola
 /// niente: due testi non diventano un terzo. «Tienile tutte e due» solo dove
-/// possono convivere, cioè per le voci.
+/// possono convivere, cioè per le voci e le note (tela, 142).
 ///
 /// Chiudendo senza scegliere si torna al foglio, con quello che si era scritto.
 class SchermataDueVersioni extends StatefulWidget {
@@ -343,6 +343,29 @@ class _Riga extends StatelessWidget {
           ? Colori.cobaltoScuro
           : Colori.inchiostro,
     );
+    // Un testo lungo, senza etichetta: a capo, da sinistra, per intero.
+    if (etichetta.isEmpty && !tolta) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: Colori.foschia, width: 1.5)),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: diversa ? Colori.cobaltoChiaro : null,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            testo,
+            style: Testi.corpo.copyWith(
+              color: diversa ? Colori.cobaltoScuro : Colori.inchiostro,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 9),
       decoration: const BoxDecoration(
@@ -565,6 +588,10 @@ List<_RigaConfronto> _righe(Conflitto c, _Contesto contesto) {
               ].join(' · ');
       }),
     ],
+    // Il testo di una nota è lungo: va a capo, per intero.
+    CosaInConflitto.nota => [
+      riga('', ['testo'], (v) => v['testo'] as String?),
+    ],
     CosaInConflitto.voce => [
       riga('Cosa', ['testo'], (v) => v['testo'] as String?),
       riga('Quante', ['quantita'], (v) => '${v['quantita']}'),
@@ -625,6 +652,7 @@ class _Parole {
     CosaInConflitto.tappa => 'questa tappa',
     CosaInConflitto.spesa => 'questa spesa',
     CosaInConflitto.voce => 'questa voce',
+    CosaInConflitto.nota => 'questa nota',
   };
 
   /// «Marco ha cambiato questa tappa», «Hai cambiato questa tappa da un altro
@@ -636,7 +664,8 @@ class _Parole {
 
   String get spiegazione {
     final mentre = _daMe ? 'qui' : 'tu';
-    // Tappa, spesa e voce sono femminili; un viaggio non si toglie da qui.
+    // Tappa, spesa, voce e nota sono femminili; un viaggio non si toglie da
+    // qui.
     if (c.tolta) {
       return '${_chiHa('tolto $_questa')} mentre la cambiavi $mentre. Puoi '
           'rimetterla con la tua versione, o lasciarla tolta.';
@@ -658,6 +687,9 @@ class _Parole {
       CosaInConflitto.voce =>
         '${_chiHa('riscritto questa voce')} mentre la riscrivevi $mentre. Due '
             'testi non si uniscono mai: scegline uno, o tienili come due voci.',
+      CosaInConflitto.nota =>
+        '${_chiHa('riscritto questa nota')} mentre la riscrivevi $mentre. Due '
+            'testi non si uniscono mai: scegline uno, o tienili come due note.',
     };
   }
 
@@ -695,7 +727,9 @@ class _Parole {
 
   String get nota {
     if (c.possonoConvivere) {
-      return 'Con «tutte e due» la tua diventa una voce in più.';
+      return c.cosa == CosaInConflitto.nota
+          ? 'Con «tutte e due» la tua diventa una nota in più.'
+          : 'Con «tutte e due» la tua diventa una voce in più.';
     }
     if (c.cosa == CosaInConflitto.spesa) {
       return 'I conti del viaggio si rifanno con quella che scegli.';

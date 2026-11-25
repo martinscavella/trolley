@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/aspetto/elementi.dart';
 import 'package:trolley/aspetto/mappamondo.dart';
 import 'package:trolley/dominio/calendario.dart';
+import 'package:trolley/schermate/globo.dart';
 import 'package:trolley/schermate/impostazioni.dart';
 import 'package:trolley/schermate/mappamondo.dart';
 import 'package:trolley/schermate/passaporto.dart';
@@ -114,7 +116,8 @@ void main() {
     await tester.tap(find.text('Mappamondo'));
     await aspetta(tester);
     expect(find.byType(SchermataMappamondo), findsOneWidget);
-    await tester.tap(find.byTooltip('Indietro'));
+    // Sul blu della notte la freccia è solo il segno (tela, 144).
+    await tester.tap(find.bySemanticsLabel('Indietro'));
     await aspetta(tester);
 
     await tester.tap(find.text('Traguardi'));
@@ -171,8 +174,10 @@ void main() {
     await ambiente.monta(tester, const SchermataMappamondo());
     await aspetta(tester);
 
+    // I numeri grandi nella scheda della notte (tela, 144).
+    expect(find.bySemanticsLabel('2 paesi e 3 città'), findsOne);
     expect(
-      find.text('2 paesi e 3 città: ogni viaggio chiuso, verificato o no.'),
+      find.text('Giralo col dito · allargalo per entrarci'),
       findsOneWidget,
     );
     expect(find.bySemanticsLabel('Mappamondo: 2 paesi visitati'), findsOne);
@@ -195,6 +200,137 @@ void main() {
     );
   });
 
+  /// Due dita sul globo, che si allargano o si stringono.
+  Future<void> pizzica(
+    WidgetTester tester,
+    Finder globo, {
+    required bool allarga,
+  }) async {
+    final c = tester.getCenter(globo);
+    final da = allarga ? 20.0 : 90.0;
+    final passo = allarga ? 12.0 : -12.0;
+    final uno = await tester.startGesture(c - Offset(da, 0), pointer: 7);
+    final due = await tester.startGesture(c + Offset(da, 0), pointer: 8);
+    for (var i = 0; i < 6; i++) {
+      await uno.moveBy(Offset(-passo, 0));
+      await due.moveBy(Offset(passo, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await uno.up();
+    await due.up();
+  }
+
+  testWidgets('allargando il mappamondo con due dita il globo cresce dal suo '
+      'posto fino a tutto schermo; un paese tenuto premuto mostra i suoi '
+      'viaggi, e stringendo le dita torna al suo posto (tela, 144, 146–149)', (
+    tester,
+  ) async {
+    await viaggi(tester);
+    await ambiente.monta(tester, const SchermataMappamondo());
+    await aspetta(tester);
+    final piccolo = find.byWidgetPredicate(
+      (w) => w is Mappamondo && !w.pienoSchermo,
+    );
+    final grande = find.byWidgetPredicate(
+      (w) => w is Mappamondo && w.pienoSchermo,
+    );
+    StatoMappamondo stato() => tester.state<StatoMappamondo>(grande);
+
+    // Un tocco non apre niente: si entra allargando.
+    await tester.tap(piccolo);
+    await tester.pump(const Duration(milliseconds: 400));
+    await aspetta(tester);
+    expect(find.byType(SchermataGlobo), findsNothing);
+
+    // Mentre le dita si allargano, il globo grande parte dal posto del
+    // piccolo e le segue: non salta.
+    final prima = tester.state<StatoMappamondo>(piccolo).disco!;
+    final c = prima.centro;
+    final uno = await tester.startGesture(c - const Offset(30, 0), pointer: 7);
+    final due = await tester.startGesture(c + const Offset(30, 0), pointer: 8);
+    await uno.moveBy(const Offset(-1, 0));
+    await due.moveBy(const Offset(1, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+    for (var i = 0; i < 2; i++) {
+      await uno.moveBy(const Offset(-1, 0));
+      await due.moveBy(const Offset(1, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(find.byType(SchermataGlobo), findsOneWidget);
+    final disco = stato().disco!;
+    // Il raggio è quello del piccolo per quanto si sono allargate le dita, e
+    // il centro è partito dal suo verso il mezzo dello schermo.
+    expect(disco.raggio, closeTo(prima.raggio * 66 / 60, 1));
+    final mezzo = tester.getCenter(find.byType(SchermataGlobo));
+    expect((disco.centro - c).distance, lessThan((mezzo - c).distance / 2));
+    for (var i = 0; i < 6; i++) {
+      await uno.moveBy(const Offset(-4, 0));
+      await due.moveBy(const Offset(4, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await uno.up();
+    await due.up();
+    await aspetta(tester);
+    // Allargato oltre metà strada e lasciato, si apre del tutto.
+    expect(find.text('2 paesi · 3 città'), findsOneWidget);
+    // Niente tasti per avvicinare: si fa con le dita, o scorrendo con
+    // VoiceOver.
+    expect(find.bySemanticsLabel('Avvicina'), findsNothing);
+
+    // A tutto schermo il globo occupa tutto lo schermo.
+    expect(tester.getSize(grande), tester.getSize(find.byType(SchermataGlobo)));
+
+    // Al centro c'è il Portogallo, il paese dell'ultimo viaggio. Un tocco
+    // veloce non lo sceglie: si tiene premuto.
+    await tester.tap(grande);
+    await tester.pump(const Duration(milliseconds: 400));
+    await aspetta(tester);
+    expect(find.byType(PaginaPassaporto), findsNothing);
+    await tester.longPress(grande);
+    await aspetta(tester);
+    expect(find.text('Portogallo'), findsWidgets);
+    expect(find.textContaining('2 viaggi · Porto, Lisbona'), findsOneWidget);
+    expect(find.byType(PaginaPassaporto), findsNWidgets(2));
+    expect(tester.widget<Mappamondo>(grande).scelto, 'PT');
+
+    // Lontano del tutto, e poi ancora più stretto: torna al suo posto, e il
+    // piccolo ricompare.
+    stato().allontana();
+    stato().allontana();
+    stato().allontana();
+    await aspetta(tester);
+    await pizzica(tester, grande, allarga: false);
+    await aspetta(tester);
+    expect(find.byType(SchermataGlobo), findsNothing);
+    expect(find.text('Giralo col dito · allargalo per entrarci'), findsOne);
+  });
+
+  testWidgets('con VoiceOver il globo si apre fra le sue azioni, e la croce '
+      'lo richiude', (tester) async {
+    await viaggi(tester);
+    await ambiente.monta(tester, const SchermataMappamondo());
+    await aspetta(tester);
+    final nodo = tester.getSemantics(
+      find.bySemanticsLabel('Mappamondo: 2 paesi visitati'),
+    );
+    expect(nodo.getSemanticsData().customSemanticsActionIds, isNotEmpty);
+    final azione = CustomSemanticsAction.getIdentifier(
+      const CustomSemanticsAction(label: 'Apri a tutto schermo'),
+    );
+    nodo.owner!.performAction(
+      nodo.id,
+      SemanticsAction.customAction,
+      azione,
+    );
+    await aspetta(tester);
+    expect(find.byType(SchermataGlobo), findsOneWidget);
+    expect(find.text('2 paesi · 3 città'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Chiudi'));
+    await aspetta(tester);
+    expect(find.byType(SchermataGlobo), findsNothing);
+  });
+
   testWidgets('senza viaggi chiusi si dice come si riempiono', (tester) async {
     await ambiente.accedi(tester: tester);
     await ambiente.monta(tester, const SchermataPassaporto());
@@ -203,7 +339,7 @@ void main() {
 
     await ambiente.monta(tester, const SchermataMappamondo());
     await aspetta(tester);
-    expect(find.textContaining('Si colora con i viaggi chiusi'), findsOne);
+    expect(find.textContaining('Si accende con i viaggi chiusi'), findsOne);
     expect(find.text('PAESI · 0'), findsNothing);
   });
 

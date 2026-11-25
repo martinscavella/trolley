@@ -2,7 +2,7 @@
 /// cosa, le due versioni, chi ha scritto quella già salvata e quando.
 ///
 /// Le regole del confronto stanno in dominio/conflitti.dart. Qui ci sono i
-/// **ritratti** delle quattro cose che possono trovarsi in due versioni — i
+/// **ritratti** delle cinque cose che possono trovarsi in due versioni — i
 /// campi che la persona cambia, con i valori resi confrontabili — scritti nei
 /// nomi del server, così da un ritratto si torna alla riga da mandare.
 library;
@@ -19,11 +19,12 @@ enum CosaInConflitto {
   viaggio,
   tappa,
   spesa,
-  voce;
+  voce,
+  nota;
 
-  /// Le due versioni possono restare come due cose distinte: due voci sì,
-  /// due tappe o due spese no (tela, 36).
-  bool get divisibile => this == voce;
+  /// Le due versioni possono restare come due cose distinte: due voci o due
+  /// note sì, due tappe o due spese no (tela, 36 e 142).
+  bool get divisibile => this == voce || this == nota;
 }
 
 /// Il server ha rifiutato una scrittura fatta su una versione superata, e
@@ -140,6 +141,13 @@ Map<String, Object?> ritrattoVoce(Map<String, Object?> r) => {
   campoEliminato: r['eliminato_il'] != null,
 };
 
+/// Il ritratto di una nota scritta a mano: il testo. Di una nota si cambia
+/// solo quello (tela, 141).
+Map<String, Object?> ritrattoNota(Map<String, Object?> r) => {
+  'testo': (r['testo'] as String).trim(),
+  campoEliminato: r['eliminato_il'] != null,
+};
+
 /// Il ritratto di un viaggio: quando si parte. Lo stato conta perché fissare
 /// le date fa di un'idea un viaggio in programma, e tornare idea il contrario.
 Map<String, Object?> ritrattoViaggio(Map<String, Object?> r) => {
@@ -182,6 +190,11 @@ Map<String, Object?> rigaDellaVoce(VoceLista v) => {
   'quantita': v.quantita,
   'assegnato_a': v.assegnatoA,
   'eliminato_il': v.eliminatoIl,
+};
+
+Map<String, Object?> rigaDellaNota(Nota n) => {
+  'testo': n.testo,
+  'eliminato_il': n.eliminatoIl,
 };
 
 Map<String, Object?> rigaDelViaggio(Viaggio v) => {

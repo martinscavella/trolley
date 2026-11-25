@@ -466,7 +466,10 @@ void main() {
       );
       final p = porto as TileLayer;
       final b = berlino as TileLayer;
-      expect(p.urlTemplate, '$indirizzo/riquadro/{z}/{x}/{y}{r}.png');
+      expect(
+        p.urlTemplate,
+        '$indirizzo/riquadro/{z}/{x}/{y}{r}.png?stile=klokantech-basic',
+      );
       expect(b.urlTemplate, p.urlTemplate);
       expect(p.tileProvider.headers['x-viaggio'], 'porto');
       expect(b.tileProvider.headers['x-viaggio'], 'berlino');

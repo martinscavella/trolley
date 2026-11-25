@@ -4,20 +4,25 @@
 ///
 /// È una sola per tutte le sezioni (ADR-013): quando la voce attiva cambia,
 /// la pillola bianca scivola dalla voce di prima alla nuova e si allunga sul
-/// suo nome, mentre quella di prima torna icona (tela, 126). Ci arriva con
-/// una molla, con un piccolo rimbalzo.
+/// suo nome, mentre quella di prima torna icona (tela, 126). I suoi due bordi
+/// hanno ciascuno la sua molla, e quello davanti è più svelto: la pillola si
+/// stira nella corsa e torna tonda all'arrivo, senza scatti (tela, 143).
 ///
-/// Come la barra di iOS, la pillola si trascina (tela, 137): col dito sulla
-/// barra cresce un poco, come una lente, lo segue senza scatti e si allunga
-/// sul nome della voce che ha sotto, con un tocco leggero del telefono a ogni
-/// voce. Lasciando, va sulla voce più vicina e la sezione cambia; il «+» si
-/// attraversa ma non si sceglie così.
+/// Come la barra di iOS, la pillola si trascina (tela, 137 e 143): col dito
+/// sulla barra diventa una lente, un poco più grande, che insegue il dito.
+/// Sotto il dito la barra sta ferma — i nomi non si aprono né si chiudono —
+/// e dove passa la lente icone e nomi si scuriscono; un tocco leggero del
+/// telefono a ogni voce. Lasciando, la lente si posa sulla voce più vicina
+/// portandosi la velocità del dito, e solo allora il nome si apre e la
+/// sezione cambia; il «+» si attraversa ma non si sceglie così.
 library;
 
+import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import 'movimento.dart';
@@ -77,40 +82,62 @@ const _fraIconaENome = 8.0;
 /// Il minimo fra un tasto e l'altro, anche con un nome lungo.
 const _fraTasti = 4.0;
 
-/// La molla della pillola: arriva in un terzo di secondo, con un rimbalzo
-/// appena.
-const _molla = SpringDescription(mass: 1, stiffness: 520, damping: 33);
+/// I nomi che si aprono e si chiudono: senza rimbalzo, in un terzo di
+/// secondo, e solo quando il dito ha lasciato (tela, 143).
+const _mollaNomi = SpringDescription(mass: 1, stiffness: 300, damping: 34.6);
+
+/// Le molle dei due bordi della pillola: quello davanti, nel verso della
+/// corsa, più svelto di quello dietro, così la pillola si stira e torna tonda
+/// all'arrivo. Col dito sono più rigide, perché la lente gli stia vicina.
+const _davanti = 500.0;
+const _dietro = 190.0;
+const _davantiColDito = 1500.0;
+const _dietroColDito = 900.0;
 
 class _BarraPrincipaleState extends State<BarraPrincipale>
     with TickerProviderStateMixin {
-  /// La corsa della pillola, da dov'era a dove va: da 0 a 1, con la molla
-  /// che passa un poco oltre e torna.
+  /// I nomi, da com'erano a come vanno: da 0 a 1.
   late final _corsa = AnimationController.unbounded(vsync: this, value: 1);
 
   /// La lente: quanto è cresciuta la pillola sotto il dito.
   late final _lente = AnimationController(vsync: this, duration: Ritmo.breve);
 
-  /// Dove sta il dito, come posto fra le voci (il «+» compreso): 1,5 è a
-  /// metà fra la seconda e la terza. `null` se non si trascina.
+  /// I due bordi della pillola, ciascuno con la sua molla. `null` prima del
+  /// primo disegno.
+  Inseguitore? _sinistra;
+  Inseguitore? _destra;
+
+  /// Dove devono andare i bordi, all'ultimo disegno.
+  Rect? _bersaglio;
+
+  /// Il passo delle molle.
+  late final Ticker _molle = createTicker(_avanza);
+  Duration _ultimo = Duration.zero;
+
+  /// Dove sta il dito, in punti dalla sinistra della barra; `null` se non
+  /// si trascina.
   double? _dito;
+
+  /// Com'era la barra quando il dito si è appoggiato: sotto il dito non si
+  /// ridisegna, si muove solo la lente.
+  List<double>? _ferme;
 
   /// La voce più vicina al dito, per il tocco del telefono quando cambia.
   int? _vicina;
 
-  /// Il centro di ogni posto all'ultimo disegno: dal punto del dito al posto.
+  /// Il centro e la larghezza di ogni posto all'ultimo disegno.
   List<double> _centri = const [];
+  List<double> _larghezze = const [];
 
   /// La voce dove va la pillola.
   late String? _arrivo = _attiva(widget);
 
-  /// Quanto era aperta ogni voce, e dov'era la pillola, quando è partita:
-  /// una corsa interrotta riparte da lì, senza salti.
+  /// Quanto era aperta ogni voce quando i nomi sono partiti: una corsa
+  /// interrotta riparte da lì, senza salti.
   Map<String, double> _apertePrima = const {};
-  Rect? _pillolaPrima;
 
   /// Com'era all'ultimo disegno.
   Map<String, double> _aperte = const {};
-  Rect? _pillola;
 
   static String? _attiva(BarraPrincipale b) =>
       [...b.prima, ...b.dopo].where((v) => v.attiva).firstOrNull?.etichetta;
@@ -123,20 +150,62 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
     _parti(nuova);
   }
 
-  /// La pillola parte da dov'è verso [arrivo].
+  /// I nomi partono verso [arrivo], e la pillola ci va.
   void _parti(String? arrivo) {
     _apertePrima = _aperte;
-    _pillolaPrima = _pillola;
     _arrivo = arrivo;
-    if (movimentoRidotto(context) || _pillolaPrima == null) {
+    if (movimentoRidotto(context) || _sinistra == null) {
       _corsa.value = 1;
     } else {
-      _corsa.animateWith(SpringSimulation(_molla, 0, 1, 0));
+      _corsa.animateWith(SpringSimulation(_mollaNomi, 0, 1, 0));
+      _sveglia();
     }
+  }
+
+  void _sveglia() {
+    if (_molle.isActive) return;
+    _ultimo = Duration.zero;
+    _molle.start();
+  }
+
+  /// Un passo delle molle: i bordi inseguono il bersaglio dell'ultimo
+  /// disegno, e il disegno dopo dice il bersaglio nuovo.
+  void _avanza(Duration trascorso) {
+    final dt = (trascorso - _ultimo).inMicroseconds / 1e6;
+    _ultimo = trascorso;
+    final (s, d, b) = (_sinistra, _destra, _bersaglio);
+    if (s == null || d == null || b == null) return;
+    final colDito = _dito != null;
+    // Il bordo davanti è quello verso cui va il centro.
+    final versoDestra = b.center.dx > (s.posizione + d.posizione) / 2;
+    final svelto = colDito ? _davantiColDito : _davanti;
+    final lento = colDito ? _dietroColDito : _dietro;
+    s.avanza(
+      b.left,
+      dt,
+      rigidita: versoDestra ? lento : svelto,
+      smorzamento: 0.9,
+    );
+    d.avanza(
+      b.right,
+      dt,
+      rigidita: versoDestra ? svelto : lento,
+      smorzamento: 0.9,
+    );
+    if (!colDito &&
+        !_corsa.isAnimating &&
+        s.fermoSu(b.left) &&
+        d.fermoSu(b.right)) {
+      s.salta(b.left);
+      d.salta(b.right);
+      _molle.stop();
+    }
+    setState(() {});
   }
 
   @override
   void dispose() {
+    _molle.dispose();
     _corsa.dispose();
     _lente.dispose();
     super.dispose();
@@ -144,25 +213,14 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
 
   List<VoceBarra?> get _voci => [...widget.prima, null, ...widget.dopo];
 
-  /// Il posto sotto il punto [x] della barra, fra i centri dei posti.
-  double _posto(double x) {
-    final c = _centri;
-    if (c.isEmpty) return 0;
-    if (x <= c.first) return 0;
-    for (var i = 0; i < c.length - 1; i++) {
-      if (x <= c[i + 1]) return i + (x - c[i]) / (c[i + 1] - c[i]);
-    }
-    return c.length - 1.0;
-  }
-
-  /// La voce più vicina a un posto: il «+» non si sceglie.
-  int _voceVicina(double posto) {
+  /// Il posto più vicino al punto [x] della barra: il «+» non si sceglie.
+  int _voceVicina(double x) {
     final voci = _voci;
     var migliore = 0;
     var distanza = double.infinity;
     for (final (i, v) in voci.indexed) {
-      if (v == null) continue;
-      final d = (i - posto).abs();
+      if (v == null || i >= _centri.length) continue;
+      final d = (_centri[i] - x).abs();
       if (d < distanza) (migliore, distanza) = (i, d);
     }
     return migliore;
@@ -170,31 +228,44 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
 
   void _appoggia(DragStartDetails d) {
     _corsa.stop();
-    final posto = _posto(d.localPosition.dx);
+    final x = d.localPosition.dx;
     setState(() {
-      _dito = posto;
-      _vicina = _voceVicina(posto);
+      _ferme = [
+        for (final v in _voci) v == null ? 0.0 : _aperte[v.etichetta] ?? 0,
+      ];
+      _dito = x;
+      _vicina = _voceVicina(x);
     });
-    if (!movimentoRidotto(context)) _lente.forward();
+    if (!movimentoRidotto(context)) {
+      _lente.forward();
+      _sveglia();
+    }
     HapticFeedback.selectionClick();
   }
 
   void _scorri(DragUpdateDetails d) {
     if (_dito == null) return;
-    final posto = _posto(d.localPosition.dx);
-    final vicina = _voceVicina(posto);
+    final x = d.localPosition.dx;
+    final vicina = _voceVicina(x);
     if (vicina != _vicina) HapticFeedback.selectionClick();
     setState(() {
-      _dito = posto;
+      _dito = x;
       _vicina = vicina;
     });
   }
 
-  void _lascia() {
+  void _lascia([DragEndDetails? fine]) {
     final dito = _dito;
     if (dito == null) return;
     final voce = _voci[_voceVicina(dito)]!;
-    setState(() => _dito = null);
+    // La lente si posa portandosi la velocità del dito.
+    final v = fine?.velocity.pixelsPerSecond.dx ?? 0;
+    _sinistra?.velocita += v * 0.6;
+    _destra?.velocita += v * 0.6;
+    setState(() {
+      _dito = null;
+      _ferme = null;
+    });
     _lente.reverse();
     _parti(voce.etichetta);
     if (!voce.attiva) {
@@ -223,7 +294,7 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
         behavior: HitTestBehavior.translucent,
         onHorizontalDragStart: _appoggia,
         onHorizontalDragUpdate: _scorri,
-        onHorizontalDragEnd: (_) => _lascia(),
+        onHorizontalDragEnd: _lascia,
         onHorizontalDragCancel: _lascia,
         child: AnimatedBuilder(
           animation: Listenable.merge([_corsa, _lente]),
@@ -236,8 +307,9 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
   Widget _tasti(BuildContext context, double larghezza) {
     final t = _corsa.value;
     final voci = _voci;
-    final dito = _dito;
+    final ferme = _ferme;
     final scala = MediaQuery.textScalerOf(context);
+    final ridotto = movimentoRidotto(context);
 
     // Quanto cresce ogni voce quando è aperta: il nome e il margine. La voce
     // attiva prende lo spazio che resta: con cinque voci, su un telefono
@@ -256,58 +328,91 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
       return piena.clamp(0, massimo < 0 ? 0 : massimo);
     }
 
-    // Col dito, è aperta la voce che ha sotto, e a metà strada mezza l'una e
-    // mezza l'altra; altrimenti si va da com'era a dove arriva.
-    double aperta(int i, VoceBarra v) => dito != null
-        ? (1 - (i - dito).abs()).clamp(0.0, 1.0)
-        : lerpDouble(
-            _apertePrima[v.etichetta] ?? 0,
-            v.etichetta == _arrivo ? 1 : 0,
-            t,
-          )!.clamp(0.0, 1.0);
+    // Col dito la barra resta com'era; altrimenti i nomi vanno da com'erano
+    // a dove arrivano.
+    double aperta(int i, VoceBarra v) =>
+        ferme?[i] ??
+        lerpDouble(
+          _apertePrima[v.etichetta] ?? 0,
+          v.etichetta == _arrivo ? 1 : 0,
+          t,
+        )!.clamp(0.0, 1.0);
 
     final crescite = [for (final v in voci) v == null ? 0.0 : crescita(v)];
     final aperture = [
       for (final (i, v) in voci.indexed) v == null ? 0.0 : aperta(i, v),
     ];
-    final larghezze = [
-      for (final (i, _) in voci.indexed) _lato + crescite[i] * aperture[i],
-    ];
-    final spazio =
-        (larghezza - larghezze.fold(0.0, (a, b) => a + b)) /
-        (voci.length - 1);
-    final sinistre = <double>[];
-    var x = 0.0;
-    for (final l in larghezze) {
-      sinistre.add(x);
-      x += l + spazio;
+    // Dove sta ogni posto con quelle aperture: lo spazio che resta si divide
+    // fra un posto e l'altro.
+    (List<double>, List<double>) disponi(List<double> aperture) {
+      final larghezze = [
+        for (final (i, _) in voci.indexed) _lato + crescite[i] * aperture[i],
+      ];
+      final spazio =
+          (larghezza - larghezze.fold(0.0, (a, b) => a + b)) /
+          (voci.length - 1);
+      final sinistre = <double>[];
+      var x = 0.0;
+      for (final l in larghezze) {
+        sinistre.add(x);
+        x += l + spazio;
+      }
+      return (sinistre, larghezze);
     }
 
-    _centri = [
-      for (final (j, l) in larghezze.indexed) sinistre[j] + l / 2,
-    ];
-    Rect posto(int j) => Rect.fromLTWH(sinistre[j], 0, larghezze[j], _lato);
-
-    final Rect? pillola;
+    final (sinistre, larghezze) = disponi(aperture);
+    _centri = [for (final (j, l) in larghezze.indexed) sinistre[j] + l / 2];
+    _larghezze = larghezze;
+    // Dove deve andare la pillola: col dito, una lente larga quanto il posto
+    // che ha sotto, centrata sul dito e dentro la barra; altrimenti il posto
+    // della voce dove arriva, com'è a nomi già aperti: la pillola va dritta
+    // lì, e la barra le si sistema sotto.
+    final dito = _dito;
+    final Rect? bersaglio;
     if (dito != null) {
-      // Sotto il dito, fra un posto e l'altro.
-      final da = dito.floor().clamp(0, voci.length - 1);
-      final a = dito.ceil().clamp(0, voci.length - 1);
-      pillola = Rect.lerp(posto(da), posto(a), dito - da);
+      final larga = _larghezze[_voceVicina(dito)];
+      final sinistra = (dito - larga / 2).clamp(0.0, larghezza - larga);
+      bersaglio = Rect.fromLTWH(sinistra, 0, larga, _lato);
     } else {
       final i = voci.indexWhere((v) => v?.etichetta == _arrivo);
-      final dove = i < 0 ? null : posto(i);
-      pillola = dove == null
-          ? null
-          : _pillolaPrima == null
-          ? dove
-          : Rect.lerp(_pillolaPrima, dove, t);
+      if (i < 0) {
+        bersaglio = null;
+      } else {
+        final (s, l) = disponi([
+          for (final (j, v) in voci.indexed) v != null && j == i ? 1.0 : 0.0,
+        ]);
+        bersaglio = Rect.fromLTWH(s[i], 0, l[i], _lato);
+      }
     }
+    _bersaglio = bersaglio;
     _aperte = {
       for (final (j, v) in voci.indexed)
         if (v != null) v.etichetta: aperture[j],
     };
-    _pillola = pillola;
+
+    // La prima volta, e con «Riduci movimento», la pillola è già dove va.
+    if (bersaglio != null && (_sinistra == null || ridotto)) {
+      (_sinistra ??= Inseguitore(bersaglio.left)).salta(bersaglio.left);
+      (_destra ??= Inseguitore(bersaglio.right)).salta(bersaglio.right);
+    } else if (bersaglio != null && !_molle.isActive) {
+      final (s, d) = (_sinistra!, _destra!);
+      if (!s.fermoSu(bersaglio.left) || !d.fermoSu(bersaglio.right)) {
+        // Il bersaglio si è spostato senza che nessuno lo dicesse: un
+        // telefono girato, il testo più grande.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _sveglia();
+        });
+      }
+    }
+    final (s, d) = (_sinistra, _destra);
+    final pillola = bersaglio == null || s == null || d == null
+        ? null
+        : Rect.fromLTRB(
+            s.posizione,
+            0,
+            max(d.posizione, s.posizione + _lato * 0.6),
+            _lato,
+          );
 
     return Stack(
       clipBehavior: Clip.none,
@@ -344,7 +449,16 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
             height: _lato,
             child: v == null
                 ? _aggiungi()
-                : _voce(v, aperta: aperture[j], crescita: crescite[j]),
+                : _voce(
+                    v,
+                    aperta: aperture[j],
+                    crescita: crescite[j],
+                    // La pillola vista da questo posto: lì icona e nome sono
+                    // d'inchiostro, fuori bianchi.
+                    sotto: pillola
+                        ?.inflate(4 * _lente.value)
+                        .shift(Offset(-sinistre[j], 0)),
+                  ),
           ),
       ],
     );
@@ -354,13 +468,40 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
     VoceBarra v, {
     required double aperta,
     required double crescita,
+    required Rect? sotto,
   }) {
-    final colore = Color.lerp(
-      Colori.bianco.withValues(alpha: 0.75),
-      Colori.inchiostro,
-      aperta,
-    )!;
     final nome = crescita - (2 * _margine + _icona + _fraIconaENome - _lato);
+    Widget contenuto(Color colore) => Stack(
+      children: [
+        Positioned(
+          left: lerpDouble((_lato - _icona) / 2, _margine, aperta),
+          top: (_lato - _icona) / 2,
+          child:
+              v.simbolo?.call(colore) ??
+              Icon(v.icona, size: _icona, color: colore),
+        ),
+        if (aperta > 0.01 && nome > 0)
+          Positioned(
+            left: _margine + _icona + _fraIconaENome,
+            top: 0,
+            bottom: 0,
+            width: nome,
+            child: Opacity(
+              opacity: aperta * aperta,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  v.etichetta,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: Testi.voceBarra.copyWith(color: colore),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
     return Semantics(
       selected: v.attiva,
       child: Premibile(
@@ -369,43 +510,41 @@ class _BarraPrincipaleState extends State<BarraPrincipale>
         etichetta: v.etichetta,
         child: ExcludeSemantics(
           child: ClipRect(
-            child: Stack(
-              children: [
-                Positioned(
-                  left: lerpDouble((_lato - _icona) / 2, _margine, aperta),
-                  top: (_lato - _icona) / 2,
-                  child:
-                      v.simbolo?.call(colore) ??
-                      Icon(v.icona, size: _icona, color: colore),
-                ),
-                if (aperta > 0 && nome > 0)
-                  Positioned(
-                    left: _margine + _icona + _fraIconaENome,
-                    top: 0,
-                    bottom: 0,
-                    width: nome,
-                    child: Opacity(
-                      opacity: aperta * aperta,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          v.etichetta,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: Testi.voceBarra.copyWith(
-                            color: Colori.inchiostro,
-                          ),
-                        ),
-                      ),
-                    ),
+            child: sotto == null
+                ? contenuto(_spenta)
+                : ShaderMask(
+                    blendMode: BlendMode.srcIn,
+                    shaderCallback: (riquadro) =>
+                        _sottoLaPillola(riquadro, sotto),
+                    child: contenuto(Colori.bianco),
                   ),
-              ],
-            ),
           ),
         ),
       ),
     );
+  }
+
+  /// Le voci spente, fuori dalla pillola.
+  static final _spenta = Colori.bianco.withValues(alpha: 0.75);
+
+  /// Il colore di un posto della barra: d'inchiostro dove c'è la pillola,
+  /// bianco fuori. Il taglio è dritto: icone e nomi stanno a metà altezza,
+  /// dove la pillola è piena.
+  static Shader _sottoLaPillola(Rect riquadro, Rect pillola) {
+    final w = riquadro.width;
+    final a = w == 0 ? 0.0 : (pillola.left / w).clamp(0.0, 1.0);
+    final b = w == 0 ? 0.0 : (pillola.right / w).clamp(a, 1.0);
+    return LinearGradient(
+      colors: [
+        _spenta,
+        _spenta,
+        Colori.inchiostro,
+        Colori.inchiostro,
+        _spenta,
+        _spenta,
+      ],
+      stops: [0, a, a, b, b, 1],
+    ).createShader(riquadro);
   }
 
   Widget _aggiungi() => Premibile(
@@ -437,10 +576,8 @@ class SimboloPassaporto extends StatelessWidget {
   final double dimensione;
 
   @override
-  Widget build(BuildContext context) => CustomPaint(
-    size: Size.square(dimensione),
-    painter: _Passaporto(colore),
-  );
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size.square(dimensione), painter: _Passaporto(colore));
 }
 
 class _Passaporto extends CustomPainter {

@@ -109,7 +109,11 @@ class _SchermataPassaportoState extends State<SchermataPassaporto> {
     // Finché non si sa che cosa è già scoperto, non si dice da grattare.
     final daScoprire = scoperti == null
         ? const <String>[]
-        : daGrattare(visiteDi(viaggi), scoperti: scoperti, oggi: DateTime.now());
+        : daGrattare(
+            visiteDi(viaggi),
+            scoperti: scoperti,
+            oggi: DateTime.now(),
+          );
     final punti = puntiDeiPaesi(_elenco, mete);
     var n = 3;
     return Pagina(
@@ -165,16 +169,18 @@ class _SchermataPassaportoState extends State<SchermataPassaporto> {
                   centroSenzaViaggi,
             ).entra(context, ritardo: Ritmo.passo * 2),
             const SizedBox(height: 10),
-            _SchedaTraguardi(
-              presi: presi,
-            ).entra(context, ritardo: Ritmo.passo * 3),
+            _SchedaTraguardi(presi: presi)
+                .entra(context, ritardo: Ritmo.passo * 3),
             const SizedBox(height: 8),
             for (final (anno, delAnno) in pagine) ...[
               EtichettaSezione('$anno'),
               for (final (p, v) in delAnno)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: _Pagina(viaggio: v, verificato: p.verificato == true),
+                  child: PaginaPassaporto(
+                    viaggio: v,
+                    verificato: p.verificato == true,
+                  ),
                 ).entra(context, ritardo: Ritmo.passo * min(++n, 8)),
             ],
             if (passati.isNotEmpty) ...[
@@ -182,7 +188,7 @@ class _SchermataPassaportoState extends State<SchermataPassaporto> {
               for (final v in passati)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: _Passato(viaggio: v),
+                  child: PaginaPassata(viaggio: v),
                 ).entra(context, ritardo: Ritmo.passo * min(++n, 8)),
             ],
           ],
@@ -297,7 +303,8 @@ class _SchedaMappamondo extends StatelessWidget {
                   children: [
                     Text(
                       'Mappamondo',
-                      style: Testi.titoli(17).copyWith(color: Colori.inchiostro),
+                      style: Testi.titoli(17)
+                          .copyWith(color: Colori.inchiostro),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -383,7 +390,8 @@ class _SchedaTraguardi extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Traguardi',
-                      style: Testi.titoli(17).copyWith(color: Colori.inchiostro),
+                      style: Testi.titoli(17)
+                          .copyWith(color: Colori.inchiostro),
                     ),
                   ),
                   Text(
@@ -447,9 +455,14 @@ class _MedagliaPiccola extends StatelessWidget {
 }
 
 /// Un viaggio del passaporto: il biglietto d'inchiostro, con quando e quanti
-/// giorni, e il timbro se è verificato.
-class _Pagina extends StatelessWidget {
-  const _Pagina({required this.viaggio, required this.verificato});
+/// giorni, e il timbro se è verificato. Anche nella scheda di un paese del
+/// mappamondo (tela, 147).
+class PaginaPassaporto extends StatelessWidget {
+  const PaginaPassaporto({
+    super.key,
+    required this.viaggio,
+    required this.verificato,
+  });
 
   final Viaggio viaggio;
   final bool verificato;
@@ -480,8 +493,8 @@ class _Pagina extends StatelessWidget {
 
 /// Un viaggio passato, aggiunto a mano (tela, 65 e 98): bianco, tratteggiato,
 /// con il timbro «importato». Toccandolo, lo si cambia o lo si toglie.
-class _Passato extends StatelessWidget {
-  const _Passato({required this.viaggio});
+class PaginaPassata extends StatelessWidget {
+  const PaginaPassata({super.key, required this.viaggio});
 
   final Viaggio viaggio;
 
