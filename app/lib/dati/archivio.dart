@@ -29,7 +29,9 @@ import 'conflitti.dart';
 import 'database.dart';
 import 'destinazioni.dart';
 import 'errori.dart';
+import '../misurazione/misurazione.dart';
 import 'lettura.dart';
+import 'mappe.dart';
 import 'rete.dart';
 
 /// Quanto può essere lunga una nota: come sul server. Una risposta lunga di
@@ -87,13 +89,25 @@ class ViaggioLasciato {
 }
 
 class Archivio {
-  Archivio(this._db, this._supabase, {this.rete});
+  Archivio(
+    this._db,
+    this._supabase, {
+    this.rete,
+    this.mappe = const MappeAssenti(),
+    this.misurazione,
+  });
 
   final DatabaseLocale _db;
   final SupabaseClient _supabase;
 
   /// A cui dire com'è andata ogni chiamata (rete.dart).
   final Rete? rete;
+
+  /// Per rinnovare le coordinate di Google aggiornando la copia (ADR-014).
+  final Mappe mappe;
+
+  /// Per contare i rinnovi (07, `coordinate_rinnovate`).
+  final Misurazione? misurazione;
 
   /// I gesti che si fanno anche senza rete (coda.dart).
   late final coda = Coda(_db, _supabase, rete: rete);
@@ -253,7 +267,14 @@ class Archivio {
   /// rete); con [viaggioId], di quel viaggio solo, com'è quando lo si apre. Un
   /// viaggio finito tiene la copia dell'ultima volta che lo si è aperto, e la
   /// dice con la sua età ([copiaDelViaggio]).
-  Future<void> aggiornaCopia({String? viaggioId}) async {
+  ///
+  /// Con la copia arrivata, rinnova le coordinate di Google più vecchie di
+  /// [giorniCoordinate] giorni ([rinnovaCoordinate]).
+  Future<void> aggiornaCopia({
+    String? viaggioId,
+    int giorniCoordinate = giorniPerRinnovare,
+  }) async {
+    await scadiCoordinate().catchError((_) {});
     await coda.svuota();
     await mandaSulPosto().catchError((_) {});
     final io = _io;
@@ -414,12 +435,132 @@ class Archivio {
       });
       await coda.riapplica();
     });
+    await rinnovaCoordinate(
+      interi,
+      giorni: giorniCoordinate,
+    ).catchError((_) {});
     await aggiornaTassi().catchError((_) {});
     await aggiornaConfigurazione().catchError((_) {});
     await aggiornaTraguardi().catchError((_) {});
   }
 
   static const _copia = 'copia:';
+
+  // ─── Le coordinate di Google: trenta giorni al massimo (ADR-014) ─────────
+
+  /// Rinnova le coordinate di Google dei [viaggi] che ne hanno di più
+  /// vecchie di [giorni] giorni, o che le hanno perse: le chiede e le
+  /// scrive il server, qui si mettono nella copia. Si chiede solo per i
+  /// viaggi che ne hanno bisogno, a sapere dalla copia appena arrivata, e
+  /// non per quelli chiusi o in archivio. Con la rete; senza, o se il
+  /// server non risponde, resta com'è: si riproverà al prossimo
+  /// aggiornamento, e intanto valgono quelle che ci sono finché non
+  /// scadono.
+  Future<void> rinnovaCoordinate(
+    Iterable<String> viaggi, {
+    int giorni = giorniPerRinnovare,
+  }) async {
+    if (!mappe.disponibili) return;
+    final ids = viaggi.toSet();
+    if (ids.isEmpty) return;
+    final soglia = DateTime.now().toUtc().subtract(Duration(days: giorni));
+    final aperti = {
+      for (final v
+          in await (_db.select(_db.viaggi)..where(
+                (v) =>
+                    v.id.isIn(ids) &
+                    v.stato.isNotIn(['chiuso', 'archiviato']) &
+                    v.eliminatoIl.isNull(),
+              ))
+              .get())
+        v.id,
+    };
+    final daRinnovare = <String>{
+      for (final t
+          in await (_db.select(_db.tappe)..where(
+                (t) =>
+                    t.viaggioId.isIn(aperti) &
+                    t.placeId.isNotNull() &
+                    t.eliminatoIl.isNull(),
+              ))
+              .get())
+        if (_coordinateDa(t)?.isBefore(soglia) ?? true) t.viaggioId,
+    };
+    final adesso = DateTime.now();
+    for (final viaggioId in daRinnovare) {
+      // Un posto che Google non sa più dire resterebbe da rinnovare a ogni
+      // aggiornamento, e ogni domanda si paga: lo stesso viaggio si riprova
+      // dopo un'ora. Preparando il viaggio si chiede comunque.
+      final ultimo = _ultimoRinnovo[viaggioId];
+      if (giorni >= giorniPerRinnovare &&
+          ultimo != null &&
+          adesso.difference(ultimo) < const Duration(hours: 1)) {
+        continue;
+      }
+      _ultimoRinnovo[viaggioId] = adesso;
+      final rinnovo = await mappe.rinnovaCoordinate(
+        viaggioId: viaggioId,
+        giorni: giorni,
+      );
+      await _db.batch((b) {
+        for (final r in rinnovo.rinnovate) {
+          b.update(
+            _db.tappe,
+            TappeCompanion(
+              placeId: Value(r.placeId),
+              lat: Value(r.posto.lat),
+              lon: Value(r.posto.lon),
+              coordinateIl: Value(r.il.toIso8601String()),
+            ),
+            where: (t) => t.id.equals(r.tappaId),
+          );
+        }
+      });
+      if (rinnovo.rinnovate.isEmpty && rinnovo.mancate == 0) continue;
+      await misurazione?.registra(Eventi.coordinateRinnovate, {
+        'viaggio_id': viaggioId,
+        'tappe': rinnovo.rinnovate.length,
+        'mancate': rinnovo.mancate,
+      });
+    }
+  }
+
+  /// Quando si è chiesto l'ultimo rinnovo, per viaggio, da quando l'app è
+  /// aperta.
+  final _ultimoRinnovo = <String, DateTime>{};
+
+  /// Toglie dalla copia le coordinate di Google che hanno più di 30 giorni:
+  /// le condizioni di Google valgono anche sul telefono. Il server fa lo
+  /// stesso di notte; qui serve per i viaggi che la copia non riscarica più
+  /// (quelli finiti) e per il telefono che resta a lungo senza rete. Il
+  /// posto resta: le coordinate si possono rinnovare.
+  Future<void> scadiCoordinate() async {
+    final soglia = DateTime.now().toUtc().subtract(const Duration(days: 30));
+    final scadute = [
+      for (final t
+          in await (_db.select(_db.tappe)..where(
+                (t) => t.placeId.isNotNull() & t.coordinateIl.isNotNull(),
+              ))
+              .get())
+        if ((DateTime.tryParse(t.coordinateIl!) ?? soglia).isBefore(soglia))
+          t.id,
+    ];
+    if (scadute.isEmpty) return;
+    await (_db.update(_db.tappe)..where((t) => t.id.isIn(scadute))).write(
+      const TappeCompanion(
+        lat: Value(null),
+        lon: Value(null),
+        coordinateIl: Value(null),
+      ),
+    );
+  }
+
+  /// Da quando la tappa sa dove sta il suo posto di Google; `null` se non lo
+  /// sa. Senza coordinate non lo sa, qualunque data abbia.
+  static DateTime? _coordinateDa(Tappa t) => t.lat == null || t.lon == null
+      ? null
+      : DateTime.tryParse(t.coordinateIl ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
 
   /// Lo stato di un viaggio dalla sua riga del server, per decidere se la
   /// copia lo tiene intero.
@@ -823,8 +964,11 @@ class Archivio {
   /// telefono sono di poche ore fa. Richiede la rete: senza, lo dice con un
   /// [ErroreTrolley] e il viaggio resta com'era. I tassi sono un di più: se
   /// non arrivano, restano gli ultimi, con la loro data.
+  ///
+  /// Le coordinate di Google si rinnovano tutte, tranne quelle di oggi: così
+  /// durano 30 giorni da adesso, anche senza rete per tutto il viaggio.
   Future<void> preparaViaggio(String viaggioId) async {
-    await aggiornaCopia(viaggioId: viaggioId);
+    await aggiornaCopia(viaggioId: viaggioId, giorniCoordinate: 1);
     await aggiornaTassi(forza: true).catchError((_) {});
     await _db
         .into(_db.impostazioni)

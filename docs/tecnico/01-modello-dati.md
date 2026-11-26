@@ -79,7 +79,7 @@ La capienza di un giorno è `finestra_fine − finestra_inizio`. **Non tiene con
 |---|---|
 | `giorno_id`, `ordine` | |
 | `titolo`, `luogo_nome`, `lat`, `lon` | Senza coordinate la tappa esiste ma non compare sulla mappa |
-| `place_id`, `coordinate_il` | Il posto cercato con Google ([ADR-014](adr/014-google-maps-platform.md)): il `place_id` si tiene per sempre, le coordinate al massimo 30 giorni da `coordinate_il`. Le rinnova la funzione `mappe`; se nessuno le rinnova, `privato.scadi_coordinate_google` le toglie di notte e il `place_id` resta. Di un posto di Google non si tengono nome né indirizzo: `luogo_nome` resta per i posti di prima, da OpenStreetMap (migrazione `posto_da_google`) |
+| `place_id`, `coordinate_il` | Il posto cercato con Google ([ADR-014](adr/014-google-maps-platform.md)): il `place_id` si tiene per sempre, le coordinate al massimo 30 giorni da `coordinate_il`. Le rinnova la funzione `mappe` quando un telefono aggiorna la copia (`coordinate_da_rinnovare`, `rinnova_coordinate`), senza fare una versione nuova; se nessuno le rinnova, `privato.scadi_coordinate_google` le toglie di notte e il `place_id` resta (migrazione `rinnovo_coordinate`). Di un posto di Google non si tengono nome né indirizzo: `luogo_nome` resta per i posti di prima, da OpenStreetMap (migrazione `posto_da_google`) |
 | `durata_stimata_min` | Precompilata, sempre modificabile |
 | `ora_inizio` | Sul server resta facoltativo; l'app la scrive sempre, proposta (04, regola 19). Una tappa che non ce l'ha — da prima del 26 ottobre 2026, o incollata senza ora — si mette in fila da sola sulla linea del tempo (`dominio/orari.dart`) |
 | `stato` | `da_fare` · `completata` · `saltata` |

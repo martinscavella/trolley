@@ -109,6 +109,12 @@ abstract final class Eventi {
   /// a un altro giorno (04, regole 31–33): se le tappe saltate tornano nel
   /// programma o si perdono. Mai la tappa, mai l'ora.
   static const tappaRimandata = 'tappa_rimandata';
+
+  /// Le coordinate di Google rinnovate aggiornando la copia (ADR-014):
+  /// quante tappe, e quanti posti Google non ha saputo dire. Si pagano: è il
+  /// numero che dice quanto costa tenere le coordinate. Mai quali tappe, mai
+  /// dove.
+  static const coordinateRinnovate = 'coordinate_rinnovate';
 }
 
 class Misurazione {

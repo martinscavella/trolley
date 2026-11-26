@@ -154,6 +154,7 @@ Map<String, Object?> rigaDiTappa(
   double? lat,
   double? lon,
   String? placeId,
+  String? coordinateIl,
 }) => {
   'id': id,
   'viaggio_id': viaggio,
@@ -163,7 +164,13 @@ Map<String, Object?> rigaDiTappa(
   'luogo_nome': luogo,
   'lat': lat,
   'lon': lon,
-  if (placeId != null) ...{'place_id': placeId, 'coordinate_il': _istante},
+  if (placeId != null) ...{
+    'place_id': placeId,
+    // Di oggi: le coordinate di Google scadono dopo 30 giorni.
+    'coordinate_il': lat == null
+        ? null
+        : coordinateIl ?? DateTime.now().toUtc().toIso8601String(),
+  },
   'durata_stimata_min': durata,
   'ora_inizio': ora,
   'stato': stato,
@@ -1942,6 +1949,22 @@ class MappeFinte implements Mappe {
       fermati: _consumo.fermati,
     );
   }
+
+  /// I rinnovi chiesti, in ordine: per quale viaggio, con quanti giorni.
+  final rinnovi = <({String viaggioId, int giorni})>[];
+
+  /// Quello che risponde il server a ogni rinnovo; senza, niente da
+  /// rinnovare. Può lanciare, come senza rete.
+  RinnovoCoordinate Function(String viaggioId, int giorni)? rinnovo;
+
+  @override
+  Future<RinnovoCoordinate> rinnovaCoordinate({
+    required String viaggioId,
+    int giorni = giorniPerRinnovare,
+  }) async {
+    rinnovi.add((viaggioId: viaggioId, giorni: giorni));
+    return rinnovo?.call(viaggioId, giorni) ?? const RinnovoCoordinate();
+  }
 }
 
 /// La guida comandata dal test: la vista è un riquadro vuoto, e il test
@@ -2242,7 +2265,13 @@ class Ambiente {
   final rete = ReteFinta();
   late final server = ServerFinto(rete);
   final ingresso = IngressoFinto();
-  late final archivio = Archivio(db, server.supabase, rete: rete);
+  late final archivio = Archivio(
+    db,
+    server.supabase,
+    rete: rete,
+    mappe: mappe,
+    misurazione: misurazione,
+  );
   late final misurazione = Misurazione(
     db,
     server.supabase,

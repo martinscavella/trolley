@@ -176,6 +176,32 @@ class PostoTrovato {
   final String? indirizzo;
 }
 
+/// Una tappa di cui il server ha rinnovato le coordinate di Google (ADR-014):
+/// il suo posto (Google a volte ne rinnova anche l'id), dove sta, e da
+/// quando lo si sa.
+class CoordinateRinnovate {
+  const CoordinateRinnovate({
+    required this.tappaId,
+    required this.placeId,
+    required this.posto,
+    required this.il,
+  });
+
+  final String tappaId;
+  final String placeId;
+  final Coordinate posto;
+  final DateTime il;
+}
+
+/// Com'è andato un rinnovo: le tappe rinnovate, e quanti posti Google non ha
+/// saputo dire.
+class RinnovoCoordinate {
+  const RinnovoCoordinate({this.rinnovate = const [], this.mancate = 0});
+
+  final List<CoordinateRinnovate> rinnovate;
+  final int mancate;
+}
+
 /// Quanto si è chiesto a Google: le ricerche, i posti, le schede, le
 /// destinazioni della guida. E quante chiamate il tetto ha fermato prima
 /// che arrivassero a Google.
@@ -290,7 +316,22 @@ abstract interface class Mappe {
   /// destinazione sul tetto di oggi (U.2), perché ognuna si paga. Lo dice
   /// con un errore: senza rete, o al tetto.
   Future<void> guidaConsentita({required String viaggioId});
+
+  /// Rinnova le coordinate di Google delle tappe del viaggio che le hanno da
+  /// più di [giorni] giorni (da 1 a 29), o non le hanno più: Google le lascia
+  /// tenere al massimo 30 giorni (ADR-014). Le chiede e le scrive il server,
+  /// che sa quali sono; qui tornano quelle scritte, per la copia. Non passa
+  /// dal tetto della persona. Senza rete lo dice con un errore.
+  Future<RinnovoCoordinate> rinnovaCoordinate({
+    required String viaggioId,
+    int giorni = giorniPerRinnovare,
+  });
 }
+
+/// Dopo quanti giorni si rinnovano le coordinate di Google, aggiornando la
+/// copia: dieci giorni prima dei 30, perché chi parte senza rete abbia
+/// margine.
+const giorniPerRinnovare = 20;
 
 /// Il fornitore senza chiave: niente mappa, niente ricerca.
 class MappeAssenti implements Mappe {
@@ -342,6 +383,12 @@ class MappeAssenti implements Mappe {
   @override
   Future<void> guidaConsentita({required String viaggioId}) =>
       Future.error(const ErroreTrolley(_nonDisponibili));
+
+  @override
+  Future<RinnovoCoordinate> rinnovaCoordinate({
+    required String viaggioId,
+    int giorni = giorniPerRinnovare,
+  }) async => const RinnovoCoordinate();
 }
 
 const _nonDisponibili = 'La mappa non è disponibile in questa versione.';
@@ -514,15 +561,33 @@ class MappeGoogle implements Mappe {
     );
   }
 
-  /// Chiede alla funzione [cosa] — `cerca`, `posto`, `scheda` o `guida` —
-  /// per il viaggio. I parametri vanno nel corpo, non nell'indirizzo: il
-  /// testo cercato non finisce nei registri del server.
+  @override
+  Future<RinnovoCoordinate> rinnovaCoordinate({
+    required String viaggioId,
+    int giorni = giorniPerRinnovare,
+  }) async {
+    final json = await _chiedi(
+      'rinnova',
+      viaggioId,
+      {'giorni': giorni},
+      conta: () {},
+      tetto: const ErroreTrolley(_nonRisponde),
+      // Fino a 50 posti, cinque alla volta.
+      attesa: const Duration(seconds: 30),
+    );
+    return rinnovoDaServer(json);
+  }
+
+  /// Chiede alla funzione [cosa] — `cerca`, `posto`, `scheda`, `guida` o
+  /// `rinnova` — per il viaggio. I parametri vanno nel corpo, non
+  /// nell'indirizzo: il testo cercato non finisce nei registri del server.
   Future<Map<String, dynamic>> _chiedi(
     String cosa,
     String viaggioId,
     Map<String, Object> parametri, {
     required void Function() conta,
     required ErroreTrolley tetto,
+    Duration attesa = const Duration(seconds: 10),
   }) async {
     final http.Response risposta;
     try {
@@ -532,7 +597,7 @@ class MappeGoogle implements Mappe {
             headers: {..._intestazioni(), 'content-type': 'application/json'},
             body: jsonEncode({'viaggio': viaggioId, 'parametri': parametri}),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(attesa);
     } on SocketException {
       throw _senzaRete;
     } on TimeoutException {
@@ -553,6 +618,36 @@ class MappeGoogle implements Mappe {
     return corpo;
   }
 }
+
+/// Il rinnovo come lo dice la funzione `mappe`: `{ rinnovate: [{id,
+/// place_id, lat, lon, coordinate_il}], mancate }`. Le righe che non si
+/// leggono si lasciano: restano come sono, e scadranno.
+RinnovoCoordinate rinnovoDaServer(Map<String, dynamic> json) {
+  final righe = json['rinnovate'];
+  final mancate = json['mancate'];
+  return RinnovoCoordinate(
+    rinnovate: [
+      if (righe is List)
+        for (final r in righe.whereType<Map<String, dynamic>>())
+          if ((
+                _testo(r['id']),
+                _testo(r['place_id']),
+                coordinate(_gradi(r['lat']), _gradi(r['lon'])),
+                DateTime.tryParse('${r['coordinate_il']}'),
+              )
+              case (final id?, final placeId?, final posto?, final il?))
+            CoordinateRinnovate(
+              tappaId: id,
+              placeId: placeId,
+              posto: posto,
+              il: il.toUtc(),
+            ),
+    ],
+    mancate: mancate is int && mancate >= 0 ? mancate : 0,
+  );
+}
+
+double? _gradi(Object? valore) => valore is num ? valore.toDouble() : null;
 
 /// I posti di una risposta di Google (`places:autocomplete`). Le ricerche
 /// suggerite, senza un posto, si scartano.

@@ -48,8 +48,21 @@ Future<void> main() async {
   // Un'aggiunta interrotta a metà non lascia file.
   unawaited(documenti.pulisci().catchError((_) {}));
 
-  final archivio = Archivio(db, supabase, rete: rete);
   final misurazione = Misurazione(db, supabase, versioneApp: versioneApp);
+  final mappe = MappeGoogle(
+    indirizzo: indirizzoMappe,
+    chiavePubblica: supabaseChiave,
+    accesso: () => supabase.auth.currentSession?.accessToken,
+  );
+  final archivio = Archivio(
+    db,
+    supabase,
+    rete: rete,
+    mappe: mappe,
+    misurazione: misurazione,
+  );
+  // Le coordinate di Google scadute vanno via anche senza rete (ADR-014).
+  unawaited(archivio.scadiCoordinate().catchError((_) {}));
 
   runApp(
     Servizi(
@@ -61,11 +74,7 @@ Future<void> main() async {
       rete: rete,
       documenti: documenti,
       acquisizione: const AcquisizioneDelTelefono(),
-      mappe: MappeGoogle(
-        indirizzo: indirizzoMappe,
-        chiavePubblica: supabaseChiave,
-        accesso: () => supabase.auth.currentSession?.accessToken,
-      ),
+      mappe: mappe,
       guida: GuidaGoogle(),
       posizione: const PosizioneDelTelefono(),
       mappeDelTelefono: const MappeDiSistema(),

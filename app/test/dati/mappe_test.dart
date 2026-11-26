@@ -229,6 +229,36 @@ void main() {
       expect(m.consumo.destinazioni, 1);
     });
 
+    test('il rinnovo delle coordinate: solo il viaggio e i giorni, e non '
+        'conta sul consumo di una schermata', () async {
+      risponde = (_) => http.Response(
+        jsonEncode({
+          'rinnovate': [
+            {
+              'id': 't-1',
+              'place_id': 'ChIJ-lello',
+              'lat': 41.1469,
+              'lon': -8.6149,
+              'coordinate_il': '2026-11-27T10:00:00+00:00',
+            },
+          ],
+          'mancate': 0,
+        }),
+        200,
+      );
+      final m = mappe();
+      final rinnovo = await m.rinnovaCoordinate(viaggioId: 'porto', giorni: 1);
+      final r = chieste.single;
+      expect(r.url.toString(), '$indirizzo/rinnova');
+      expect(r.headers['authorization'], 'Bearer gettone-di-giulia');
+      expect(corpo(r), {
+        'viaggio': 'porto',
+        'parametri': {'giorni': 1},
+      });
+      expect(rinnovo.rinnovate.single.tappaId, 't-1');
+      expect(m.consumo.nullo, isTrue);
+    });
+
     test('al tetto di oggi lo dice, e conta la chiamata fra le fermate, non '
         'fra quelle pagate', () async {
       risponde = (_) => http.Response('{"codice":"tetto"}', 429);
