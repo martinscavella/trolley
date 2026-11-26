@@ -75,6 +75,8 @@ Il testo delle condizioni non si legge dagli strumenti automatici, ma le pagine 
 - **Le chiavi degli SDK**: `tool/scrivi_chiavi.dart` le scrive da `app/chiavi.json` in `ios/Flutter/Chiavi.xcconfig` (che Info.plist passa come `GMSApiKey`, letto da `AppDelegate`) e in `android/local.properties` (che il manifesto passa come `com.google.android.geo.API_KEY`). Tutti e tre ignorati da git.
 - **Resta su Geoapify** la navigazione a piedi (riquadri e percorso), fino al passo 4.
 
+**Passo 3, il dettaglio con due schede (26 novembre 2026).** Con un posto sulla mappa, il dettaglio della tappa ha «Info» e «Mappa», mai visibili insieme (tela, 161–162). «Info» chiede a Google, con la rete e solo quando si vede, la scheda del posto: indirizzo, aperto adesso e fino a quando, gli orari della settimana, la descrizione (`/mappe/scheda`; Enterprise e Atmosphere, le chiamate più care, contate in `consumo_mappe.schede`). Gli orari di un giorno si calcolano in `dominio/apertura.dart`, che servirà anche agli avvisi della CR-03. «Mappa» è la mappa di Google ferma, con il solo segno della tappa. Senza rete «Info» dice «Sulla mappa». La domanda 31 per l'avvocato (se due schede bastano a non essere «accanto» alla mappa) resta aperta.
+
 ## Conseguenze
 
 - **La mappa non si paga più a visualizzazione**: il problema di Copenaghen sparisce sul telefono. Restano a consumo i tragitti, le ricerche, gli orari e la guida.

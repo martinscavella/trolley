@@ -540,6 +540,7 @@ void main() {
       'riquadri': 24,
       'ricerche': 0,
       'dettagli': 0,
+      'schede': 0,
       'percorsi': 2,
       'fermati': 0,
     });

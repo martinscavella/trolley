@@ -1787,6 +1787,10 @@ class MappeFinte implements Mappe {
   /// L'indirizzo che dà ogni posto chiesto.
   String? indirizzoDelPosto = 'Via finta 1, Città';
 
+  /// Le schede chieste, in ordine; e quella che dà ognuna.
+  final schedeChieste = <String>[];
+  SchedaPosto Function(String id)? schedaDelPosto;
+
   /// I testi cercati, in ordine.
   final cercati = <String>[];
 
@@ -1816,6 +1820,7 @@ class MappeFinte implements Mappe {
     riquadri: _consumo.riquadri + quanti,
     ricerche: _consumo.ricerche,
     dettagli: _consumo.dettagli,
+    schede: _consumo.schede,
     percorsi: _consumo.percorsi,
     fermati: _consumo.fermati,
   );
@@ -1839,6 +1844,7 @@ class MappeFinte implements Mappe {
     required Coordinate centro,
     required double zoom,
     EdgeInsets margini = EdgeInsets.zero,
+    bool interattiva = true,
     required void Function(ControlloMappa controllo) onPronta,
     VoidCallback? onTocca,
   }) {
@@ -1861,6 +1867,7 @@ class MappeFinte implements Mappe {
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
       dettagli: _consumo.dettagli,
+      schede: _consumo.schede,
       percorsi: _consumo.percorsi,
       fermati: _consumo.fermati + 1,
     );
@@ -1885,6 +1892,7 @@ class MappeFinte implements Mappe {
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche + 1,
       dettagli: _consumo.dettagli,
+      schede: _consumo.schede,
       percorsi: _consumo.percorsi,
       fermati: _consumo.fermati,
     );
@@ -1909,12 +1917,32 @@ class MappeFinte implements Mappe {
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
       dettagli: _consumo.dettagli + 1,
+      schede: _consumo.schede,
       percorsi: _consumo.percorsi,
       fermati: _consumo.fermati,
     );
     final posto = posti[id];
     if (posto == null) throw const ErroreTrolley('La mappa non risponde.');
     return PostoTrovato(id: id, posto: posto, indirizzo: indirizzoDelPosto);
+  }
+
+  @override
+  Future<SchedaPosto> scheda(String id, {required String viaggioId}) async {
+    viaggi.add(viaggioId);
+    if (tetto) {
+      throw _fermato('Per oggi, in questo viaggio, le ricerche sono finite.');
+    }
+    schedeChieste.add(id);
+    _consumo = ConsumoMappe(
+      riquadri: _consumo.riquadri,
+      ricerche: _consumo.ricerche,
+      dettagli: _consumo.dettagli,
+      schede: _consumo.schede + 1,
+      percorsi: _consumo.percorsi,
+      fermati: _consumo.fermati,
+    );
+    return schedaDelPosto?.call(id) ??
+        SchedaPosto(id: id, indirizzo: indirizzoDelPosto);
   }
 
   @override
@@ -1934,6 +1962,7 @@ class MappeFinte implements Mappe {
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
       dettagli: _consumo.dettagli,
+      schede: _consumo.schede,
       percorsi: _consumo.percorsi + 1,
       fermati: _consumo.fermati,
     );

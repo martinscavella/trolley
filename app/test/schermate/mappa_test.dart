@@ -279,6 +279,7 @@ void main() {
         'riquadri': 24,
         'ricerche': 0,
         'dettagli': 0,
+        'schede': 0,
         'percorsi': 0,
         'fermati': 0,
       });
@@ -705,10 +706,7 @@ void main() {
       expect(find.text('Usa «Majestic» com\'è'), findsOneWidget);
     });
 
-    testWidgets('il dettaglio di una tappa con il posto di Google chiede '
-        'l\'indirizzo a Google, con la rete, e lo dice suo', (tester) async {
-      ambiente.mappe.posti['ChIJ-torre'] = (lat: 41.1458, lon: -8.6146);
-      ambiente.mappe.indirizzoDelPosto = 'R. de São Filipe de Nery, Porto';
+    Future<void> torreDiGoogle(WidgetTester tester) async {
       await viaggio(tester);
       ambiente.server.tappe.firstWhere((t) => t['id'] == 'torre')
         ..['luogo_nome'] = null
@@ -716,27 +714,65 @@ void main() {
         ..['coordinate_il'] = DateTime.now().toUtc().toIso8601String()
         ..['versione'] = 99;
       await tester.runAsync(ambiente.archivio.aggiornaCopia);
+    }
+
+    testWidgets('il dettaglio di una tappa di Google: «Info» chiede a Google '
+        'indirizzo, orari e descrizione, con la rete, e lo dice suo (tela, '
+        '161)', (tester) async {
+      ambiente.mappe.schedaDelPosto = (id) => SchedaPosto(
+        id: id,
+        indirizzo: 'R. de São Filipe de Nery, Porto',
+        apertoOra: true,
+        cambiaAlle: DateTime.utc(2026, 11, 26, 19),
+        descrizione: 'Torre barocca del Settecento.',
+      );
+      await torreDiGoogle(tester);
       await ambiente.monta(
         tester,
         const SchermataDettaglioTappa(viaggioId: 'v', tappaId: 'torre'),
       );
       await aspetta(tester);
 
-      expect(ambiente.mappe.postiChiesti, [(id: 'ChIJ-torre', sessione: null)]);
+      expect(ambiente.mappe.schedeChieste, ['ChIJ-torre']);
       expect(find.text('R. de São Filipe de Nery, Porto'), findsOneWidget);
+      expect(find.text('Aperto · fino alle 19:00'), findsOneWidget);
+      expect(find.text('Torre barocca del Settecento.'), findsOneWidget);
       expect(find.text('Google Maps'), findsOneWidget);
+      expect(find.text('Portami lì'), findsOneWidget);
+    });
+
+    testWidgets('«Mappa»: la mini mappa con il solo segno della tappa, e '
+        'niente di Google accanto; tornando a «Info» non si richiede '
+        '(tela, 162)', (tester) async {
+      await torreDiGoogle(tester);
+      await ambiente.monta(
+        tester,
+        const SchermataDettaglioTappa(viaggioId: 'v', tappaId: 'torre'),
+      );
+      await aspetta(tester);
+      await tester.ensureVisible(find.text('Mappa'));
+      await tester.tap(find.text('Mappa'));
+      await aspetta(tester);
+
+      expect(segno('torre'), findsOneWidget);
+      expect(find.text('Via finta 1, Città'), findsNothing);
+      expect(find.text('Google Maps'), findsNothing);
+      expect(
+        find.textContaining('Google non li lascia accanto alla mappa'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Info'));
+      await aspetta(tester);
+      expect(find.text('Via finta 1, Città'), findsOneWidget);
+      expect(ambiente.mappe.schedeChieste, hasLength(1));
+      expect(ambiente.mappe.consumo.schede, 1);
     });
 
     testWidgets('senza rete il dettaglio dice solo che è sulla mappa', (
       tester,
     ) async {
-      await viaggio(tester);
-      ambiente.server.tappe.firstWhere((t) => t['id'] == 'torre')
-        ..['luogo_nome'] = null
-        ..['place_id'] = 'ChIJ-torre'
-        ..['coordinate_il'] = DateTime.now().toUtc().toIso8601String()
-        ..['versione'] = 99;
-      await tester.runAsync(ambiente.archivio.aggiornaCopia);
+      await torreDiGoogle(tester);
       ambiente.rete.disponibile = false;
       await ambiente.monta(
         tester,
@@ -744,7 +780,7 @@ void main() {
       );
       await aspetta(tester);
 
-      expect(ambiente.mappe.postiChiesti, isEmpty);
+      expect(ambiente.mappe.schedeChieste, isEmpty);
       expect(find.text('Sulla mappa'), findsOneWidget);
       expect(find.text('Google Maps'), findsNothing);
       expect(find.text('Portami lì'), findsOneWidget);

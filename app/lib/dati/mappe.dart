@@ -28,6 +28,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/retry.dart';
 
+import '../dominio/apertura.dart';
 import '../dominio/mappa.dart';
 import '../dominio/navigazione.dart';
 import 'errori.dart';
@@ -56,6 +57,45 @@ class Luogo {
   /// «Rua das Carmelitas 144, Porto»; `null` se non c'è altro da dire.
   final String? indirizzo;
   final TipoLuogo tipo;
+}
+
+/// La scheda di un posto di Google, per il dettaglio di una tappa (tela,
+/// 161): si mostra senza mappa, e non si tiene (ADR-014).
+class SchedaPosto {
+  const SchedaPosto({
+    required this.id,
+    this.posto,
+    this.indirizzo,
+    this.orari,
+    this.apertoOra,
+    this.cambiaAlle,
+    this.descrizione,
+    this.scarto,
+    this.chiusoPerSempre = false,
+    this.chiusoPerOra = false,
+  });
+
+  final String id;
+  final Coordinate? posto;
+
+  /// Quanto l'ora del posto è avanti sul tempo universale.
+  final Duration? scarto;
+  final String? indirizzo;
+
+  /// Gli orari della settimana, nell'ora del posto.
+  final OrariDiApertura? orari;
+
+  /// Se adesso è aperto; `null` se Google non lo sa.
+  final bool? apertoOra;
+
+  /// Quando chiude, se è aperto, o quando apre, se è chiuso: nell'ora del
+  /// posto.
+  final DateTime? cambiaAlle;
+
+  /// Due righe su che cos'è, scritte da Google.
+  final String? descrizione;
+  final bool chiusoPerSempre;
+  final bool chiusoPerOra;
 }
 
 /// Un segno sulla mappa: dove sta, come si disegna, cosa fa toccarlo. Il
@@ -132,6 +172,7 @@ class ConsumoMappe {
     this.riquadri = 0,
     this.ricerche = 0,
     this.dettagli = 0,
+    this.schede = 0,
     this.percorsi = 0,
     this.fermati = 0,
   });
@@ -143,6 +184,9 @@ class ConsumoMappe {
 
   /// I posti chiesti a Google: quello scelto, o l'indirizzo di una tappa.
   final int dettagli;
+
+  /// Le schede dei posti, con orari e descrizione: le chiamate più care.
+  final int schede;
   final int percorsi;
   final int fermati;
 
@@ -150,6 +194,7 @@ class ConsumoMappe {
       riquadri == 0 &&
       ricerche == 0 &&
       dettagli == 0 &&
+      schede == 0 &&
       percorsi == 0 &&
       fermati == 0;
 
@@ -157,6 +202,7 @@ class ConsumoMappe {
     riquadri: riquadri - prima.riquadri,
     ricerche: ricerche - prima.ricerche,
     dettagli: dettagli - prima.dettagli,
+    schede: schede - prima.schede,
     percorsi: percorsi - prima.percorsi,
     fermati: fermati - prima.fermati,
   );
@@ -166,6 +212,7 @@ class ConsumoMappe {
     'riquadri': riquadri,
     'ricerche': ricerche,
     'dettagli': dettagli,
+    'schede': schede,
     'percorsi': percorsi,
     'fermati': fermati,
   };
@@ -190,6 +237,8 @@ abstract interface class Mappe {
   /// riquadri). Comincia in [centro] a [zoom]; [margini] è lo spazio
   /// coperto da quello che le sta sopra, che la mappa lascia libero (anche
   /// per il marchio di Google). Quando è pronta dà il suo [ControlloMappa].
+  /// Non [interattiva]: non si sposta col dito (la mini mappa della tappa,
+  /// dentro una pagina che scorre).
   Widget mappa(
     BuildContext context, {
     required String viaggioId,
@@ -198,6 +247,7 @@ abstract interface class Mappe {
     required Coordinate centro,
     required double zoom,
     EdgeInsets margini = EdgeInsets.zero,
+    bool interattiva = true,
     required void Function(ControlloMappa controllo) onPronta,
     VoidCallback? onTocca,
   });
@@ -227,6 +277,9 @@ abstract interface class Mappe {
     required String viaggioId,
     String? sessione,
   });
+
+  /// La scheda del posto [id]: indirizzo, orari, descrizione (tela, 161).
+  Future<SchedaPosto> scheda(String id, {required String viaggioId});
 
   /// Il percorso a piedi da [da] ad [a], con le indicazioni in italiano.
   Future<Percorso> percorsoAPiedi(
@@ -259,6 +312,7 @@ class MappeAssenti implements Mappe {
     required Coordinate centro,
     required double zoom,
     EdgeInsets margini = EdgeInsets.zero,
+    bool interattiva = true,
     required void Function(ControlloMappa controllo) onPronta,
     VoidCallback? onTocca,
   }) => const SizedBox.shrink();
@@ -283,6 +337,10 @@ class MappeAssenti implements Mappe {
     required String viaggioId,
     String? sessione,
   }) => Future.error(const ErroreTrolley(_nonDisponibili));
+
+  @override
+  Future<SchedaPosto> scheda(String id, {required String viaggioId}) =>
+      Future.error(const ErroreTrolley(_nonDisponibili));
 
   @override
   Future<Percorso> percorsoAPiedi(
@@ -341,6 +399,7 @@ class MappeGeoapify implements Mappe {
   var _riquadri = 0;
   var _ricerche = 0;
   var _dettagli = 0;
+  var _schede = 0;
   var _percorsi = 0;
   var _fermati = 0;
 
@@ -352,6 +411,7 @@ class MappeGeoapify implements Mappe {
     riquadri: _riquadri,
     ricerche: _ricerche,
     dettagli: _dettagli,
+    schede: _schede,
     percorsi: _percorsi,
     fermati: _fermati,
   );
@@ -414,6 +474,7 @@ class MappeGeoapify implements Mappe {
     required Coordinate centro,
     required double zoom,
     EdgeInsets margini = EdgeInsets.zero,
+    bool interattiva = true,
     required void Function(ControlloMappa controllo) onPronta,
     VoidCallback? onTocca,
   }) => MappaGoogle(
@@ -422,6 +483,7 @@ class MappeGeoapify implements Mappe {
     centro: centro,
     zoom: zoom,
     margini: margini,
+    interattiva: interattiva,
     onPronta: onPronta,
     onTocca: onTocca,
   );
@@ -483,6 +545,18 @@ class MappeGeoapify implements Mappe {
     final trovato = postoDaGoogle(json, id);
     if (trovato == null) throw const ErroreTrolley(_nonRisponde);
     return trovato;
+  }
+
+  @override
+  Future<SchedaPosto> scheda(String id, {required String viaggioId}) async {
+    final json = await _chiedi(
+      'scheda',
+      viaggioId,
+      {'id': id, 'lingua': 'it'},
+      conta: () => _schede++,
+      tetto: _tettoRicerche,
+    );
+    return schedaDaGoogle(json, id);
   }
 
   @override
@@ -638,6 +712,48 @@ PostoTrovato? postoDaGoogle(Map<String, dynamic> json, String id) {
     id: _testo(json['id']) ?? id,
     posto: posto,
     indirizzo: _testo(json['formattedAddress']),
+  );
+}
+
+/// La scheda di un posto da una risposta di Google (`places/{id}` con
+/// orari e descrizione). Le ore di [SchedaPosto.cambiaAlle] sono quelle del
+/// posto: Google dà l'istante e lo scarto dal tempo universale.
+SchedaPosto schedaDaGoogle(Map<String, dynamic> json, String id) {
+  final dove = json['location'];
+  final posto = dove is Map
+      ? coordinate(
+          (dove['latitude'] as num?)?.toDouble(),
+          (dove['longitude'] as num?)?.toDouble(),
+        )
+      : null;
+  final scarto = json['utcOffsetMinutes'];
+  final adesso = json['currentOpeningHours'];
+  bool? apertoOra;
+  DateTime? cambiaAlle;
+  if (adesso is Map) {
+    final aperto = adesso['openNow'];
+    if (aperto is bool) apertoOra = aperto;
+    final istante = DateTime.tryParse(
+      (aperto == true ? adesso['nextCloseTime'] : adesso['nextOpenTime'])
+              as String? ??
+          '',
+    );
+    if (istante != null && scarto is int) {
+      cambiaAlle = istante.toUtc().add(Duration(minutes: scarto));
+    }
+  }
+  final stato = json['businessStatus'];
+  return SchedaPosto(
+    id: _testo(json['id']) ?? id,
+    posto: posto,
+    indirizzo: _testo(json['formattedAddress']),
+    orari: OrariDiApertura.daGoogle(json['regularOpeningHours']),
+    apertoOra: apertoOra,
+    cambiaAlle: cambiaAlle,
+    descrizione: _testo((json['editorialSummary'] as Map?)?['text']),
+    scarto: scarto is int ? Duration(minutes: scarto) : null,
+    chiusoPerSempre: stato == 'CLOSED_PERMANENTLY',
+    chiusoPerOra: stato == 'CLOSED_TEMPORARILY',
   );
 }
 

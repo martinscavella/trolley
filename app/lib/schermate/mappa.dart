@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../aspetto/barra.dart';
 import '../aspetto/elementi.dart';
@@ -89,6 +90,10 @@ class _SchermataMappaState extends State<SchermataMappa> {
 
   /// La mappa, quando è pronta (CR-06: quella di Google).
   ControlloMappa? _controllo;
+
+  /// Quanto dal fondo dello schermo occupano le schede in basso, misurato:
+  /// la mappa lo lascia libero, e il marchio di Google le sta appena sopra.
+  double? _occupatoSotto;
 
   /// Che cosa si sta inquadrando: quando cambia, si rifà l'inquadratura.
   String? _inquadrata;
@@ -262,11 +267,16 @@ class _SchermataMappaState extends State<SchermataMappa> {
   /// del viaggio e del giorno, in basso le schede. Lì la mappa non mette le
   /// tappe, e lascia visibile il marchio di Google.
   EdgeInsets _margini(MediaQueryData mq) => EdgeInsets.fromLTRB(
-    16,
+    0,
     mq.padding.top + 8 + _InAlto.altezza + 60,
-    16,
-    mq.padding.bottom + 290,
+    0,
+    (_occupatoSotto ?? mq.padding.bottom + 290) + 6,
   );
+
+  void _misuratoSotto(double altezza) {
+    if (!mounted || (_occupatoSotto ?? -1) == altezza) return;
+    setState(() => _occupatoSotto = altezza);
+  }
 
   // Un viaggio nuovo è una mappa nuova: niente dati di due viaggi insieme,
   // nemmeno per un attimo.
@@ -481,17 +491,20 @@ class _SchermataMappaState extends State<SchermataMappa> {
               left: 20,
               right: 20,
               bottom: sopra,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  AnimatedSwitcher(
-                    duration: movimentoRidotto(context)
-                        ? Duration.zero
-                        : Ritmo.medio,
-                    child: _schedaInBasso(vista, prossima),
-                  ),
-                ],
+              child: _Misura(
+                onAltezza: (h) => _misuratoSotto(sopra + h),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: movimentoRidotto(context)
+                          ? Duration.zero
+                          : Ritmo.medio,
+                      child: _schedaInBasso(vista, prossima),
+                    ),
+                  ],
+                ),
               ),
             ),
           ] else
@@ -499,14 +512,17 @@ class _SchermataMappaState extends State<SchermataMappa> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: _SchedaTappa(
-                key: ValueKey(scelta.tappa.tappa.id),
-                vista: vista,
-                sulla: scelta,
-                onChiudi: () => setState(() => _scelta = null),
-                onSegna: (stato) => _segna(vista, scelta.tappa.tappa, stato),
-                onPortami: () => _portami(vista, scelta.tappa),
-                onApri: () => _apriTappa(vista, scelta.tappa.tappa),
+              child: _Misura(
+                onAltezza: _misuratoSotto,
+                child: _SchedaTappa(
+                  key: ValueKey(scelta.tappa.tappa.id),
+                  vista: vista,
+                  sulla: scelta,
+                  onChiudi: () => setState(() => _scelta = null),
+                  onSegna: (stato) => _segna(vista, scelta.tappa.tappa, stato),
+                  onPortami: () => _portami(vista, scelta.tappa),
+                  onApri: () => _apriTappa(vista, scelta.tappa.tappa),
+                ),
               ),
             ),
         ],
@@ -1983,5 +1999,36 @@ class _RigaIndirizzo extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Dice quanto è alto quello che contiene, ogni volta che cambia.
+class _Misura extends SingleChildRenderObjectWidget {
+  const _Misura({required this.onAltezza, required super.child});
+
+  final ValueChanged<double> onAltezza;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMisura(onAltezza);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderMisura render) =>
+      render.onAltezza = onAltezza;
+}
+
+class _RenderMisura extends RenderProxyBox {
+  _RenderMisura(this.onAltezza);
+
+  ValueChanged<double> onAltezza;
+  double? _ultima;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final altezza = size.height;
+    if (altezza == _ultima) return;
+    _ultima = altezza;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onAltezza(altezza));
   }
 }

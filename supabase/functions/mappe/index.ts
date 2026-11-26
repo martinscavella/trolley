@@ -18,12 +18,15 @@
 //   GET  /mappe/riquadro/{z}/{x}/{y}.png  (o {y}@2x.png), intestazione x-viaggio
 //   POST /mappe/cerca     { viaggio, parametri }  → Google, places:autocomplete
 //   POST /mappe/posto     { viaggio, parametri }  → Google, places/{id}
+//   POST /mappe/scheda    { viaggio, parametri }  → Google, places/{id}, con orari
 //   POST /mappe/percorso  { viaggio, parametri }  → Geoapify, /v1/routing
 //
 // La ricerca e il posto scelto vanno nella stessa sessione di Google
 // (`sessione`): così i suggerimenti non si pagano, si paga il posto scelto.
-// Del posto si chiedono solo le coordinate e l'indirizzo (Place Details
-// Essentials). Si contano tutti e due come `ricerche` sul tetto.
+// Del posto scelto si chiedono solo le coordinate e l'indirizzo (Place
+// Details Essentials). La scheda del posto, nel dettaglio di una tappa,
+// chiede anche gli orari e la descrizione (Enterprise e Atmosphere: le più
+// care, 1000 al mese gratis). Si contano tutti come `ricerche` sul tetto.
 //
 // Si pubblica senza il controllo dell'accesso del gateway (verify_jwt
 // spento): lo fa consuma_mappe, attraverso le regole del database.
@@ -254,8 +257,22 @@ async function cerca(richiesta: Request): Promise<Response> {
   }
 }
 
-/// Il posto scelto: `{ id, lingua?, sessione? }` → coordinate e indirizzo.
-async function posto(richiesta: Request): Promise<Response> {
+/// I campi che si chiedono: per il posto scelto, e per la sua scheda.
+const campi = {
+  posto: 'id,location,formattedAddress',
+  scheda:
+    'id,location,formattedAddress,businessStatus,utcOffsetMinutes,' +
+    'currentOpeningHours.openNow,currentOpeningHours.nextOpenTime,' +
+    'currentOpeningHours.nextCloseTime,regularOpeningHours.periods,' +
+    'editorialSummary',
+} as const;
+
+/// Il posto: `{ id, lingua?, sessione? }` → coordinate e indirizzo; per la
+/// scheda anche gli orari e la descrizione.
+async function posto(
+  richiesta: Request,
+  cosa: keyof typeof campi,
+): Promise<Response> {
   const corpo = await leggiCorpo(richiesta);
   if (!corpo) return errore(400, 'corpo');
   const p = corpo.parametri ?? {};
@@ -271,8 +288,8 @@ async function posto(richiesta: Request): Promise<Response> {
     const risposta = await fetch(indirizzo, {
       headers: {
         'x-goog-api-key': chiaveGoogle,
-        // Place Details Essentials: niente nome, niente orari.
-        'x-goog-fieldmask': 'id,location,formattedAddress',
+        // Mai il nome, le foto, le recensioni.
+        'x-goog-fieldmask': campi[cosa],
       },
     });
     return dalFornitore(risposta, ['content-type']);
@@ -286,9 +303,9 @@ Deno.serve((richiesta) => {
   const parti = new URL(richiesta.url).pathname.split('/').filter(Boolean);
   const [cosa, ...resto] = parti.slice(parti.indexOf('mappe') + 1);
   const post = richiesta.method === 'POST' && resto.length === 0;
-  if (post && (cosa === 'cerca' || cosa === 'posto')) {
+  if (post && (cosa === 'cerca' || cosa === 'posto' || cosa === 'scheda')) {
     if (!chiaveGoogle) return errore(502, 'fornitore');
-    return cosa === 'cerca' ? cerca(richiesta) : posto(richiesta);
+    return cosa === 'cerca' ? cerca(richiesta) : posto(richiesta, cosa);
   }
   if (!chiave) return errore(502, 'fornitore');
   if (richiesta.method === 'GET' && cosa === 'riquadro') {

@@ -35,6 +35,7 @@ class MappaGoogle extends StatefulWidget {
     required this.zoom,
     required this.margini,
     required this.onPronta,
+    this.interattiva = true,
     this.onTocca,
   });
 
@@ -43,6 +44,7 @@ class MappaGoogle extends StatefulWidget {
   final Coordinate centro;
   final double zoom;
   final EdgeInsets margini;
+  final bool interattiva;
   final void Function(ControlloMappa controllo) onPronta;
   final VoidCallback? onTocca;
 
@@ -103,6 +105,8 @@ class _MappaGoogleState extends State<MappaGoogle> {
       padding: widget.margini,
       minMaxZoomPreference: const MinMaxZoomPreference(3, 19),
       rotateGesturesEnabled: false,
+      scrollGesturesEnabled: widget.interattiva,
+      zoomGesturesEnabled: widget.interattiva,
       tiltGesturesEnabled: false,
       compassEnabled: false,
       mapToolbarEnabled: false,

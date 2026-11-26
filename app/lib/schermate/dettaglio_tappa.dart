@@ -23,10 +23,12 @@ import '../aspetto/pagina.dart';
 import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
+import '../aspetto/segni_mappa.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/mappe.dart';
 import '../dati/lettura.dart';
+import '../dominio/mappa.dart';
 import '../dominio/orari.dart';
 import '../dominio/tappe.dart';
 import '../servizi.dart';
@@ -234,10 +236,12 @@ class _SchermataDettaglioTappaState extends State<SchermataDettaglioTappa> {
             ),
           ),
           if (segnabili) ..._gesti(d.viaggio, tappa, stato),
-          EtichettaSezione('Dove'),
+          if (tappa.posto == null) EtichettaSezione('Dove'),
           _Dove(
             viaggioId: d.viaggio.id,
             tappa: tappa,
+            numero: numero,
+            giorno: giorno?.finestra.data,
             onPortami: () => portamiAllaTappa(
               context,
               viaggio: d.viaggio,
@@ -362,20 +366,27 @@ class _SchermataDettaglioTappaState extends State<SchermataDettaglioTappa> {
       };
 }
 
-/// Dove sta (tela, 156, 158 e 161): il posto, con «Portami lì» e «Apri in
-/// Mappe»; senza un posto sulla mappa, «Cerca il posto» apre la modifica.
-/// Per un posto di Google l'indirizzo si chiede a Google, con la rete: non si
-/// tiene (ADR-014). Qui non c'è una mappa, e può stare.
+/// Dove sta. Senza un posto sulla mappa, «Cerca il posto» apre la modifica
+/// (tela, 158). Con il posto, due schede mai visibili insieme (tela, 161 e
+/// 162; ADR-014): «Info», con l'indirizzo, gli orari e la descrizione di
+/// Google, chiesti con la rete e non tenuti; «Mappa», con la mini mappa e
+/// sopra solo il nostro segno. Sotto, «Portami lì» e «Apri in Mappe».
 class _Dove extends StatefulWidget {
   const _Dove({
     required this.viaggioId,
     required this.tappa,
+    required this.numero,
+    required this.giorno,
     required this.onPortami,
     required this.onCerca,
   });
 
   final String viaggioId;
   final Tappa tappa;
+  final int numero;
+
+  /// Il giorno della tappa: gli orari di quel giorno.
+  final DateTime? giorno;
   final VoidCallback onPortami;
   final VoidCallback onCerca;
 
@@ -384,9 +395,12 @@ class _Dove extends StatefulWidget {
 }
 
 class _DoveState extends State<_Dove> {
-  /// L'indirizzo di Google del posto, per [_di].
-  String? _indirizzo;
+  bool _info = true;
+
+  /// La scheda di Google del posto, per [_di].
+  SchedaPosto? _scheda;
   String? _di;
+  bool _chiede = false;
 
   late Servizi _servizi;
   late ConsumoMappe _prima;
@@ -421,31 +435,39 @@ class _DoveState extends State<_Dove> {
     super.dispose();
   }
 
+  /// La scheda si chiede solo quando «Info» si vede, e una volta: è la
+  /// chiamata più cara di Google.
   Future<void> _chiedi() async {
     final id = widget.tappa.placeId;
-    if (id == null || id == _di) return;
+    if (!_info || id == null || id == _di || widget.tappa.posto == null) {
+      return;
+    }
     if (!_servizi.rete.disponibile || !_servizi.mappe.disponibili) return;
     _di = id;
+    setState(() => _chiede = true);
     try {
-      final trovato = await _servizi.mappe.posto(
+      final scheda = await _servizi.mappe.scheda(
         id,
         viaggioId: widget.viaggioId,
       );
       if (mounted && widget.tappa.placeId == id) {
-        setState(() => _indirizzo = trovato.indirizzo);
+        setState(() => _scheda = scheda);
       }
     } on ErroreTrolley {
-      // Senza l'indirizzo resta «Sulla mappa»: si può andare lo stesso.
+      // Senza la scheda resta «Sulla mappa»: si può andare lo stesso.
       if (mounted) _di = null;
+    } finally {
+      if (mounted) setState(() => _chiede = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final tappa = widget.tappa;
-    final nome = doveDellaTappa(tappa.luogoNome, tappa.placeId);
-    final conNome = nome != null && tappa.placeId == null;
-    if (tappa.posto == null) {
+    final posto = tappa.posto;
+    if (posto == null) {
+      final nome = tappa.luogoNome?.trim();
+      final conNome = nome != null && nome.isNotEmpty;
       return Avviso(
         icona: icona(
           ios: CupertinoIcons.location,
@@ -465,75 +487,294 @@ class _DoveState extends State<_Dove> {
         ],
       );
     }
-    final indirizzo = tappa.placeId != null && _di == tappa.placeId
-        ? _indirizzo
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        DueSchede(
+          prima: 'Info',
+          seconda: 'Mappa',
+          sullaPrima: _info,
+          onScegli: (info) {
+            setState(() => _info = info);
+            unawaited(_chiedi());
+          },
+        ),
+        const SizedBox(height: 12),
+        if (_info) _schedaInfo(tappa) else _schedaMappa(tappa, posto),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: PulsanteGrande(
+                etichetta: 'Portami lì',
+                onPressed: widget.onPortami,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: PulsanteGrande(
+                etichetta: 'Apri in Mappe',
+                secondario: true,
+                onPressed: () async {
+                  final aperte = await _servizi.mappeDelTelefono.portami(
+                    nome: tappa.titolo,
+                    posto: tappa.posto,
+                    indirizzo: tappa.luogoNome,
+                  );
+                  if (!aperte && context.mounted) {
+                    mostraMessaggio(
+                      context,
+                      'Le Mappe non si sono aperte.',
+                      errore: true,
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+        if (!_info && tappa.placeId != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 12, 4, 0),
+            child: Text(
+              'Indirizzo e orari stanno in «Info»: Google non li lascia '
+              'accanto alla mappa.',
+              style: Testi.didascalia.copyWith(color: Colori.grafite),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _schedaInfo(Tappa tappa) {
+    final scheda = tappa.placeId != null && _di == tappa.placeId
+        ? _scheda
         : null;
-    final mappe = _servizi.mappeDelTelefono;
+    final righe = <Widget>[];
+    if (scheda == null) {
+      righe.add(
+        _RigaInfo(
+          icona: icona(
+            ios: CupertinoIcons.location,
+            android: Icons.place_outlined,
+          ),
+          titolo:
+              doveDellaTappa(tappa.luogoNome, tappa.placeId) ?? postoSullaMappa,
+          sotto: tappa.placeId == null || _chiede
+              ? null
+              : 'Con la rete qui ci sono l\'indirizzo e gli orari.',
+        ),
+      );
+      if (_chiede) {
+        righe.add(
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Center(child: IndicatoreAttivita()),
+          ),
+        );
+      }
+    } else {
+      final apertura = descriviApertura(
+        scheda,
+        giorno: widget.giorno,
+        adesso: DateTime.now(),
+      );
+      righe.addAll([
+        // In alto a destra, piccolo: le condizioni di Google lo vogliono
+        // vicino al contenuto, nello stesso riquadro, e non più piccolo di
+        // 12 punti.
+        const Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: AttribuzioneGoogle(compatta: true),
+          ),
+        ),
+        _RigaInfo(
+          icona: icona(
+            ios: CupertinoIcons.location,
+            android: Icons.place_outlined,
+          ),
+          titolo: scheda.indirizzo ?? postoSullaMappa,
+        ),
+        if (apertura != null)
+          _RigaInfo(
+            icona: icona(
+              ios: CupertinoIcons.clock,
+              android: Icons.schedule_rounded,
+            ),
+            colore: Colori.verde,
+            titolo: apertura.titolo,
+            coloreTitolo: apertura.aperto ? Colori.verde : null,
+            sotto: apertura.sotto,
+          ),
+        if (scheda.descrizione case final descrizione?)
+          _RigaInfo(
+            icona: icona(
+              ios: CupertinoIcons.book,
+              android: Icons.menu_book_outlined,
+            ),
+            titolo: descrizione,
+            normale: true,
+          ),
+      ]);
+    }
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       decoration: BoxDecoration(
         color: Colori.bianco,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icona(
-                  ios: CupertinoIcons.location,
-                  android: Icons.place_outlined,
-                ),
-                color: Colori.cobalto,
-                size: 22,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  indirizzo ?? nome ?? postoSullaMappa,
-                  style: Testi.evidenza.copyWith(color: Colori.inchiostro),
-                ),
-              ),
-            ],
-          ),
-          if (indirizzo != null) const AttribuzioneGoogle(),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: PulsanteGrande(
-                  etichetta: 'Portami lì',
-                  onPressed: widget.onPortami,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: PulsanteGrande(
-                  etichetta: 'Apri in Mappe',
-                  secondario: true,
-                  onPressed: () async {
-                    final aperte = await mappe.portami(
-                      nome: tappa.titolo,
-                      posto: tappa.posto,
-                      indirizzo: tappa.luogoNome,
-                    );
-                    if (!aperte && context.mounted) {
-                      mostraMessaggio(
-                        context,
-                        'Le Mappe non si sono aperte.',
-                        errore: true,
-                      );
-                    }
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
+        children: righe,
       ),
     );
   }
+
+  Widget _schedaMappa(Tappa tappa, Coordinate posto) {
+    final segno = switch (tappa.statoTappa) {
+      StatoTappa.completata => SegnoTappa.fatta,
+      StatoTappa.saltata => SegnoTappa.saltata,
+      _ => SegnoTappa.prossima,
+    };
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        height: 240,
+        child: _servizi.mappe.mappa(
+          context,
+          viaggioId: widget.viaggioId,
+          centro: posto,
+          zoom: 16,
+          interattiva: false,
+          onPronta: (_) {},
+          segni: [
+            SegnoMappa(
+              id: 'segno-${tappa.id}',
+              posto: posto,
+              aspetto: '${widget.numero}|${segno.name}',
+              lato: latoSegno,
+              disegno: SegnoSullaMappa(
+                numero: widget.numero,
+                segno: segno,
+                etichetta: '${widget.numero}, ${tappa.titolo}',
+                onTap: () {},
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Una riga di «Info»: l'icona, il testo, una riga sotto.
+class _RigaInfo extends StatelessWidget {
+  const _RigaInfo({
+    required this.icona,
+    required this.titolo,
+    this.sotto,
+    this.colore = Colori.cobalto,
+    this.coloreTitolo,
+    this.normale = false,
+  });
+
+  final IconData icona;
+  final String titolo;
+  final String? sotto;
+  final Color colore;
+  final Color? coloreTitolo;
+
+  /// Un testo lungo, non un'etichetta: senza grassetto.
+  final bool normale;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icona, color: colore, size: 22),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                titolo,
+                style: (normale ? Testi.corpo : Testi.evidenza).copyWith(
+                  color: coloreTitolo ?? Colori.inchiostro,
+                ),
+              ),
+              if (sotto case final sotto?) ...[
+                const SizedBox(height: 2),
+                Text(
+                  sotto,
+                  style: Testi.didascalia.copyWith(color: Colori.grafite),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Come dire se un posto è aperto (tela, 161): adesso, e il giorno in cui
+/// ci si va. `null` se Google non sa niente degli orari.
+({String titolo, String? sotto, bool aperto})? descriviApertura(
+  SchedaPosto scheda, {
+  DateTime? giorno,
+  required DateTime adesso,
+}) {
+  if (scheda.chiusoPerSempre) {
+    return (titolo: 'Chiuso per sempre', sotto: null, aperto: false);
+  }
+  if (scheda.chiusoPerOra) {
+    return (titolo: 'Chiuso per ora', sotto: null, aperto: false);
+  }
+  final orari = scheda.orari;
+  String? quel;
+  if (giorno != null && orari != null) {
+    final nome = conMaiuscola(giornoDellaSettimana(giorno));
+    final aperture = orari.del(giorno);
+    quel = orari.sempre
+        ? '$nome, quando ci vai: sempre aperto'
+        : aperture.isEmpty
+        ? '$nome, quando ci vai: chiuso'
+        : '$nome, quando ci vai: '
+              '${aperture.map((a) => '${ora(a.apre)}–${ora(a.chiude)}').join(', ')}';
+  }
+  final aperto = scheda.apertoOra;
+  if (aperto == null) {
+    return quel == null ? null : (titolo: quel, sotto: null, aperto: false);
+  }
+  final cambia = scheda.cambiaAlle;
+  String? quando;
+  if (cambia != null) {
+    final alle = ora(Duration(hours: cambia.hour, minutes: cambia.minute));
+    final li = scheda.scarto == null
+        ? null
+        : adesso.toUtc().add(scheda.scarto!);
+    final oggi =
+        li == null ||
+        (li.year == cambia.year &&
+            li.month == cambia.month &&
+            li.day == cambia.day);
+    quando = aperto
+        ? 'fino alle $alle'
+        : oggi
+        ? 'apre alle $alle'
+        : 'apre ${giornoDellaSettimana(cambia)} alle $alle';
+  }
+  return (
+    titolo: [aperto ? 'Aperto' : 'Chiuso', ?quando].join(' · '),
+    sotto: quel,
+    aperto: aperto,
+  );
 }
 
 /// La tappa è stata tolta, da qui o da un altro telefono.

@@ -417,23 +417,31 @@ class _Riga extends StatelessWidget {
 /// «Google Maps» sotto quello che viene da Google: com'è, su una riga, mai
 /// tradotto, grigio e di peso normale (condizioni di Google Places, ADR-014).
 class AttribuzioneGoogle extends StatelessWidget {
-  const AttribuzioneGoogle({super.key});
+  const AttribuzioneGoogle({super.key, this.compatta = false});
 
+  /// Senza margini: in un angolo di un riquadro.
+  final bool compatta;
+
+  /// Non si tocca: è un'attribuzione, non un collegamento.
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 10, 4, 4),
-    child: Text(
-      Servizi.of(context).mappe.attribuzioneRicerca,
-      textAlign: TextAlign.right,
-      maxLines: 1,
-      softWrap: false,
-      style: const TextStyle(
-        fontFamily: 'Roboto',
-        fontFamilyFallback: ['sans-serif'],
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        letterSpacing: 0,
-        color: Color(0xFF5E5E5E),
+  Widget build(BuildContext context) => IgnorePointer(
+    child: Padding(
+      padding: compatta
+          ? EdgeInsets.zero
+          : const EdgeInsets.fromLTRB(4, 10, 4, 4),
+      child: Text(
+        Servizi.of(context).mappe.attribuzioneRicerca,
+        textAlign: TextAlign.right,
+        maxLines: 1,
+        softWrap: false,
+        style: const TextStyle(
+          fontFamily: 'Roboto',
+          fontFamilyFallback: ['sans-serif'],
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0,
+          color: Color(0xFF5E5E5E),
+        ),
       ),
     ),
   );

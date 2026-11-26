@@ -1319,3 +1319,73 @@ class _TieniVivoState extends State<TieniVivo>
     return widget.child;
   }
 }
+
+/// Due schede di una pagina, una sola visibile (tela, 161 e 162): il fondo
+/// bianco, quella scelta d'inchiostro.
+class DueSchede extends StatelessWidget {
+  const DueSchede({
+    super.key,
+    required this.prima,
+    required this.seconda,
+    required this.sullaPrima,
+    required this.onScegli,
+  });
+
+  final String prima;
+  final String seconda;
+  final bool sullaPrima;
+
+  /// `true`: la prima.
+  final ValueChanged<bool> onScegli;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget voce(String nome, bool primaVoce) {
+      final scelta = sullaPrima == primaVoce;
+      return Expanded(
+        child: Semantics(
+          selected: scelta,
+          button: true,
+          child: Premibile(
+            onTap: () => onScegli(primaVoce),
+            scala: 0.96,
+            etichetta: nome,
+            child: AnimatedContainer(
+              duration: movimentoRidotto(context) ? Duration.zero : Ritmo.breve,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: scelta ? Colori.inchiostro : Colori.bianco,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                nome,
+                maxLines: 1,
+                style: Testi.secondario.copyWith(
+                  color: scelta ? Colori.bianco : Colori.ardesia,
+                  fontWeight: scelta ? FontWeight.w700 : FontWeight.w600,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colori.bianco,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          voce(prima, true),
+          const SizedBox(width: 4),
+          voce(seconda, false),
+        ],
+      ),
+    );
+  }
+}
