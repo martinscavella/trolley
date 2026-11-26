@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -29,6 +31,13 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // La mappa di Google (ADR-014): la chiave legata all'app, da
+        // local.properties (tool/scrivi_chiavi.dart), che git ignora.
+        val locali = Properties()
+        rootProject.file("local.properties").takeIf { it.exists() }
+            ?.inputStream()?.use { locali.load(it) }
+        manifestPlaceholders["googleMapsChiave"] =
+            locali.getProperty("google.maps.chiave") ?: ""
     }
 
     buildTypes {

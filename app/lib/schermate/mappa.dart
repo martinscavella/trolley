@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 
 import '../aspetto/barra.dart';
 import '../aspetto/elementi.dart';
@@ -73,8 +71,6 @@ class SchermataMappa extends StatefulWidget {
   State<SchermataMappa> createState() => _SchermataMappaState();
 }
 
-LatLng _ll(Coordinate c) => LatLng(c.lat, c.lon);
-
 /// Il fondo della carta mentre arrivano i riquadri, come nella tela.
 const _fondoCarta = Color(0xFFE7EAF0);
 
@@ -91,8 +87,8 @@ class _SchermataMappaState extends State<SchermataMappa> {
   late ConsumoMappe _prima;
   bool _avviata = false;
 
-  final _controllo = MapController();
-  bool _pronta = false;
+  /// La mappa, quando è pronta (CR-06: quella di Google).
+  ControlloMappa? _controllo;
 
   /// Che cosa si sta inquadrando: quando cambia, si rifà l'inquadratura.
   String? _inquadrata;
@@ -169,7 +165,7 @@ class _SchermataMappaState extends State<SchermataMappa> {
     _inquadrata = null;
     _usoContato = false;
     // La mappa si rifà: è pronta quando lo dice lei.
-    _pronta = false;
+    _controllo = null;
   }
 
   Future<void> _cambiaViaggio(String viaggioId) async {
@@ -200,7 +196,6 @@ class _SchermataMappaState extends State<SchermataMappa> {
   @override
   void dispose() {
     unawaited(_seguo?.cancel());
-    _controllo.dispose();
     unawaited(
       registraConsumo(
         _servizi.misurazione,
@@ -246,33 +241,32 @@ class _SchermataMappaState extends State<SchermataMappa> {
     if (mounted) setState(() => _centro = centro);
   }
 
-  /// Inquadra [punti]: tutti dentro, sopra la scheda in basso.
+  /// Inquadra [punti]: tutti dentro, sopra la scheda in basso (i margini
+  /// della mappa lasciano fuori quello che le sta sopra).
   void _inquadra(String chiave, List<Coordinate> punti) {
-    if (!_pronta || chiave == _inquadrata) return;
-    final mq = MediaQuery.of(context);
-    final margini = EdgeInsets.fromLTRB(
-      56,
-      mq.padding.top + 8 + _InAlto.altezza + 60,
-      56,
-      mq.padding.bottom + 290,
-    );
+    final controllo = _controllo;
+    if (controllo == null || chiave == _inquadrata) return;
     if (punti.length >= 2) {
-      _controllo.fitCamera(
-        CameraFit.coordinates(
-          coordinates: [for (final p in punti) _ll(p)],
-          padding: margini,
-          maxZoom: 16,
-        ),
-      );
+      unawaited(controllo.inquadra(punti));
     } else if (punti.length == 1) {
-      _controllo.move(_ll(punti.single), 15.5);
+      unawaited(controllo.vai(punti.single, 15.5));
     } else if (_centro != null) {
-      _controllo.move(_ll(_centro!.centro), 13);
+      unawaited(controllo.vai(_centro!.centro, 13));
     } else {
       return;
     }
     _inquadrata = chiave;
   }
+
+  /// Lo spazio coperto da quello che sta sopra la mappa: in alto la scelta
+  /// del viaggio e del giorno, in basso le schede. Lì la mappa non mette le
+  /// tappe, e lascia visibile il marchio di Google.
+  EdgeInsets _margini(MediaQueryData mq) => EdgeInsets.fromLTRB(
+    16,
+    mq.padding.top + 8 + _InAlto.altezza + 60,
+    16,
+    mq.padding.bottom + 290,
+  );
 
   // Un viaggio nuovo è una mappa nuova: niente dati di due viaggi insieme,
   // nemmeno per un attimo.
@@ -383,88 +377,64 @@ class _SchermataMappaState extends State<SchermataMappa> {
         : null;
     final iniziale = _centro?.centro;
 
-    final mappa = FlutterMap(
-      mapController: _controllo,
-      options: MapOptions(
-        backgroundColor: _fondoCarta,
-        initialCenter: _ll(
-          punti.firstOrNull ?? iniziale ?? (lat: 41.9, lon: 12.5),
-        ),
-        initialZoom: switch (punti.length) {
-          0 => iniziale != null ? 13 : 4,
-          1 => 15.5,
-          _ => 13,
-        },
-        initialCameraFit: punti.length >= 2
-            ? CameraFit.coordinates(
-                coordinates: [for (final p in punti) _ll(p)],
-                padding: EdgeInsets.fromLTRB(
-                  56,
-                  mq.padding.top + 8 + _InAlto.altezza + 60,
-                  56,
-                  mq.padding.bottom + 290,
-                ),
-                maxZoom: 16,
-              )
-            : null,
-        minZoom: 3,
-        maxZoom: 19,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
-        onMapReady: () {
-          _pronta = true;
-          // La mappa nasce già inquadrata: un salto nell'istante in cui è
-          // pronta lasciava i riquadri nuovi fuori dal disegno, grigi finché
-          // non la si muoveva.
-          if (punti.isNotEmpty || iniziale != null) _inquadrata = chiave;
-          _inquadra(chiave, punti);
-        },
-        onTap: (_, _) {
-          if (_scelta != null) setState(() => _scelta = null);
-        },
-      ),
-      children: [
-        _servizi.mappe.riquadri(context, viaggioId: _viaggioId),
+    final mappa = _servizi.mappe.mappa(
+      context,
+      viaggioId: _viaggioId,
+      centro: punti.firstOrNull ?? iniziale ?? (lat: 41.9, lon: 12.5),
+      zoom: switch (punti.length) {
+        0 => iniziale != null ? 13 : 4,
+        1 => 15.5,
+        _ => 13,
+      },
+      margini: _margini(mq),
+      onPronta: (controllo) {
+        _controllo = controllo;
+        _inquadra(chiave, punti);
+      },
+      onTocca: () {
+        if (_scelta != null) setState(() => _scelta = null);
+      },
+      linee: [
         if (!vista.tutto)
-          PolylineLayer(
-            polylines: [
-              for (final t in trattiDellaGiornata(vista.delGiorno))
-                Polyline(
-                  points: [_ll(t.da), _ll(t.a)],
-                  color: t.percorso ? Colori.verde : Colori.cobalto,
-                  strokeWidth: 5,
-                ),
-            ],
-          ),
-        MarkerLayer(
-          markers: [
-            for (final s in vista.sullaMappa)
-              if (s.tappa.posto case final posto?)
-                Marker(
-                  key: ValueKey('segno-${s.tappa.tappa.id}'),
-                  point: _ll(posto),
-                  width: latoSegno,
-                  height: latoSegno,
-                  child: SegnoSullaMappa(
-                    numero: s.tappa.numero,
-                    segno: s.tappa.segno,
-                    colore: vista.tutto ? coloreGiorno(s.indiceGiorno) : null,
-                    scelto: s.tappa.tappa.id == _scelta,
-                    etichetta: _etichetta(vista, s),
-                    onTap: () => setState(() => _scelta = s.tappa.tappa.id),
-                  ),
-                ),
-            // La posizione solo mentre il viaggio è in corso (08, regola 3).
-            if (_qui case final qui? when vista.stato == StatoViaggio.inCorso)
-              Marker(
-                point: _ll(qui),
-                width: PuntinoPosizione.lato,
-                height: PuntinoPosizione.lato,
-                child: const PuntinoPosizione(),
+          for (final (i, t) in trattiDellaGiornata(vista.delGiorno).indexed)
+            LineaMappa(
+              id: 'tratto-$i',
+              punti: [t.da, t.a],
+              colore: t.percorso ? Colori.verde : Colori.cobalto,
+            ),
+      ],
+      segni: [
+        for (final s in vista.sullaMappa)
+          if (s.tappa.posto case final posto?)
+            SegnoMappa(
+              id: 'segno-${s.tappa.tappa.id}',
+              posto: posto,
+              lato: latoSegno,
+              sopra: s.tappa.tappa.id == _scelta,
+              aspetto:
+                  '${s.tappa.numero}|${s.tappa.segno.name}|'
+                  '${vista.tutto ? s.indiceGiorno : '-'}|'
+                  '${s.tappa.tappa.id == _scelta}',
+              onTap: () => setState(() => _scelta = s.tappa.tappa.id),
+              disegno: SegnoSullaMappa(
+                numero: s.tappa.numero,
+                segno: s.tappa.segno,
+                colore: vista.tutto ? coloreGiorno(s.indiceGiorno) : null,
+                scelto: s.tappa.tappa.id == _scelta,
+                etichetta: _etichetta(vista, s),
+                onTap: () => setState(() => _scelta = s.tappa.tappa.id),
               ),
-          ],
-        ),
+            ),
+        // La posizione solo mentre il viaggio è in corso (08, regola 3).
+        if (_qui case final qui? when vista.stato == StatoViaggio.inCorso)
+          SegnoMappa(
+            id: 'qui',
+            posto: qui,
+            lato: PuntinoPosizione.lato,
+            aspetto: 'qui',
+            sopra: true,
+            disegno: const PuntinoPosizione(),
+          ),
       ],
     );
 
@@ -515,8 +485,6 @@ class _SchermataMappaState extends State<SchermataMappa> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Attribuzione(_servizi.mappe.attribuzione),
-                  const SizedBox(height: 8),
                   AnimatedSwitcher(
                     duration: movimentoRidotto(context)
                         ? Duration.zero

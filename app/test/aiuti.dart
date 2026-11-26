@@ -1824,6 +1824,32 @@ class MappeFinte implements Mappe {
   Widget riquadri(BuildContext context, {required String viaggioId}) =>
       const SizedBox.shrink();
 
+  /// Quante volte la mappa si è inquadrata, e su quali punti.
+  final inquadrature = <List<Coordinate>>[];
+
+  /// Le linee dell'ultima mappa disegnata.
+  var linee = <LineaMappa>[];
+
+  @override
+  Widget mappa(
+    BuildContext context, {
+    required String viaggioId,
+    required List<SegnoMappa> segni,
+    List<LineaMappa> linee = const [],
+    required Coordinate centro,
+    required double zoom,
+    EdgeInsets margini = EdgeInsets.zero,
+    required void Function(ControlloMappa controllo) onPronta,
+    VoidCallback? onTocca,
+  }) {
+    this.linee = linee;
+    return _MappaFinta(
+      segni: segni,
+      onPronta: () => onPronta(_ControlloFinto(inquadrature)),
+      onTocca: onTocca,
+    );
+  }
+
   @override
   String get attribuzione => 'Mappe finte';
 
@@ -2268,4 +2294,64 @@ class PagineFinte implements PagineDelSito {
     aperte.add(pagina);
     return true;
   }
+}
+
+/// La mappa finta: i segni in fila al centro, toccabili come sulla mappa
+/// vera, e un fondo che, toccato, è la mappa toccata.
+class _MappaFinta extends StatefulWidget {
+  const _MappaFinta({
+    required this.segni,
+    required this.onPronta,
+    this.onTocca,
+  });
+
+  final List<SegnoMappa> segni;
+  final VoidCallback onPronta;
+  final VoidCallback? onTocca;
+
+  @override
+  State<_MappaFinta> createState() => _MappaFintaState();
+}
+
+class _MappaFintaState extends State<_MappaFinta> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onPronta();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: widget.onTocca,
+    child: Center(
+      child: Wrap(
+        children: [
+          for (final s in widget.segni)
+            KeyedSubtree(
+              key: ValueKey(s.id),
+              child: SizedBox.square(dimension: s.lato, child: s.disegno),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _ControlloFinto implements ControlloMappa {
+  _ControlloFinto(this._inquadrature);
+
+  final List<List<Coordinate>> _inquadrature;
+
+  @override
+  Future<void> inquadra(
+    List<Coordinate> punti, {
+    double zoomMassimo = 16,
+  }) async => _inquadrature.add(punti);
+
+  @override
+  Future<void> vai(Coordinate posto, double zoom) async =>
+      _inquadrature.add([posto]);
 }

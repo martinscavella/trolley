@@ -23,6 +23,8 @@ dependencies:
     sdk: flutter
   flutter_map: ^8.3.2
   geolocator: ^14.1.1
+  google_maps_flutter: ^2.19.0
+  google_maps_flutter_ios_sdk10: ^2.19.0
   http: ^1.6.0
   latlong2: ^0.10.1
   path_provider: ^2.1.6

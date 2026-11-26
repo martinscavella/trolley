@@ -185,7 +185,11 @@ void main() {
       expect(find.text('Portami'), findsOneWidget);
       expect(find.text('Fatta'), findsOneWidget);
       expect(find.text('Salta'), findsOneWidget);
-      expect(find.textContaining('Mappe finte'), findsOneWidget);
+      // La mappa di Google ha il suo marchio: niente ringraziamenti nostri.
+      expect(find.textContaining('Mappe finte'), findsNothing);
+      // La linea della giornata, e l'inquadratura sulle tappe.
+      expect(ambiente.mappe.linee, isNotEmpty);
+      expect(ambiente.mappe.inquadrature.last.length, greaterThan(1));
     });
 
     testWidgets('«Fatta» dalla mappa segna la tappa in un tocco, e la '

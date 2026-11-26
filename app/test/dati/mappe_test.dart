@@ -6,9 +6,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:trolley/aspetto/segni_mappa.dart';
 import 'package:trolley/dati/errori.dart';
+import 'package:trolley/dati/mappa_google.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/mappe_del_telefono.dart';
+import 'package:trolley/dominio/mappa.dart';
 import 'package:trolley/dominio/navigazione.dart';
 
 /// Il fornitore di mappe dietro la sua interfaccia (fase 3.2, ADR-006):
@@ -505,6 +508,28 @@ void main() {
       );
       expect(const MappeAssenti().disponibili, isFalse);
     });
+  });
+
+  testWidgets('il segno di una tappa diventa un\'immagine per la mappa di '
+      'Google, della sua misura', (tester) async {
+    final byte = await tester.runAsync(
+      () => immagineDelWidget(
+        SegnoSullaMappa(
+          numero: 2,
+          segno: SegnoTappa.prossima,
+          etichetta: '2, Rosenborg',
+          onTap: () {},
+        ),
+        latoSegno,
+        3,
+      ),
+    );
+    expect(byte, isNotNull);
+    // Un PNG di 48 punti a densità 3: 144 pixel di lato.
+    expect(byte!.sublist(1, 4), 'PNG'.codeUnits);
+    final larghezza =
+        byte[16] << 24 | byte[17] << 16 | byte[18] << 8 | byte[19];
+    expect(larghezza, 144);
   });
 
   test('il consumo di una schermata è la differenza', () {

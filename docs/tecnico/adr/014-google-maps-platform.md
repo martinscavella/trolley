@@ -69,6 +69,12 @@ Il testo delle condizioni non si legge dagli strumenti automatici, ma le pagine 
 - **Da fare**: rinnovare le coordinate prima dei 30 giorni (per ora il lavoro di notte le toglie e la tappa resta senza posto finché non la si cerca di nuovo); una tappa di Google senza coordinate oggi conta come «senza posto».
 - **Le chiavi degli SDK** (iOS e Android, legate all'app) sono in `app/chiavi.json`, che git ignora: il repository è pubblico. Servono dal passo 2.
 
+**Passo 2, la mappa (26 novembre 2026).** La mappa del viaggio (tela, 159–160) è la mappa di Google, con `google_maps_flutter` e, su iOS, `google_maps_flutter_ios_sdk10` (Google Maps SDK 10, con Swift Package Manager): **l'app chiede iOS 16**. Le schermate non parlano con Google: `Mappe.mappa` riceve segni, linee e margini e dà un `ControlloMappa` per inquadrare; nelle prove la mappa è finta e i segni si toccano come prima.
+
+- **Sulla mappa solo il nostro**: i segni delle tappe sono i nostri widget (`SegnoSullaMappa`), fatti immagine (`immagineDelWidget`), il puntino della persona, la linea della giornata. Il marchio di Google lo mette la mappa: i margini lo tengono sopra le schede.
+- **Le chiavi degli SDK**: `tool/scrivi_chiavi.dart` le scrive da `app/chiavi.json` in `ios/Flutter/Chiavi.xcconfig` (che Info.plist passa come `GMSApiKey`, letto da `AppDelegate`) e in `android/local.properties` (che il manifesto passa come `com.google.android.geo.API_KEY`). Tutti e tre ignorati da git.
+- **Resta su Geoapify** la navigazione a piedi (riquadri e percorso), fino al passo 4.
+
 ## Conseguenze
 
 - **La mappa non si paga più a visualizzazione**: il problema di Copenaghen sparisce sul telefono. Restano a consumo i tragitti, le ricerche, gli orari e la guida.

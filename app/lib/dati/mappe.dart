@@ -31,6 +31,7 @@ import 'package:http/retry.dart';
 import '../dominio/mappa.dart';
 import '../dominio/navigazione.dart';
 import 'errori.dart';
+import 'mappa_google.dart';
 
 /// Lo stile dei riquadri, lo stesso della funzione `mappe` (ADR-006).
 const stileRiquadri = 'klokantech-basic';
@@ -55,6 +56,59 @@ class Luogo {
   /// «Rua das Carmelitas 144, Porto»; `null` se non c'è altro da dire.
   final String? indirizzo;
   final TipoLuogo tipo;
+}
+
+/// Un segno sulla mappa: dove sta, come si disegna, cosa fa toccarlo. Il
+/// disegno è un nostro widget; la mappa di Google ne fa un'immagine.
+class SegnoMappa {
+  const SegnoMappa({
+    required this.id,
+    required this.posto,
+    required this.disegno,
+    required this.aspetto,
+    this.lato = 48,
+    this.onTap,
+    this.sopra = false,
+  });
+
+  final String id;
+  final Coordinate posto;
+  final Widget disegno;
+
+  /// Cosa cambia il disegno: due segni con lo stesso aspetto hanno la
+  /// stessa immagine, che si fa una volta sola.
+  final String aspetto;
+
+  /// Il lato del quadrato del disegno, con il suo spazio per il dito.
+  final double lato;
+  final VoidCallback? onTap;
+
+  /// Sopra gli altri: il segno scelto, la persona.
+  final bool sopra;
+}
+
+/// Una linea sulla mappa: i tratti della giornata.
+class LineaMappa {
+  const LineaMappa({
+    required this.id,
+    required this.punti,
+    required this.colore,
+    this.spessore = 5,
+  });
+
+  final String id;
+  final List<Coordinate> punti;
+  final Color colore;
+  final double spessore;
+}
+
+/// Comanda una mappa già pronta: inquadrare dei punti, andare in un posto.
+abstract interface class ControlloMappa {
+  /// Tutti i [punti] dentro, senza avvicinarsi oltre [zoomMassimo].
+  Future<void> inquadra(List<Coordinate> punti, {double zoomMassimo = 16});
+
+  /// Va in [posto], a [zoom].
+  Future<void> vai(Coordinate posto, double zoom);
 }
 
 /// Che cosa si è trovato: un posto con un nome, un indirizzo, una zona.
@@ -127,8 +181,26 @@ abstract interface class Mappe {
   /// Quanto si è chiesto da quando l'app è aperta.
   ConsumoMappe get consumo;
 
-  /// I riquadri della mappa, da mettere sotto le tappe.
+  /// I riquadri della mappa, da mettere sotto le tappe: per la navigazione,
+  /// finché non passa a Google (CR-06, passo 4).
   Widget riquadri(BuildContext context, {required String viaggioId});
+
+  /// La mappa del viaggio, con i suoi [segni] e le sue [linee] (CR-06,
+  /// passo 2: la mappa di Google, sul telefono, che non si paga a
+  /// riquadri). Comincia in [centro] a [zoom]; [margini] è lo spazio
+  /// coperto da quello che le sta sopra, che la mappa lascia libero (anche
+  /// per il marchio di Google). Quando è pronta dà il suo [ControlloMappa].
+  Widget mappa(
+    BuildContext context, {
+    required String viaggioId,
+    required List<SegnoMappa> segni,
+    List<LineaMappa> linee = const [],
+    required Coordinate centro,
+    required double zoom,
+    EdgeInsets margini = EdgeInsets.zero,
+    required void Function(ControlloMappa controllo) onPronta,
+    VoidCallback? onTocca,
+  });
 
   /// Chi ringraziare sotto la mappa: lo chiedono il fornitore e i dati.
   String get attribuzione;
@@ -177,6 +249,19 @@ class MappeAssenti implements Mappe {
   @override
   Widget riquadri(BuildContext context, {required String viaggioId}) =>
       const SizedBox.shrink();
+
+  @override
+  Widget mappa(
+    BuildContext context, {
+    required String viaggioId,
+    required List<SegnoMappa> segni,
+    List<LineaMappa> linee = const [],
+    required Coordinate centro,
+    required double zoom,
+    EdgeInsets margini = EdgeInsets.zero,
+    required void Function(ControlloMappa controllo) onPronta,
+    VoidCallback? onTocca,
+  }) => const SizedBox.shrink();
 
   @override
   String get attribuzione => '';
@@ -319,6 +404,27 @@ class MappeGeoapify implements Mappe {
           ),
         ),
       );
+
+  @override
+  Widget mappa(
+    BuildContext context, {
+    required String viaggioId,
+    required List<SegnoMappa> segni,
+    List<LineaMappa> linee = const [],
+    required Coordinate centro,
+    required double zoom,
+    EdgeInsets margini = EdgeInsets.zero,
+    required void Function(ControlloMappa controllo) onPronta,
+    VoidCallback? onTocca,
+  }) => MappaGoogle(
+    segni: segni,
+    linee: linee,
+    centro: centro,
+    zoom: zoom,
+    margini: margini,
+    onPronta: onPronta,
+    onTocca: onTocca,
+  );
 
   @override
   String get attribuzione =>
