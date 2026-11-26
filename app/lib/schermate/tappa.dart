@@ -86,6 +86,17 @@ class _SchermataTappaState extends State<SchermataTappa> {
 
   /// Dove sta, se il posto è stato cercato e trovato (tela, 56).
   late Coordinate? _posto = widget.tappa?.posto;
+
+  /// Il posto di Google, e quando ne sono arrivate le coordinate (ADR-014).
+  late String? _google = widget.tappa?.placeId;
+  late String? _coordinateIl = widget.tappa?.coordinateIl;
+
+  /// Il nome e l'indirizzo di Google del posto appena scelto: si mostrano
+  /// finché il foglio è aperto, non si salvano.
+  String? _etichetta;
+
+  /// Cosa mostrare come «Dove».
+  String? get _dove => _etichetta ?? doveDellaTappa(_luogo, _google);
   late TipoTappa? _tipo = widget.tappa == null
       ? TipoTappa.visita
       : widget.tappa!.tipoTappa;
@@ -239,10 +250,14 @@ class _SchermataTappaState extends State<SchermataTappa> {
       // Un orario proposto si conferma salvando (regola 27).
       if (_ora != t.ora) 'ora_inizio': scriviOra(_ora),
       // Il posto va col suo nome: cambia l'uno, cambiano insieme.
-      if (luogo != (t.luogoNome ?? '') || _posto != t.posto) ...{
+      if (luogo != (t.luogoNome ?? '') ||
+          _posto != t.posto ||
+          _google != t.placeId) ...{
         'luogo_nome': luogo.isEmpty ? null : luogo,
         'lat': _posto?.lat,
         'lon': _posto?.lon,
+        'place_id': _google,
+        'coordinate_il': _posto == null ? null : _coordinateIl,
       },
     };
   }
@@ -352,7 +367,6 @@ class _SchermataTappaState extends State<SchermataTappa> {
       FoglioLuogo(
         viaggioId: widget.viaggio.id,
         iniziale: _luogo,
-        titolo: _titolo.text,
         vicinoA: vicino?.centro,
         dalleTappe: vicino?.dalleTappe ?? false,
         cercaSubito: _posto == null,
@@ -362,10 +376,11 @@ class _SchermataTappaState extends State<SchermataTappa> {
     setState(() {
       _luogo = scelta.testo;
       _posto = scelta.posto;
-      // Un posto trovato dà il nome a una tappa che non ce l'ha ancora.
-      if (_titolo.text.trim().isEmpty && scelta.nome != null) {
-        _titolo.text = scelta.nome!;
-      }
+      _google = scelta.google;
+      _coordinateIl = scelta.daGoogle
+          ? DateTime.now().toUtc().toIso8601String()
+          : null;
+      _etichetta = scelta.etichetta;
     });
   }
 
@@ -455,6 +470,10 @@ class _SchermataTappaState extends State<SchermataTappa> {
             ora: _ora,
             luogo: _luogo,
             posto: _posto,
+            placeId: _google,
+            coordinateIl: _coordinateIl == null
+                ? null
+                : DateTime.parse(_coordinateIl!),
           ),
         ],
       );
@@ -609,12 +628,15 @@ class _SchermataTappaState extends State<SchermataTappa> {
                     android: Icons.place_outlined,
                   ),
                   segnaposto: 'Facoltativo',
-                  valore: _luogo.trim().isEmpty ? null : _luogo.trim(),
+                  valore: _dove,
                   righe: 2,
                   onTap: _scegliLuogo,
                   onCancella: () => setState(() {
                     _luogo = '';
                     _posto = null;
+                    _google = null;
+                    _coordinateIl = null;
+                    _etichetta = null;
                   }),
                 ),
               ),

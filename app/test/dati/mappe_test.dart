@@ -14,48 +14,63 @@ import 'package:trolley/dominio/navigazione.dart';
 /// Il fornitore di mappe dietro la sua interfaccia (fase 3.2, ADR-006):
 /// come si leggono le sue risposte, cosa gli si chiede, cosa si conta.
 void main() {
-  /// Una risposta di `/v1/geocode/autocomplete` con `format=json`.
+  /// Una risposta di Google `places:autocomplete`, con la maschera della
+  /// funzione `mappe`.
   final ricerca = {
-    'results': [
+    'suggestions': [
       {
-        'name': 'Livraria Lello',
-        'country': 'Portogallo',
-        'country_code': 'pt',
-        'city': 'Porto',
-        'postcode': '4050-161',
-        'street': 'Rua das Carmelitas',
-        'housenumber': '144',
-        'lon': -8.61479,
-        'lat': 41.14686,
-        'formatted':
-            'Livraria Lello, Rua das Carmelitas 144, 4050-161 Porto, '
-            'Portogallo',
-        'address_line1': 'Livraria Lello',
-        'address_line2': 'Rua das Carmelitas 144, 4050-161 Porto, Portogallo',
-        'result_type': 'amenity',
-        'place_id': 'abc',
+        'placePrediction': {
+          'placeId': 'ChIJ-lello',
+          'structuredFormat': {
+            'mainText': {'text': 'Livraria Lello'},
+            'secondaryText': {'text': 'Rua das Carmelitas 144, Porto'},
+          },
+          'types': ['book_store', 'point_of_interest', 'establishment'],
+        },
       },
       {
-        'country': 'Portogallo',
-        'city': 'Porto',
-        'street': 'Rua de Cedofeita',
-        'housenumber': '22',
-        'lon': -8.6175,
-        'lat': 41.1513,
-        'address_line1': 'Rua de Cedofeita 22',
-        'result_type': 'building',
+        'placePrediction': {
+          'placeId': 'ChIJ-cedofeita',
+          'structuredFormat': {
+            'mainText': {'text': 'Rua de Cedofeita 22'},
+            'secondaryText': {'text': 'Porto'},
+          },
+          'types': ['street_address', 'geocode'],
+        },
       },
       {
-        'name': 'Vila Nova de Gaia',
-        'country': 'Portogallo',
-        'city': 'Vila Nova de Gaia',
-        'lon': -8.6118,
-        'lat': 41.1239,
-        'result_type': 'city',
+        'placePrediction': {
+          'placeId': 'ChIJ-gaia',
+          'structuredFormat': {
+            'mainText': {'text': 'Vila Nova de Gaia'},
+            'secondaryText': {'text': 'Portogallo'},
+          },
+          'types': ['locality', 'political', 'geocode'],
+        },
       },
-      // Senza coordinate non serve: non si mette sulla mappa.
-      {'name': 'Da nessuna parte', 'result_type': 'amenity'},
+      // Una ricerca suggerita, senza posto: si scarta.
+      {
+        'queryPrediction': {
+          'text': {'text': 'librerie a Porto'},
+        },
+      },
+      // Lo stesso posto due volte: una basta.
+      {
+        'placePrediction': {
+          'placeId': 'ChIJ-lello',
+          'structuredFormat': {
+            'mainText': {'text': 'Livraria Lello'},
+          },
+        },
+      },
     ],
+  };
+
+  /// Una risposta di Google `places/{id}` con `id,location,formattedAddress`.
+  final dettaglio = {
+    'id': 'ChIJ-lello',
+    'location': {'latitude': 41.14686, 'longitude': -8.61479},
+    'formattedAddress': 'R. das Carmelitas 144, 4050-161 Porto, Portogallo',
   };
 
   /// Una risposta di `/v1/routing`, GeoJSON: un tratto, tre passi.
@@ -123,28 +138,42 @@ void main() {
     ],
   };
 
-  group('le risposte di Geoapify', () {
-    test('i posti: il nome, l\'indirizzo corto, che cosa sono', () {
-      final luoghi = luoghiDaGeoapify(ricerca);
+  group('le risposte di Google', () {
+    test('i posti: il place_id, il nome, l\'indirizzo corto, che cosa '
+        'sono', () {
+      final luoghi = luoghiDaGoogle(ricerca);
       expect(luoghi, hasLength(3));
       final lello = luoghi[0];
+      expect(lello.id, 'ChIJ-lello');
       expect(lello.nome, 'Livraria Lello');
       expect(lello.indirizzo, 'Rua das Carmelitas 144, Porto');
-      expect(lello.posto, (lat: 41.14686, lon: -8.61479));
       expect(lello.tipo, TipoLuogo.posto);
-      expect(luoghi[1].nome, 'Rua de Cedofeita 22');
-      expect(luoghi[1].indirizzo, 'Porto');
       expect(luoghi[1].tipo, TipoLuogo.indirizzo);
       expect(luoghi[2].nome, 'Vila Nova de Gaia');
-      expect(luoghi[2].indirizzo, 'Portogallo');
       expect(luoghi[2].tipo, TipoLuogo.zona);
     });
 
-    test('una risposta senza risultati non è un errore', () {
-      expect(luoghiDaGeoapify({'results': []}), isEmpty);
-      expect(luoghiDaGeoapify({'altro': 1}), isEmpty);
+    test('una risposta senza suggerimenti non è un errore', () {
+      expect(luoghiDaGoogle({}), isEmpty);
+      expect(luoghiDaGoogle({'suggestions': []}), isEmpty);
     });
 
+    test('il posto scelto: dove sta e l\'indirizzo', () {
+      final p = postoDaGoogle(dettaglio, 'ChIJ-lello')!;
+      expect(p.id, 'ChIJ-lello');
+      expect(p.posto, (lat: 41.14686, lon: -8.61479));
+      expect(p.indirizzo, startsWith('R. das Carmelitas 144'));
+      expect(postoDaGoogle({'id': 'x'}, 'x'), isNull);
+      expect(
+        postoDaGoogle({
+          'location': {'latitude': 200, 'longitude': 0},
+        }, 'x'),
+        isNull,
+      );
+    });
+  });
+
+  group('le risposte di Geoapify', () {
     test('il percorso: la linea, i passi, la lunghezza e il tempo', () {
       final p = percorsoDaGeoapify(strada)!;
       expect(p.punti, hasLength(4));
@@ -190,24 +219,6 @@ void main() {
         jsonDecode(File('test/dati/risposte/$nome.json').readAsStringSync())
             as Map<String, dynamic>;
 
-    test('«lello» vicino a Porto: la libreria, una volta per indirizzo', () {
-      final luoghi = luoghiDaGeoapify(leggi('geoapify_ricerca'));
-      expect(luoghi.first.nome, 'Lello & Irmao Bookstore');
-      expect(luoghi.first.indirizzo, 'Rua das Carmelitas, Porto');
-      expect(luoghi.first.tipo, TipoLuogo.posto);
-      expect(
-        luoghi.any(
-          (l) =>
-              l.nome == 'Livraria Lello e Irmão' &&
-              l.indirizzo == 'Rua das Carmelitas 144, Porto',
-        ),
-        isTrue,
-      );
-      for (final l in luoghi) {
-        expect(l.posto.lat, closeTo(41.147, 0.01));
-      }
-    });
-
     test(
       'a piedi dalla libreria alla torre: la linea, le svolte, l\'arrivo',
       () {
@@ -226,40 +237,6 @@ void main() {
         expect(a.metriRimasti, closeTo(230, 25));
       },
     );
-  });
-
-  group('cosa si scrive come «Dove»', () {
-    const lello = Luogo(
-      nome: 'Livraria Lello',
-      indirizzo: 'Rua das Carmelitas 144, Porto',
-      posto: (lat: 41.14686, lon: -8.61479),
-    );
-
-    test('se il posto ha il nome della tappa basta l\'indirizzo', () {
-      expect(
-        lello.dove(titolo: 'livraria lello '),
-        'Rua das Carmelitas 144, Porto',
-      );
-    });
-
-    test('altrimenti il nome con l\'indirizzo', () {
-      expect(
-        lello.dove(titolo: 'Libri'),
-        'Livraria Lello, Rua das Carmelitas 144, Porto',
-      );
-      expect(lello.dove(), 'Livraria Lello, Rua das Carmelitas 144, Porto');
-    });
-
-    test('un indirizzo è già sé stesso', () {
-      const via = Luogo(
-        nome: 'Rua de Cedofeita 22',
-        indirizzo: 'Porto',
-        posto: (lat: 41.15, lon: -8.61),
-      );
-      expect(via.dove(), 'Rua de Cedofeita 22, Porto');
-      const solo = Luogo(nome: 'Porto', posto: (lat: 41.15, lon: -8.61));
-      expect(solo.dove(), 'Porto');
-    });
   });
 
   group('le chiamate, dal nostro server', () {
@@ -288,19 +265,24 @@ void main() {
       chieste = [];
       gettone = 'gettone-di-giulia';
       risponde = (r) => http.Response(
-        jsonEncode(r.url.path.endsWith('/percorso') ? strada : ricerca),
+        jsonEncode(switch (r.url.path.split('/').last) {
+          'percorso' => strada,
+          'posto' => dettaglio,
+          _ => ricerca,
+        }),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
       );
     });
 
-    test('la ricerca va al server, per il viaggio, con l\'accesso e senza '
-        'chiave del fornitore', () async {
+    test('la ricerca va al server, per il viaggio, con l\'accesso, la '
+        'sessione e senza chiave del fornitore', () async {
       final m = mappe();
       final trovati = await m.cerca(
         ' lello ',
         viaggioId: 'porto',
         vicinoA: (lat: 41.152, lon: -8.622),
+        sessione: 'sessione-1',
       );
       expect(trovati.first.nome, 'Livraria Lello');
       final r = chieste.single;
@@ -312,40 +294,48 @@ void main() {
       expect(r.headers['apikey'], 'sb_publishable_prova');
       expect(corpo(r)['viaggio'], 'porto');
       final q = parametri(r);
-      expect(q['text'], 'lello');
-      expect(q['lang'], 'it');
-      expect(q['bias'], 'proximity:-8.622,41.152');
-      // Nella zona del viaggio: la vicinanza da sola pesa poco.
-      expect(q['filter'], 'circle:-8.622,41.152,40000');
-      expect(r.body, isNot(contains('apiKey')));
+      expect(q['testo'], 'lello');
+      expect(q['lingua'], 'it');
+      expect(q['sessione'], 'sessione-1');
+      // Vicino alla zona del viaggio, una ricerca sola.
+      expect((q['lat'], q['lon'], q['raggio']), (41.152, -8.622, 40000.0));
+      expect(r.body, isNot(contains('AIza')));
       expect(m.consumo.ricerche, 1);
     });
 
-    test('se nella zona non c\'è niente, si cerca ovunque: una ricerca in '
-        'più', () async {
-      risponde = (r) => http.Response(
-        jsonEncode(
-          parametri(r).containsKey('filter') ? {'results': []} : ricerca,
-        ),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
-      final m = mappe();
-      final trovati = await m.cerca(
-        'lello',
-        viaggioId: 'porto',
-        vicinoA: (lat: 45.4, lon: 9.2),
-      );
-      expect(trovati, isNotEmpty);
-      expect(chieste, hasLength(2));
-      expect(parametri(chieste.last).containsKey('filter'), isFalse);
-      expect(m.consumo.ricerche, 2);
-    });
-
-    test('senza una zona, ovunque e una volta sola', () async {
+    test('senza una zona, ovunque, senza sessione se non c\'è', () async {
       final m = mappe();
       await m.cerca('lello', viaggioId: 'porto');
-      expect(parametri(chieste.single).containsKey('bias'), isFalse);
+      final q = parametri(chieste.single);
+      expect(q.containsKey('lat'), isFalse);
+      expect(q.containsKey('sessione'), isFalse);
+    });
+
+    test('il posto scelto, nella stessa sessione: si conta fra i '
+        'dettagli', () async {
+      final m = mappe();
+      final p = await m.posto(
+        'ChIJ-lello',
+        viaggioId: 'porto',
+        sessione: 'sessione-1',
+      );
+      expect(p.posto, (lat: 41.14686, lon: -8.61479));
+      final r = chieste.single;
+      expect(r.url.toString(), '$indirizzo/posto');
+      expect(parametri(r), {
+        'id': 'ChIJ-lello',
+        'lingua': 'it',
+        'sessione': 'sessione-1',
+      });
+      expect((m.consumo.ricerche, m.consumo.dettagli), (0, 1));
+    });
+
+    test('un posto senza coordinate non si inventa', () async {
+      risponde = (_) => http.Response('{"id":"x"}', 200);
+      await expectLater(
+        mappe().posto('x', viaggioId: 'porto'),
+        throwsA(isA<ErroreTrolley>()),
+      );
     });
 
     test('un testo vuoto non si cerca, e non si paga', () async {
@@ -524,6 +514,7 @@ void main() {
     expect(fatto.proprieta, {
       'riquadri': 24,
       'ricerche': 0,
+      'dettagli': 0,
       'percorsi': 2,
       'fermati': 0,
     });

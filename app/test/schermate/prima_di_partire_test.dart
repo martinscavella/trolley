@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/aspetto/elementi.dart';
 import 'package:trolley/aspetto/formati.dart';
 import 'package:trolley/dati/errori.dart';
-import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dominio/calendario.dart';
 import 'package:trolley/schermate/prima_di_partire.dart';
 import 'package:trolley/schermate/viaggio.dart';
@@ -234,12 +233,10 @@ void main() {
 
   testWidgets('«Sistemale»: le tappe senza posto, e il posto cercato si '
       'salva subito', (tester) async {
-    ambiente.mappe.luoghi.add(
-      const Luogo(
-        nome: 'Cantinho do Avillez',
-        indirizzo: 'Rua Mouzinho da Silveira 166, Porto',
-        posto: (lat: 41.1427, lon: -8.6131),
-      ),
+    ambiente.mappe.aggiungi(
+      'Cantinho do Avillez',
+      indirizzo: 'Rua Mouzinho da Silveira 166, Porto',
+      posto: (lat: 41.1427, lon: -8.6131),
     );
     await viaggio(tester);
     await giro(tester);
@@ -266,11 +263,11 @@ void main() {
       (t) => t['id'] == 't-cantinho',
     );
     expect((tappa['lat'], tappa['lon']), (41.1427, -8.6131));
-    // Il posto ha un nome suo, diverso dal titolo: va nel «Dove».
-    expect(
-      tappa['luogo_nome'],
-      'Cantinho do Avillez, Rua Mouzinho da Silveira 166, Porto',
-    );
+    // Il posto di Google: il place_id e la data delle coordinate, non il
+    // nome né l'indirizzo; quello scritto prima era da cercare (ADR-014).
+    expect(tappa['place_id'], 'p-1');
+    expect(tappa['coordinate_il'], isNotNull);
+    expect(tappa['luogo_nome'], isNull);
     expect(
       find.text('Adesso hanno tutte un posto sulla mappa.'),
       findsOneWidget,

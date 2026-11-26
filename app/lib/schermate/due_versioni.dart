@@ -23,6 +23,7 @@ import '../dominio/valute.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
+import 'luogo.dart';
 import 'spese.dart' show elenco;
 
 /// Che cosa ha scelto la persona davanti a due versioni. Il nome è quello
@@ -551,11 +552,14 @@ List<_RigaConfronto> _righe(Conflitto c, _Contesto contesto) {
         final o = leggiOra(v['ora_inizio'] as String?);
         return o == null ? null : ora(o);
       }),
-      riga('Dove', [
-        'luogo_nome',
-        'lat',
-        'lon',
-      ], (v) => v['luogo_nome'] as String?),
+      riga(
+        'Dove',
+        ['luogo_nome', 'lat', 'lon', 'place_id', 'coordinate_il'],
+        (v) => doveDellaTappa(
+          v['luogo_nome'] as String?,
+          v['place_id'] as String?,
+        ),
+      ),
       riga('Giorno', ['giorno_id'], (v) {
         final data = contesto.giorni[v['giorno_id']];
         return data == null ? null : giornoCorto(data);

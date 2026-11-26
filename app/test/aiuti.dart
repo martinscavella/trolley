@@ -1761,6 +1761,32 @@ class MappeFinte implements Mappe {
   /// Quello che trova ogni ricerca.
   final luoghi = <Luogo>[];
 
+  /// Dove sta ogni posto, per il suo id.
+  final posti = <String, Coordinate>{};
+
+  /// Un posto che le ricerche trovano: il suo id è `p-1`, `p-2`, …
+  Luogo aggiungi(
+    String nome, {
+    String? indirizzo,
+    required Coordinate posto,
+    TipoLuogo tipo = TipoLuogo.posto,
+  }) {
+    final id = 'p-${luoghi.length + 1}';
+    final luogo = Luogo(id: id, nome: nome, indirizzo: indirizzo, tipo: tipo);
+    luoghi.add(luogo);
+    posti[id] = posto;
+    return luogo;
+  }
+
+  /// Le sessioni delle ricerche, e dei posti chiesti, in ordine.
+  final sessioni = <String?>[];
+
+  /// I posti chiesti, in ordine, con la loro sessione.
+  final postiChiesti = <({String id, String? sessione})>[];
+
+  /// L'indirizzo che dà ogni posto chiesto.
+  String? indirizzoDelPosto = 'Via finta 1, Città';
+
   /// I testi cercati, in ordine.
   final cercati = <String>[];
 
@@ -1789,6 +1815,7 @@ class MappeFinte implements Mappe {
   void scaricaRiquadri(int quanti) => _consumo = ConsumoMappe(
     riquadri: _consumo.riquadri + quanti,
     ricerche: _consumo.ricerche,
+    dettagli: _consumo.dettagli,
     percorsi: _consumo.percorsi,
     fermati: _consumo.fermati,
   );
@@ -1800,10 +1827,14 @@ class MappeFinte implements Mappe {
   @override
   String get attribuzione => 'Mappe finte';
 
+  @override
+  String get attribuzioneRicerca => 'Google Maps';
+
   ErroreTrolley _fermato(String messaggio) {
     _consumo = ConsumoMappe(
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
+      dettagli: _consumo.dettagli,
       percorsi: _consumo.percorsi,
       fermati: _consumo.fermati + 1,
     );
@@ -1815,6 +1846,7 @@ class MappeFinte implements Mappe {
     String testo, {
     required String viaggioId,
     Coordinate? vicinoA,
+    String? sessione,
   }) async {
     viaggi.add(viaggioId);
     if (tetto) {
@@ -1822,9 +1854,11 @@ class MappeFinte implements Mappe {
     }
     cercati.add(testo);
     vicino.add(vicinoA);
+    sessioni.add(sessione);
     _consumo = ConsumoMappe(
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche + 1,
+      dettagli: _consumo.dettagli,
       percorsi: _consumo.percorsi,
       fermati: _consumo.fermati,
     );
@@ -1832,6 +1866,29 @@ class MappeFinte implements Mappe {
       for (final l in luoghi)
         if (l.nome.toLowerCase().contains(testo.trim().toLowerCase())) l,
     ];
+  }
+
+  @override
+  Future<PostoTrovato> posto(
+    String id, {
+    required String viaggioId,
+    String? sessione,
+  }) async {
+    viaggi.add(viaggioId);
+    if (tetto) {
+      throw _fermato('Per oggi, in questo viaggio, le ricerche sono finite.');
+    }
+    postiChiesti.add((id: id, sessione: sessione));
+    _consumo = ConsumoMappe(
+      riquadri: _consumo.riquadri,
+      ricerche: _consumo.ricerche,
+      dettagli: _consumo.dettagli + 1,
+      percorsi: _consumo.percorsi,
+      fermati: _consumo.fermati,
+    );
+    final posto = posti[id];
+    if (posto == null) throw const ErroreTrolley('La mappa non risponde.');
+    return PostoTrovato(id: id, posto: posto, indirizzo: indirizzoDelPosto);
   }
 
   @override
@@ -1850,6 +1907,7 @@ class MappeFinte implements Mappe {
     _consumo = ConsumoMappe(
       riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
+      dettagli: _consumo.dettagli,
       percorsi: _consumo.percorsi + 1,
       fermati: _consumo.fermati,
     );

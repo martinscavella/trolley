@@ -87,6 +87,9 @@ Map<String, Object?> ritrattoTappa(Map<String, Object?> r) => {
   // Il posto va col suo nome: si cambiano insieme, e si sceglie insieme.
   'lat': (r['lat'] as num?)?.toDouble(),
   'lon': (r['lon'] as num?)?.toDouble(),
+  'place_id': r['place_id'],
+  // Va con le coordinate: senza, il server non le accetta (ADR-014).
+  'coordinate_il': _istante(r['coordinate_il']),
   'giorno_id': r['giorno_id'],
   campoEliminato: r['eliminato_il'] != null,
 };
@@ -168,6 +171,8 @@ Map<String, Object?> rigaDellaTappa(Tappa t) => {
   'luogo_nome': t.luogoNome,
   'lat': t.lat,
   'lon': t.lon,
+  'place_id': t.placeId,
+  'coordinate_il': t.coordinateIl,
   'giorno_id': t.giornoId,
   'eliminato_il': t.eliminatoIl,
 };
@@ -239,3 +244,10 @@ String? _data(Object? v) => switch (leggiData(v as String?)) {
   final data? => scriviData(data),
   null => null,
 };
+
+/// Un istante, come lo scrive il server o il telefono, nello stesso modo:
+/// `…+00:00` e `…Z` sono la stessa ora.
+String? _istante(Object? valore) {
+  if (valore is! String) return null;
+  return DateTime.tryParse(valore)?.toUtc().toIso8601String() ?? valore;
+}

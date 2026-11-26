@@ -1,6 +1,8 @@
-/// Mappe, percorsi e ricerca dei luoghi (04-integrazioni.md, ADR-006): un
-/// fornitore solo — Geoapify, con i dati di OpenStreetMap — dietro questa
-/// interfaccia. Nessuna schermata parla con lui: sostituirlo è questo file.
+/// Mappe, percorsi e ricerca dei luoghi (04-integrazioni.md, ADR-006,
+/// ADR-014) dietro questa interfaccia. La ricerca dei posti è di Google
+/// Places (CR-06, passo 1); i riquadri e i percorsi sono ancora di Geoapify,
+/// con i dati di OpenStreetMap, finché la mappa e la guida non passano a
+/// Google. Nessuna schermata parla con loro: sostituirli è questo file.
 ///
 /// Al fornitore non si parla dal telefono: tutto passa dalla funzione `mappe`
 /// del nostro server (supabase/functions/mappe), che tiene la chiave e fa
@@ -30,39 +32,43 @@ import '../dominio/mappa.dart';
 import '../dominio/navigazione.dart';
 import 'errori.dart';
 
-/// Un posto trovato cercando: dove mettere una tappa.
 /// Lo stile dei riquadri, lo stesso della funzione `mappe` (ADR-006).
 const stileRiquadri = 'klokantech-basic';
 
+/// Un posto suggerito cercando: dove mettere una tappa. Di Google: il nome e
+/// l'indirizzo si mostrano nell'elenco e non si tengono (ADR-014); dove sta
+/// lo dice [Mappe.posto], quando lo si sceglie.
 class Luogo {
   const Luogo({
+    required this.id,
     required this.nome,
-    required this.posto,
     this.indirizzo,
     this.tipo = TipoLuogo.posto,
   });
+
+  /// Il `place_id` di Google: l'unica cosa del posto che la tappa tiene.
+  final String id;
 
   /// «Livraria Lello», o la via se il posto non ha un nome.
   final String nome;
 
   /// «Rua das Carmelitas 144, Porto»; `null` se non c'è altro da dire.
   final String? indirizzo;
-  final Coordinate posto;
   final TipoLuogo tipo;
-
-  /// Cosa scrivere nella tappa come «Dove»: l'indirizzo se il nome è già il
-  /// titolo della tappa, altrimenti il nome con l'indirizzo.
-  String dove({String? titolo}) {
-    final i = indirizzo;
-    if (i == null || i.isEmpty) return nome;
-    final stesso =
-        titolo != null && titolo.trim().toLowerCase() == nome.toLowerCase();
-    return stesso || i.startsWith(nome) ? i : '$nome, $i';
-  }
 }
 
 /// Che cosa si è trovato: un posto con un nome, un indirizzo, una zona.
 enum TipoLuogo { posto, indirizzo, zona }
+
+/// Dove sta un posto di Google, e il suo indirizzo: le coordinate si tengono
+/// al massimo 30 giorni, l'indirizzo non si tiene (ADR-014).
+class PostoTrovato {
+  const PostoTrovato({required this.id, required this.posto, this.indirizzo});
+
+  final String id;
+  final Coordinate posto;
+  final String? indirizzo;
+}
 
 /// Quanto si è chiesto al fornitore: i riquadri scaricati davvero (quelli
 /// già in memoria non si pagano), le ricerche, i percorsi. E quante chiamate
@@ -71,21 +77,32 @@ class ConsumoMappe {
   const ConsumoMappe({
     this.riquadri = 0,
     this.ricerche = 0,
+    this.dettagli = 0,
     this.percorsi = 0,
     this.fermati = 0,
   });
 
   final int riquadri;
+
+  /// I suggerimenti chiesti scrivendo.
   final int ricerche;
+
+  /// I posti chiesti a Google: quello scelto, o l'indirizzo di una tappa.
+  final int dettagli;
   final int percorsi;
   final int fermati;
 
   bool get nullo =>
-      riquadri == 0 && ricerche == 0 && percorsi == 0 && fermati == 0;
+      riquadri == 0 &&
+      ricerche == 0 &&
+      dettagli == 0 &&
+      percorsi == 0 &&
+      fermati == 0;
 
   ConsumoMappe operator -(ConsumoMappe prima) => ConsumoMappe(
     riquadri: riquadri - prima.riquadri,
     ricerche: ricerche - prima.ricerche,
+    dettagli: dettagli - prima.dettagli,
     percorsi: percorsi - prima.percorsi,
     fermati: fermati - prima.fermati,
   );
@@ -94,6 +111,7 @@ class ConsumoMappe {
   Map<String, Object?> get proprieta => {
     'riquadri': riquadri,
     'ricerche': ricerche,
+    'dettagli': dettagli,
     'percorsi': percorsi,
     'fermati': fermati,
   };
@@ -115,11 +133,27 @@ abstract interface class Mappe {
   /// Chi ringraziare sotto la mappa: lo chiedono il fornitore e i dati.
   String get attribuzione;
 
+  /// Chi ringraziare sotto i posti trovati: «Google Maps», com'è, mai
+  /// tradotto (condizioni di Google Places).
+  String get attribuzioneRicerca;
+
   /// I posti che corrispondono a [testo], i più vicini a [vicinoA] prima.
+  /// [sessione] lega i suggerimenti al posto che si sceglierà: per Google
+  /// è una ricerca sola.
   Future<List<Luogo>> cerca(
     String testo, {
     required String viaggioId,
     Coordinate? vicinoA,
+    String? sessione,
+  });
+
+  /// Dove sta il posto [id], e il suo indirizzo. Con la [sessione] della
+  /// ricerca, quando lo si sceglie; senza, per mostrare l'indirizzo di una
+  /// tappa.
+  Future<PostoTrovato> posto(
+    String id, {
+    required String viaggioId,
+    String? sessione,
   });
 
   /// Il percorso a piedi da [da] ad [a], con le indicazioni in italiano.
@@ -148,10 +182,21 @@ class MappeAssenti implements Mappe {
   String get attribuzione => '';
 
   @override
+  String get attribuzioneRicerca => '';
+
+  @override
   Future<List<Luogo>> cerca(
     String testo, {
     required String viaggioId,
     Coordinate? vicinoA,
+    String? sessione,
+  }) => Future.error(const ErroreTrolley(_nonDisponibili));
+
+  @override
+  Future<PostoTrovato> posto(
+    String id, {
+    required String viaggioId,
+    String? sessione,
   }) => Future.error(const ErroreTrolley(_nonDisponibili));
 
   @override
@@ -182,9 +227,9 @@ const _tettoPercorsi = ErroreTrolley(
   codice: CodiciServer.tettoMappe,
 );
 
-/// Geoapify, attraverso la funzione `mappe` del nostro server: riquadri,
-/// ricerca e percorsi dallo stesso posto. Le risposte sono quelle di
-/// Geoapify, e si leggono qui.
+/// La funzione `mappe` del nostro server: riquadri e percorsi di Geoapify,
+/// posti di Google, dallo stesso posto. Le risposte sono quelle dei
+/// fornitori, e si leggono qui.
 class MappeGeoapify implements Mappe {
   MappeGeoapify({
     required this.indirizzo,
@@ -210,6 +255,7 @@ class MappeGeoapify implements Mappe {
 
   var _riquadri = 0;
   var _ricerche = 0;
+  var _dettagli = 0;
   var _percorsi = 0;
   var _fermati = 0;
 
@@ -220,6 +266,7 @@ class MappeGeoapify implements Mappe {
   ConsumoMappe get consumo => ConsumoMappe(
     riquadri: _riquadri,
     ricerche: _ricerche,
+    dettagli: _dettagli,
     percorsi: _percorsi,
     fermati: _fermati,
   );
@@ -278,46 +325,59 @@ class MappeGeoapify implements Mappe {
       'Powered by Geoapify · © OpenMapTiles · © OpenStreetMap';
 
   @override
+  String get attribuzioneRicerca => 'Google Maps';
+
+  @override
   Future<List<Luogo>> cerca(
     String testo, {
     required String viaggioId,
     Coordinate? vicinoA,
+    String? sessione,
   }) async {
     final cercato = testo.trim();
     if (cercato.isEmpty) return const [];
-    Future<List<Luogo>> chiedi({required bool soloQui}) async {
-      final json = await _chiedi(
-        'cerca',
-        viaggioId,
-        {
-          'text': cercato,
-          'lang': 'it',
-          'limit': '8',
-          'format': 'json',
-          if (vicinoA != null) ...{
-            'bias': 'proximity:${vicinoA.lon},${vicinoA.lat}',
-            if (soloQui)
-              'filter':
-                  'circle:${vicinoA.lon},${vicinoA.lat},${raggioDiRicerca.round()}',
-          },
+    // La vicinanza pesa, ma non chiude: una gita in giornata ci sta, e se
+    // vicino non c'è niente si trova lontano.
+    final json = await _chiedi(
+      'cerca',
+      viaggioId,
+      {
+        'testo': cercato,
+        'lingua': 'it',
+        'sessione': ?sessione,
+        if (vicinoA != null) ...{
+          'lat': vicinoA.lat,
+          'lon': vicinoA.lon,
+          'raggio': raggioDiRicerca,
         },
-        conta: () => _ricerche++,
-        tetto: _tettoRicerche,
-      );
-      return luoghiDaGeoapify(json);
-    }
-
-    // La vicinanza da sola pesa poco: «majestic» darebbe gli Stati Uniti
-    // prima del caffè di Porto. Si cerca nella zona del viaggio, e solo se
-    // lì non c'è niente, ovunque (una ricerca in più).
-    if (vicinoA == null) return chiedi(soloQui: false);
-    final qui = await chiedi(soloQui: true);
-    return qui.isNotEmpty ? qui : chiedi(soloQui: false);
+      },
+      conta: () => _ricerche++,
+      tetto: _tettoRicerche,
+    );
+    return luoghiDaGoogle(json);
   }
 
-  /// Quanto lontano dalla zona del viaggio si cerca prima: una gita in
+  /// Quanto lontano dalla zona del viaggio pesa la vicinanza: una gita in
   /// giornata ci sta.
   static const raggioDiRicerca = 40000.0;
+
+  @override
+  Future<PostoTrovato> posto(
+    String id, {
+    required String viaggioId,
+    String? sessione,
+  }) async {
+    final json = await _chiedi(
+      'posto',
+      viaggioId,
+      {'id': id, 'lingua': 'it', 'sessione': ?sessione},
+      conta: () => _dettagli++,
+      tetto: _tettoRicerche,
+    );
+    final trovato = postoDaGoogle(json, id);
+    if (trovato == null) throw const ErroreTrolley(_nonRisponde);
+    return trovato;
+  }
 
   @override
   Future<Percorso> percorsoAPiedi(
@@ -349,7 +409,7 @@ class MappeGeoapify implements Mappe {
   Future<Map<String, dynamic>> _chiedi(
     String cosa,
     String viaggioId,
-    Map<String, String> parametri, {
+    Map<String, Object> parametri, {
     required void Function() conta,
     required ErroreTrolley tetto,
   }) async {
@@ -404,47 +464,75 @@ class _AlServer extends http.BaseClient {
   void close() => _dentro.close();
 }
 
-/// I posti di una risposta di Geoapify (`/v1/geocode/autocomplete`,
-/// `format=json`). Quelli senza coordinate si scartano.
-List<Luogo> luoghiDaGeoapify(Map<String, dynamic> json) {
-  final risultati = json['results'];
-  if (risultati is! List) return const [];
+/// I posti di una risposta di Google (`places:autocomplete`). Le ricerche
+/// suggerite, senza un posto, si scartano.
+List<Luogo> luoghiDaGoogle(Map<String, dynamic> json) {
+  final suggerimenti = json['suggestions'];
+  if (suggerimenti is! List) return const [];
   final luoghi = <Luogo>[];
-  for (final r in risultati.whereType<Map<String, dynamic>>()) {
-    final posto = coordinate(
-      (r['lat'] as num?)?.toDouble(),
-      (r['lon'] as num?)?.toDouble(),
-    );
-    if (posto == null) continue;
-    final tipo = switch (r['result_type']) {
-      'amenity' => TipoLuogo.posto,
-      'building' || 'street' => TipoLuogo.indirizzo,
-      _ => TipoLuogo.zona,
-    };
-    final via = _testo(r['street']);
-    final civico = _testo(r['housenumber']);
-    final citta =
-        _testo(r['city']) ?? _testo(r['town']) ?? _testo(r['village']);
-    final strada = via == null ? null : [via, ?civico].join(' ');
-    final nome =
-        _testo(r['name']) ??
-        strada ??
-        _testo(r['address_line1']) ??
-        _testo(r['formatted']);
+  for (final s in suggerimenti.whereType<Map<String, dynamic>>()) {
+    final p = s['placePrediction'];
+    if (p is! Map<String, dynamic>) continue;
+    final id = _testo(p['placeId']);
+    final formato = p['structuredFormat'];
+    if (id == null || formato is! Map<String, dynamic>) continue;
+    final nome = _testo((formato['mainText'] as Map?)?['text']);
     if (nome == null) continue;
-    final indirizzo = [
-      if (strada != null && strada != nome) strada,
-      if (citta != null && citta != nome) citta,
-    ].join(', ');
-    final paese = _testo(r['country']);
-    final dove = indirizzo.isNotEmpty
-        ? indirizzo
-        : (paese != null && paese != nome ? paese : null);
-    // Lo stesso posto con più ingressi: uno basta.
-    if (luoghi.any((l) => l.nome == nome && l.indirizzo == dove)) continue;
-    luoghi.add(Luogo(nome: nome, indirizzo: dove, posto: posto, tipo: tipo));
+    final indirizzo = _testo((formato['secondaryText'] as Map?)?['text']);
+    final tipi = (p['types'] as List?)?.whereType<String>().toSet() ?? {};
+    if (luoghi.any((l) => l.id == id)) continue;
+    luoghi.add(
+      Luogo(id: id, nome: nome, indirizzo: indirizzo, tipo: tipoDaGoogle(tipi)),
+    );
   }
   return luoghi;
+}
+
+/// Che cosa è un posto, dai tipi di Google: una zona (città, quartiere,
+/// regione), un indirizzo (una via, un civico), o un posto con un nome.
+TipoLuogo tipoDaGoogle(Set<String> tipi) {
+  const zone = {
+    'locality',
+    'sublocality',
+    'neighborhood',
+    'administrative_area_level_1',
+    'administrative_area_level_2',
+    'administrative_area_level_3',
+    'country',
+    'postal_code',
+    'political',
+  };
+  const indirizzi = {
+    'route',
+    'street_address',
+    'premise',
+    'subpremise',
+    'intersection',
+    'plus_code',
+  };
+  if (tipi.contains('establishment') || tipi.contains('point_of_interest')) {
+    return TipoLuogo.posto;
+  }
+  if (tipi.any(indirizzi.contains)) return TipoLuogo.indirizzo;
+  if (tipi.any(zone.contains)) return TipoLuogo.zona;
+  return TipoLuogo.posto;
+}
+
+/// Dove sta il posto di una risposta di Google (`places/{id}`); `null` se
+/// non ha coordinate.
+PostoTrovato? postoDaGoogle(Map<String, dynamic> json, String id) {
+  final dove = json['location'];
+  if (dove is! Map) return null;
+  final posto = coordinate(
+    (dove['latitude'] as num?)?.toDouble(),
+    (dove['longitude'] as num?)?.toDouble(),
+  );
+  if (posto == null) return null;
+  return PostoTrovato(
+    id: _testo(json['id']) ?? id,
+    posto: posto,
+    indirizzo: _testo(json['formattedAddress']),
+  );
 }
 
 String? _testo(Object? valore) {

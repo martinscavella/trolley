@@ -59,6 +59,16 @@ Il testo delle condizioni non si legge dagli strumenti automatici, ma le pagine 
 - **I passi dei mezzi pubblici** stanno in una schermata loro, senza mappa; sulla mappa, se si può, solo la linea del percorso.
 - **«Qui vicino»** resta un elenco senza mappa (già deciso il 25 novembre).
 
+## La costruzione
+
+**Passo 1, la ricerca dei posti (26 novembre 2026).** «Dove?» cerca con Google: `places:autocomplete` mentre si scrive, poi `places/{id}` con le sole coordinate e l'indirizzo (Place Details Essentials) per il posto scelto, nella stessa sessione, così i suggerimenti non si pagano. Passa dalla funzione `mappe` (`/cerca`, `/posto`), che conta tutti e due come `ricerche` sul tetto; l'app li conta a parte (`consumo_mappe.dettagli`). I riquadri e il percorso a piedi restano di Geoapify fino ai passi 2 e 4: le coordinate di Google su una mappa non di Google si possono mostrare (sono l'eccezione, e in Europa mescolare è permesso).
+
+- **Cosa tiene la tappa**: `place_id`, coordinate e `coordinate_il`. `luogo_nome` resta vuoto: il nome e l'indirizzo di Google si vedono nell'elenco e nel foglio della tappa finché è aperto, poi no. Il titolo non si prende più dal nome del posto: sarebbe il nome di Google tenuto per sempre, e sulla mappa.
+- **Senza rete** una tappa di Google dice «Sulla mappa»; con la rete il dettaglio chiede l'indirizzo a Google (un dettaglio in più a ogni apertura) e lo mostra con «Google Maps» sotto, perché lì non c'è una mappa.
+- **L'attribuzione** è il testo «Google Maps», com'è, grigio #5E5E5E, 12 punti, peso normale: le pagine di Google lo chiedono per i nuovi lavori al posto di «powered by Google» ([regole](https://developers.google.com/maps/documentation/places/web-service/policies)).
+- **Da fare**: rinnovare le coordinate prima dei 30 giorni (per ora il lavoro di notte le toglie e la tappa resta senza posto finché non la si cerca di nuovo); una tappa di Google senza coordinate oggi conta come «senza posto».
+- **Le chiavi degli SDK** (iOS e Android, legate all'app) sono in `app/chiavi.json`, che git ignora: il repository è pubblico. Servono dal passo 2.
+
 ## Conseguenze
 
 - **La mappa non si paga più a visualizzazione**: il problema di Copenaghen sparisce sul telefono. Restano a consumo i tragitti, le ricerche, gli orari e la guida.

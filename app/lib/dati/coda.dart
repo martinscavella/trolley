@@ -39,6 +39,8 @@ class NuovaTappa {
     this.ora,
     this.luogo,
     this.posto,
+    this.placeId,
+    this.coordinateIl,
   });
 
   /// Generato sul telefono: rimandarla non la aggiunge due volte.
@@ -56,6 +58,10 @@ class NuovaTappa {
   /// ma non compare sulla mappa (ADR-005).
   final Coordinate? posto;
 
+  /// Il posto di Google, e quando ne sono arrivate le coordinate (ADR-014).
+  final String? placeId;
+  final DateTime? coordinateIl;
+
   /// La riga come la scrive il server.
   Map<String, Object?> get riga {
     final dove = luogo?.trim();
@@ -71,6 +77,10 @@ class NuovaTappa {
       'luogo_nome': dove == null || dove.isEmpty ? null : dove,
       'lat': posto?.lat,
       'lon': posto?.lon,
+      'place_id': placeId,
+      'coordinate_il': posto == null || placeId == null
+          ? null
+          : (coordinateIl ?? DateTime.now()).toUtc().toIso8601String(),
     };
   }
 }
@@ -208,6 +218,8 @@ TappeCompanion rigaTappa(Map<String, dynamic> r, DateTime adesso) =>
       luogoNome: Value(r['luogo_nome'] as String?),
       lat: Value((r['lat'] as num?)?.toDouble()),
       lon: Value((r['lon'] as num?)?.toDouble()),
+      placeId: Value(r['place_id'] as String?),
+      coordinateIl: Value(r['coordinate_il'] as String?),
       durataStimataMin: r['durata_stimata_min'] as int,
       oraInizio: Value(r['ora_inizio'] as String?),
       stato: r['stato'] as String,
@@ -663,6 +675,9 @@ class Coda {
                 // Un gesto messo in coda prima della 3.2 non le ha.
                 lat: Value((c['lat'] as num?)?.toDouble()),
                 lon: Value((c['lon'] as num?)?.toDouble()),
+                // Uno messo in coda prima della CR-06 nemmeno queste.
+                placeId: Value(c['place_id'] as String?),
+                coordinateIl: Value(c['coordinate_il'] as String?),
                 durataStimataMin: c['durata_stimata_min']! as int,
                 oraInizio: Value(c['ora_inizio'] as String?),
                 stato: StatoTappa.daFare.codice,

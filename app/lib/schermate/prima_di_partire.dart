@@ -805,7 +805,6 @@ class _FoglioTappeSenzaPostoState extends State<FoglioTappeSenzaPosto> {
       FoglioLuogo(
         viaggioId: c.viaggio.id,
         iniziale: tappa.luogoNome ?? tappa.titolo,
-        titolo: tappa.titolo,
         vicinoA: vicino?.centro,
         dalleTappe: vicino?.dalleTappe ?? false,
         cercaSubito: true,
@@ -820,9 +819,15 @@ class _FoglioTappeSenzaPostoState extends State<FoglioTappeSenzaPosto> {
       await salvaOScegli(
         context,
         () => archivio.modificaTappa(tappa, {
+          // Un posto di Google non tiene il nome scritto prima: era quello
+          // da cercare, e il posto ora c'è (ADR-014).
           'luogo_nome': scelta.testo.trim().isEmpty ? null : scelta.testo,
           'lat': posto.lat,
           'lon': posto.lon,
+          'place_id': scelta.google,
+          'coordinate_il': scelta.daGoogle
+              ? DateTime.now().toUtc().toIso8601String()
+              : null,
         }),
       );
     } on ErroreTrolley catch (e) {

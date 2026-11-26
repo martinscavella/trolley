@@ -3087,6 +3087,28 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _placeIdMeta = const VerificationMeta(
+    'placeId',
+  );
+  @override
+  late final GeneratedColumn<String> placeId = GeneratedColumn<String>(
+    'place_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _coordinateIlMeta = const VerificationMeta(
+    'coordinateIl',
+  );
+  @override
+  late final GeneratedColumn<String> coordinateIl = GeneratedColumn<String>(
+    'coordinate_il',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _durataStimataMinMeta = const VerificationMeta(
     'durataStimataMin',
   );
@@ -3201,6 +3223,8 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
     luogoNome,
     lat,
     lon,
+    placeId,
+    coordinateIl,
     durataStimataMin,
     oraInizio,
     stato,
@@ -3304,6 +3328,21 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
       context.handle(
         _lonMeta,
         lon.isAcceptableOrUnknown(data['lon']!, _lonMeta),
+      );
+    }
+    if (data.containsKey('place_id')) {
+      context.handle(
+        _placeIdMeta,
+        placeId.isAcceptableOrUnknown(data['place_id']!, _placeIdMeta),
+      );
+    }
+    if (data.containsKey('coordinate_il')) {
+      context.handle(
+        _coordinateIlMeta,
+        coordinateIl.isAcceptableOrUnknown(
+          data['coordinate_il']!,
+          _coordinateIlMeta,
+        ),
       );
     }
     if (data.containsKey('durata_stimata_min')) {
@@ -3431,6 +3470,14 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
         DriftSqlType.double,
         data['${effectivePrefix}lon'],
       ),
+      placeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}place_id'],
+      ),
+      coordinateIl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}coordinate_il'],
+      ),
       durataStimataMin: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}durata_stimata_min'],
@@ -3491,6 +3538,14 @@ class Tappa extends DataClass implements Insertable<Tappa> {
   final String? luogoNome;
   final double? lat;
   final double? lon;
+
+  /// Il posto di Google (ADR-014): si tiene per sempre. Senza, il posto (se
+  /// c'è) è scritto a mano, o di OpenStreetMap come prima della CR-06.
+  final String? placeId;
+
+  /// Quando sono arrivate da Google [lat] e [lon]: dopo 30 giorni il server
+  /// le toglie, se nessuno le ha rinnovate.
+  final String? coordinateIl;
   final int durataStimataMin;
   final String? oraInizio;
   final String stato;
@@ -3519,6 +3574,8 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     this.luogoNome,
     this.lat,
     this.lon,
+    this.placeId,
+    this.coordinateIl,
     required this.durataStimataMin,
     this.oraInizio,
     required this.stato,
@@ -3550,6 +3607,12 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     }
     if (!nullToAbsent || lon != null) {
       map['lon'] = Variable<double>(lon);
+    }
+    if (!nullToAbsent || placeId != null) {
+      map['place_id'] = Variable<String>(placeId);
+    }
+    if (!nullToAbsent || coordinateIl != null) {
+      map['coordinate_il'] = Variable<String>(coordinateIl);
     }
     map['durata_stimata_min'] = Variable<int>(durataStimataMin);
     if (!nullToAbsent || oraInizio != null) {
@@ -3586,6 +3649,12 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           : Value(luogoNome),
       lat: lat == null && nullToAbsent ? const Value.absent() : Value(lat),
       lon: lon == null && nullToAbsent ? const Value.absent() : Value(lon),
+      placeId: placeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(placeId),
+      coordinateIl: coordinateIl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coordinateIl),
       durataStimataMin: Value(durataStimataMin),
       oraInizio: oraInizio == null && nullToAbsent
           ? const Value.absent()
@@ -3619,6 +3688,8 @@ class Tappa extends DataClass implements Insertable<Tappa> {
       luogoNome: serializer.fromJson<String?>(json['luogoNome']),
       lat: serializer.fromJson<double?>(json['lat']),
       lon: serializer.fromJson<double?>(json['lon']),
+      placeId: serializer.fromJson<String?>(json['placeId']),
+      coordinateIl: serializer.fromJson<String?>(json['coordinateIl']),
       durataStimataMin: serializer.fromJson<int>(json['durataStimataMin']),
       oraInizio: serializer.fromJson<String?>(json['oraInizio']),
       stato: serializer.fromJson<String>(json['stato']),
@@ -3647,6 +3718,8 @@ class Tappa extends DataClass implements Insertable<Tappa> {
       'luogoNome': serializer.toJson<String?>(luogoNome),
       'lat': serializer.toJson<double?>(lat),
       'lon': serializer.toJson<double?>(lon),
+      'placeId': serializer.toJson<String?>(placeId),
+      'coordinateIl': serializer.toJson<String?>(coordinateIl),
       'durataStimataMin': serializer.toJson<int>(durataStimataMin),
       'oraInizio': serializer.toJson<String?>(oraInizio),
       'stato': serializer.toJson<String>(stato),
@@ -3673,6 +3746,8 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     Value<String?> luogoNome = const Value.absent(),
     Value<double?> lat = const Value.absent(),
     Value<double?> lon = const Value.absent(),
+    Value<String?> placeId = const Value.absent(),
+    Value<String?> coordinateIl = const Value.absent(),
     int? durataStimataMin,
     Value<String?> oraInizio = const Value.absent(),
     String? stato,
@@ -3694,6 +3769,8 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     luogoNome: luogoNome.present ? luogoNome.value : this.luogoNome,
     lat: lat.present ? lat.value : this.lat,
     lon: lon.present ? lon.value : this.lon,
+    placeId: placeId.present ? placeId.value : this.placeId,
+    coordinateIl: coordinateIl.present ? coordinateIl.value : this.coordinateIl,
     durataStimataMin: durataStimataMin ?? this.durataStimataMin,
     oraInizio: oraInizio.present ? oraInizio.value : this.oraInizio,
     stato: stato ?? this.stato,
@@ -3722,6 +3799,10 @@ class Tappa extends DataClass implements Insertable<Tappa> {
       luogoNome: data.luogoNome.present ? data.luogoNome.value : this.luogoNome,
       lat: data.lat.present ? data.lat.value : this.lat,
       lon: data.lon.present ? data.lon.value : this.lon,
+      placeId: data.placeId.present ? data.placeId.value : this.placeId,
+      coordinateIl: data.coordinateIl.present
+          ? data.coordinateIl.value
+          : this.coordinateIl,
       durataStimataMin: data.durataStimataMin.present
           ? data.durataStimataMin.value
           : this.durataStimataMin,
@@ -3752,6 +3833,8 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           ..write('luogoNome: $luogoNome, ')
           ..write('lat: $lat, ')
           ..write('lon: $lon, ')
+          ..write('placeId: $placeId, ')
+          ..write('coordinateIl: $coordinateIl, ')
           ..write('durataStimataMin: $durataStimataMin, ')
           ..write('oraInizio: $oraInizio, ')
           ..write('stato: $stato, ')
@@ -3766,7 +3849,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     versione,
     eliminatoIl,
@@ -3778,6 +3861,8 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     luogoNome,
     lat,
     lon,
+    placeId,
+    coordinateIl,
     durataStimataMin,
     oraInizio,
     stato,
@@ -3787,7 +3872,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     tipo,
     creatoDa,
     creatoIl,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3803,6 +3888,8 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           other.luogoNome == this.luogoNome &&
           other.lat == this.lat &&
           other.lon == this.lon &&
+          other.placeId == this.placeId &&
+          other.coordinateIl == this.coordinateIl &&
           other.durataStimataMin == this.durataStimataMin &&
           other.oraInizio == this.oraInizio &&
           other.stato == this.stato &&
@@ -3826,6 +3913,8 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
   final Value<String?> luogoNome;
   final Value<double?> lat;
   final Value<double?> lon;
+  final Value<String?> placeId;
+  final Value<String?> coordinateIl;
   final Value<int> durataStimataMin;
   final Value<String?> oraInizio;
   final Value<String> stato;
@@ -3848,6 +3937,8 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     this.luogoNome = const Value.absent(),
     this.lat = const Value.absent(),
     this.lon = const Value.absent(),
+    this.placeId = const Value.absent(),
+    this.coordinateIl = const Value.absent(),
     this.durataStimataMin = const Value.absent(),
     this.oraInizio = const Value.absent(),
     this.stato = const Value.absent(),
@@ -3871,6 +3962,8 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     this.luogoNome = const Value.absent(),
     this.lat = const Value.absent(),
     this.lon = const Value.absent(),
+    this.placeId = const Value.absent(),
+    this.coordinateIl = const Value.absent(),
     required int durataStimataMin,
     this.oraInizio = const Value.absent(),
     required String stato,
@@ -3906,6 +3999,8 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     Expression<String>? luogoNome,
     Expression<double>? lat,
     Expression<double>? lon,
+    Expression<String>? placeId,
+    Expression<String>? coordinateIl,
     Expression<int>? durataStimataMin,
     Expression<String>? oraInizio,
     Expression<String>? stato,
@@ -3929,6 +4024,8 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
       if (luogoNome != null) 'luogo_nome': luogoNome,
       if (lat != null) 'lat': lat,
       if (lon != null) 'lon': lon,
+      if (placeId != null) 'place_id': placeId,
+      if (coordinateIl != null) 'coordinate_il': coordinateIl,
       if (durataStimataMin != null) 'durata_stimata_min': durataStimataMin,
       if (oraInizio != null) 'ora_inizio': oraInizio,
       if (stato != null) 'stato': stato,
@@ -3955,6 +4052,8 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     Value<String?>? luogoNome,
     Value<double?>? lat,
     Value<double?>? lon,
+    Value<String?>? placeId,
+    Value<String?>? coordinateIl,
     Value<int>? durataStimataMin,
     Value<String?>? oraInizio,
     Value<String>? stato,
@@ -3978,6 +4077,8 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
       luogoNome: luogoNome ?? this.luogoNome,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
+      placeId: placeId ?? this.placeId,
+      coordinateIl: coordinateIl ?? this.coordinateIl,
       durataStimataMin: durataStimataMin ?? this.durataStimataMin,
       oraInizio: oraInizio ?? this.oraInizio,
       stato: stato ?? this.stato,
@@ -4028,6 +4129,12 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     if (lon.present) {
       map['lon'] = Variable<double>(lon.value);
     }
+    if (placeId.present) {
+      map['place_id'] = Variable<String>(placeId.value);
+    }
+    if (coordinateIl.present) {
+      map['coordinate_il'] = Variable<String>(coordinateIl.value);
+    }
     if (durataStimataMin.present) {
       map['durata_stimata_min'] = Variable<int>(durataStimataMin.value);
     }
@@ -4077,6 +4184,8 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
           ..write('luogoNome: $luogoNome, ')
           ..write('lat: $lat, ')
           ..write('lon: $lon, ')
+          ..write('placeId: $placeId, ')
+          ..write('coordinateIl: $coordinateIl, ')
           ..write('durataStimataMin: $durataStimataMin, ')
           ..write('oraInizio: $oraInizio, ')
           ..write('stato: $stato, ')
@@ -11027,6 +11136,8 @@ typedef $$TappeTableCreateCompanionBuilder = TappeCompanion Function({
   Value<String?> luogoNome,
   Value<double?> lat,
   Value<double?> lon,
+  Value<String?> placeId,
+  Value<String?> coordinateIl,
   required int durataStimataMin,
   Value<String?> oraInizio,
   required String stato,
@@ -11050,6 +11161,8 @@ typedef $$TappeTableUpdateCompanionBuilder = TappeCompanion Function({
   Value<String?> luogoNome,
   Value<double?> lat,
   Value<double?> lon,
+  Value<String?> placeId,
+  Value<String?> coordinateIl,
   Value<int> durataStimataMin,
   Value<String?> oraInizio,
   Value<String> stato,
@@ -11123,6 +11236,16 @@ class $$TappeTableFilterComposer
 
   ColumnFilters<double> get lon => $composableBuilder(
     column: $table.lon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get placeId => $composableBuilder(
+    column: $table.placeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coordinateIl => $composableBuilder(
+    column: $table.coordinateIl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11236,6 +11359,16 @@ class $$TappeTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get placeId => $composableBuilder(
+    column: $table.placeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coordinateIl => $composableBuilder(
+    column: $table.coordinateIl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get durataStimataMin => $composableBuilder(
     column: $table.durataStimataMin,
     builder: (column) => ColumnOrderings(column),
@@ -11328,6 +11461,14 @@ class $$TappeTableAnnotationComposer
   GeneratedColumn<double> get lon =>
       $composableBuilder(column: $table.lon, builder: (column) => column);
 
+  GeneratedColumn<String> get placeId =>
+      $composableBuilder(column: $table.placeId, builder: (column) => column);
+
+  GeneratedColumn<String> get coordinateIl => $composableBuilder(
+    column: $table.coordinateIl,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get durataStimataMin => $composableBuilder(
     column: $table.durataStimataMin,
     builder: (column) => column,
@@ -11399,6 +11540,8 @@ class $$TappeTableTableManager
                 Value<String?> luogoNome = const Value.absent(),
                 Value<double?> lat = const Value.absent(),
                 Value<double?> lon = const Value.absent(),
+                Value<String?> placeId = const Value.absent(),
+                Value<String?> coordinateIl = const Value.absent(),
                 Value<int> durataStimataMin = const Value.absent(),
                 Value<String?> oraInizio = const Value.absent(),
                 Value<String> stato = const Value.absent(),
@@ -11421,6 +11564,8 @@ class $$TappeTableTableManager
                 luogoNome: luogoNome,
                 lat: lat,
                 lon: lon,
+                placeId: placeId,
+                coordinateIl: coordinateIl,
                 durataStimataMin: durataStimataMin,
                 oraInizio: oraInizio,
                 stato: stato,
@@ -11445,6 +11590,8 @@ class $$TappeTableTableManager
                 Value<String?> luogoNome = const Value.absent(),
                 Value<double?> lat = const Value.absent(),
                 Value<double?> lon = const Value.absent(),
+                Value<String?> placeId = const Value.absent(),
+                Value<String?> coordinateIl = const Value.absent(),
                 required int durataStimataMin,
                 Value<String?> oraInizio = const Value.absent(),
                 required String stato,
@@ -11467,6 +11614,8 @@ class $$TappeTableTableManager
                 luogoNome: luogoNome,
                 lat: lat,
                 lon: lon,
+                placeId: placeId,
+                coordinateIl: coordinateIl,
                 durataStimataMin: durataStimataMin,
                 oraInizio: oraInizio,
                 stato: stato,

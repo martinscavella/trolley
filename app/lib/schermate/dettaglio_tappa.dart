@@ -12,6 +12,8 @@
 /// loro fogli.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -22,6 +24,8 @@ import '../aspetto/piattaforma.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../dati/database.dart';
+import '../dati/errori.dart';
+import '../dati/mappe.dart';
 import '../dati/lettura.dart';
 import '../dominio/orari.dart';
 import '../dominio/tappe.dart';
@@ -29,6 +33,7 @@ import '../servizi.dart';
 import 'documenti.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
+import 'luogo.dart';
 import 'salta.dart';
 import 'tappa.dart';
 
@@ -231,6 +236,7 @@ class _SchermataDettaglioTappaState extends State<SchermataDettaglioTappa> {
           if (segnabili) ..._gesti(d.viaggio, tappa, stato),
           EtichettaSezione('Dove'),
           _Dove(
+            viaggioId: d.viaggio.id,
             tappa: tappa,
             onPortami: () => portamiAllaTappa(
               context,
@@ -356,23 +362,89 @@ class _SchermataDettaglioTappaState extends State<SchermataDettaglioTappa> {
       };
 }
 
-/// Dove sta (tela, 156 e 158): il posto, con «Portami lì» e «Apri in
+/// Dove sta (tela, 156, 158 e 161): il posto, con «Portami lì» e «Apri in
 /// Mappe»; senza un posto sulla mappa, «Cerca il posto» apre la modifica.
-class _Dove extends StatelessWidget {
+/// Per un posto di Google l'indirizzo si chiede a Google, con la rete: non si
+/// tiene (ADR-014). Qui non c'è una mappa, e può stare.
+class _Dove extends StatefulWidget {
   const _Dove({
+    required this.viaggioId,
     required this.tappa,
     required this.onPortami,
     required this.onCerca,
   });
 
+  final String viaggioId;
   final Tappa tappa;
   final VoidCallback onPortami;
   final VoidCallback onCerca;
 
   @override
+  State<_Dove> createState() => _DoveState();
+}
+
+class _DoveState extends State<_Dove> {
+  /// L'indirizzo di Google del posto, per [_di].
+  String? _indirizzo;
+  String? _di;
+
+  late Servizi _servizi;
+  late ConsumoMappe _prima;
+  bool _avviato = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_avviato) return;
+    _avviato = true;
+    _servizi = Servizi.of(context);
+    _prima = _servizi.mappe.consumo;
+    unawaited(_chiedi());
+  }
+
+  @override
+  void didUpdateWidget(_Dove prima) {
+    super.didUpdateWidget(prima);
+    if (prima.tappa.placeId != widget.tappa.placeId) unawaited(_chiedi());
+  }
+
+  @override
+  void dispose() {
+    unawaited(
+      registraConsumo(
+        _servizi.misurazione,
+        _servizi.mappe,
+        viaggioId: widget.viaggioId,
+        prima: _prima,
+      ),
+    );
+    super.dispose();
+  }
+
+  Future<void> _chiedi() async {
+    final id = widget.tappa.placeId;
+    if (id == null || id == _di) return;
+    if (!_servizi.rete.disponibile || !_servizi.mappe.disponibili) return;
+    _di = id;
+    try {
+      final trovato = await _servizi.mappe.posto(
+        id,
+        viaggioId: widget.viaggioId,
+      );
+      if (mounted && widget.tappa.placeId == id) {
+        setState(() => _indirizzo = trovato.indirizzo);
+      }
+    } on ErroreTrolley {
+      // Senza l'indirizzo resta «Sulla mappa»: si può andare lo stesso.
+      if (mounted) _di = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final nome = tappa.luogoNome?.trim();
-    final conNome = nome != null && nome.isNotEmpty;
+    final tappa = widget.tappa;
+    final nome = doveDellaTappa(tappa.luogoNome, tappa.placeId);
+    final conNome = nome != null && tappa.placeId == null;
     if (tappa.posto == null) {
       return Avviso(
         icona: icona(
@@ -386,11 +458,17 @@ class _Dove extends StatelessWidget {
                   'mostra e ti ci porta.'
             : 'Cercalo da «Modifica»: poi la mappa la mostra e ti ci porta.',
         azioni: [
-          PulsantePiccolo(etichetta: 'Cerca il posto', onPressed: onCerca),
+          PulsantePiccolo(
+            etichetta: 'Cerca il posto',
+            onPressed: widget.onCerca,
+          ),
         ],
       );
     }
-    final mappe = Servizi.of(context).mappeDelTelefono;
+    final indirizzo = tappa.placeId != null && _di == tappa.placeId
+        ? _indirizzo
+        : null;
+    final mappe = _servizi.mappeDelTelefono;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
@@ -413,19 +491,20 @@ class _Dove extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  conNome ? nome : 'Sulla mappa',
+                  indirizzo ?? nome ?? postoSullaMappa,
                   style: Testi.evidenza.copyWith(color: Colori.inchiostro),
                 ),
               ),
             ],
           ),
+          if (indirizzo != null) const AttribuzioneGoogle(),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: PulsanteGrande(
                   etichetta: 'Portami lì',
-                  onPressed: onPortami,
+                  onPressed: widget.onPortami,
                 ),
               ),
               const SizedBox(width: 10),

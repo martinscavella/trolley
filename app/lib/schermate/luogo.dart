@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/movimento.dart';
@@ -16,26 +17,60 @@ import '../servizi.dart';
 import 'con_la_rete.dart';
 import 'gesti_mappa.dart';
 
-/// Il posto scelto per una tappa: quello che si scrive come «Dove», e dove
-/// sta se lo si è trovato.
-class SceltaLuogo {
-  const SceltaLuogo({required this.testo, this.posto, this.nome});
-
-  /// Cosa va in `luogo_nome`.
-  final String testo;
-
-  /// `null` se si è usato il testo com'è: la tappa resta senza posto, e lo si
-  /// cerca dopo (ADR-005).
-  final Coordinate? posto;
-
-  /// Il nome del posto trovato: diventa il titolo di una tappa che non ne ha.
-  final String? nome;
+/// Come dire dove sta una tappa senza rete: quello che la persona ha
+/// scritto; per un posto di Google, che è sulla mappa. Il nome e
+/// l'indirizzo di Google non si tengono, e si chiedono con la rete
+/// (ADR-014).
+String? doveDellaTappa(String? luogoNome, String? placeId) {
+  final scritto = luogoNome?.trim();
+  if (scritto != null && scritto.isNotEmpty) return scritto;
+  return placeId == null ? null : postoSullaMappa;
 }
 
-/// «Dove?» (tela, 56): il posto di una tappa, cercato vicino alla meta del
-/// viaggio o alle sue tappe. La ricerca è del fornitore di mappe (ADR-005,
-/// ADR-006) e ha bisogno della rete; senza, il posto si scrive com'è e si
-/// cerca quando torna. Una tappa non si rifiuta mai perché manca un posto.
+/// Un posto di Google, senza il suo nome.
+const postoSullaMappa = 'Sulla mappa';
+
+/// Il posto scelto per una tappa: scritto a mano, o trovato con Google.
+class SceltaLuogo {
+  const SceltaLuogo({
+    required this.testo,
+    this.posto,
+    this.google,
+    this.etichetta,
+  });
+
+  /// Un posto scritto a mano: il testo com'è.
+  const SceltaLuogo.aMano(this.testo)
+    : posto = null,
+      google = null,
+      etichetta = null;
+
+  /// Cosa va in `luogo_nome`: quello che la persona ha scritto. Per un posto
+  /// di Google è vuoto: il nome e l'indirizzo di Google non si tengono
+  /// (ADR-014).
+  final String testo;
+
+  /// Dove sta. `null` se si è usato il testo com'è: la tappa resta senza
+  /// posto, e lo si cerca dopo (ADR-005).
+  final Coordinate? posto;
+
+  /// Il `place_id` di Google: si tiene per sempre, le coordinate 30 giorni.
+  final String? google;
+
+  /// Il nome e l'indirizzo di Google, da mostrare finché il foglio della
+  /// tappa è aperto. Non si salva.
+  final String? etichetta;
+
+  /// Se è un posto di Google: allora va salvato con la data delle coordinate.
+  bool get daGoogle => google != null && posto != null;
+}
+
+/// «Dove?» (tela, 56 e 165): il posto di una tappa, cercato con Google vicino
+/// alla meta del viaggio o alle sue tappe (ADR-014). È un elenco, senza
+/// mappa: il nome e l'indirizzo di Google non stanno su una mappa, e non si
+/// tengono. La ricerca ha bisogno della rete; senza, il posto si scrive com'è
+/// e si cerca quando torna. Una tappa non si rifiuta mai perché manca un
+/// posto.
 ///
 /// Chiudendo restituisce una [SceltaLuogo], o `null` se la persona ci ripensa.
 class FoglioLuogo extends StatefulWidget {
@@ -43,7 +78,6 @@ class FoglioLuogo extends StatefulWidget {
     super.key,
     required this.viaggioId,
     this.iniziale,
-    this.titolo,
     this.vicinoA,
     this.dalleTappe = false,
     this.cercaSubito = false,
@@ -53,10 +87,6 @@ class FoglioLuogo extends StatefulWidget {
 
   /// Quello che c'era già scritto.
   final String? iniziale;
-
-  /// Il titolo della tappa: se il posto ha lo stesso nome, come «Dove» basta
-  /// l'indirizzo.
-  final String? titolo;
 
   /// Dove cercare prima.
   final Coordinate? vicinoA;
@@ -85,6 +115,13 @@ class _FoglioLuogoState extends State<FoglioLuogo> {
   List<Luogo>? _trovati;
   String? _errore;
   bool _cerca = false;
+
+  /// Il posto scelto, mentre si chiede a Google dove sta.
+  String? _scelto;
+
+  /// Una sessione di Google per foglio: i suggerimenti e il posto scelto
+  /// sono una ricerca sola. Dopo la scelta se ne comincia un'altra.
+  String _sessione = const Uuid().v4();
 
   /// Le risposte arrivano in disordine: vale solo l'ultima chiesta.
   int _ultima = 0;
@@ -146,6 +183,7 @@ class _FoglioLuogoState extends State<FoglioLuogo> {
         cercato,
         viaggioId: widget.viaggioId,
         vicinoA: widget.vicinoA,
+        sessione: _sessione,
       );
       if (!mounted || questa != _ultima) return;
       setState(() {
@@ -160,24 +198,41 @@ class _FoglioLuogoState extends State<FoglioLuogo> {
     }
   }
 
-  void _scegli(Luogo l) {
-    final nome = l.tipo == TipoLuogo.posto ? l.nome : null;
-    // Una tappa ancora senza titolo prende il nome del posto: allora come
-    // «Dove» basta l'indirizzo.
-    final titolo = (widget.titolo?.trim().isEmpty ?? true)
-        ? nome
-        : widget.titolo;
-    Navigator.of(context).pop(
-      SceltaLuogo(
-        testo: l.dove(titolo: titolo),
-        posto: l.posto,
-        nome: nome,
-      ),
-    );
+  /// Scelto un posto, si chiede a Google dove sta: è la fine della sessione,
+  /// e la sola chiamata che si paga.
+  Future<void> _scegli(Luogo l) async {
+    if (_scelto != null) return;
+    setState(() {
+      _scelto = l.id;
+      _errore = null;
+    });
+    try {
+      final trovato = await _servizi.mappe.posto(
+        l.id,
+        viaggioId: widget.viaggioId,
+        sessione: _sessione,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(
+        SceltaLuogo(
+          testo: '',
+          posto: trovato.posto,
+          google: trovato.id,
+          etichetta: [l.nome, ?l.indirizzo].join(', '),
+        ),
+      );
+    } on ErroreTrolley catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errore = e.messaggio;
+        _scelto = null;
+        _sessione = const Uuid().v4();
+      });
+    }
   }
 
   void _comE() =>
-      Navigator.of(context).pop(SceltaLuogo(testo: _testo.text.trim()));
+      Navigator.of(context).pop(SceltaLuogo.aMano(_testo.text.trim()));
 
   @override
   Widget build(BuildContext context) => ConLaRete(
@@ -198,16 +253,6 @@ class _FoglioLuogoState extends State<FoglioLuogo> {
       final trovati = rete && mappe ? _trovati : null;
       return Foglio(
         titolo: 'Dove?',
-        inBasso: mappe
-            ? Text(
-                _servizi.mappe.attribuzione,
-                textAlign: TextAlign.center,
-                style: Testi.didascalia.copyWith(
-                  color: Colori.grafite.withValues(alpha: 0.8),
-                  fontSize: 11,
-                ),
-              )
-            : null,
         children: [
           Campo(
             controller: _testo,
@@ -267,8 +312,10 @@ class _FoglioLuogoState extends State<FoglioLuogo> {
               primo: i == 0,
               titolo: l.nome,
               sotto: l.indirizzo,
-              onTap: () => _scegli(l),
+              inAttesa: _scelto == l.id,
+              onTap: () => unawaited(_scegli(l)),
             ).entra(context, ritardo: Ritmo.passo * i, da: 8),
+          if (trovati != null && trovati.isNotEmpty) const AttribuzioneGoogle(),
           if (scritto.isNotEmpty)
             _Riga(
               icona: Icons.edit_outlined,
@@ -294,12 +341,16 @@ class _Riga extends StatelessWidget {
     this.sotto,
     this.primo = false,
     this.ultimo = false,
+    this.inAttesa = false,
   });
 
   final IconData icona;
   final String titolo;
   final String? sotto;
   final VoidCallback onTap;
+
+  /// Si sta chiedendo dove sta: al posto dell'icona, l'attesa.
+  final bool inAttesa;
 
   /// Il più probabile: il cerchio è cobalto.
   final bool primo;
@@ -329,11 +380,13 @@ class _Riga extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: primo ? Colori.cobaltoChiaro : Colori.foschia,
               ),
-              child: Icon(
-                icona,
-                size: 20,
-                color: primo ? Colori.cobalto : Colori.ardesia,
-              ),
+              child: inAttesa
+                  ? const Center(child: IndicatoreAttivita())
+                  : Icon(
+                      icona,
+                      size: 20,
+                      color: primo ? Colori.cobalto : Colori.ardesia,
+                    ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -356,6 +409,31 @@ class _Riga extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    ),
+  );
+}
+
+/// «Google Maps» sotto quello che viene da Google: com'è, su una riga, mai
+/// tradotto, grigio e di peso normale (condizioni di Google Places, ADR-014).
+class AttribuzioneGoogle extends StatelessWidget {
+  const AttribuzioneGoogle({super.key});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 10, 4, 4),
+    child: Text(
+      Servizi.of(context).mappe.attribuzioneRicerca,
+      textAlign: TextAlign.right,
+      maxLines: 1,
+      softWrap: false,
+      style: const TextStyle(
+        fontFamily: 'Roboto',
+        fontFamilyFallback: ['sans-serif'],
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 0,
+        color: Color(0xFF5E5E5E),
       ),
     ),
   );

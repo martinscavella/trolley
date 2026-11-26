@@ -274,6 +274,7 @@ void main() {
         'viaggio_id': 'v',
         'riquadri': 24,
         'ricerche': 0,
+        'dettagli': 0,
         'percorsi': 0,
         'fermati': 0,
       });
@@ -625,21 +626,21 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('si cerca vicino alle tappe del viaggio, e il posto trovato '
-        'dà nome, indirizzo e coordinate alla tappa', (tester) async {
-      ambiente.mappe.luoghi.addAll(const [
-        Luogo(
-          nome: 'Café Majestic',
-          indirizzo: 'Rua de Santa Catarina 112, Porto',
-          posto: (lat: 41.1468, lon: -8.6067),
-        ),
-        Luogo(
-          nome: 'Majestic Hotel',
-          indirizzo: 'Avenida 5, Porto',
-          posto: (lat: 41.15, lon: -8.6),
-        ),
-      ]);
+    testWidgets('si cerca con Google vicino alle tappe del viaggio: la '
+        'tappa tiene il place_id e le coordinate con la data, non il nome né '
+        'l\'indirizzo (ADR-014)', (tester) async {
+      ambiente.mappe.aggiungi(
+        'Café Majestic',
+        indirizzo: 'Rua de Santa Catarina 112, Porto',
+        posto: (lat: 41.1468, lon: -8.6067),
+      );
+      ambiente.mappe.aggiungi(
+        'Majestic Hotel',
+        indirizzo: 'Avenida 5, Porto',
+        posto: (lat: 41.15, lon: -8.6),
+      );
       await nuovaTappa(tester);
+      await tester.enterText(find.byType(TextField).first, 'Colazione');
 
       // Il campo, non la sua etichetta: «Facoltativo» è il segnaposto.
       await tester.tap(find.text('Facoltativo'));
@@ -654,20 +655,95 @@ void main() {
       expect(ambiente.mappe.cercati, ['Majestic']);
       expect(ambiente.mappe.vicino.single, isNotNull);
       expect(find.text('Usa «Majestic» com\'è'), findsOneWidget);
+      expect(find.text('Google Maps'), findsOneWidget);
       await tester.tap(find.text('Café Majestic'));
       await tester.pumpAndSettle();
 
-      // Il titolo era vuoto: lo dà il posto; come «Dove» basta l'indirizzo.
-      expect(find.text('Rua de Santa Catarina 112, Porto'), findsOneWidget);
+      // Il posto scelto chiude la stessa sessione dei suggerimenti.
+      final sessione = ambiente.mappe.sessioni.single;
+      expect(sessione, isNotNull);
+      expect(ambiente.mappe.postiChiesti, [(id: 'p-1', sessione: sessione)]);
+
+      // Finché il foglio è aperto si vede il posto di Google.
+      expect(
+        find.text('Café Majestic, Rua de Santa Catarina 112, Porto'),
+        findsOneWidget,
+      );
       await tester.tap(pulsante('Aggiungi'));
       await aspetta(tester);
 
       final arrivata = ambiente.server.tappe.firstWhere(
-        (t) => t['titolo'] == 'Café Majestic',
+        (t) => t['titolo'] == 'Colazione',
       );
-      expect(arrivata['luogo_nome'], 'Rua de Santa Catarina 112, Porto');
+      expect(arrivata['luogo_nome'], isNull);
+      expect(arrivata['place_id'], 'p-1');
       expect((arrivata['lat'], arrivata['lon']), (41.1468, -8.6067));
-      expect((await evento(tester, 'consumo_mappe'))['ricerche'], 1);
+      expect(DateTime.parse(arrivata['coordinate_il'] as String).isUtc, isTrue);
+      final consumo = await evento(tester, 'consumo_mappe');
+      expect((consumo['ricerche'], consumo['dettagli']), (1, 1));
+    });
+
+    testWidgets('se Google non dice dove sta il posto, il foglio resta aperto '
+        'e lo dice', (tester) async {
+      ambiente.mappe.luoghi.add(
+        const Luogo(id: 'sparito', nome: 'Café Majestic'),
+      );
+      await nuovaTappa(tester);
+      await tester.tap(find.text('Facoltativo'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'Majestic');
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Café Majestic'));
+      await tester.pumpAndSettle();
+      expect(find.text('La mappa non risponde.'), findsOneWidget);
+      expect(find.text('Usa «Majestic» com\'è'), findsOneWidget);
+    });
+
+    testWidgets('il dettaglio di una tappa con il posto di Google chiede '
+        'l\'indirizzo a Google, con la rete, e lo dice suo', (tester) async {
+      ambiente.mappe.posti['ChIJ-torre'] = (lat: 41.1458, lon: -8.6146);
+      ambiente.mappe.indirizzoDelPosto = 'R. de São Filipe de Nery, Porto';
+      await viaggio(tester);
+      ambiente.server.tappe.firstWhere((t) => t['id'] == 'torre')
+        ..['luogo_nome'] = null
+        ..['place_id'] = 'ChIJ-torre'
+        ..['coordinate_il'] = DateTime.now().toUtc().toIso8601String()
+        ..['versione'] = 99;
+      await tester.runAsync(ambiente.archivio.aggiornaCopia);
+      await ambiente.monta(
+        tester,
+        const SchermataDettaglioTappa(viaggioId: 'v', tappaId: 'torre'),
+      );
+      await aspetta(tester);
+
+      expect(ambiente.mappe.postiChiesti, [(id: 'ChIJ-torre', sessione: null)]);
+      expect(find.text('R. de São Filipe de Nery, Porto'), findsOneWidget);
+      expect(find.text('Google Maps'), findsOneWidget);
+    });
+
+    testWidgets('senza rete il dettaglio dice solo che è sulla mappa', (
+      tester,
+    ) async {
+      await viaggio(tester);
+      ambiente.server.tappe.firstWhere((t) => t['id'] == 'torre')
+        ..['luogo_nome'] = null
+        ..['place_id'] = 'ChIJ-torre'
+        ..['coordinate_il'] = DateTime.now().toUtc().toIso8601String()
+        ..['versione'] = 99;
+      await tester.runAsync(ambiente.archivio.aggiornaCopia);
+      ambiente.rete.disponibile = false;
+      await ambiente.monta(
+        tester,
+        const SchermataDettaglioTappa(viaggioId: 'v', tappaId: 'torre'),
+      );
+      await aspetta(tester);
+
+      expect(ambiente.mappe.postiChiesti, isEmpty);
+      expect(find.text('Sulla mappa'), findsOneWidget);
+      expect(find.text('Google Maps'), findsNothing);
+      expect(find.text('Portami lì'), findsOneWidget);
     });
 
     testWidgets('al tetto di oggi la ricerca lo dice, e il posto si scrive '

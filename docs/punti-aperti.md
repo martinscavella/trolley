@@ -406,7 +406,7 @@ Otto richieste decise il 25 novembre 2026 ([decisioni](decisioni/prodotto.md#le-
 | Voce | Cosa ha chiesto l'utente | Quando |
 |---|---|---|
 | ~~**CR-04 · Rimandare una tappa saltata**~~ | Saltata una tappa, poterla rimettere più tardi o in un altro giorno ([04](prodotto/04-itinerario.md), 31–33). Costruita il 25 novembre 2026 (tela, 152–155): il foglio di «Salta» da «Adesso», dalla giornata, dalla mappa e dalla navigazione; «Rimandala» sul foglio di una tappa saltata; evento `tappa_rimandata` | ✅ 25 novembre 2026, da provare sul telefono |
-| **CR-06 · Google al posto di Geoapify** | Il tetto finito a Copenaghen; Google per mappa, ricerca, orari, tragitti e guida ([ADR-014](tecnico/adr/014-google-maps-platform.md)) | Dopo la CR-04 |
+| **CR-06 · Google al posto di Geoapify** | Il tetto finito a Copenaghen; Google per mappa, ricerca, orari, tragitti e guida ([ADR-014](tecnico/adr/014-google-maps-platform.md)). **Passo 1, la ricerca dei posti, costruito il 26 novembre 2026** (tela, 165): da provare sul telefono. Restano la mappa (passo 2), il dettaglio con le due schede (3), la guida (4) e il rinnovo delle coordinate prima dei 30 giorni | In corso |
 | **CR-07 · I tragitti e i mezzi** | Tempi fra le tappe, con mezzi pubblici, bici, monopattino, auto, taxi ([04](prodotto/04-itinerario.md), 34–39) | Dopo Google |
 | **CR-05 · Adesso sa quando partire** | Non mostrare come imminente una tappa fra quattro ore; notifiche, anche dalla posizione ([09](prodotto/09-durante-il-viaggio.md), 13–17) | Dopo i tragitti |
 | **CR-02 · La mappa di dove sei** | La mappa sulla zona in cui si è ([08](prodotto/08-mappa.md), 8) | |
