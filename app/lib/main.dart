@@ -11,6 +11,7 @@ import 'dati/archivio.dart';
 import 'dati/database.dart';
 import 'dati/documenti.dart';
 import 'dati/file_del_telefono.dart';
+import 'dati/guida_google.dart';
 import 'dati/mappe.dart';
 import 'dati/mappe_del_telefono.dart';
 import 'dati/notifiche.dart';
@@ -60,11 +61,12 @@ Future<void> main() async {
       rete: rete,
       documenti: documenti,
       acquisizione: const AcquisizioneDelTelefono(),
-      mappe: MappeGeoapify(
+      mappe: MappeGoogle(
         indirizzo: indirizzoMappe,
         chiavePubblica: supabaseChiave,
         accesso: () => supabase.auth.currentSession?.accessToken,
       ),
+      guida: GuidaGoogle(),
       posizione: const PosizioneDelTelefono(),
       mappeDelTelefono: const MappeDiSistema(),
       pagine: const PagineNelBrowser(),

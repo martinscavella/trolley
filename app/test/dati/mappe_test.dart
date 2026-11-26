@@ -1,21 +1,22 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:google_navigation_flutter/google_navigation_flutter.dart' as g;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:trolley/aspetto/segni_mappa.dart';
 import 'package:trolley/dati/errori.dart';
+import 'package:trolley/dati/guida.dart';
+import 'package:trolley/dati/guida_google.dart';
 import 'package:trolley/dati/mappa_google.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/mappe_del_telefono.dart';
 import 'package:trolley/dominio/mappa.dart';
-import 'package:trolley/dominio/navigazione.dart';
 
-/// Il fornitore di mappe dietro la sua interfaccia (fase 3.2, ADR-006):
-/// come si leggono le sue risposte, cosa gli si chiede, cosa si conta.
+/// Il fornitore di mappe dietro la sua interfaccia (fase 3.2, ADR-006,
+/// ADR-014): come si leggono le sue risposte, cosa gli si chiede, cosa si
+/// conta.
 void main() {
   /// Una risposta di Google `places:autocomplete`, con la maschera della
   /// funzione `mappe`.
@@ -76,71 +77,6 @@ void main() {
     'formattedAddress': 'R. das Carmelitas 144, 4050-161 Porto, Portogallo',
   };
 
-  /// Una risposta di `/v1/routing`, GeoJSON: un tratto, tre passi.
-  final strada = {
-    'type': 'FeatureCollection',
-    'features': [
-      {
-        'type': 'Feature',
-        'properties': {
-          'mode': 'walk',
-          'distance': 450,
-          'distance_units': 'meters',
-          'time': 360.4,
-          'legs': [
-            {
-              'distance': 450,
-              'time': 360.4,
-              'steps': [
-                {
-                  'from_index': 0,
-                  'to_index': 2,
-                  'distance': 330,
-                  'time': 264,
-                  'instruction': {
-                    'text': 'Cammina verso est su Rua das Carmelitas.',
-                    'type': 'StartAt',
-                  },
-                },
-                {
-                  'from_index': 2,
-                  'to_index': 3,
-                  'distance': 120,
-                  'time': 96.4,
-                  'instruction': {
-                    'text': 'Svolta a destra su Rua das Flores.',
-                    'type': 'Right',
-                  },
-                },
-                {
-                  'from_index': 3,
-                  'to_index': 3,
-                  'distance': 0,
-                  'time': 0,
-                  'instruction': {
-                    'text': 'Sei arrivato a destinazione.',
-                    'type': 'DestinationReached',
-                  },
-                },
-              ],
-            },
-          ],
-        },
-        'geometry': {
-          'type': 'MultiLineString',
-          'coordinates': [
-            [
-              [-8.6160, 41.1470],
-              [-8.6155, 41.1469],
-              [-8.6150, 41.1468],
-              [-8.6148, 41.1459],
-            ],
-          ],
-        },
-      },
-    ],
-  };
-
   group('le risposte di Google', () {
     test('i posti: il place_id, il nome, l\'indirizzo corto, che cosa '
         'sono', () {
@@ -176,72 +112,6 @@ void main() {
     });
   });
 
-  group('le risposte di Geoapify', () {
-    test('il percorso: la linea, i passi, la lunghezza e il tempo', () {
-      final p = percorsoDaGeoapify(strada)!;
-      expect(p.punti, hasLength(4));
-      expect(p.punti.first, (lat: 41.1470, lon: -8.6160));
-      expect(p.metri, 450);
-      expect(p.durata, const Duration(seconds: 360));
-      expect(
-        [for (final s in p.passi) s.manovra],
-        [Manovra.partenza, Manovra.aDestra, Manovra.arrivo],
-      );
-      expect(p.passi[1].istruzione, 'Svolta a destra su Rua das Flores.');
-      expect((p.passi[1].da, p.passi[1].a), (2, 3));
-    });
-
-    test('un percorso con due tratti: gli indici continuano', () {
-      final due = jsonDecode(jsonEncode(strada)) as Map<String, dynamic>;
-      final f = (due['features'] as List).first as Map<String, dynamic>;
-      final legs = (f['properties'] as Map)['legs'] as List;
-      legs.add(legs.first);
-      final linee = (f['geometry'] as Map)['coordinates'] as List;
-      linee.add(linee.first);
-      final p = percorsoDaGeoapify(due)!;
-      expect(p.punti, hasLength(8));
-      expect(p.passi, hasLength(6));
-      expect((p.passi[4].da, p.passi[4].a), (6, 7));
-    });
-
-    test('senza percorso, niente', () {
-      expect(percorsoDaGeoapify({'features': []}), isNull);
-      expect(percorsoDaGeoapify({}), isNull);
-    });
-
-    test('le manovre che non si conoscono vanno dritte', () {
-      expect(manovraDaGeoapify('SharpLeft'), Manovra.strettaASinistra);
-      expect(manovraDaGeoapify('TransitTransfer'), Manovra.mezzi);
-      expect(manovraDaGeoapify('Qualcosa'), Manovra.dritto);
-      expect(manovraDaGeoapify(null), Manovra.dritto);
-    });
-  });
-
-  group('le risposte vere, registrate il 5 ottobre 2026', () {
-    Map<String, dynamic> leggi(String nome) =>
-        jsonDecode(File('test/dati/risposte/$nome.json').readAsStringSync())
-            as Map<String, dynamic>;
-
-    test(
-      'a piedi dalla libreria alla torre: la linea, le svolte, l\'arrivo',
-      () {
-        final p = percorsoDaGeoapify(leggi('geoapify_percorso'))!;
-        expect(p.metri, 230);
-        expect(p.durata.inSeconds, 225);
-        expect(p.punti, hasLength(25));
-        expect(p.passi.first.manovra, Manovra.partenza);
-        expect(p.passi[1].manovra, Manovra.aSinistra);
-        expect(p.passi.last.manovra, Manovra.arrivo);
-        expect(p.passi.last.istruzione, 'La tua destinazione è sulla destra.');
-        expect(p.passi.last.a, 24);
-        // Alla partenza la prossima svolta è la prima a sinistra.
-        final a = p.avanzamento(p.punti.first);
-        expect(a.prossima!.manovra, Manovra.aSinistra);
-        expect(a.metriRimasti, closeTo(230, 25));
-      },
-    );
-  });
-
   group('le chiamate, dal nostro server', () {
     late List<http.Request> chieste;
     late http.Response Function(http.Request) risponde;
@@ -249,7 +119,7 @@ void main() {
 
     const indirizzo = 'https://progetto.supabase.co/functions/v1/mappe';
 
-    MappeGeoapify mappe() => MappeGeoapify(
+    MappeGoogle mappe() => MappeGoogle(
       indirizzo: indirizzo,
       chiavePubblica: 'sb_publishable_prova',
       accesso: () => gettone,
@@ -269,7 +139,7 @@ void main() {
       gettone = 'gettone-di-giulia';
       risponde = (r) => http.Response(
         jsonEncode(switch (r.url.path.split('/').last) {
-          'percorso' => strada,
+          'guida' => {'ok': true},
           'posto' => dettaglio,
           _ => ricerca,
         }),
@@ -348,24 +218,15 @@ void main() {
       expect(m.consumo.nullo, isTrue);
     });
 
-    test('il percorso a piedi, dai due capi', () async {
+    test('prima di guidare il server conta la destinazione: solo il '
+        'viaggio, nessun posto', () async {
       final m = mappe();
-      final p = await m.percorsoAPiedi(
-        (lat: 41.147, lon: -8.616),
-        (lat: 41.1459, lon: -8.6148),
-        viaggioId: 'porto',
-      );
-      expect(p.metri, 450);
+      await m.guidaConsentita(viaggioId: 'porto');
       final r = chieste.single;
-      expect(r.url.toString(), '$indirizzo/percorso');
-      expect(corpo(r)['viaggio'], 'porto');
-      final q = parametri(r);
-      expect(q['waypoints'], '41.147,-8.616|41.1459,-8.6148');
-      expect(q['mode'], 'walk');
-      // Senza i dettagli le indicazioni non hanno il tipo di svolta.
-      expect(q['details'], 'instruction_details');
-      expect(q['lang'], 'it');
-      expect(m.consumo.percorsi, 1);
+      expect(r.url.toString(), '$indirizzo/guida');
+      expect(r.headers['authorization'], 'Bearer gettone-di-giulia');
+      expect(corpo(r), {'viaggio': 'porto', 'parametri': <String, Object>{}});
+      expect(m.consumo.destinazioni, 1);
     });
 
     test('al tetto di oggi lo dice, e conta la chiamata fra le fermate, non '
@@ -381,22 +242,16 @@ void main() {
         ),
       );
       await expectLater(
-        m.percorsoAPiedi(
-          (lat: 41, lon: -8),
-          (lat: 41.1, lon: -8.1),
-          viaggioId: 'porto',
-        ),
+        m.guidaConsentita(viaggioId: 'porto'),
         throwsA(
-          isA<ErroreTrolley>().having(
-            (e) => e.codice,
-            'codice',
-            CodiciServer.tettoMappe,
-          ),
+          isA<ErroreTrolley>()
+              .having((e) => e.codice, 'codice', CodiciServer.tettoMappe)
+              .having((e) => e.messaggio, 'messaggio', contains('guide')),
         ),
       );
       expect(m.consumo.fermati, 2);
       expect(m.consumo.ricerche, 0);
-      expect(m.consumo.percorsi, 0);
+      expect(m.consumo.destinazioni, 0);
     });
 
     test(
@@ -417,18 +272,14 @@ void main() {
     );
 
     test('senza rete lo dice, e propone le Mappe del telefono', () async {
-      final m = MappeGeoapify(
+      final m = MappeGoogle(
         indirizzo: indirizzo,
         chiavePubblica: 'k',
         accesso: () => 'g',
         client: MockClient((_) => throw const SocketException('nessuna rete')),
       );
       await expectLater(
-        m.percorsoAPiedi(
-          (lat: 41, lon: -8),
-          (lat: 41.1, lon: -8.1),
-          viaggioId: 'porto',
-        ),
+        m.guidaConsentita(viaggioId: 'porto'),
         throwsA(
           isA<ErroreTrolley>()
               .having((e) => e.serveLaRete, 'serveLaRete', isTrue)
@@ -443,63 +294,9 @@ void main() {
       expect(chieste.single.headers.containsKey('authorization'), isFalse);
     });
 
-    testWidgets('i riquadri dal server: un indirizzo senza chiave, che non '
-        'dice il viaggio, e il viaggio nell\'intestazione', (tester) async {
-      final m = mappe();
-      late Widget porto;
-      late Widget berlino;
-      await tester.pumpWidget(
-        Builder(
-          builder: (context) {
-            porto = m.riquadri(context, viaggioId: 'porto');
-            berlino = m.riquadri(context, viaggioId: 'berlino');
-            return const SizedBox();
-          },
-        ),
-      );
-      final p = porto as TileLayer;
-      final b = berlino as TileLayer;
-      expect(
-        p.urlTemplate,
-        '$indirizzo/riquadro/{z}/{x}/{y}{r}.png?stile=klokantech-basic',
-      );
-      expect(b.urlTemplate, p.urlTemplate);
-      expect(p.tileProvider.headers['x-viaggio'], 'porto');
-      expect(b.tileProvider.headers['x-viaggio'], 'berlino');
-      // Lo stesso viaggio riusa il suo fornitore.
-      late Widget ancora;
-      await tester.pumpWidget(
-        Builder(
-          builder: (context) {
-            ancora = m.riquadri(context, viaggioId: 'porto');
-            return const SizedBox();
-          },
-        ),
-      );
-      expect((ancora as TileLayer).tileProvider, same(p.tileProvider));
-    });
-
-    test('ogni riquadro porta l\'accesso, e si conta: pagato, o fermato '
-        'dal tetto', () async {
-      var stato = 200;
-      risponde = (_) => http.Response('png', stato);
-      final m = mappe();
-      final client = m.clientDeiRiquadri;
-      await client.get(Uri.parse('$indirizzo/riquadro/15/1/2@2x.png'));
-      expect(
-        chieste.single.headers['authorization'],
-        'Bearer gettone-di-giulia',
-      );
-      expect(chieste.single.headers['apikey'], 'sb_publishable_prova');
-      stato = 429;
-      await client.get(Uri.parse('$indirizzo/riquadro/15/1/3@2x.png'));
-      expect(m.consumo.riquadri, 1);
-      expect(m.consumo.fermati, 1);
-    });
-
     test('senza indirizzo il fornitore non c\'è', () {
       expect(
-        MappeGeoapify(
+        MappeGoogle(
           indirizzo: '',
           chiavePubblica: 'k',
           accesso: () => null,
@@ -507,7 +304,69 @@ void main() {
         isFalse,
       );
       expect(const MappeAssenti().disponibili, isFalse);
+      expect(const GuidaAssente().disponibile, isFalse);
     });
+  });
+
+  test('la direzione in cui si cammina, per girare la mappa', () {
+    const a = g.LatLng(latitude: 45.46, longitude: 9.19);
+    expect(
+      direzioneFra(a, const g.LatLng(latitude: 45.47, longitude: 9.19)),
+      closeTo(0, 0.5),
+    );
+    expect(
+      direzioneFra(a, const g.LatLng(latitude: 45.46, longitude: 9.20)),
+      closeTo(90, 0.5),
+    );
+    expect(
+      direzioneFra(a, const g.LatLng(latitude: 45.45, longitude: 9.19)),
+      closeTo(180, 0.5),
+    );
+    expect(
+      metriFra(a, const g.LatLng(latitude: 45.461, longitude: 9.19)),
+      closeTo(111, 1),
+    );
+  });
+
+  test('le svolte di Google diventano le nostre icone', () {
+    expect(svoltaDaGoogle(g.Maneuver.turnRight), Svolta.aDestra);
+    expect(svoltaDaGoogle(g.Maneuver.turnSharpLeft), Svolta.strettaASinistra);
+    expect(
+      svoltaDaGoogle(g.Maneuver.turnSlightRight),
+      Svolta.leggermenteADestra,
+    );
+    expect(svoltaDaGoogle(g.Maneuver.turnKeepLeft), Svolta.tieniLaSinistra);
+    expect(svoltaDaGoogle(g.Maneuver.forkRight), Svolta.tieniLaDestra);
+    expect(svoltaDaGoogle(g.Maneuver.roundaboutLeftClockwise), Svolta.rotonda);
+    expect(svoltaDaGoogle(g.Maneuver.turnUTurnClockwise), Svolta.inversione);
+    expect(svoltaDaGoogle(g.Maneuver.destinationLeft), Svolta.arrivo);
+    expect(svoltaDaGoogle(g.Maneuver.straight), Svolta.dritto);
+    expect(svoltaDaGoogle(g.Maneuver.depart), Svolta.dritto);
+  });
+
+  test('le risposte della guida di Google: che cosa dire, e quando '
+      'restano solo le Mappe', () {
+    expect(esitoDaGoogle(g.NavigationRouteStatus.statusOk), EsitoGuida.ok);
+    expect(
+      esitoDaGoogle(g.NavigationRouteStatus.routeNotFound),
+      EsitoGuida.nonTrovata,
+    );
+    expect(
+      esitoDaGoogle(g.NavigationRouteStatus.quotaExceeded),
+      EsitoGuida.tetto,
+    );
+    expect(
+      esitoDaGoogle(g.NavigationRouteStatus.networkError),
+      EsitoGuida.senzaRete,
+    );
+    expect(
+      esitoDaGoogle(g.NavigationRouteStatus.locationUnavailable),
+      EsitoGuida.senzaPosizione,
+    );
+    expect(
+      esitoDaGoogle(g.NavigationRouteStatus.apiKeyNotAuthorized),
+      EsitoGuida.nonDisponibile,
+    );
   });
 
   testWidgets('il segno di una tappa diventa un\'immagine per la mappa di '
@@ -533,15 +392,14 @@ void main() {
   });
 
   test('il consumo di una schermata è la differenza', () {
-    const prima = ConsumoMappe(riquadri: 10, ricerche: 1);
-    const dopo = ConsumoMappe(riquadri: 34, ricerche: 1, percorsi: 2);
+    const prima = ConsumoMappe(ricerche: 1, schede: 2);
+    const dopo = ConsumoMappe(ricerche: 1, schede: 3, destinazioni: 2);
     final fatto = dopo - prima;
     expect(fatto.proprieta, {
-      'riquadri': 24,
       'ricerche': 0,
       'dettagli': 0,
-      'schede': 0,
-      'percorsi': 2,
+      'schede': 1,
+      'destinazioni': 2,
       'fermati': 0,
     });
     expect((prima - prima).nullo, isTrue);
@@ -580,6 +438,17 @@ void main() {
       expect(u.host, 'www.google.com');
       expect(u.queryParameters['destination'], '41.14686,-8.61479');
       expect(u.queryParameters['travelmode'], 'walking');
+      expect(u.queryParameters.containsKey('destination_place_id'), isFalse);
+    });
+
+    test('dalla guida, Google Maps dritto al posto di Google', () {
+      final u = indirizzoPerLeMappe(
+        nome: 'Livraria Lello',
+        posto: (lat: 41.14686, lon: -8.61479),
+        placeId: 'ChIJ-lello',
+        apple: false,
+      )!;
+      expect(u.queryParameters['destination_place_id'], 'ChIJ-lello');
     });
   });
 }

@@ -9,6 +9,62 @@ typedef _V = ({String id, StatoViaggio stato, DateTime? inizio});
 /// La mappa (fase 3.2, 08-mappa.md): i numeri della giornata, la prossima,
 /// il tratto già percorso, quale giorno e quale viaggio si aprono.
 void main() {
+  group('l\'inquadratura, con lo spazio del logo che sposta la camera', () {
+    const zero = (sopra: 0.0, sotto: 0.0, sinistra: 0.0, destra: 0.0);
+    const porto = (lat: 41.1469, lon: -8.6148);
+
+    test('un punto, con la camera al centro dello spazio libero: ci si va', () {
+      final d = inquadratura(
+        [porto],
+        larghezza: 400,
+        altezza: 800,
+        libero: zero,
+        camera: zero,
+        zoomMassimo: 15,
+      );
+      expect(d.zoom, 15);
+      expect(d.centro.lat, closeTo(porto.lat, 1e-9));
+      expect(d.centro.lon, closeTo(porto.lon, 1e-9));
+    });
+
+    test('le schede coprono il fondo: la camera, che sta al centro dello '
+        'schermo, va più a sud, perché il punto salga nello spazio libero', () {
+      final d = inquadratura(
+        [porto],
+        larghezza: 400,
+        altezza: 800,
+        libero: (sopra: 100.0, sotto: 300.0, sinistra: 0.0, destra: 0.0),
+        camera: zero,
+        zoomMassimo: 15,
+      );
+      expect(d.centro.lat, lessThan(porto.lat));
+      expect(d.centro.lon, closeTo(porto.lon, 1e-9));
+    });
+
+    test('la striscia stretta del logo non stringe l\'inquadratura', () {
+      const lello = (lat: 41.1469, lon: -8.6148);
+      const ribeira = (lat: 41.1406, lon: -8.6131);
+      final largo = inquadratura(
+        [lello, ribeira],
+        larghezza: 400,
+        altezza: 800,
+        libero: zero,
+        camera: zero,
+      );
+      final conIlLogo = inquadratura(
+        [lello, ribeira],
+        larghezza: 400,
+        altezza: 800,
+        libero: zero,
+        camera: (sopra: 0.0, sotto: 0.0, sinistra: 142.0, destra: 142.0),
+      );
+      expect(conIlLogo.zoom, largo.zoom);
+      expect(conIlLogo.centro.lat, closeTo(largo.centro.lat, 1e-9));
+      expect(conIlLogo.zoom, lessThanOrEqualTo(16));
+      expect(conIlLogo.zoom, greaterThan(13));
+    });
+  });
+
   const lello = (lat: 41.14686, lon: -8.61479);
   const torre = (lat: 41.14573, lon: -8.61391);
   const ribeira = (lat: 41.14063, lon: -8.61307);

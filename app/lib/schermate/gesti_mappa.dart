@@ -1,5 +1,6 @@
 /// I gesti della mappa che più schermate condividono: dove centrarla, come
-/// portare la persona a una tappa, come contare quello che costa (ADR-006).
+/// portare la persona a una tappa, come contare quello che costa (ADR-006,
+/// ADR-014).
 library;
 
 import 'dart:async';
@@ -68,7 +69,7 @@ Future<void> registraConsumo(
   unawaited(misurazione.invia());
 }
 
-/// «Portami»: la navigazione dentro Trolley se si può (rete, fornitore,
+/// «Portami»: la guida dentro Trolley se si può (rete, fornitore, guida,
 /// posizione), altrimenti le Mappe del telefono — chi sta viaggiando non
 /// resta mai senza indicazioni (ADR-006). Il permesso di posizione si chiede
 /// qui, la prima volta, dopo aver detto a cosa serve (tela, 58); dopo un no
@@ -94,7 +95,8 @@ Future<void> portamiAllaTappa(
 
   if (posto == null ||
       !servizi.rete.disponibile ||
-      !servizi.mappe.disponibili) {
+      !servizi.mappe.disponibili ||
+      !servizi.guida.disponibile) {
     return alleMappe();
   }
   final permesso = await chiediLaPosizione(context, viaggio: viaggio);

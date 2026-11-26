@@ -1,41 +1,36 @@
-/// Mappe, percorsi e ricerca dei luoghi (04-integrazioni.md, ADR-006,
-/// ADR-014) dietro questa interfaccia. La ricerca dei posti è di Google
-/// Places (CR-06, passo 1); i riquadri e i percorsi sono ancora di Geoapify,
-/// con i dati di OpenStreetMap, finché la mappa e la guida non passano a
-/// Google. Nessuna schermata parla con loro: sostituirli è questo file.
+/// La mappa e la ricerca dei luoghi (04-integrazioni.md, ADR-006, ADR-014)
+/// dietro questa interfaccia: tutto di Google (CR-06). La mappa è il Maps
+/// SDK sul telefono, che non si paga a visualizzazione; la ricerca e le
+/// schede dei posti sono Google Places. La guida è in `guida.dart`. Nessuna
+/// schermata parla con Google: sostituirlo è questo file, `guida.dart` e
+/// la funzione `mappe`.
 ///
-/// Al fornitore non si parla dal telefono: tutto passa dalla funzione `mappe`
-/// del nostro server (supabase/functions/mappe), che tiene la chiave e fa
+/// A Places non si parla dal telefono: passa dalla funzione `mappe` del
+/// nostro server (supabase/functions/mappe), che tiene la chiave e fa
 /// rispettare il tetto per persona, per viaggio e per giorno (U.2). Per
-/// questo ogni chiamata dice di quale viaggio è.
+/// questo ogni chiamata dice di quale viaggio è. Dallo stesso tetto passano
+/// le destinazioni della guida, prima di partire ([guidaConsentita]).
 ///
-/// Cosa vede il fornitore: le zone di mappa che si guardano, il testo che si
-/// cerca, e i due capi di un percorso — la posizione della persona solo
-/// quando chiede di essere portata a una tappa (08, regola 7). Non sa chi è
-/// né per quale viaggio, e non vede il telefono: vede il server.
+/// Cosa vede Places: il testo che si cerca, e il posto scelto. Non sa chi
+/// è né per quale viaggio, e non vede il telefono: vede il server.
 ///
-/// Ogni chiamata si paga in crediti: i riquadri, le ricerche e i percorsi si
-/// contano qui ([consumo]), con quelle che il tetto ha fermato, e le schermate
-/// li registrano (07, `consumo_mappe`).
+/// Ogni chiamata si paga: le ricerche, i posti, le schede e le destinazioni
+/// si contano qui ([consumo]), con quelle che il tetto ha fermato, e le
+/// schermate li registrano (07, `consumo_mappe`).
 library;
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/retry.dart';
 
 import '../dominio/apertura.dart';
 import '../dominio/mappa.dart';
-import '../dominio/navigazione.dart';
 import 'errori.dart';
 import 'mappa_google.dart';
-
-/// Lo stile dei riquadri, lo stesso della funzione `mappe` (ADR-006).
-const stileRiquadri = 'klokantech-basic';
 
 /// Un posto suggerito cercando: dove mettere una tappa. Di Google: il nome e
 /// l'indirizzo si mostrano nell'elenco e non si tengono (ADR-014); dove sta
@@ -140,6 +135,18 @@ class LineaMappa {
   final List<Coordinate> punti;
   final Color colore;
   final double spessore;
+
+  // Uguali se disegnano la stessa linea: la mappa non la ridisegna.
+  @override
+  bool operator ==(Object other) =>
+      other is LineaMappa &&
+      other.id == id &&
+      other.colore == colore &&
+      other.spessore == spessore &&
+      listEquals(other.punti, punti);
+
+  @override
+  int get hashCode => Object.hash(id, colore, spessore, Object.hashAll(punti));
 }
 
 /// Comanda una mappa già pronta: inquadrare dei punti, andare in un posto.
@@ -164,20 +171,17 @@ class PostoTrovato {
   final String? indirizzo;
 }
 
-/// Quanto si è chiesto al fornitore: i riquadri scaricati davvero (quelli
-/// già in memoria non si pagano), le ricerche, i percorsi. E quante chiamate
-/// il tetto ha fermato prima che arrivassero al fornitore.
+/// Quanto si è chiesto a Google: le ricerche, i posti, le schede, le
+/// destinazioni della guida. E quante chiamate il tetto ha fermato prima
+/// che arrivassero a Google.
 class ConsumoMappe {
   const ConsumoMappe({
-    this.riquadri = 0,
     this.ricerche = 0,
     this.dettagli = 0,
     this.schede = 0,
-    this.percorsi = 0,
+    this.destinazioni = 0,
     this.fermati = 0,
   });
-
-  final int riquadri;
 
   /// I suggerimenti chiesti scrivendo.
   final int ricerche;
@@ -187,33 +191,33 @@ class ConsumoMappe {
 
   /// Le schede dei posti, con orari e descrizione: le chiamate più care.
   final int schede;
-  final int percorsi;
+
+  /// Le guide partite verso una tappa: ognuna è una destinazione del
+  /// Navigation SDK, che si paga.
+  final int destinazioni;
   final int fermati;
 
   bool get nullo =>
-      riquadri == 0 &&
       ricerche == 0 &&
       dettagli == 0 &&
       schede == 0 &&
-      percorsi == 0 &&
+      destinazioni == 0 &&
       fermati == 0;
 
   ConsumoMappe operator -(ConsumoMappe prima) => ConsumoMappe(
-    riquadri: riquadri - prima.riquadri,
     ricerche: ricerche - prima.ricerche,
     dettagli: dettagli - prima.dettagli,
     schede: schede - prima.schede,
-    percorsi: percorsi - prima.percorsi,
+    destinazioni: destinazioni - prima.destinazioni,
     fermati: fermati - prima.fermati,
   );
 
   /// Le proprietà dell'evento `consumo_mappe` (07): solo quante.
   Map<String, Object?> get proprieta => {
-    'riquadri': riquadri,
     'ricerche': ricerche,
     'dettagli': dettagli,
     'schede': schede,
-    'percorsi': percorsi,
+    'destinazioni': destinazioni,
     'fermati': fermati,
   };
 }
@@ -228,15 +232,13 @@ abstract interface class Mappe {
   /// Quanto si è chiesto da quando l'app è aperta.
   ConsumoMappe get consumo;
 
-  /// I riquadri della mappa, da mettere sotto le tappe: per la navigazione,
-  /// finché non passa a Google (CR-06, passo 4).
-  Widget riquadri(BuildContext context, {required String viaggioId});
-
   /// La mappa del viaggio, con i suoi [segni] e le sue [linee] (CR-06,
   /// passo 2: la mappa di Google, sul telefono, che non si paga a
   /// riquadri). Comincia in [centro] a [zoom]; [margini] è lo spazio
   /// coperto da quello che le sta sopra, che la mappa lascia libero (anche
-  /// per il marchio di Google). Quando è pronta dà il suo [ControlloMappa].
+  /// per il marchio di Google). [zonaDelLogo], se c'è, è dove va il
+  /// marchio, nell'angolo in basso: i [margini] valgono allora solo per
+  /// inquadrare. Quando è pronta dà il suo [ControlloMappa].
   /// Non [interattiva]: non si sposta col dito (la mini mappa della tappa,
   /// dentro una pagina che scorre).
   Widget mappa(
@@ -247,13 +249,11 @@ abstract interface class Mappe {
     required Coordinate centro,
     required double zoom,
     EdgeInsets margini = EdgeInsets.zero,
+    EdgeInsets? zonaDelLogo,
     bool interattiva = true,
     required void Function(ControlloMappa controllo) onPronta,
     VoidCallback? onTocca,
   });
-
-  /// Chi ringraziare sotto la mappa: lo chiedono il fornitore e i dati.
-  String get attribuzione;
 
   /// Chi ringraziare sotto i posti trovati: «Google Maps», com'è, mai
   /// tradotto (condizioni di Google Places).
@@ -281,12 +281,10 @@ abstract interface class Mappe {
   /// La scheda del posto [id]: indirizzo, orari, descrizione (tela, 161).
   Future<SchedaPosto> scheda(String id, {required String viaggioId});
 
-  /// Il percorso a piedi da [da] ad [a], con le indicazioni in italiano.
-  Future<Percorso> percorsoAPiedi(
-    Coordinate da,
-    Coordinate a, {
-    required String viaggioId,
-  });
+  /// Se si può partire con la guida verso una tappa: il server conta la
+  /// destinazione sul tetto di oggi (U.2), perché ognuna si paga. Lo dice
+  /// con un errore: senza rete, o al tetto.
+  Future<void> guidaConsentita({required String viaggioId});
 }
 
 /// Il fornitore senza chiave: niente mappa, niente ricerca.
@@ -300,10 +298,6 @@ class MappeAssenti implements Mappe {
   ConsumoMappe get consumo => const ConsumoMappe();
 
   @override
-  Widget riquadri(BuildContext context, {required String viaggioId}) =>
-      const SizedBox.shrink();
-
-  @override
   Widget mappa(
     BuildContext context, {
     required String viaggioId,
@@ -312,13 +306,11 @@ class MappeAssenti implements Mappe {
     required Coordinate centro,
     required double zoom,
     EdgeInsets margini = EdgeInsets.zero,
+    EdgeInsets? zonaDelLogo,
     bool interattiva = true,
     required void Function(ControlloMappa controllo) onPronta,
     VoidCallback? onTocca,
   }) => const SizedBox.shrink();
-
-  @override
-  String get attribuzione => '';
 
   @override
   String get attribuzioneRicerca => '';
@@ -343,11 +335,8 @@ class MappeAssenti implements Mappe {
       Future.error(const ErroreTrolley(_nonDisponibili));
 
   @override
-  Future<Percorso> percorsoAPiedi(
-    Coordinate da,
-    Coordinate a, {
-    required String viaggioId,
-  }) => Future.error(const ErroreTrolley(_nonDisponibili));
+  Future<void> guidaConsentita({required String viaggioId}) =>
+      Future.error(const ErroreTrolley(_nonDisponibili));
 }
 
 const _nonDisponibili = 'La mappa non è disponibile in questa versione.';
@@ -365,21 +354,20 @@ const _tettoRicerche = ErroreTrolley(
   'mano, o riprova domani.',
   codice: CodiciServer.tettoMappe,
 );
-const _tettoPercorsi = ErroreTrolley(
-  'Per oggi, in questo viaggio, le strade calcolate sono finite.',
+const _tettoGuide = ErroreTrolley(
+  'Per oggi, in questo viaggio, le guide sono finite.',
   codice: CodiciServer.tettoMappe,
 );
 
-/// La funzione `mappe` del nostro server: riquadri e percorsi di Geoapify,
-/// posti di Google, dallo stesso posto. Le risposte sono quelle dei
-/// fornitori, e si leggono qui.
-class MappeGeoapify implements Mappe {
-  MappeGeoapify({
+/// La mappa di Google sul telefono, e la funzione `mappe` del nostro server
+/// per i posti di Google e per contare le guide. Le risposte di Google si
+/// leggono qui.
+class MappeGoogle implements Mappe {
+  MappeGoogle({
     required this.indirizzo,
     required this.chiavePubblica,
     required this.accesso,
     http.Client? client,
-    this._memoria,
   }) : _client = client ?? http.Client();
 
   /// Dove risponde la funzione: `https://<progetto>.supabase.co/functions/v1/mappe`.
@@ -394,13 +382,11 @@ class MappeGeoapify implements Mappe {
   final String? Function() accesso;
 
   final http.Client _client;
-  final MapCachingProvider? _memoria;
 
-  var _riquadri = 0;
   var _ricerche = 0;
   var _dettagli = 0;
   var _schede = 0;
-  var _percorsi = 0;
+  var _destinazioni = 0;
   var _fermati = 0;
 
   @override
@@ -408,11 +394,10 @@ class MappeGeoapify implements Mappe {
 
   @override
   ConsumoMappe get consumo => ConsumoMappe(
-    riquadri: _riquadri,
     ricerche: _ricerche,
     dettagli: _dettagli,
     schede: _schede,
-    percorsi: _percorsi,
+    destinazioni: _destinazioni,
     fermati: _fermati,
   );
 
@@ -420,50 +405,6 @@ class MappeGeoapify implements Mappe {
     'apikey': chiavePubblica,
     if (accesso() case final gettone?) 'authorization': 'Bearer $gettone',
   };
-
-  /// Uno solo per tutta l'app: tiene la connessione, conta, e mette
-  /// l'accesso a ogni riquadro.
-  late final _clientRiquadri = _AlServer(
-    RetryClient(_client),
-    _intestazioni,
-    (stato) => stato == 429 ? _fermati++ : _riquadri++,
-  );
-
-  /// Il client con cui partono i riquadri, per le prove.
-  @visibleForTesting
-  http.Client get clientDeiRiquadri => _clientRiquadri;
-
-  /// La memoria dei riquadri già visti, che non si scaricano (e non si
-  /// pagano) due volte: una per tutti i viaggi, perché l'indirizzo di un
-  /// riquadro non dice di quale viaggio è.
-  late final _memoriaRiquadri =
-      _memoria ??
-      BuiltInMapCachingProvider.getOrCreateInstance(
-        maxCacheSize: 200 * 1000 * 1000,
-      );
-
-  /// Un fornitore di riquadri per viaggio, che dice al server di quale.
-  final _fornitori = <String, NetworkTileProvider>{};
-
-  @override
-  Widget riquadri(BuildContext context, {required String viaggioId}) =>
-      TileLayer(
-        // Lo stile lo sceglie il server (funzione `mappe`): qui il suo nome
-        // serve solo a non riusare i riquadri salvati di quello di prima.
-        urlTemplate:
-            '$indirizzo/riquadro/{z}/{x}/{y}{r}.png?stile=$stileRiquadri',
-        retinaMode: RetinaMode.isHighDensity(context),
-        maxNativeZoom: 20,
-        userAgentPackageName: 'com.aionlabs.trolley',
-        tileProvider: _fornitori.putIfAbsent(
-          viaggioId,
-          () => NetworkTileProvider(
-            httpClient: _clientRiquadri,
-            headers: {'x-viaggio': viaggioId},
-            cachingProvider: _memoriaRiquadri,
-          ),
-        ),
-      );
 
   @override
   Widget mappa(
@@ -474,6 +415,7 @@ class MappeGeoapify implements Mappe {
     required Coordinate centro,
     required double zoom,
     EdgeInsets margini = EdgeInsets.zero,
+    EdgeInsets? zonaDelLogo,
     bool interattiva = true,
     required void Function(ControlloMappa controllo) onPronta,
     VoidCallback? onTocca,
@@ -483,14 +425,11 @@ class MappeGeoapify implements Mappe {
     centro: centro,
     zoom: zoom,
     margini: margini,
+    zonaDelLogo: zonaDelLogo,
     interattiva: interattiva,
     onPronta: onPronta,
     onTocca: onTocca,
   );
-
-  @override
-  String get attribuzione =>
-      'Powered by Geoapify · © OpenMapTiles · © OpenStreetMap';
 
   @override
   String get attribuzioneRicerca => 'Google Maps';
@@ -560,32 +499,19 @@ class MappeGeoapify implements Mappe {
   }
 
   @override
-  Future<Percorso> percorsoAPiedi(
-    Coordinate da,
-    Coordinate a, {
-    required String viaggioId,
-  }) async {
-    final json = await _chiedi(
-      'percorso',
+  Future<void> guidaConsentita({required String viaggioId}) async {
+    await _chiedi(
+      'guida',
       viaggioId,
-      {
-        'waypoints': '${da.lat},${da.lon}|${a.lat},${a.lon}',
-        'mode': 'walk',
-        'lang': 'it',
-        // Senza, le indicazioni hanno il testo ma non il tipo di svolta.
-        'details': 'instruction_details',
-      },
-      conta: () => _percorsi++,
-      tetto: _tettoPercorsi,
+      const {},
+      conta: () => _destinazioni++,
+      tetto: _tettoGuide,
     );
-    final percorso = percorsoDaGeoapify(json);
-    if (percorso == null) throw const ErroreTrolley(_nonRisponde);
-    return percorso;
   }
 
-  /// Chiede alla funzione [cosa] — `cerca` o `percorso` — per il viaggio. I
-  /// parametri vanno nel corpo, non nell'indirizzo: il testo cercato e i
-  /// capi di un percorso non finiscono nei registri del server.
+  /// Chiede alla funzione [cosa] — `cerca`, `posto`, `scheda` o `guida` —
+  /// per il viaggio. I parametri vanno nel corpo, non nell'indirizzo: il
+  /// testo cercato non finisce nei registri del server.
   Future<Map<String, dynamic>> _chiedi(
     String cosa,
     String viaggioId,
@@ -621,27 +547,6 @@ class MappeGeoapify implements Mappe {
     }
     return corpo;
   }
-}
-
-/// Il client dei riquadri: mette l'accesso a ogni richiesta, e conta quelle
-/// che tornano — fermate dal tetto (429) o arrivate al fornitore.
-class _AlServer extends http.BaseClient {
-  _AlServer(this._dentro, this._intestazioni, this._conta);
-
-  final http.Client _dentro;
-  final Map<String, String> Function() _intestazioni;
-  final void Function(int stato) _conta;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    request.headers.addAll(_intestazioni());
-    final risposta = await _dentro.send(request);
-    _conta(risposta.statusCode);
-    return risposta;
-  }
-
-  @override
-  void close() => _dentro.close();
 }
 
 /// I posti di una risposta di Google (`places:autocomplete`). Le ricerche
@@ -761,93 +666,3 @@ String? _testo(Object? valore) {
   final t = valore is String ? valore.trim() : null;
   return t == null || t.isEmpty ? null : t;
 }
-
-/// Il percorso di una risposta di Geoapify (`/v1/routing`, GeoJSON). Le
-/// tappe intermedie non ci sono: un tratto solo, dal punto in cui si è alla
-/// tappa. `null` se la risposta non ha un percorso.
-Percorso? percorsoDaGeoapify(Map<String, dynamic> json) {
-  final caratteristiche = json['features'];
-  if (caratteristiche is! List || caratteristiche.isEmpty) return null;
-  final primo = caratteristiche.first;
-  if (primo is! Map<String, dynamic>) return null;
-  final proprieta = primo['properties'];
-  final geometria = primo['geometry'];
-  if (proprieta is! Map<String, dynamic> || geometria is! Map) return null;
-
-  // Una linea per ogni tratto fra due punti di passaggio; gli indici dei
-  // passi contano dall'inizio della loro linea.
-  final linee = switch (geometria['type']) {
-    'MultiLineString' => geometria['coordinates'] as List? ?? const [],
-    'LineString' => [geometria['coordinates']],
-    _ => const [],
-  };
-  final punti = <Coordinate>[];
-  final inizioLinea = <int>[];
-  for (final linea in linee) {
-    inizioLinea.add(punti.length);
-    for (final c in (linea as List? ?? const [])) {
-      if (c is List && c.length >= 2) {
-        final p = coordinate(
-          (c[1] as num).toDouble(),
-          (c[0] as num).toDouble(),
-        );
-        if (p != null) punti.add(p);
-      }
-    }
-  }
-  if (punti.length < 2) return null;
-
-  final passi = <Passo>[];
-  final tratti = proprieta['legs'] as List? ?? const [];
-  for (final (i, tratto) in tratti.indexed) {
-    final scarto = i < inizioLinea.length ? inizioLinea[i] : 0;
-    for (final s in ((tratto as Map)['steps'] as List? ?? const [])) {
-      final passo = s as Map;
-      final istruzione = passo['instruction'] as Map? ?? const {};
-      passi.add(
-        Passo(
-          istruzione: _testo(istruzione['text']) ?? '',
-          manovra: manovraDaGeoapify(istruzione['type'] as String?),
-          da: scarto + ((passo['from_index'] as num?)?.toInt() ?? 0),
-          a: scarto + ((passo['to_index'] as num?)?.toInt() ?? 0),
-          metri: (passo['distance'] as num?)?.toDouble() ?? 0,
-        ),
-      );
-    }
-  }
-
-  return Percorso(
-    punti: punti,
-    passi: passi,
-    metri: (proprieta['distance'] as num?)?.toDouble() ?? 0,
-    durata: Duration(seconds: ((proprieta['time'] as num?) ?? 0).round()),
-  );
-}
-
-/// I tipi di indicazione di Geoapify, nelle manovre dell'app.
-Manovra manovraDaGeoapify(String? tipo) => switch (tipo) {
-  'StartAt' || 'StartAtRight' || 'StartAtLeft' => Manovra.partenza,
-  'DestinationReached' ||
-  'DestinationReachedRight' ||
-  'DestinationReachedLeft' => Manovra.arrivo,
-  'SlightRight' => Manovra.leggermenteADestra,
-  'Right' || 'ExitRight' => Manovra.aDestra,
-  'SharpRight' => Manovra.strettaADestra,
-  'SlightLeft' => Manovra.leggermenteASinistra,
-  'Left' || 'ExitLeft' => Manovra.aSinistra,
-  'SharpLeft' => Manovra.strettaASinistra,
-  'TurnAroundRight' || 'TurnAroundLeft' => Manovra.inversione,
-  'StayRight' || 'MergeRight' => Manovra.tieniLaDestra,
-  'StayLeft' || 'MergeLeft' => Manovra.tieniLaSinistra,
-  'Roundabout' => Manovra.rotonda,
-  'FerryEnter' ||
-  'FerryExit' ||
-  'Transit' ||
-  'TransitTransfer' ||
-  'TransitRemainOn' ||
-  'TransitConnectionStart' ||
-  'TransitConnectionTransfer' ||
-  'TransitConnectionDestination' ||
-  'PostTransitConnectionDestination' => Manovra.mezzi,
-  _ => Manovra.dritto,
-};

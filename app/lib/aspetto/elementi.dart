@@ -427,9 +427,13 @@ class PulsanteTondo extends StatelessWidget {
     required this.onPressed,
     this.scuro = false,
     this.fondo,
+    this.testo,
   });
 
   final IconData icona;
+
+  /// Due lettere al posto dell'icona, quando dicono di più: «3D».
+  final String? testo;
 
   /// Cosa legge VoiceOver: il pulsante non ha testo.
   final String etichetta;
@@ -458,11 +462,23 @@ class PulsanteTondo extends StatelessWidget {
             color: scuro ? Colori.inchiostro : (fondo ?? Colori.bianco),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(
-            icona,
-            size: 22,
-            color: onPressed == null ? tinta.withValues(alpha: 0.35) : tinta,
-          ),
+          alignment: Alignment.center,
+          child: testo != null
+              ? Text(
+                  testo!,
+                  style: Testi.titoli(
+                    13,
+                    spaziatura: 0,
+                    altezza: 1,
+                  ).copyWith(color: tinta),
+                )
+              : Icon(
+                  icona,
+                  size: 22,
+                  color: onPressed == null
+                      ? tinta.withValues(alpha: 0.35)
+                      : tinta,
+                ),
         ),
       ),
     );

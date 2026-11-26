@@ -81,6 +81,7 @@ void main() {
         ),
         acquisizione: AcquisizioneFinta(Directory.systemTemp),
         mappe: MappeFinte(),
+        guida: GuidaFinta(),
         posizione: PosizioneFinta(),
         mappeDelTelefono: MappeDelTelefonoFinte(),
         pagine: pagine,

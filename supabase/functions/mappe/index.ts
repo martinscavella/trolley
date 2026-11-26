@@ -1,25 +1,28 @@
-// Le mappe passano da qui (U.2; ADR-006, ADR-014): i riquadri e i percorsi
-// di Geoapify, finché la mappa e la guida non passano a Google (CR-06, passi
-// 2 e 4), e la ricerca dei posti con Google Places (New). Le chiavi stanno
-// solo sul server (i segreti GEOAPIFY_CHIAVE e GOOGLE_MAPS_CHIAVE), con il
-// tetto per persona, per viaggio e per giorno.
+// Le mappe passano da qui (U.2; ADR-006, ADR-014): la ricerca dei posti
+// con Google Places (New), e il conto delle guide. La mappa e la guida sono
+// sul telefono, con gli SDK di Google (CR-06, passi 2 e 4): qui non passano.
+// La chiave di Places sta solo sul server (il segreto GOOGLE_MAPS_CHIAVE),
+// con il tetto per persona, per viaggio e per giorno.
 //
 // Prima di ogni chiamata si chiede a consuma_mappe, con l'accesso di chi
 // chiama: è il server che sa chi è, se partecipa al viaggio e se è sotto il
 // tetto (migrazione tetto_mappe). Al tetto si risponde 429 e il fornitore non
 // si chiama.
 //
-// Cosa passa di qui: le zone di mappa, il testo cercato, il posto scelto e i
-// capi di un percorso vanno al fornitore e tornano indietro, senza restare.
-// Ricerche e percorsi arrivano nel corpo, non nell'indirizzo: così non
-// finiscono nei registri delle richieste. Il fornitore vede il server, non il
-// telefono.
+// Cosa passa di qui: il testo cercato e il posto scelto vanno a Google e
+// tornano indietro, senza restare. Arrivano nel corpo, non nell'indirizzo:
+// così non finiscono nei registri delle richieste. Google vede il server,
+// non il telefono.
 //
-//   GET  /mappe/riquadro/{z}/{x}/{y}.png  (o {y}@2x.png), intestazione x-viaggio
 //   POST /mappe/cerca     { viaggio, parametri }  → Google, places:autocomplete
 //   POST /mappe/posto     { viaggio, parametri }  → Google, places/{id}
 //   POST /mappe/scheda    { viaggio, parametri }  → Google, places/{id}, con orari
-//   POST /mappe/percorso  { viaggio, parametri }  → Geoapify, /v1/routing
+//   POST /mappe/guida     { viaggio }             → nessuno: conta la guida
+//
+// La guida (il Navigation SDK, sul telefono) si paga a destinazione: prima
+// di partire l'app chiede qui, e la destinazione si conta sul tetto come
+// `percorsi` (il nome del contatore dai tempi di Geoapify). Non arriva né il
+// posto né dove si è: solo il viaggio.
 //
 // La ricerca e il posto scelto vanno nella stessa sessione di Google
 // (`sessione`): così i suggerimenti non si pagano, si paga il posto scelto.
@@ -31,26 +34,11 @@
 // Si pubblica senza il controllo dell'accesso del gateway (verify_jwt
 // spento): lo fa consuma_mappe, attraverso le regole del database.
 
-const chiave = Deno.env.get('GEOAPIFY_CHIAVE') ?? '';
 const chiaveGoogle = Deno.env.get('GOOGLE_MAPS_CHIAVE') ?? '';
 const server = Deno.env.get('SUPABASE_URL') ?? '';
 const chiavePubblica = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
-// Colorato e morbido, come Mappe di iPhone: terra sabbia, acqua azzurra,
-// parchi verdi, strade bianche (scelto dall'utente il 1° novembre 2026; era
-// `positron`, grigio). L'app mette lo stesso nome nell'indirizzo dei riquadri,
-// perché la sua memoria non riusi quelli dello stile di prima.
-const stile = 'klokantech-basic';
-
-/// I parametri che si passano al fornitore, e nient'altro.
-const ammessi = {
-  percorso: {
-    percorso: '/v1/routing',
-    parametri: ['waypoints', 'mode', 'lang', 'details'],
-  },
-} as const;
-
-type Tipo = 'riquadri' | 'ricerche' | 'percorsi';
+type Tipo = 'ricerche' | 'percorsi';
 
 function errore(stato: number, codice: string): Response {
   return new Response(JSON.stringify({ codice }), {
@@ -105,8 +93,7 @@ async function consuma(
 /// Il fornitore non risponde, o non ha più crediti per oggi: per l'app è lo
 /// stesso, la mappa non risponde.
 function dalFornitore(risposta: Response, intestazioni: string[]): Response {
-  const nonCambiato = risposta.status === 304;
-  if (!risposta.ok && !nonCambiato) {
+  if (!risposta.ok) {
     risposta.body?.cancel();
     return errore(502, 'fornitore');
   }
@@ -115,72 +102,7 @@ function dalFornitore(risposta: Response, intestazioni: string[]): Response {
     const valore = risposta.headers.get(nome);
     if (valore) headers.set(nome, valore);
   }
-  // Il riquadro che l'app ha già non è cambiato: torna senza corpo.
-  if (nonCambiato) return new Response(null, { status: 304, headers });
   return new Response(risposta.body, { status: 200, headers });
-}
-
-async function riquadro(richiesta: Request, resto: string[]): Promise<Response> {
-  const [z, x, ultimo] = resto;
-  const y = /^(\d+)(@2x)?\.png$/.exec(ultimo ?? '');
-  if (!/^\d+$/.test(z ?? '') || !/^\d+$/.test(x ?? '') || !y) {
-    return errore(404, 'riquadro');
-  }
-  if (Number(z) > 20) return errore(404, 'riquadro');
-  const no = await consuma(richiesta, richiesta.headers.get('x-viaggio'), 'riquadri');
-  if (no) return no;
-  // Geoapify chiede di ricontrollare ogni riquadro (no-cache): l'app manda
-  // quello che ha, e se non è cambiato torna un 304 senza corpo.
-  const condizioni = new Headers();
-  for (const nome of ['if-none-match', 'if-modified-since']) {
-    const valore = richiesta.headers.get(nome);
-    if (valore) condizioni.set(nome, valore);
-  }
-  try {
-    const risposta = await fetch(
-      `https://maps.geoapify.com/v1/tile/${stile}/${z}/${x}/${y[1]}${y[2] ?? ''}.png` +
-        `?apiKey=${encodeURIComponent(chiave)}`,
-      { headers: condizioni },
-    );
-    return dalFornitore(risposta, [
-      'content-type',
-      'cache-control',
-      'etag',
-      'last-modified',
-      'expires',
-    ]);
-  } catch {
-    return errore(502, 'fornitore');
-  }
-}
-
-async function chiedi(
-  richiesta: Request,
-  cosa: keyof typeof ammessi,
-  tipo: Tipo,
-): Promise<Response> {
-  let corpo: { viaggio?: unknown; parametri?: Record<string, unknown> };
-  try {
-    corpo = await richiesta.json();
-  } catch {
-    return errore(400, 'corpo');
-  }
-  const { percorso, parametri } = ammessi[cosa];
-  const indirizzo = new URL(`https://api.geoapify.com${percorso}`);
-  for (const nome of parametri) {
-    const valore = corpo.parametri?.[nome];
-    if (typeof valore === 'string' && valore.length <= 300) {
-      indirizzo.searchParams.set(nome, valore);
-    }
-  }
-  const no = await consuma(richiesta, corpo.viaggio, tipo);
-  if (no) return no;
-  indirizzo.searchParams.set('apiKey', chiave);
-  try {
-    return dalFornitore(await fetch(indirizzo), ['content-type']);
-  } catch {
-    return errore(502, 'fornitore');
-  }
 }
 
 // ─── Google Places (New) ────────────────────────────────────────────────
@@ -298,21 +220,27 @@ async function posto(
   }
 }
 
+/// La guida: `{ viaggio }`. Conta una destinazione sul tetto, e basta.
+async function guida(richiesta: Request): Promise<Response> {
+  const corpo = await leggiCorpo(richiesta);
+  if (!corpo) return errore(400, 'corpo');
+  const no = await consuma(richiesta, corpo.viaggio, 'percorsi');
+  if (no) return no;
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
 Deno.serve((richiesta) => {
   // L'indirizzo arriva come /mappe/…: si guarda quello che segue.
   const parti = new URL(richiesta.url).pathname.split('/').filter(Boolean);
   const [cosa, ...resto] = parti.slice(parti.indexOf('mappe') + 1);
   const post = richiesta.method === 'POST' && resto.length === 0;
+  if (post && cosa === 'guida') return guida(richiesta);
   if (post && (cosa === 'cerca' || cosa === 'posto' || cosa === 'scheda')) {
     if (!chiaveGoogle) return errore(502, 'fornitore');
     return cosa === 'cerca' ? cerca(richiesta) : posto(richiesta, cosa);
-  }
-  if (!chiave) return errore(502, 'fornitore');
-  if (richiesta.method === 'GET' && cosa === 'riquadro') {
-    return riquadro(richiesta, resto);
-  }
-  if (post && cosa === 'percorso') {
-    return chiedi(richiesta, 'percorso', 'percorsi');
   }
   return errore(404, 'indirizzo');
 });

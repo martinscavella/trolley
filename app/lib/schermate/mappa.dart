@@ -1,8 +1,8 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 import '../aspetto/barra.dart';
 import '../aspetto/elementi.dart';
@@ -273,6 +273,31 @@ class _SchermataMappaState extends State<SchermataMappa> {
     (_occupatoSotto ?? mq.padding.bottom + 290) + 6,
   );
 
+  double _inBasso(MediaQueryData mq) =>
+      mq.padding.bottom > 0 ? mq.padding.bottom - 6 : 20.0;
+
+  /// Lo spazio fra la barra e la scheda, dove sta il logo di Google.
+  static const _spazioDelLogo = 36.0;
+
+  /// Dove va il logo di Google: in basso al centro, come nella guida
+  /// (scelta dell'utente). Nella sezione fra la barra e la scheda; con una
+  /// tappa aperta, sopra il suo foglio; fuori dalla sezione, nella striscia
+  /// in fondo. La mappa lo mette in fondo alla zona, più la zona sicura.
+  EdgeInsets _zonaDelLogo(MediaQueryData mq) {
+    final fondoDelLogo = _scelta != null
+        ? (_occupatoSotto ?? mq.padding.bottom + 290) + 8
+        : widget.inSezione
+        ? _inBasso(mq) + 64 + (_spazioDelLogo - altezzaDelLogo) / 2
+        : mq.padding.bottom + sopraLaZonaSicura;
+    final lato = latoPerIlLogo(mq.size.width);
+    return EdgeInsets.fromLTRB(
+      lato,
+      0,
+      lato,
+      max(0, fondoDelLogo - mq.padding.bottom - sopraLaZonaSicura),
+    );
+  }
+
   void _misuratoSotto(double altezza) {
     if (!mounted || (_occupatoSotto ?? -1) == altezza) return;
     setState(() => _occupatoSotto = altezza);
@@ -397,6 +422,7 @@ class _SchermataMappaState extends State<SchermataMappa> {
         _ => 13,
       },
       margini: _margini(mq),
+      zonaDelLogo: _zonaDelLogo(mq),
       onPronta: (controllo) {
         _controllo = controllo;
         _inquadra(chiave, punti);
@@ -419,7 +445,7 @@ class _SchermataMappaState extends State<SchermataMappa> {
             SegnoMappa(
               id: 'segno-${s.tappa.tappa.id}',
               posto: posto,
-              lato: latoSegno,
+              lato: latoImmagineSegno,
               sopra: s.tappa.tappa.id == _scelta,
               aspetto:
                   '${s.tappa.numero}|${s.tappa.segno.name}|'
@@ -448,9 +474,12 @@ class _SchermataMappaState extends State<SchermataMappa> {
       ],
     );
 
-    final inBasso = mq.padding.bottom > 0 ? mq.padding.bottom - 6 : 20.0;
-    // Nella sezione, sopra la barra.
-    final sopra = widget.inSezione ? inBasso + 64 + 16 : inBasso;
+    final inBasso = _inBasso(mq);
+    // Nella sezione, sopra la barra, con lo spazio per il logo di Google
+    // in mezzo; fuori, sopra la striscia del logo, come nella guida.
+    final sopra = widget.inSezione
+        ? inBasso + 64 + _spazioDelLogo
+        : mq.padding.bottom + sopraLaZonaSicura + altezzaDelLogo + 10;
     return Scaffold(
       backgroundColor: _fondoCarta,
       body: Stack(
@@ -491,7 +520,7 @@ class _SchermataMappaState extends State<SchermataMappa> {
               left: 20,
               right: 20,
               bottom: sopra,
-              child: _Misura(
+              child: MisuraAltezza(
                 onAltezza: (h) => _misuratoSotto(sopra + h),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -512,7 +541,7 @@ class _SchermataMappaState extends State<SchermataMappa> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: _Misura(
+              child: MisuraAltezza(
                 onAltezza: _misuratoSotto,
                 child: _SchedaTappa(
                   key: ValueKey(scelta.tappa.tappa.id),
@@ -1999,36 +2028,5 @@ class _RigaIndirizzo extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-/// Dice quanto è alto quello che contiene, ogni volta che cambia.
-class _Misura extends SingleChildRenderObjectWidget {
-  const _Misura({required this.onAltezza, required super.child});
-
-  final ValueChanged<double> onAltezza;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderMisura(onAltezza);
-
-  @override
-  void updateRenderObject(BuildContext context, _RenderMisura render) =>
-      render.onAltezza = onAltezza;
-}
-
-class _RenderMisura extends RenderProxyBox {
-  _RenderMisura(this.onAltezza);
-
-  ValueChanged<double> onAltezza;
-  double? _ultima;
-
-  @override
-  void performLayout() {
-    super.performLayout();
-    final altezza = size.height;
-    if (altezza == _ultima) return;
-    _ultima = altezza;
-    WidgetsBinding.instance.addPostFrameCallback((_) => onAltezza(altezza));
   }
 }

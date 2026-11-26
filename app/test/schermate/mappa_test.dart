@@ -7,7 +7,7 @@ import 'package:trolley/aspetto/segni_mappa.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/posizione.dart';
 import 'package:trolley/dominio/calendario.dart';
-import 'package:trolley/dominio/navigazione.dart';
+import 'package:trolley/dati/guida.dart';
 import 'package:trolley/schermate/giornata.dart';
 import 'package:trolley/schermate/mappa.dart';
 import 'package:trolley/schermate/navigazione.dart';
@@ -261,11 +261,19 @@ void main() {
       expect(segno('ribeira'), findsOneWidget);
     });
 
-    testWidgets('la mappa vista con delle tappe è la funzione usata, e '
-        'quello che è costato si registra uscendo', (tester) async {
+    testWidgets('il logo di Google va in basso al centro: la zona che gli '
+        'si lascia è uguale ai due lati', (tester) async {
       await viaggio(tester);
       await mappa(tester);
-      ambiente.mappe.scaricaRiquadri(24);
+      final zona = ambiente.mappe.zonaDelLogo!;
+      expect(zona.left, greaterThan(0));
+      expect(zona.left, zona.right);
+    });
+
+    testWidgets('la mappa vista con delle tappe è la funzione usata; la '
+        'mappa di Google sul telefono non costa niente', (tester) async {
+      await viaggio(tester);
+      await mappa(tester);
 
       await tester.pumpWidget(const SizedBox());
       await aspetta(tester);
@@ -274,15 +282,10 @@ void main() {
         'viaggio_id': 'v',
         'funzione': 'mappa',
       });
-      expect(await evento(tester, 'consumo_mappe'), {
-        'viaggio_id': 'v',
-        'riquadri': 24,
-        'ricerche': 0,
-        'dettagli': 0,
-        'schede': 0,
-        'percorsi': 0,
-        'fermati': 0,
-      });
+      expect(
+        (await ambiente.eventi(tester)).where((e) => e.nome == 'consumo_mappe'),
+        isEmpty,
+      );
     });
   });
 
@@ -444,76 +447,159 @@ void main() {
     });
   });
 
-  group('la navigazione', () {
-    // Da qui si va a est per un centinaio di metri, poi a sud fino a Lello.
-    const partenza = (lat: 41.1475, lon: -8.6160);
-    const svolta = (lat: 41.1475, lon: -8.61479);
-
-    Percorso strada() => Percorso(
-      punti: const [partenza, svolta, lello],
-      passi: const [
-        Passo(
-          istruzione: 'Cammina verso est.',
-          manovra: Manovra.partenza,
-          da: 0,
-          a: 1,
-          metri: 101,
-        ),
-        Passo(
-          istruzione: 'Svolta a destra su Rua das Carmelitas.',
-          manovra: Manovra.aDestra,
-          da: 1,
-          a: 2,
-          metri: 71,
-        ),
-        Passo(
-          istruzione: 'Sei arrivato.',
-          manovra: Manovra.arrivo,
-          da: 2,
-          a: 2,
-          metri: 0,
-        ),
-      ],
-      metri: 172,
-      durata: const Duration(minutes: 3),
-    );
-
+  group('la guida', () {
     Future<void> portami(WidgetTester tester) async {
-      ambiente.mappe.percorso = strada();
       await viaggio(tester);
       await mappa(tester);
       await tester.tap(find.text('Portami'));
-      await tester.pumpAndSettle();
+      await aspetta(tester);
     }
 
-    testWidgets('«Portami»: la strada a piedi dentro Trolley, l\'indicazione '
-        'grande in alto, quanto manca in basso', (tester) async {
+    testWidgets('«Portami»: la guida di Google dentro Trolley, verso la '
+        'tappa, con la nostra scheda in basso (tela, 163)', (tester) async {
       await portami(tester);
 
       expect(find.byType(SchermataNavigazione), findsOneWidget);
-      expect(find.text('Cerco dove sei…'), findsOneWidget);
-      expect(find.text('Apri in Mappe'), findsOneWidget);
-
-      ambiente.posizione.vai(partenza);
+      final guida = ambiente.guida;
+      expect(guida.preparazioni, 1);
+      // Prima di partire il server conta la destinazione, per il viaggio.
+      expect(ambiente.mappe.guide, ['v']);
+      final partita = guida.partite.single;
+      expect(partita.titolo, 'Livraria Lello');
+      expect(partita.posto, lello);
+      expect(partita.placeId, isNull);
+      // Sulla mappa, il segno della tappa: il nostro.
+      expect(guida.segni.single.posto, lello);
+      // L'intestazione è nostra anche mentre si cammina (tela, 163).
+      expect(find.text('Si parte'), findsOneWidget);
+      expect(find.text('Apri in Google Maps'), findsOneWidget);
+      guida.indica(
+        const Indicazione(
+          svolta: Svolta.aDestra,
+          testo: 'Svolta a destra in Rua das Carmelitas',
+          metri: 118,
+        ),
+      );
       await aspetta(tester);
-
-      // Al fornitore va solo dove si parte, e dove si arriva.
-      expect(ambiente.mappe.chiesti.single, (da: partenza, a: lello));
+      expect(find.text('120 m'), findsOneWidget);
       expect(
-        find.text('Svolta a destra su Rua das Carmelitas.'),
+        find.text('Svolta a destra in Rua das Carmelitas'),
         findsOneWidget,
       );
-      expect(find.text('100 m'), findsOneWidget);
-      expect(find.textContaining('3 min a piedi · 170 m'), findsOneWidget);
+      expect(find.byIcon(Icons.turn_right_rounded), findsOneWidget);
+      expect(find.text('Rua das Carmelitas 144, Porto'), findsOneWidget);
+
+      guida.manca(450, const Duration(minutes: 6));
+      await aspetta(tester);
+      expect(
+        find.textContaining('6 min a piedi · arrivi alle'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('spostata la mappa, il pulsante tondo la riporta dove si '
+        'è', (tester) async {
+      await portami(tester);
+      // Partita la guida, la mappa segue la persona da sola.
+      expect(ambiente.guida.seguimi, 1);
+      expect(find.bySemanticsLabel('Torna dove sei'), findsNothing);
+
+      ambiente.guida.spostaLaMappa();
+      await aspetta(tester);
+      await tester.tap(find.bySemanticsLabel('Torna dove sei'));
+      await aspetta(tester);
+
+      expect(ambiente.guida.seguimi, 2);
+      expect(find.bySemanticsLabel('Torna dove sei'), findsNothing);
+    });
+
+    testWidgets('la posizione del telefono arriva alla mappa della guida, '
+        'per il puntino', (tester) async {
+      await portami(tester);
+      const qui = (lat: 41.1475, lon: -8.6160);
+      ambiente.posizione.vai(qui);
+      await aspetta(tester);
+      expect(ambiente.guida.qui, qui);
+    });
+
+    testWidgets('la voce si toglie e si rimette dal pulsante', (tester) async {
+      await portami(tester);
+      expect(ambiente.guida.voceAccesa, isTrue);
+
+      await tester.tap(find.bySemanticsLabel('Togli la voce'));
+      await aspetta(tester);
+      expect(ambiente.guida.voceAccesa, isFalse);
+
+      await tester.tap(find.bySemanticsLabel('Rimetti la voce'));
+      await aspetta(tester);
+      expect(ambiente.guida.voceAccesa, isTrue);
+    });
+
+    testWidgets('la voce spenta resta spenta alla guida dopo', (tester) async {
+      await portami(tester);
+      await tester.tap(find.bySemanticsLabel('Togli la voce'));
+      await aspetta(tester);
+      await tester.tap(find.text('Fine'));
+      await aspetta(tester);
+
+      ambiente.guida.voceAccesa = true;
+      await tester.tap(find.text('Portami'));
+      await aspetta(tester);
+      expect(ambiente.guida.voceAccesa, isFalse);
+      expect(find.bySemanticsLabel('Rimetti la voce'), findsOneWidget);
+    });
+
+    testWidgets('2D e 3D dal pulsante, e il telefono se lo ricorda', (
+      tester,
+    ) async {
+      await portami(tester);
+      expect(ambiente.guida.inclinata, isTrue);
+      expect(find.text('2D'), findsOneWidget);
+
+      await tester.tap(find.text('2D'));
+      await aspetta(tester);
+      expect(ambiente.guida.inclinata, isFalse);
+      expect(find.text('3D'), findsOneWidget);
+
+      await tester.tap(find.text('Fine'));
+      await aspetta(tester);
+      await tester.tap(find.text('Portami'));
+      await aspetta(tester);
+      // La vista riparte in 2D.
+      expect(ambiente.guida.inclinata, isFalse);
+      expect(find.text('3D'), findsOneWidget);
+    });
+
+    testWidgets('anche se la guida non parte, il pulsante tondo porta dove '
+        'si è', (tester) async {
+      ambiente.guida.partenza = EsitoGuida.nonTrovata;
+      await portami(tester);
+
+      expect(find.text('Niente strada'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Torna dove sei'));
+      await aspetta(tester);
+      expect(ambiente.guida.seguimi, 1);
+    });
+
+    testWidgets('una tappa con il posto di Google va al suo place_id', (
+      tester,
+    ) async {
+      final prima = giornata[1];
+      giornata[1] = {
+        ...prima,
+        'place_id': 'ChIJ-lello',
+        'coordinate_il': prima['creato_il'],
+      };
+      addTearDown(() => giornata[1] = prima);
+      await portami(tester);
+      expect(ambiente.guida.partite.single.placeId, 'ChIJ-lello');
     });
 
     testWidgets('all\'arrivo «Sei qui» propone di segnarla: un tocco, e la '
-        'navigazione si chiude', (tester) async {
+        'guida si chiude', (tester) async {
       await portami(tester);
-      ambiente.posizione.vai(partenza);
-      await aspetta(tester);
 
-      ambiente.posizione.vai((lat: 41.14695, lon: -8.61481));
+      ambiente.guida.arriva();
       await aspetta(tester);
       expect(find.text('SEI QUI'), findsOneWidget);
 
@@ -521,96 +607,84 @@ void main() {
       await aspetta(tester);
 
       expect(find.byType(SchermataNavigazione), findsNothing);
+      expect(ambiente.guida.fermate, 1);
       expect(await statoDi(tester, 'lello'), 'completata');
     });
 
-    testWidgets('fuori strada due volte di fila: una strada nuova da dove '
-        'si è', (tester) async {
+    testWidgets('«Apri in Google Maps» c\'è sempre, e «Fine» torna alla '
+        'mappa; la destinazione si conta', (tester) async {
       await portami(tester);
-      ambiente.posizione.vai(partenza);
-      await aspetta(tester);
 
-      const persi = (lat: 41.1490, lon: -8.6160);
-      ambiente.posizione.vai(persi);
-      await aspetta(tester);
-      expect(ambiente.mappe.chiesti, hasLength(1));
-      ambiente.posizione.vai(persi);
-      await aspetta(tester);
-      expect(ambiente.mappe.chiesti, hasLength(2));
-      expect(ambiente.mappe.chiesti.last.da, persi);
-    });
-
-    testWidgets('«Apri in Mappe» c\'è sempre, e «Fine» torna alla mappa; '
-        'il percorso chiesto si conta', (tester) async {
-      await portami(tester);
-      ambiente.posizione.vai(partenza);
-      await aspetta(tester);
-
-      await tester.tap(find.text('Apri in Mappe'));
+      await tester.tap(find.text('Apri in Google Maps'));
       await tester.pumpAndSettle();
-      expect(ambiente.mappeDelTelefono.aperte.single.posto, lello);
+      final aperta = ambiente.mappeDelTelefono.aperte.single;
+      expect(aperta.posto, lello);
+      expect(aperta.conGoogle, isTrue);
 
       await tester.tap(find.text('Fine'));
       await aspetta(tester);
       expect(find.byType(SchermataNavigazione), findsNothing);
       expect(find.byType(SchermataMappa), findsOneWidget);
+      expect(ambiente.guida.fermate, 1);
 
-      expect((await evento(tester, 'consumo_mappe'))['percorsi'], 1);
+      expect((await evento(tester, 'consumo_mappe'))['destinazioni'], 1);
     });
 
-    testWidgets('se il fornitore non trova la strada lo dice, e restano le '
-        'Mappe', (tester) async {
+    testWidgets('senza le condizioni di Google la guida non parte, e non si '
+        'conta niente: restano le Mappe', (tester) async {
+      ambiente.guida.preparata = EsitoGuida.condizioniRifiutate;
       await portami(tester);
-      ambiente.mappe.percorso = null;
-      ambiente.posizione.vai(partenza);
-      await aspetta(tester);
 
-      expect(find.text('Niente strada'), findsOneWidget);
-      expect(find.text('Apri in Mappe'), findsOneWidget);
-    });
-
-    testWidgets('al tetto di oggi la strada non si calcola: lo dice, e '
-        'restano le Mappe (U.2)', (tester) async {
-      await portami(tester);
-      ambiente.mappe.tetto = true;
-      ambiente.posizione.vai(partenza);
-      await aspetta(tester);
-
-      expect(ambiente.mappe.viaggi, ['v']);
       expect(find.text('Niente strada'), findsOneWidget);
       expect(
-        find.textContaining('le strade calcolate sono finite'),
+        find.textContaining('Senza le condizioni di Google'),
         findsOneWidget,
       );
-      expect(find.text('Apri in Mappe'), findsOneWidget);
+      expect(find.text('Apri in Google Maps'), findsOneWidget);
+      expect(ambiente.mappe.guide, isEmpty);
+      expect(ambiente.guida.partite, isEmpty);
+    });
+
+    testWidgets('se Google non trova la strada lo dice, e restano le Mappe', (
+      tester,
+    ) async {
+      ambiente.guida.partenza = EsitoGuida.nonTrovata;
+      await portami(tester);
+
+      expect(find.text('Niente strada'), findsOneWidget);
+      expect(
+        find.textContaining('Non c\'è una strada a piedi'),
+        findsOneWidget,
+      );
+      expect(find.text('Apri in Google Maps'), findsOneWidget);
+    });
+
+    testWidgets('al tetto di oggi la guida non parte: lo dice, e restano le '
+        'Mappe (U.2)', (tester) async {
+      ambiente.mappe.tetto = true;
+      await portami(tester);
+
+      expect(ambiente.mappe.viaggi, ['v']);
+      expect(ambiente.guida.partite, isEmpty);
+      expect(find.text('Niente strada'), findsOneWidget);
+      expect(find.textContaining('le guide sono finite'), findsOneWidget);
 
       await tester.tap(find.text('Fine'));
       await aspetta(tester);
       expect((await evento(tester, 'consumo_mappe'))['fermati'], 1);
     });
 
-    testWidgets('se il tetto arriva a metà strada, la strada di prima resta '
-        'e da lì portano le Mappe', (tester) async {
-      await portami(tester);
-      ambiente.posizione.vai(partenza);
-      await aspetta(tester);
-      expect(
-        find.text('Svolta a destra su Rua das Carmelitas.'),
-        findsOneWidget,
-      );
+    testWidgets('senza la guida su questo telefono, «Portami» apre le Mappe', (
+      tester,
+    ) async {
+      ambiente.guida.disponibile = false;
+      await viaggio(tester);
+      await mappa(tester);
+      await tester.tap(find.text('Portami'));
+      await tester.pumpAndSettle();
 
-      ambiente.mappe.tetto = true;
-      const persi = (lat: 41.1490, lon: -8.6160);
-      ambiente.posizione.vai(persi);
-      await aspetta(tester);
-      ambiente.posizione.vai(persi);
-      await aspetta(tester);
-
-      expect(
-        find.text('Da qui ti portano meglio le Mappe del telefono.'),
-        findsOneWidget,
-      );
-      expect(find.text('Apri in Mappe'), findsOneWidget);
+      expect(find.byType(SchermataNavigazione), findsNothing);
+      expect(ambiente.mappeDelTelefono.aperte.single.posto, lello);
     });
   });
 

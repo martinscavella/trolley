@@ -229,7 +229,7 @@
   <h2>3. Che cosa non arriva mai a noi</h2>
   <ul>
     <li><strong>I documenti</strong> — passaporti, biglietti, prenotazioni — stanno solo sul tuo telefono, cifrati con il suo codice di sblocco. Fanno parte del backup del telefono, se lo hai attivo, che è un servizio tuo con Apple.</li>
-    <li><strong>La tua posizione.</strong> Per la verifica il confronto con la meta lo fa il telefono, e a noi arriva solo il «sì». Quando chiedi a Trolley di portarti a una tappa, il punto da cui parti passa dal nostro server al fornitore delle mappe per calcolare la strada, e non viene salvato. La posizione si usa solo mentre usi l'app, mai in sottofondo.</li>
+    <li><strong>La tua posizione.</strong> Per la verifica il confronto con la meta lo fa il telefono, e a noi arriva solo il «sì». Quando chiedi a Trolley di portarti a una tappa, la guida di Google sul telefono usa la tua posizione per tutto il tempo che ti guida, e la manda a Google; a noi non arriva. La posizione si usa solo mentre usi l'app, e mentre ti guida anche a schermo spento: mai in sottofondo altrimenti.</li>
     <li><strong>I promemoria.</strong> Li programma il telefono, dai viaggi che ha già: quello che dicono non passa da noi. Sappiamo solo, se misuri, di che tipo era un promemoria arrivato o toccato.</li>
     <li><strong>L'itinerario chiesto al tuo assistente.</strong> Trolley prepara una richiesta che copi tu nel tuo assistente (per esempio Claude o ChatGPT), con il tuo account: noi non lo chiamiamo e non vediamo la conversazione. Quello che incolli torna nel viaggio come nota.</li>
   </ul>
@@ -240,7 +240,7 @@
     <li><strong>I fornitori che lavorano per noi</strong>, solo per quello che serve:
       <ul>
         <li><strong>Supabase</strong>: il database, l'accesso e le funzioni del server. I dati stanno su server nell'Unione europea, in Irlanda.</li>
-        <li><strong>Geoapify</strong> <span class="da-fare">[sede da verificare]</span>: mappe, ricerche dei posti e percorsi a piedi. Riceve dal nostro server le zone di mappa che guardi, il testo che cerchi e i due capi di un percorso; non sa chi sei e non vede il tuo telefono.</li>
+        <li><strong>Google</strong> (Google Maps Platform) <span class="da-fare">[ruolo e garanzie da confermare]</span>: la mappa, la ricerca dei posti e la guida a piedi. Dal nostro server riceve il testo che cerchi e il posto che scegli, senza sapere chi sei; dal telefono, la mappa che guardi e, mentre ti guida a una tappa, la tua posizione. Le condizioni della guida di Google le accetti tu, la prima volta che ti fai guidare.</li>
         <li><strong>Vercel</strong>: ospita questa pagina e la pagina dei link d'invito, e vede l'indirizzo IP di chi le apre.</li>
         <li><strong>Twilio</strong>, solo se accendi il profilo pubblico: manda e controlla il codice SMS che verifica il tuo numero. Riceve il numero dal nostro server, non sa altro di te.</li>
       </ul>
@@ -251,7 +251,7 @@
   <p>I tassi di cambio delle spese li scarica il nostro server da un servizio pubblico: lì non passa niente di tuo.</p>
 
   <h2>5. Fuori dall'Unione europea</h2>
-  <p>Supabase, Vercel e Twilio sono società con sede negli Stati Uniti. I dati dell'app stanno su server nell'Unione europea; per gli eventuali accessi dagli Stati Uniti valgono <span class="da-fare">[le garanzie da confermare: Data Privacy Framework o clausole contrattuali standard]</span>.</p>
+  <p>Supabase, Vercel, Twilio e Google sono società con sede negli Stati Uniti. I dati dell'app stanno su server nell'Unione europea; per gli eventuali accessi dagli Stati Uniti valgono <span class="da-fare">[le garanzie da confermare: Data Privacy Framework o clausole contrattuali standard]</span>.</p>
 
   <h2>6. La misurazione</h2>
   <p>È accesa quando installi l'app, e la spegni dal profilo, alla voce Privacy. Spenta, sul telefono non si scrive più niente, e quello che aspettava di partire si butta. Non perdi nessuna funzione. Il dettaglio di che cosa si conta è in <a href="/misurazione">Cosa misuriamo</a>.</p>

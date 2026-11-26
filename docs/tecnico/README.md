@@ -36,4 +36,4 @@ Le decisioni architetturali che vale la pena motivare per iscritto vivono in `ad
 - [**ADR-011** — La verifica del numero di telefono](adr/011-verifica-del-telefono.md) ✅
 - [**ADR-012** — Le notifiche, prima parte: i promemoria programmati dal telefono](adr/012-notifiche-locali.md) ✅
 - [**ADR-013** — Le sezioni: una barra sola, una pila per sezione](adr/013-le-sezioni.md) ✅
-- [**ADR-014** — Google Maps Platform al posto di Geoapify](adr/014-google-maps-platform.md) ✅ *(da costruire, CR-06)*
+- [**ADR-014** — Google Maps Platform al posto di Geoapify](adr/014-google-maps-platform.md) ✅ *(CR-06: passi 1–4 costruiti, resta il rinnovo delle coordinate)*

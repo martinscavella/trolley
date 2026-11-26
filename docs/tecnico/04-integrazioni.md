@@ -14,9 +14,11 @@ La regola che li governa tutti: **ogni integrazione sta dietro un'interfaccia in
 | **Costo** | A chiamata. È **il costo variabile che cresce con l'uso** e non con le registrazioni: chi naviga tutto il giorno costa più di dieci persone che aprono l'app due volte |
 | **Senza rete** | Non funziona. Restano indirizzi e coordinate delle tappe, che sono nell'insieme essenziale, e la possibilità di consegnarli all'app di mappe del telefono |
 | **Se smette** | Degrada a elenco: le tappe restano, la mappa no. Non si blocca niente |
-| **Cosa vede** | Le zone di mappa che si guardano, il testo che si cerca, e la posizione solo come partenza di un percorso chiesto dalla persona. Dev'essere l'unico servizio a vederla. Non sa chi è la persona né per quale viaggio, e non vede il telefono: le chiamate gli arrivano dal nostro server |
+| **Cosa vede** | Dal nostro server, il testo che si cerca e il posto scelto, senza sapere chi è la persona né per quale viaggio. Dal telefono, attraverso gli SDK, la mappa che si guarda e, solo mentre guida a una tappa chiesta dalla persona, la posizione. Dev'essere l'unico servizio a vederla |
 
 Il fornitore è **Geoapify** (dati OpenStreetMap), scelto perché le coordinate di un posto cercato si possono conservare nella tappa. Nella fase interna il piano gratuito basta (3000 crediti al giorno, senza carta). Dall'8 ottobre 2026 (U.2) **la chiave sta solo sul server**: la funzione `mappe` di Supabase passa riquadri, ricerche e percorsi e fa rispettare il **tetto per persona, per viaggio e per giorno**; il consumo si conta con `consumo_mappe`. Vedi [ADR-006](adr/006-mappe-e-percorsi.md).
+
+**Dal 26 novembre 2026 il fornitore è Google** ([ADR-014](adr/014-google-maps-platform.md), CR-06): la mappa e la guida con gli SDK sul telefono (`dati/mappa_google.dart`, `dati/guida_google.dart`, dietro `Mappe` e `Guida`), la ricerca e le schede dei posti con Places dalla funzione `mappe`, che fa rispettare lo stesso tetto e conta, prima di partire, ogni destinazione della guida. Geoapify non c'è più.
 
 ---
 

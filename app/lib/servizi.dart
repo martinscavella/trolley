@@ -5,6 +5,7 @@ import 'dati/acquisizione.dart';
 import 'dati/archivio.dart';
 import 'dati/database.dart';
 import 'dati/documenti.dart';
+import 'dati/guida.dart';
 import 'dati/mappe.dart';
 import 'dati/mappe_del_telefono.dart';
 import 'dati/pagine.dart';
@@ -29,6 +30,7 @@ class Servizi extends InheritedWidget {
     required this.documenti,
     required this.acquisizione,
     required this.mappe,
+    required this.guida,
     required this.posizione,
     required this.mappeDelTelefono,
     required this.pagine,
@@ -51,8 +53,11 @@ class Servizi extends InheritedWidget {
   /// Da dove arriva un documento nuovo: scansione, foto, file.
   final Acquisizione acquisizione;
 
-  /// Il fornitore di mappe, percorsi e ricerca dei luoghi (ADR-006).
+  /// La mappa e la ricerca dei luoghi (ADR-006, ADR-014).
   final Mappe mappe;
+
+  /// La guida passo passo verso una tappa (CR-06, passo 4).
+  final Guida guida;
 
   /// Dove si trova il telefono: solo per la mappa, mai fuori (08, regola 7).
   final Posizione posizione;

@@ -191,3 +191,66 @@ String? viaggioPerLaMappa<V>({
   }
   return (sudOvest: (lat: s, lon: o), nordEst: (lat: n, lon: e));
 }
+
+/// Un rettangolo sullo schermo, in punti dai bordi: quello che una mappa
+/// lascia libero, o dove mette il centro della camera.
+typedef Bordi = ({double sopra, double sotto, double sinistra, double destra});
+
+/// Dove mettere la camera di una mappa larga [larghezza] e alta [altezza]
+/// perché [punti] stiano tutti nello spazio [libero] (lontani [bordo] punti
+/// dai suoi lati), quando la camera mette il suo centro al centro di
+/// [camera]. Così lo spazio lasciato al logo di Google, che sposta il
+/// centro della camera, non stringe l'inquadratura. Con un punto solo, o
+/// tutti nello stesso posto, lo zoom è [zoomMassimo].
+({Coordinate centro, double zoom}) inquadratura(
+  List<Coordinate> punti, {
+  required double larghezza,
+  required double altezza,
+  required Bordi libero,
+  required Bordi camera,
+  double bordo = 40,
+  double zoomMassimo = 16,
+  double? zoom,
+}) {
+  final xs = [for (final p in punti) _mercatoreX(p.lon)];
+  final ys = [for (final p in punti) _mercatoreY(p.lat)];
+  final x1 = xs.reduce(min), x2 = xs.reduce(max);
+  final y1 = ys.reduce(min), y2 = ys.reduce(max);
+  final largo = larghezza - libero.sinistra - libero.destra - 2 * bordo;
+  final alto = altezza - libero.sopra - libero.sotto - 2 * bordo;
+  var z = zoom ?? zoomMassimo;
+  if (zoom == null) {
+    final dx = x2 - x1, dy = y2 - y1;
+    final perX = dx > 1e-12 ? largo / (dx * 256) : double.infinity;
+    final perY = dy > 1e-12 ? alto / (dy * 256) : double.infinity;
+    final adatta = min(perX, perY);
+    if (adatta.isFinite && adatta > 0) {
+      z = (log(adatta) / ln2).clamp(2.0, zoomMassimo);
+    }
+  }
+  final scala = 256 * pow(2, z);
+  // Il centro dei punti va al centro dello spazio libero; la camera mette
+  // il suo centro altrove: lo si sposta di quanto li separa.
+  final liberoX = (libero.sinistra + larghezza - libero.destra) / 2;
+  final liberoY = (libero.sopra + altezza - libero.sotto) / 2;
+  final cameraX = (camera.sinistra + larghezza - camera.destra) / 2;
+  final cameraY = (camera.sopra + altezza - camera.sotto) / 2;
+  final x = (x1 + x2) / 2 + (cameraX - liberoX) / scala;
+  final y = (y1 + y2) / 2 + (cameraY - liberoY) / scala;
+  return (
+    centro: (lat: _mercatoreLat(y), lon: x * 360 - 180),
+    zoom: z.toDouble(),
+  );
+}
+
+double _mercatoreX(double lon) => (lon + 180) / 360;
+
+double _mercatoreY(double lat) {
+  final s = sin(lat * pi / 180).clamp(-0.9999, 0.9999);
+  return 0.5 - log((1 + s) / (1 - s)) / (4 * pi);
+}
+
+double _mercatoreLat(double y) {
+  final t = pi * (1 - 2 * y);
+  return atan((exp(t) - exp(-t)) / 2) * 180 / pi;
+}

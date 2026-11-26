@@ -64,7 +64,7 @@ Il loro impianto di sicurezza (5.1) è già costruito, e resta spento finché la
 ### Fornitori e trasferimenti
 
 9. **Responsabili del trattamento**: Supabase (database, accesso, funzioni), Vercel (sito con la pagina degli inviti e l'informativa), Geoapify (mappe, ricerche, percorsi; riceve dal nostro server zone di mappa, testo cercato e capi del percorso, senza sapere chi è la persona). Servono gli accordi dell'art. 28 con tutti e tre? Quelli standard dei fornitori bastano?
-10. **Geoapify**: dalle fonti pubbliche risulta Geoapify GmbH in Germania, ma anche una KEPTAGO LTD a Cipro. Quale entità va indicata?
+10. ~~**Geoapify**: dalle fonti pubbliche risulta Geoapify GmbH in Germania, ma anche una KEPTAGO LTD a Cipro. Quale entità va indicata?~~ Superata il 26 novembre 2026: Geoapify non c'è più, il fornitore è Google (28, 32).
 11. **Trasferimenti fuori dall'UE**: Supabase e Vercel sono società statunitensi. I dati dell'app stanno in Irlanda, ma il sito di Vercel è servito dalla rete globale, e l'assistenza di entrambi può accedere dagli Stati Uniti. Quali garanzie citare: Data Privacy Framework, clausole contrattuali standard?
 12. **Apple** (App Store, TestFlight, backup del telefono) e l'**assistente** scelto dalla persona per l'itinerario: li consideriamo titolari autonomi, non nostri fornitori. È corretto?
 
@@ -98,6 +98,7 @@ Il loro impianto di sicurezza (5.1) è già costruito, e resta spento finché la
 29. **La guida scritta da un modello** (CR-01): la scheda di un luogo la scrive un modello da Wikipedia e dal nome del luogo, si conserva per tutti e si può segnalare. Che cosa va detto alla persona (che è scritta da un modello, le fonti), e chi risponde di un errore? Dati personali non ne entrano.
 30. **Le foto nel racconto del viaggio** (CR-08): l'app legge le foto del telefono per proporre i momenti del viaggio, sul telefono, senza mandarle a nessuno; la persona condivide un'immagine fatta da lei. Basta il permesso alle foto del sistema? E nell'immagine condivisa possono esserci altre persone: serve un avviso?
 31. **Le condizioni europee di Google Maps Platform** ([ADR-014](../tecnico/adr/014-google-maps-platform.md)): il contenuto di Places e i passi di Routes non si usano «con nessuna mappa», cioè né sopra né accanto né «in modo visivamente associato». Il dettaglio di una tappa avrà due schede, «Info» con indirizzo e orari di Google e «Mappa» con la mini mappa, mai visibili insieme: basta? E il titolo di una tappa, proposto dal nome del posto scelto nella ricerca di Google e poi della persona, è contenuto di Google?
+32. **La guida di Google** (CR-06, passo 4, 26 novembre 2026): mentre guida verso una tappa, il Navigation SDK manda a Google dal telefono la posizione precisa e continua, anche a schermo spento finché la guida è accesa; a noi non arriva. Alla prima guida la persona accetta, in un dialogo di Google, le condizioni della guida di Google. Basta il permesso «mentre usi l'app» e quel dialogo, o va detto prima con parole nostre? Per questi dati Google è un nostro responsabile o un titolare autonomo, visto che le condizioni le accetta la persona? La [informativa](../../sito/privacy.html) in bozza lo dice al punto 3.
 
 ---
 

@@ -26,6 +26,7 @@ import 'package:trolley/dati/database.dart';
 import 'package:trolley/dati/destinazioni.dart';
 import 'package:trolley/dati/documenti.dart';
 import 'package:trolley/dati/errori.dart';
+import 'package:trolley/dati/guida.dart';
 import 'package:trolley/dati/file_del_telefono.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/mappe_del_telefono.dart';
@@ -37,7 +38,6 @@ import 'package:trolley/dati/promemoria.dart';
 import 'package:trolley/dati/rete.dart';
 import 'package:trolley/dati/telefono.dart';
 import 'package:trolley/dominio/mappa.dart';
-import 'package:trolley/dominio/navigazione.dart';
 import 'package:trolley/dominio/notifiche.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
@@ -153,6 +153,7 @@ Map<String, Object?> rigaDiTappa(
   String? luogo,
   double? lat,
   double? lon,
+  String? placeId,
 }) => {
   'id': id,
   'viaggio_id': viaggio,
@@ -162,6 +163,7 @@ Map<String, Object?> rigaDiTappa(
   'luogo_nome': luogo,
   'lat': lat,
   'lon': lon,
+  if (placeId != null) ...{'place_id': placeId, 'coordinate_il': _istante},
   'durata_stimata_min': durata,
   'ora_inizio': ora,
   'stato': stato,
@@ -1797,17 +1799,13 @@ class MappeFinte implements Mappe {
   /// Vicino a dove si è cercato.
   final vicino = <Coordinate?>[];
 
-  /// Il percorso che dà ogni richiesta; `null` per un fornitore che non
-  /// risponde.
-  Percorso? percorso;
-
-  /// I capi dei percorsi chiesti.
-  final chiesti = <({Coordinate da, Coordinate a})>[];
+  /// Le guide che il server ha lasciato partire, per viaggio.
+  final guide = <String>[];
 
   /// Per quali viaggi si è chiesto, in ordine.
   final viaggi = <String>[];
 
-  /// Il tetto di oggi è raggiunto: ricerche e percorsi si fermano.
+  /// Il tetto di oggi è raggiunto: ricerche e guide si fermano.
   bool tetto = false;
 
   var _consumo = const ConsumoMappe();
@@ -1815,22 +1813,11 @@ class MappeFinte implements Mappe {
   @override
   ConsumoMappe get consumo => _consumo;
 
-  /// Come se la mappa avesse scaricato [quanti] riquadri.
-  void scaricaRiquadri(int quanti) => _consumo = ConsumoMappe(
-    riquadri: _consumo.riquadri + quanti,
-    ricerche: _consumo.ricerche,
-    dettagli: _consumo.dettagli,
-    schede: _consumo.schede,
-    percorsi: _consumo.percorsi,
-    fermati: _consumo.fermati,
-  );
-
-  @override
-  Widget riquadri(BuildContext context, {required String viaggioId}) =>
-      const SizedBox.shrink();
-
   /// Quante volte la mappa si è inquadrata, e su quali punti.
   final inquadrature = <List<Coordinate>>[];
+
+  /// Dove l'ultima mappa disegnata mette il logo di Google.
+  EdgeInsets? zonaDelLogo;
 
   /// Le linee dell'ultima mappa disegnata.
   var linee = <LineaMappa>[];
@@ -1844,10 +1831,12 @@ class MappeFinte implements Mappe {
     required Coordinate centro,
     required double zoom,
     EdgeInsets margini = EdgeInsets.zero,
+    EdgeInsets? zonaDelLogo,
     bool interattiva = true,
     required void Function(ControlloMappa controllo) onPronta,
     VoidCallback? onTocca,
   }) {
+    this.zonaDelLogo = zonaDelLogo;
     this.linee = linee;
     return _MappaFinta(
       segni: segni,
@@ -1857,18 +1846,14 @@ class MappeFinte implements Mappe {
   }
 
   @override
-  String get attribuzione => 'Mappe finte';
-
-  @override
   String get attribuzioneRicerca => 'Google Maps';
 
   ErroreTrolley _fermato(String messaggio) {
     _consumo = ConsumoMappe(
-      riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
       dettagli: _consumo.dettagli,
       schede: _consumo.schede,
-      percorsi: _consumo.percorsi,
+      destinazioni: _consumo.destinazioni,
       fermati: _consumo.fermati + 1,
     );
     return ErroreTrolley(messaggio, codice: CodiciServer.tettoMappe);
@@ -1889,11 +1874,10 @@ class MappeFinte implements Mappe {
     vicino.add(vicinoA);
     sessioni.add(sessione);
     _consumo = ConsumoMappe(
-      riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche + 1,
       dettagli: _consumo.dettagli,
       schede: _consumo.schede,
-      percorsi: _consumo.percorsi,
+      destinazioni: _consumo.destinazioni,
       fermati: _consumo.fermati,
     );
     return [
@@ -1914,11 +1898,10 @@ class MappeFinte implements Mappe {
     }
     postiChiesti.add((id: id, sessione: sessione));
     _consumo = ConsumoMappe(
-      riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
       dettagli: _consumo.dettagli + 1,
       schede: _consumo.schede,
-      percorsi: _consumo.percorsi,
+      destinazioni: _consumo.destinazioni,
       fermati: _consumo.fermati,
     );
     final posto = posti[id];
@@ -1934,11 +1917,10 @@ class MappeFinte implements Mappe {
     }
     schedeChieste.add(id);
     _consumo = ConsumoMappe(
-      riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
       dettagli: _consumo.dettagli,
       schede: _consumo.schede + 1,
-      percorsi: _consumo.percorsi,
+      destinazioni: _consumo.destinazioni,
       fermati: _consumo.fermati,
     );
     return schedaDelPosto?.call(id) ??
@@ -1946,30 +1928,154 @@ class MappeFinte implements Mappe {
   }
 
   @override
-  Future<Percorso> percorsoAPiedi(
-    Coordinate da,
-    Coordinate a, {
-    required String viaggioId,
-  }) async {
+  Future<void> guidaConsentita({required String viaggioId}) async {
     viaggi.add(viaggioId);
     if (tetto) {
-      throw _fermato(
-        'Per oggi, in questo viaggio, le strade calcolate sono finite.',
-      );
+      throw _fermato('Per oggi, in questo viaggio, le guide sono finite.');
     }
-    chiesti.add((da: da, a: a));
+    guide.add(viaggioId);
     _consumo = ConsumoMappe(
-      riquadri: _consumo.riquadri,
       ricerche: _consumo.ricerche,
       dettagli: _consumo.dettagli,
       schede: _consumo.schede,
-      percorsi: _consumo.percorsi + 1,
+      destinazioni: _consumo.destinazioni + 1,
       fermati: _consumo.fermati,
     );
-    final p = percorso;
-    if (p == null) throw const ErroreTrolley('La mappa non risponde.');
-    return p;
   }
+}
+
+/// La guida comandata dal test: la vista è un riquadro vuoto, e il test
+/// dice come risponde, quanto manca e quando si arriva.
+class GuidaFinta implements Guida {
+  @override
+  bool disponibile = true;
+
+  /// Come risponde a [prepara], e a [parti].
+  EsitoGuida preparata = EsitoGuida.ok;
+  EsitoGuida partenza = EsitoGuida.ok;
+
+  /// Le destinazioni chieste, in ordine.
+  final partite = <({String titolo, Coordinate posto, String? placeId})>[];
+  int preparazioni = 0;
+  int fermate = 0;
+
+  /// I segni dell'ultima vista.
+  var segni = <SegnoMappa>[];
+
+  final _rimasto = StreamController<Rimasto>.broadcast();
+  final _arrivo = StreamController<void>.broadcast();
+  final _indicazioni = StreamController<Indicazione>.broadcast();
+
+  /// La voce: accesa, finché il test non la spegne dal pulsante.
+  bool voceAccesa = true;
+
+  /// Dove la schermata dice alla vista che è il telefono.
+  Coordinate? qui;
+
+  /// La mappa in 3D: come la vista è partita, e poi dal pulsante.
+  bool inclinata = true;
+
+  @override
+  Future<void> voce({required bool accesa}) async => voceAccesa = accesa;
+
+  /// Quante volte la mappa è tornata a seguire la persona, a comando.
+  int seguimi = 0;
+  void Function(bool segue)? _onSegue;
+
+  /// La persona ha spostato la mappa col dito: non la segue più.
+  void spostaLaMappa() => _onSegue?.call(false);
+
+  /// La svolta che viene.
+  void indica(Indicazione i) => _indicazioni.add(i);
+
+  /// Mancano [metri] e [tempo].
+  void manca(double metri, Duration tempo) =>
+      _rimasto.add(Rimasto(metri: metri, tempo: tempo));
+
+  /// Si è arrivati.
+  void arriva() => _arrivo.add(null);
+
+  @override
+  Future<EsitoGuida> prepara() async {
+    preparazioni++;
+    return preparata;
+  }
+
+  @override
+  Widget vista({
+    required List<SegnoMappa> segni,
+    required Coordinate centro,
+    EdgeInsets margini = EdgeInsets.zero,
+    bool inclinata = true,
+    Coordinate? qui,
+    required void Function(ControlloGuida controllo) onPronta,
+    void Function(bool segue)? onSegue,
+  }) {
+    this.segni = segni;
+    this.qui = qui;
+    this.inclinata = inclinata;
+    _onSegue = onSegue;
+    return _VistaFinta(onPronta: () => onPronta(_ControlloGuidaFinto(this)));
+  }
+
+  @override
+  Future<EsitoGuida> parti({
+    required String titolo,
+    required Coordinate posto,
+    String? placeId,
+  }) async {
+    partite.add((titolo: titolo, posto: posto, placeId: placeId));
+    return partenza;
+  }
+
+  @override
+  Stream<Rimasto> get rimasto => _rimasto.stream;
+
+  @override
+  Stream<void> get arrivo => _arrivo.stream;
+
+  @override
+  Stream<Indicazione> get indicazioni => _indicazioni.stream;
+
+  @override
+  Future<void> ferma() async => fermate++;
+}
+
+class _ControlloGuidaFinto implements ControlloGuida {
+  _ControlloGuidaFinto(this._guida);
+
+  final GuidaFinta _guida;
+
+  @override
+  Future<void> seguimi() async {
+    _guida.seguimi++;
+    _guida._onSegue?.call(true);
+  }
+
+  @override
+  Future<void> inclina({required bool inclinata}) async =>
+      _guida.inclinata = inclinata;
+}
+
+class _VistaFinta extends StatefulWidget {
+  const _VistaFinta({required this.onPronta});
+
+  final VoidCallback onPronta;
+
+  @override
+  State<_VistaFinta> createState() => _VistaFintaState();
+}
+
+class _VistaFintaState extends State<_VistaFinta> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => widget.onPronta());
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      const SizedBox.expand(key: Key('vista-della-guida'));
 }
 
 /// La posizione del telefono comandata dal test.
@@ -2027,15 +2133,32 @@ class PosizioneFinta implements Posizione {
 
 /// Le Mappe del telefono finte: si ricorda dove l'hanno mandata.
 class MappeDelTelefonoFinte implements MappeDelTelefono {
-  final aperte = <({String nome, Coordinate? posto, String? indirizzo})>[];
+  final aperte =
+      <
+        ({
+          String nome,
+          Coordinate? posto,
+          String? indirizzo,
+          String? placeId,
+          bool conGoogle,
+        })
+      >[];
 
   @override
   Future<bool> portami({
     required String nome,
     Coordinate? posto,
     String? indirizzo,
+    String? placeId,
+    bool conGoogle = false,
   }) async {
-    aperte.add((nome: nome, posto: posto, indirizzo: indirizzo));
+    aperte.add((
+      nome: nome,
+      posto: posto,
+      indirizzo: indirizzo,
+      placeId: placeId,
+      conGoogle: conGoogle,
+    ));
     return true;
   }
 }
@@ -2129,6 +2252,7 @@ class Ambiente {
   );
 
   final mappe = MappeFinte();
+  final guida = GuidaFinta();
   final posizione = PosizioneFinta();
   final mappeDelTelefono = MappeDelTelefonoFinte();
   final pagine = PagineFinte();
@@ -2157,6 +2281,7 @@ class Ambiente {
     documenti: documenti,
     acquisizione: acquisizione,
     mappe: mappe,
+    guida: guida,
     posizione: posizione,
     mappeDelTelefono: mappeDelTelefono,
     pagine: pagine,

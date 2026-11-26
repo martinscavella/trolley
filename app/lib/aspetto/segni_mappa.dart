@@ -4,7 +4,10 @@
 /// viaggio un colore per giorno.
 library;
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../dominio/mappa.dart';
 import 'movimento.dart';
@@ -13,6 +16,11 @@ import 'testi.dart';
 
 /// Quanto spazio occupa un segno: abbastanza per il dito (44 punti).
 const latoSegno = 48.0;
+
+/// Il quadrato dell'immagine di un segno per la mappa di Google: più grande
+/// del segno, perché l'alone del segno scelto, ingrandito, ci stia intero.
+/// Il segno sta al centro, e la mappa lo appoggia dal centro.
+const latoImmagineSegno = 72.0;
 
 /// Una tappa sulla mappa.
 class SegnoSullaMappa extends StatelessWidget {
@@ -196,31 +204,57 @@ class NumeroTappa extends StatelessWidget {
   );
 }
 
-/// Chi ringraziare sotto la mappa: il fornitore e i dati (ADR-006). Una riga
-/// piccola, sopra la scheda in basso.
-class Attribuzione extends StatelessWidget {
-  const Attribuzione(this.testo, {super.key});
+/// Il logo di Google, in basso al centro su ogni mappa a tutto schermo
+/// (scelta dell'utente, 27 novembre 2026). La mappa lo mette nell'angolo in
+/// basso della zona che le si lascia: la zona è una striscia larga quanto
+/// il logo (circa 101 punti, a 7 dal bordo), in mezzo. Su iPhone, sotto, la
+/// mappa aggiunge da sola la zona sicura e un bordo: il logo sta circa
+/// [sopraLaZonaSicura] punti sopra la zona sicura, più quello che si lascia.
+double latoPerIlLogo(double larghezza) =>
+    max(0, (larghezza - 2 * (101 / 2 + 7)) / 2);
 
-  final String testo;
+/// Quanto sta il fondo del logo sopra la zona sicura, con niente sotto.
+const sopraLaZonaSicura = 9.0;
+
+/// Quanto è alto il logo.
+const altezzaDelLogo = 18.0;
+
+/// Dice quanto è alto quello che contiene, ogni volta che cambia: le
+/// schede sopra la mappa di Google, perché la mappa lasci libero quello
+/// spazio (e ci tenga sopra il marchio di Google).
+class MisuraAltezza extends SingleChildRenderObjectWidget {
+  const MisuraAltezza({
+    super.key,
+    required this.onAltezza,
+    required super.child,
+  });
+
+  final ValueChanged<double> onAltezza;
 
   @override
-  Widget build(BuildContext context) => testo.isEmpty
-      ? const SizedBox.shrink()
-      : Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colori.bianco.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            testo,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Testi.didascalia.copyWith(
-              fontSize: 9,
-              height: 1.3,
-              color: Colori.grafite,
-            ),
-          ),
-        );
+  RenderObject createRenderObject(BuildContext context) =>
+      RenderMisuraAltezza(onAltezza);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    RenderMisuraAltezza renderObject,
+  ) => renderObject.onAltezza = onAltezza;
+}
+
+/// La misura di [MisuraAltezza].
+class RenderMisuraAltezza extends RenderProxyBox {
+  RenderMisuraAltezza(this.onAltezza);
+
+  ValueChanged<double> onAltezza;
+  double? _ultima;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final altezza = size.height;
+    if (altezza == _ultima) return;
+    _ultima = altezza;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onAltezza(altezza));
+  }
 }

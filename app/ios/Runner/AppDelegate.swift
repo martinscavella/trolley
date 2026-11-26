@@ -19,6 +19,11 @@ import UserNotifications
     {
       GMSServices.provideAPIKey(chiave)
     }
+    // Il logo di Google in basso a destra, su ogni mappa (scelta
+    // dell'utente): la mappa lo mette dalla parte opposta se va da destra a
+    // sinistra. Cambia solo dove stanno i suoi controlli, tutti spenti tranne
+    // il logo; i nomi sulla mappa restano come sono.
+    GMSMapView.appearance().semanticContentAttribute = .forceRightToLeft
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

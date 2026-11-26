@@ -89,6 +89,10 @@ class PosizioneDelTelefono implements Posizione {
         // prima posizione, e non la riprende da solo. «Portami» restava a
         // cercare dove si è, finché un'altra app non accendeva il GPS.
         pauseLocationUpdatesAutomatically: false,
+        // Mai in sottofondo: l'app ha il permesso solo per la guida di
+        // Google (ADR-014, passo 4), e questa libreria, se c'è, lo usa da
+        // sola. Uscendo dall'app la mappa smette di sapere dove sei.
+        allowBackgroundLocationUpdates: false,
       ),
     ).map((p) => (lat: p.latitude, lon: p.longitude));
   }
@@ -104,6 +108,7 @@ class PosizioneDelTelefono implements Posizione {
           // La città, non la via: più in fretta, e con meno batteria.
           accuracy: LocationAccuracy.low,
           timeLimit: const Duration(seconds: 15),
+          allowBackgroundLocationUpdates: false,
         ),
       );
       return (lat: p.latitude, lon: p.longitude);

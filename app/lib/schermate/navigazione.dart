@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
@@ -14,28 +11,30 @@ import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
+import '../dati/guida.dart';
 import '../dati/lettura.dart';
 import '../dati/mappe.dart';
 import '../dominio/mappa.dart';
-import '../dominio/navigazione.dart';
 import '../dominio/tappe.dart';
 import '../servizi.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
 import 'salta.dart';
 
-/// La navigazione verso una tappa, dentro Trolley (08-mappa.md, regola 2;
-/// tela, 51): il percorso a piedi sulla mappa, l'indicazione grande in alto,
-/// quanto manca in basso, la posizione che si aggiorna mentre si cammina.
-/// All'arrivo, «Sei qui» propone di segnare la tappa con un tocco (tela, 52):
-/// è il gesto della verifica, e va dove la persona si trova già (regola 4).
+/// La guida verso una tappa, dentro Trolley (08-mappa.md, regola 2; CR-06,
+/// passo 4; tela, 163): la mappa di Google che segue la persona, in alto la
+/// nostra intestazione con la svolta che viene, in basso la nostra scheda,
+/// quanto manca e a che ora si arriva. Spostata la mappa col dito, il
+/// pulsante tondo la riporta dove si è. Di Google resta il logo. All'arrivo, «Sei qui» propone di
+/// segnare la tappa con un tocco (tela, 52): è il gesto della verifica, e va
+/// dove la persona si trova già (regola 4).
 ///
-/// «Apri in Mappe» c'è sempre: per i mezzi e l'auto, e quando la strada non
-/// si trova o si è chiesta troppe volte (ADR-006). Chi la apre non resta mai
-/// senza indicazioni.
+/// «Apri in Google Maps» c'è sempre, per chi preferisce, e quando la guida
+/// non parte: chi la apre non resta mai senza indicazioni (ADR-006).
 ///
 /// Si apre solo con la rete, il fornitore e il permesso di posizione
-/// ([portamiAllaTappa]); la tappa ha un posto.
+/// ([portamiAllaTappa]); la tappa ha un posto. Prima di partire il server
+/// conta la destinazione sul tetto (U.2): si paga.
 class SchermataNavigazione extends StatefulWidget {
   const SchermataNavigazione({
     super.key,
@@ -56,37 +55,54 @@ class SchermataNavigazione extends StatefulWidget {
   State<SchermataNavigazione> createState() => _SchermataNavigazioneState();
 }
 
-LatLng _ll(Coordinate c) => LatLng(c.lat, c.lon);
+enum _Fase {
+  /// Le condizioni di Google, la sessione.
+  preparo,
+
+  /// La strada si sta chiedendo.
+  parto,
+
+  /// Si cammina.
+  guida,
+
+  /// La guida non è partita.
+  ferma,
+}
 
 class _SchermataNavigazioneState extends State<SchermataNavigazione> {
   late Servizi _servizi;
   late ConsumoMappe _prima;
   bool _avviata = false;
 
-  final _controllo = MapController();
-  bool _pronta = false;
-
-  /// La mappa segue la persona finché non la sposta con le dita.
-  bool _segui = true;
-
-  StreamSubscription<Coordinate>? _seguo;
-  Coordinate? _qui;
-  Percorso? _percorso;
-  Avanzamento? _avanzamento;
-
-  /// I metri del percorso già alle spalle, alla posizione di prima.
-  double _fatti = 0;
-
-  /// Le posizioni di fila fuori strada.
-  int _fuori = 0;
-  int _ricalcoli = 0;
-  DateTime? _ultimoRicalcolo;
-  bool _chiedendo = false;
+  var _fase = _Fase.preparo;
   String? _errore;
 
-  /// Si è chiesta la strada troppe volte: si consegna alle Mappe.
-  bool _basta = false;
+  /// La vista della guida c'è solo con la sessione pronta.
+  bool _sessione = false;
+  final _vistaPronta = Completer<ControlloGuida>();
+
+  /// La mappa segue la persona, finché non la si sposta col dito.
+  /// All'inizio la mappa guarda la tappa: il pulsante tondo porta da te.
+  bool _segue = false;
+
+  /// La voce della guida e la mappa in 3D: come le ha lasciate la persona
+  /// l'ultima volta (tela, 163).
+  bool _voce = true;
+  bool _inclinata = true;
+
+  /// Quanto è alta l'intestazione: il pulsante della voce sta sotto.
+  double _altoSopra = 96;
+  Indicazione? _indicazione;
+  Rimasto? _rimasto;
+
+  /// Dove dice di essere il telefono: il puntino e la mappa della guida lo
+  /// usano quando la guida non dà la sua posizione sulla strada.
+  Coordinate? _qui;
+  final _ascolti = <StreamSubscription<Object?>>[];
   bool _arrivoMostrato = false;
+
+  /// Quanto è alta la scheda in basso: la mappa lascia libero lo spazio.
+  double _alto = 140;
 
   Coordinate get _posto => widget.tappa.posto!;
 
@@ -97,16 +113,15 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
     _avviata = true;
     _servizi = Servizi.of(context);
     _prima = _servizi.mappe.consumo;
-    _seguo = _servizi.posizione.segui().listen(
-      _nuovaPosizione,
-      onError: (Object _) {},
-    );
+    unawaited(_avvia());
   }
 
   @override
   void dispose() {
-    unawaited(_seguo?.cancel());
-    _controllo.dispose();
+    for (final a in _ascolti) {
+      unawaited(a.cancel());
+    }
+    unawaited(_servizi.guida.ferma());
     unawaited(
       registraConsumo(
         _servizi.misurazione,
@@ -118,97 +133,112 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
     super.dispose();
   }
 
-  void _nuovaPosizione(Coordinate p) {
+  Future<void> _avvia() async {
+    final guida = _servizi.guida;
+    final pronta = await guida.prepara();
+    if (!mounted) return;
+    if (pronta != EsitoGuida.ok) return _ferma(messaggioDellaGuida(pronta));
+    _ascolti.add(
+      _servizi.posizione.segui().listen((p) {
+        if (mounted) setState(() => _qui = p);
+      }, onError: (Object _) {}),
+    );
+    _voce = await _preferenza(_servizi.db, _chiaveVoce);
+    _inclinata = await _preferenza(_servizi.db, _chiave3D);
+    // La guida la tiene come la persona l'ha lasciata, dall'inizio.
+    await guida.voce(accesa: _voce);
+    if (!mounted) return;
+    _ascolti
+      ..add(
+        guida.rimasto.listen((r) {
+          if (mounted) setState(() => _rimasto = r);
+        }),
+      )
+      ..add(
+        guida.indicazioni.listen((i) {
+          if (mounted) setState(() => _indicazione = i);
+        }),
+      )
+      ..add(guida.arrivo.listen((_) => _arrivato()));
+    setState(() {
+      _sessione = true;
+      _fase = _Fase.parto;
+    });
+
+    // Ogni destinazione si paga: prima la conta il server, sul tetto.
+    try {
+      await _servizi.mappe.guidaConsentita(viaggioId: widget.viaggio.id);
+    } on ErroreTrolley catch (e) {
+      return _ferma(e.messaggio);
+    }
+    await _vistaPronta.future;
+    if (!mounted) return;
+    final partita = await guida.parti(
+      titolo: widget.tappa.titolo,
+      posto: _posto,
+      placeId: widget.tappa.placeId,
+    );
+    if (!mounted) return;
+    if (partita != EsitoGuida.ok) return _ferma(messaggioDellaGuida(partita));
+    setState(() => _fase = _Fase.guida);
+    // Partiti, la mappa segue la persona.
+    unawaited(_tornaDoveSei());
+  }
+
+  Future<void> _cambiaVoce() async {
+    final accesa = !_voce;
+    setState(() => _voce = accesa);
+    await _servizi.guida.voce(accesa: accesa);
+    await _ricorda(_servizi.db, _chiaveVoce, accesa);
+  }
+
+  Future<void> _cambiaVista() async {
+    final inclinata = !_inclinata;
+    setState(() => _inclinata = inclinata);
+    final controllo = await _vistaPronta.future;
+    await controllo.inclina(inclinata: inclinata);
+    await _ricorda(_servizi.db, _chiave3D, inclinata);
+  }
+
+  Future<void> _tornaDoveSei() async {
+    setState(() => _segue = true);
+    final controllo = await _vistaPronta.future;
+    await controllo.seguimi();
+  }
+
+  void _ferma(String messaggio) {
     if (!mounted) return;
     setState(() {
-      _qui = p;
-      final percorso = _percorso;
-      if (percorso == null) return;
-      final a = percorso.avanzamento(p, giaFatti: _fatti);
-      _avanzamento = a;
-      _fatti = a.fatti;
-      _fuori = a.fuoriStrada ? _fuori + 1 : 0;
+      _fase = _Fase.ferma;
+      _errore = messaggio;
     });
-    if (_percorso == null) {
-      if (!_chiedendo && _errore == null) unawaited(_chiediPercorso(p));
-    } else {
-      switch (vaRicalcolato(
-        fuori: _fuori,
-        fatti: _ricalcoli,
-        ultimo: _ultimoRicalcolo,
-        adesso: widget.orologio(),
-      )) {
-        case Ricalcolo.si:
-          _ricalcoli++;
-          _ultimoRicalcolo = widget.orologio();
-          _fuori = 0;
-          unawaited(_chiediPercorso(p));
-        case Ricalcolo.basta:
-          if (!_basta) setState(() => _basta = true);
-        case Ricalcolo.no:
-          break;
-      }
-    }
-    if (_segui && _pronta) {
-      _controllo.move(_ll(p), max(_controllo.camera.zoom, 16.5));
-    }
-    if (!_arrivoMostrato &&
-        widget.tappa.statoTappa == StatoTappa.daFare &&
-        arrivato(posizione: p, tappa: _posto)) {
-      _arrivoMostrato = true;
-      unawaited(_arrivo());
-    }
   }
 
-  Future<void> _chiediPercorso(Coordinate da) async {
-    if (!_servizi.rete.disponibile) {
-      if (_percorso == null) {
-        setState(() => _errore = 'Senza rete la strada non si calcola.');
-      }
+  void _arrivato() {
+    if (!mounted ||
+        _arrivoMostrato ||
+        widget.tappa.statoTappa != StatoTappa.daFare) {
       return;
     }
-    _chiedendo = true;
-    try {
-      final percorso = await _servizi.mappe.percorsoAPiedi(
-        da,
-        _posto,
-        viaggioId: widget.viaggio.id,
-      );
-      if (!mounted) return;
-      setState(() {
-        _percorso = percorso;
-        _fatti = 0;
-        _fuori = 0;
-        _avanzamento = percorso.avanzamento(_qui ?? da);
-        _errore = null;
-      });
-    } on ErroreTrolley catch (e) {
-      // Un ricalcolo che non riesce lascia la strada di prima; al tetto di
-      // oggi la si lascia, e da lì portano le Mappe del telefono.
-      if (!mounted) return;
-      if (_percorso == null) {
-        setState(() => _errore = e.messaggio);
-      } else if (e.codice == CodiciServer.tettoMappe) {
-        setState(() => _basta = true);
-      }
-    } finally {
-      _chiedendo = false;
-    }
+    _arrivoMostrato = true;
+    unawaited(_arrivo());
   }
 
-  Future<void> _alleMappe() async {
+  Future<void> _aGoogleMaps() async {
     final aperte = await _servizi.mappeDelTelefono.portami(
       nome: widget.tappa.titolo,
       posto: _posto,
       indirizzo: widget.tappa.luogoNome,
+      placeId: widget.tappa.placeId,
+      conGoogle: true,
     );
     if (!aperte && mounted) {
-      mostraMessaggio(context, 'Le Mappe non si sono aperte.', errore: true);
+      mostraMessaggio(context, 'Google Maps non si è aperto.', errore: true);
     }
   }
 
   /// «Sei qui»: segnarla da dove si è (tela, 52). Fatta o saltata chiudono
-  /// anche la navigazione; «Dopo» lascia la strada dov'è.
+  /// anche la guida; «Dopo» lascia la mappa dov'è.
   Future<void> _arrivo() async {
     final segnabili = tappeSegnabili(widget.viaggio.statoA(DateTime.now()));
     final scelta = await apriFoglio<StatoTappa>(
@@ -233,112 +263,125 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
-    final percorso = _percorso;
-    final a = _avanzamento;
-    final qui = _qui;
+    // Sotto la scheda resta una striscia per il logo di Google, in fondo a
+    // destra come nelle altre mappe: lì non copre niente e non è coperto
+    // (le condizioni di Google lo vogliono sempre visibile), e sta sopra la
+    // curva dello schermo, dove si taglierebbe.
+    final inBasso = mq.padding.bottom > 0
+        ? mq.padding.bottom + sopraLaZonaSicura + altezzaDelLogo + 10
+        : 50.0;
     return Scaffold(
       backgroundColor: const Color(0xFFE7EAF0),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: FlutterMap(
-              mapController: _controllo,
-              options: MapOptions(
-                backgroundColor: const Color(0xFFE7EAF0),
-                initialCenter: _ll(qui ?? _posto),
-                initialZoom: 16.5,
-                minZoom: 3,
-                maxZoom: 19,
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+          if (_sessione)
+            Positioned.fill(
+              child: _servizi.guida.vista(
+                centro: _posto,
+                // Il logo di Google va in basso, al centro (scelta
+                // dell'utente): la mappa lo mette nell'angolo della zona
+                // che le si lascia, e la zona è una striscia larga quanto
+                // il logo, in mezzo. Uguale a destra e a sinistra: il
+                // centro della mappa, dove sta la persona, non si sposta.
+                margini: EdgeInsets.fromLTRB(
+                  latoPerIlLogo(mq.size.width),
+                  0,
+                  latoPerIlLogo(mq.size.width),
+                  0,
                 ),
-                onMapReady: () => _pronta = true,
-                onPositionChanged: (_, conLeDita) {
-                  if (conLeDita && _segui) setState(() => _segui = false);
+                inclinata: _inclinata,
+                qui: _qui,
+                segni: [
+                  SegnoMappa(
+                    id: 'tappa',
+                    posto: _posto,
+                    lato: latoImmagineSegno,
+                    aspetto: 'guida|${widget.numero}',
+                    disegno: SegnoSullaMappa(
+                      numero: widget.numero,
+                      segno: SegnoTappa.prossima,
+                      etichetta: '${widget.numero}, ${widget.tappa.titolo}',
+                      onTap: () {},
+                    ),
+                  ),
+                ],
+                onPronta: (c) {
+                  if (!_vistaPronta.isCompleted) _vistaPronta.complete(c);
+                },
+                onSegue: (segue) {
+                  if (mounted && segue != _segue) {
+                    setState(() => _segue = segue);
+                  }
                 },
               ),
-              children: [
-                _servizi.mappe.riquadri(context, viaggioId: widget.viaggio.id),
-                if (percorso != null)
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: [for (final p in percorso.punti) _ll(p)],
-                        color: Colori.cobalto,
-                        strokeWidth: 6,
-                      ),
-                    ],
-                  ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _ll(_posto),
-                      width: latoSegno,
-                      height: latoSegno,
-                      child: SegnoSullaMappa(
-                        numero: widget.numero,
-                        segno: SegnoTappa.prossima,
-                        etichetta: '${widget.numero}, ${widget.tappa.titolo}',
-                        onTap: () => _controllo.move(_ll(_posto), 17),
-                      ),
-                    ),
-                    if (qui != null)
-                      Marker(
-                        point: _ll(qui),
-                        width: PuntinoPosizione.lato,
-                        height: PuntinoPosizione.lato,
-                        child: const PuntinoPosizione(),
-                      ),
-                  ],
-                ),
-              ],
             ),
-          ),
+          // L'intestazione è nostra, dall'inizio alla fine (tela, 51 e 163).
           Positioned(
             top: mq.padding.top + 4,
             left: 12,
             right: 12,
-            child: _Indicazione(
-              titolo: widget.tappa.titolo,
-              cercaPosizione: qui == null,
-              cercaStrada: qui != null && percorso == null && _errore == null,
-              errore: _errore,
-              basta: _basta,
-              avanzamento: a,
+            child: MisuraAltezza(
+              onAltezza: (a) {
+                if (mounted && a != _altoSopra) setState(() => _altoSopra = a);
+              },
+              child: _Intestazione(
+                titolo: widget.tappa.titolo,
+                fase: _fase,
+                errore: _errore,
+                indicazione: _indicazione,
+              ),
             ),
           ),
-          if (!_segui && qui != null)
+          if (_fase == _Fase.guida)
             Positioned(
               right: 20,
-              bottom: mq.padding.bottom + 210,
+              top: mq.padding.top + 4 + _altoSopra + 12,
+              child: PulsanteTondo(
+                icona: _voce
+                    ? Icons.volume_up_rounded
+                    : Icons.volume_off_rounded,
+                etichetta: _voce ? 'Togli la voce' : 'Rimetti la voce',
+                onPressed: _cambiaVoce,
+              ),
+            ),
+          if (_fase == _Fase.guida)
+            Positioned(
+              right: 20,
+              top: mq.padding.top + 4 + _altoSopra + 12 + 44 + 12,
+              // La scritta dice dove si va: «2D» quando la mappa è in 3D.
+              child: PulsanteTondo(
+                testo: _inclinata ? '2D' : '3D',
+                icona: Icons.layers_rounded,
+                etichetta: _inclinata ? 'Mappa in 2D' : 'Mappa in 3D',
+                onPressed: _cambiaVista,
+              ),
+            ),
+          if (_sessione && !_segue)
+            Positioned(
+              right: 20,
+              bottom: inBasso + _alto + 16,
               child: PulsanteTondo(
                 icona: Icons.my_location_rounded,
                 etichetta: 'Torna dove sei',
-                onPressed: () {
-                  setState(() => _segui = true);
-                  _controllo.move(_ll(qui), max(_controllo.camera.zoom, 16.5));
-                },
+                onPressed: _tornaDoveSei,
               ),
             ),
           Positioned(
             left: 20,
             right: 20,
-            bottom: mq.padding.bottom > 0 ? mq.padding.bottom + 8 : 32,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Attribuzione(_servizi.mappe.attribuzione),
-                const SizedBox(height: 8),
-                _QuantoManca(
-                  numero: widget.numero,
-                  tappa: widget.tappa,
-                  avanzamento: a,
-                  adesso: widget.orologio(),
-                  onFine: () => Navigator.of(context).pop(),
-                  onMappe: _alleMappe,
-                ),
-              ],
+            bottom: inBasso,
+            child: MisuraAltezza(
+              onAltezza: (a) {
+                if (mounted && a != _alto) setState(() => _alto = a);
+              },
+              child: _QuantoManca(
+                numero: widget.numero,
+                tappa: widget.tappa,
+                rimasto: _rimasto,
+                adesso: widget.orologio(),
+                onFine: () => Navigator.of(context).pop(),
+                onGoogleMaps: _aGoogleMaps,
+              ),
             ),
           ),
         ],
@@ -347,58 +390,85 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
   }
 }
 
-/// L'indicazione grande in alto: la svolta che viene e fra quanto (tela, 51).
-class _Indicazione extends StatelessWidget {
-  const _Indicazione({
+const _chiaveVoce = 'guida_voce';
+const _chiave3D = 'guida_3d';
+
+/// Una scelta della guida che il telefono ricorda; accesa se non c'è.
+Future<bool> _preferenza(DatabaseLocale db, String chiave) async {
+  final riga = await (db.select(
+    db.impostazioni,
+  )..where((i) => i.chiave.equals(chiave))).getSingleOrNull();
+  return riga?.valore != 'no';
+}
+
+Future<void> _ricorda(DatabaseLocale db, String chiave, bool si) => db
+    .into(db.impostazioni)
+    .insertOnConflictUpdate(
+      ImpostazioniCompanion.insert(chiave: chiave, valore: si ? 'si' : 'no'),
+    );
+
+/// Che cosa dire quando la guida non parte. Restano sempre le Mappe.
+String messaggioDellaGuida(EsitoGuida esito) => switch (esito) {
+  EsitoGuida.ok => '',
+  EsitoGuida.condizioniRifiutate =>
+    'Senza le condizioni di Google la guida non parte.',
+  EsitoGuida.senzaPosizione => 'Il telefono non sa dove sei.',
+  EsitoGuida.nonTrovata => 'Non c\'è una strada a piedi fino alla tappa.',
+  EsitoGuida.senzaRete => 'Senza rete la strada non si calcola.',
+  EsitoGuida.tetto => 'Per questo mese le guide sono finite.',
+  EsitoGuida.nonDisponibile => 'La guida non risponde.',
+};
+
+/// In alto (tela, 51 e 163): prima si prepara, poi la svolta che viene,
+/// fra quanto e come la dice la guida; o la guida non è partita.
+class _Intestazione extends StatelessWidget {
+  const _Intestazione({
     required this.titolo,
-    required this.cercaPosizione,
-    required this.cercaStrada,
+    required this.fase,
     required this.errore,
-    required this.basta,
-    required this.avanzamento,
+    required this.indicazione,
   });
 
   final String titolo;
-  final bool cercaPosizione;
-  final bool cercaStrada;
+  final _Fase fase;
   final String? errore;
-  final bool basta;
-  final Avanzamento? avanzamento;
+  final Indicazione? indicazione;
 
   @override
   Widget build(BuildContext context) {
-    final a = avanzamento;
-    final prossima = a?.prossima;
-    final (IconData simbolo, String grande, String sotto) = switch (()) {
-      _ when errore != null => (
+    final i = indicazione;
+    final (IconData simbolo, String grande, String sotto) = switch (fase) {
+      _Fase.ferma => (
         Icons.wrong_location_outlined,
         'Niente strada',
-        '$errore Ti portano le Mappe del telefono.',
+        '${errore ?? ''} Ti porta Google Maps.'.trim(),
       ),
-      _ when cercaPosizione => (
+      _Fase.preparo => (
         Icons.location_searching_rounded,
-        'Cerco dove sei…',
-        'All\'aperto si trova prima.',
+        'Preparo la guida…',
+        'A piedi fino a $titolo.',
       ),
-      _ when cercaStrada || a == null => (
+      _Fase.parto => (
         Icons.alt_route_rounded,
         'Cerco la strada…',
         'A piedi fino a $titolo.',
       ),
-      _ when basta => (
+      _Fase.guida when i == null => (
+        Icons.navigation_rounded,
+        'Si parte',
+        'A piedi fino a $titolo.',
+      ),
+      _Fase.guida when i!.ricalcolo => (
         Icons.alt_route_rounded,
-        distanza(a.metriRimasti),
-        'Da qui ti portano meglio le Mappe del telefono.',
+        'Ricalcolo…',
+        i.testo,
       ),
-      _ when prossima == null || prossima.manovra == Manovra.arrivo => (
-        Icons.flag_rounded,
-        distanza(a.metriAllaProssima),
-        'Arrivi a $titolo',
-      ),
-      _ => (
-        iconaManovra(prossima.manovra),
-        distanza(a.metriAllaProssima),
-        prossima.istruzione,
+      _Fase.guida => (
+        iconaSvolta(i!.svolta),
+        i.metri == null ? '' : distanza(i.metri!),
+        i.svolta == Svolta.arrivo && i.testo.isEmpty
+            ? 'Arrivi a $titolo'
+            : i.testo,
       ),
     };
     return Semantics(
@@ -419,29 +489,32 @@ class _Indicazione extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AnimatedSwitcher(
-                    duration: movimentoRidotto(context)
-                        ? Duration.zero
-                        : Ritmo.breve,
-                    child: Text(
-                      grande,
-                      key: ValueKey(grande),
-                      style: Testi.titoli(
-                        26,
-                        altezza: 1.1,
-                      ).copyWith(color: Colori.bianco),
+                  if (grande.isNotEmpty)
+                    AnimatedSwitcher(
+                      duration: movimentoRidotto(context)
+                          ? Duration.zero
+                          : Ritmo.breve,
+                      child: Text(
+                        grande,
+                        key: ValueKey(grande),
+                        style: Testi.titoli(
+                          26,
+                          altezza: 1.1,
+                        ).copyWith(color: Colori.bianco),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    sotto,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: Testi.corpo.copyWith(
-                      color: Colori.bianco.withValues(alpha: 0.85),
-                      height: 1.3,
+                  if (grande.isNotEmpty && sotto.isNotEmpty)
+                    const SizedBox(height: 2),
+                  if (sotto.isNotEmpty)
+                    Text(
+                      sotto,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: Testi.corpo.copyWith(
+                        color: Colori.bianco.withValues(alpha: 0.85),
+                        height: 1.3,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -452,54 +525,51 @@ class _Indicazione extends StatelessWidget {
   }
 }
 
-/// L'icona di una manovra.
-IconData iconaManovra(Manovra m) => switch (m) {
-  Manovra.partenza => Icons.navigation_rounded,
-  Manovra.dritto => Icons.straight_rounded,
-  Manovra.leggermenteADestra => Icons.turn_slight_right_rounded,
-  Manovra.aDestra => Icons.turn_right_rounded,
-  Manovra.strettaADestra => Icons.turn_sharp_right_rounded,
-  Manovra.leggermenteASinistra => Icons.turn_slight_left_rounded,
-  Manovra.aSinistra => Icons.turn_left_rounded,
-  Manovra.strettaASinistra => Icons.turn_sharp_left_rounded,
-  Manovra.inversione => Icons.u_turn_left_rounded,
-  Manovra.tieniLaDestra => Icons.fork_right_rounded,
-  Manovra.tieniLaSinistra => Icons.fork_left_rounded,
-  Manovra.rotonda => Icons.roundabout_right_rounded,
-  Manovra.mezzi => Icons.directions_transit_rounded,
-  Manovra.arrivo => Icons.flag_rounded,
+/// L'icona di una svolta.
+IconData iconaSvolta(Svolta s) => switch (s) {
+  Svolta.dritto => Icons.straight_rounded,
+  Svolta.leggermenteADestra => Icons.turn_slight_right_rounded,
+  Svolta.aDestra => Icons.turn_right_rounded,
+  Svolta.strettaADestra => Icons.turn_sharp_right_rounded,
+  Svolta.leggermenteASinistra => Icons.turn_slight_left_rounded,
+  Svolta.aSinistra => Icons.turn_left_rounded,
+  Svolta.strettaASinistra => Icons.turn_sharp_left_rounded,
+  Svolta.inversione => Icons.u_turn_left_rounded,
+  Svolta.tieniLaDestra => Icons.fork_right_rounded,
+  Svolta.tieniLaSinistra => Icons.fork_left_rounded,
+  Svolta.rotonda => Icons.roundabout_right_rounded,
+  Svolta.traghetto => Icons.directions_boat_rounded,
+  Svolta.arrivo => Icons.flag_rounded,
 };
 
-/// In basso: la tappa, quanto manca, «Fine» e «Apri in Mappe» (tela, 51).
+/// In basso: la tappa, quanto manca, «Fine» e «Apri in Google Maps» (tela,
+/// 163).
 class _QuantoManca extends StatelessWidget {
   const _QuantoManca({
     required this.numero,
     required this.tappa,
-    required this.avanzamento,
+    required this.rimasto,
     required this.adesso,
     required this.onFine,
-    required this.onMappe,
+    required this.onGoogleMaps,
   });
 
   final int numero;
   final Tappa tappa;
-  final Avanzamento? avanzamento;
+  final Rimasto? rimasto;
   final DateTime adesso;
   final VoidCallback onFine;
-  final VoidCallback onMappe;
+  final VoidCallback onGoogleMaps;
 
   @override
   Widget build(BuildContext context) {
-    final a = avanzamento;
-    final sotto = a == null
+    final r = rimasto;
+    final sotto = r == null
         ? (tappa.luogoNome?.trim().isNotEmpty ?? false)
               ? tappa.luogoNome!.trim()
               : 'A piedi'
-        : [
-            '${tempoAPiedi(a.tempoRimasto)} a piedi',
-            distanza(a.metriRimasti),
-            'arrivi alle ${ora(_orario(adesso.add(a.tempoRimasto)))}',
-          ].join(' · ');
+        : '${tempoAPiedi(r.tempo)} a piedi · '
+              'arrivi alle ${ora(_orario(adesso.add(r.tempo)))}';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -574,35 +644,24 @@ class _QuantoManca extends StatelessWidget {
               Expanded(
                 flex: 16,
                 child: Premibile(
-                  onTap: onMappe,
-                  etichetta: 'Apri in Mappe',
+                  onTap: onGoogleMaps,
+                  etichetta: 'Apri in Google Maps',
                   child: Container(
                     height: 48,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
                       color: Colori.foschia,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.open_in_new_rounded,
-                          size: 16,
-                          color: Colori.cobaltoScuro,
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            'Apri in Mappe',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Testi.evidenza.copyWith(
-                              color: Colori.cobaltoScuro,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Apri in Google Maps',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Testi.evidenza.copyWith(
+                        color: Colori.cobaltoScuro,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 ),

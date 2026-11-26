@@ -655,7 +655,7 @@ class _DoveState extends State<_Dove> {
               id: 'segno-${tappa.id}',
               posto: posto,
               aspetto: '${widget.numero}|${segno.name}',
-              lato: latoSegno,
+              lato: latoImmagineSegno,
               disegno: SegnoSullaMappa(
                 numero: widget.numero,
                 segno: segno,

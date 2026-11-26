@@ -1,6 +1,7 @@
 /// Le Mappe del telefono (08-mappa.md, regola 6): dove si consegna una tappa
-/// quando la mappa di Trolley non c'è — senza rete, senza fornitore, oltre il
-/// tetto di ADR-006 — o quando si va coi mezzi o in auto. Possono avere le
+/// quando la guida di Trolley non c'è — senza rete, senza fornitore, oltre il
+/// tetto di ADR-006 — o quando si va coi mezzi o in auto. Dalla guida, chi
+/// preferisce apre Google Maps (tela, 163). Possono avere le
 /// loro mappe scaricate. Dietro un'interfaccia, come ogni cosa che esce
 /// dall'app (04-integrazioni.md).
 library;
@@ -13,11 +14,15 @@ import '../dominio/mappa.dart';
 
 abstract interface class MappeDelTelefono {
   /// Apre le Mappe con le indicazioni a piedi fino a [posto], o fino a
-  /// [indirizzo] se il posto non si sa. `false` se non si sono aperte.
+  /// [indirizzo] se il posto non si sa. [conGoogle]: Google Maps anche su
+  /// iPhone, sul posto di Google [placeId] se c'è. `false` se non si sono
+  /// aperte.
   Future<bool> portami({
     required String nome,
     Coordinate? posto,
     String? indirizzo,
+    String? placeId,
+    bool conGoogle = false,
   });
 }
 
@@ -30,12 +35,15 @@ class MappeDiSistema implements MappeDelTelefono {
     required String nome,
     Coordinate? posto,
     String? indirizzo,
+    String? placeId,
+    bool conGoogle = false,
   }) async {
     final indirizzoWeb = indirizzoPerLeMappe(
       nome: nome,
       posto: posto,
       indirizzo: indirizzo,
-      apple: !Platform.isAndroid,
+      placeId: placeId,
+      apple: !conGoogle && !Platform.isAndroid,
     );
     if (indirizzoWeb == null) return false;
     try {
@@ -50,11 +58,13 @@ class MappeDiSistema implements MappeDelTelefono {
 }
 
 /// Il link che apre le Mappe sulle indicazioni a piedi. `null` se non c'è
-/// né un posto né un indirizzo.
+/// né un posto né un indirizzo. Google Maps va dritto al posto di Google
+/// [placeId], se c'è; il link apre l'app se c'è, altrimenti il sito.
 Uri? indirizzoPerLeMappe({
   required String nome,
   Coordinate? posto,
   String? indirizzo,
+  String? placeId,
   bool apple = true,
 }) {
   final dove = posto != null
@@ -72,6 +82,8 @@ Uri? indirizzoPerLeMappe({
       : Uri.https('www.google.com', '/maps/dir/', {
           'api': '1',
           'destination': dove,
+          if (placeId != null && placeId.isNotEmpty)
+            'destination_place_id': placeId,
           'travelmode': 'walking',
         });
 }

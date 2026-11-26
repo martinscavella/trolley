@@ -21,12 +21,12 @@ dependencies:
   flutter_local_notifications: ^22.3.2
   flutter_localizations:
     sdk: flutter
-  flutter_map: ^8.3.2
   geolocator: ^14.1.1
-  google_maps_flutter: ^2.19.0
-  google_maps_flutter_ios_sdk10: ^2.19.0
+  # La mappa e la guida di Google (ADR-014): un plugin solo, perché porta il
+  # suo Maps SDK e due Maps SDK nella stessa app non convivono. Ancora beta:
+  # la versione è fissata.
+  google_navigation_flutter: 0.13.0
   http: ^1.6.0
-  latlong2: ^0.10.1
   path_provider: ^2.1.6
   share_plus: ^13.3.0
   supabase_flutter: ^2.18.0
