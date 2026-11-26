@@ -244,6 +244,7 @@ class GuidaGoogle implements Guida {
     EdgeInsets margini = EdgeInsets.zero,
     bool inclinata = true,
     Coordinate? qui,
+    double? verso,
     required void Function(ControlloGuida controllo) onPronta,
     void Function(bool segue)? onSegue,
   }) => _VistaGuida(
@@ -252,6 +253,7 @@ class GuidaGoogle implements Guida {
     margini: margini,
     inclinata: inclinata,
     qui: qui,
+    verso: verso,
     onPronta: onPronta,
     onSegue: onSegue,
   );
@@ -355,6 +357,7 @@ class _VistaGuida extends StatefulWidget {
     required this.margini,
     required this.inclinata,
     required this.qui,
+    required this.verso,
     required this.onPronta,
     required this.onSegue,
   });
@@ -364,6 +367,7 @@ class _VistaGuida extends StatefulWidget {
   final EdgeInsets margini;
   final bool inclinata;
   final Coordinate? qui;
+  final double? verso;
   final void Function(ControlloGuida controllo) onPronta;
   final void Function(bool segue)? onSegue;
 
@@ -443,14 +447,25 @@ class _VistaGuidaState extends State<_VistaGuida> {
       [
         ...widget.segni,
         if (qui != null)
-          SegnoMappa(
-            id: 'qui',
-            posto: (lat: qui.latitude, lon: qui.longitude),
-            lato: PuntinoPosizione.lato,
-            aspetto: 'qui',
-            sopra: true,
-            disegno: const PuntinoPosizione(),
-          ),
+          if (widget.verso case final verso?)
+            SegnoMappa(
+              id: 'qui',
+              posto: (lat: qui.latitude, lon: qui.longitude),
+              lato: PuntinoPosizione.latoConVerso,
+              aspetto: 'qui-verso',
+              sopra: true,
+              rotazione: verso,
+              disegno: const PuntinoPosizione(conVerso: true),
+            )
+          else
+            SegnoMappa(
+              id: 'qui',
+              posto: (lat: qui.latitude, lon: qui.longitude),
+              lato: PuntinoPosizione.lato,
+              aspetto: 'qui',
+              sopra: true,
+              disegno: const PuntinoPosizione(),
+            ),
       ],
       [
         if (_strada.length >= 2)

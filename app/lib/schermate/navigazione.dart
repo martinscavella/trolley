@@ -98,6 +98,9 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
   /// Dove dice di essere il telefono: il puntino e la mappa della guida lo
   /// usano quando la guida non dà la sua posizione sulla strada.
   Coordinate? _qui;
+
+  /// Dove punta il telefono: il cono del puntino (tela, 163).
+  double? _verso;
   final _ascolti = <StreamSubscription<Object?>>[];
   bool _arrivoMostrato = false;
 
@@ -141,6 +144,11 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
     _ascolti.add(
       _servizi.posizione.segui().listen((p) {
         if (mounted) setState(() => _qui = p);
+      }, onError: (Object _) {}),
+    );
+    _ascolti.add(
+      _servizi.posizione.direzione().listen((g) {
+        if (mounted) setState(() => _verso = g);
       }, onError: (Object _) {}),
     );
     _voce = await _preferenza(_servizi.db, _chiaveVoce);
@@ -291,6 +299,7 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
                 ),
                 inclinata: _inclinata,
                 qui: _qui,
+                verso: _verso,
                 segni: [
                   SegnoMappa(
                     id: 'tappa',

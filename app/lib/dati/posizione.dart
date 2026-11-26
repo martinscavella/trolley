@@ -5,10 +5,15 @@
 /// Non lascia mai il telefono: non si scrive, non si manda al server, non va
 /// negli eventi. Al fornitore di mappe arriva solo come partenza di un
 /// percorso chiesto dalla persona; per la verifica del viaggio si confronta
-/// qui con la meta, e al server va solo l'esito (dati/sul_posto.dart). Si chiede solo «mentre si usa l'app»: in
-/// sottofondo no, mai.
+/// qui con la meta, e al server va solo l'esito (dati/sul_posto.dart). Si
+/// chiede solo «mentre si usa l'app»: in sottofondo la usa solo la guida di
+/// Google, mentre ti guida (ADR-014); qui mai.
+///
+/// La bussola (dove punta il telefono, per il cono del puntino nella guida)
+/// passa da un canale nostro: BussolaDelTelefono, in Swift e in Kotlin.
 library;
 
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../dominio/mappa.dart';
@@ -37,6 +42,10 @@ abstract interface class Posizione {
   /// Le posizioni man mano che ci si muove, finché qualcuno ascolta.
   Stream<Coordinate> segui();
 
+  /// Dove punta il telefono, in gradi dal nord in senso orario, finché
+  /// qualcuno ascolta. Niente se il telefono non ha la bussola.
+  Stream<double> direzione();
+
   /// Dov'è il telefono adesso, all'ingrosso: per la verifica del viaggio
   /// basta la città (dominio/verifica.dart). `null` se non si sa in pochi
   /// secondi, o senza permesso.
@@ -64,6 +73,16 @@ class PosizioneDelTelefono implements Posizione {
     if (adesso != PermessoPosizione.daChiedere) return adesso;
     return _traduci(await Geolocator.requestPermission());
   }
+
+  static const _bussola = EventChannel('trolley/bussola');
+
+  @override
+  Stream<double> direzione() => _bussola
+      .receiveBroadcastStream()
+      .where((g) => g is num)
+      .map((g) => (g as num).toDouble())
+      // Senza bussola, o senza il canale: niente cono, nient'altro.
+      .handleError((Object _) {});
 
   @override
   Stream<Coordinate> segui() async* {

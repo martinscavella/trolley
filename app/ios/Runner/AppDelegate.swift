@@ -33,5 +33,9 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DocumentiDelTelefono") {
       DocumentiDelTelefono.register(with: registrar)
     }
+    // La bussola, per il cono del puntino nella guida.
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "BussolaDelTelefono") {
+      BussolaDelTelefono.register(with: registrar)
+    }
   }
 }

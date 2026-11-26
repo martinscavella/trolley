@@ -1969,8 +1969,9 @@ class GuidaFinta implements Guida {
   /// La voce: accesa, finché il test non la spegne dal pulsante.
   bool voceAccesa = true;
 
-  /// Dove la schermata dice alla vista che è il telefono.
+  /// Dove la schermata dice alla vista che è il telefono, e dove punta.
   Coordinate? qui;
+  double? verso;
 
   /// La mappa in 3D: come la vista è partita, e poi dal pulsante.
   bool inclinata = true;
@@ -2008,11 +2009,13 @@ class GuidaFinta implements Guida {
     EdgeInsets margini = EdgeInsets.zero,
     bool inclinata = true,
     Coordinate? qui,
+    double? verso,
     required void Function(ControlloGuida controllo) onPronta,
     void Function(bool segue)? onSegue,
   }) {
     this.segni = segni;
     this.qui = qui;
+    this.verso = verso;
     this.inclinata = inclinata;
     _onSegue = onSegue;
     return _VistaFinta(onPronta: () => onPronta(_ControlloGuidaFinto(this)));
@@ -2091,6 +2094,14 @@ class PosizioneFinta implements Posizione {
 
   /// Il telefono si è spostato in [p].
   void vai(Coordinate p) => _posizioni.add(p);
+
+  final _direzioni = StreamController<double>.broadcast();
+
+  /// Il telefono si è girato verso [gradi].
+  void gira(double gradi) => _direzioni.add(gradi);
+
+  @override
+  Stream<double> direzione() => _direzioni.stream;
 
   /// Dove dice di essere quando glielo si chiede una volta: `null`, non lo sa.
   Coordinate? dove;

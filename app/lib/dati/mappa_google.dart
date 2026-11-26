@@ -303,6 +303,8 @@ class SegniSullaMappa {
           anchor: const g.MarkerAnchor(u: 0.5, v: 0.5),
           consumeTapEvents: true,
           zIndex: s.sopra ? 1 : 0,
+          rotation: s.rotazione ?? 0,
+          flat: s.rotazione != null,
         );
       }
     }

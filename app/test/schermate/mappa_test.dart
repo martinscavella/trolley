@@ -520,6 +520,11 @@ void main() {
       ambiente.posizione.vai(qui);
       await aspetta(tester);
       expect(ambiente.guida.qui, qui);
+
+      // E dove punta, per il cono.
+      ambiente.posizione.gira(135);
+      await aspetta(tester);
+      expect(ambiente.guida.verso, 135);
     });
 
     testWidgets('la voce si toglie e si rimette dal pulsante', (tester) async {

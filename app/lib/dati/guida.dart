@@ -102,7 +102,8 @@ abstract interface class Guida {
   /// strada e il nostro puntino: niente grafica di Google, solo il logo
   /// (tela, 163). [inclinata]: in 3D, o in 2D. [qui] è dove il telefono
   /// dice di essere: vale quando la guida non dà la sua posizione sulla
-  /// strada.
+  /// strada. [verso] è dove punta il telefono, in gradi dal nord: il cono
+  /// del puntino.
   /// [margini] è lo spazio coperto da quello che le sta sopra. [onSegue]
   /// dice quando la mappa smette di seguire la persona, perché la si è
   /// spostata col dito, e quando torna a farlo.
@@ -112,6 +113,7 @@ abstract interface class Guida {
     EdgeInsets margini = EdgeInsets.zero,
     bool inclinata = true,
     Coordinate? qui,
+    double? verso,
     required void Function(ControlloGuida controllo) onPronta,
     void Function(bool segue)? onSegue,
   });
@@ -158,6 +160,7 @@ class GuidaAssente implements Guida {
     EdgeInsets margini = EdgeInsets.zero,
     bool inclinata = true,
     Coordinate? qui,
+    double? verso,
     required void Function(ControlloGuida controllo) onPronta,
     void Function(bool segue)? onSegue,
   }) => const SizedBox.shrink();

@@ -128,34 +128,78 @@ class SegnoSullaMappa extends StatelessWidget {
 
 /// Dove si trova la persona: un puntino cobalto con il suo alone.
 class PuntinoPosizione extends StatelessWidget {
-  const PuntinoPosizione({super.key});
+  const PuntinoPosizione({super.key, this.conVerso = false});
 
   static const lato = 32.0;
+
+  /// Con il cono: il quadrato è più grande, perché il cono ci stia.
+  static const latoConVerso = 88.0;
+
+  /// Con il cono chiaro verso l'alto: dove punta il telefono, nella guida
+  /// (tela, 163). Lo gira la mappa.
+  final bool conVerso;
 
   @override
   Widget build(BuildContext context) => Semantics(
     label: 'Sei qui',
     child: SizedBox.square(
-      dimension: lato,
-      child: Center(
-        child: Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            color: Colori.cobalto,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colori.bianco, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: Colori.cobalto.withValues(alpha: 0.15),
-                spreadRadius: 6,
-              ),
-            ],
-          ),
-        ),
+      dimension: conVerso ? latoConVerso : lato,
+      child: CustomPaint(
+        painter: conVerso ? const _Cono() : null,
+        child: Center(child: _puntino()),
       ),
     ),
   );
+
+  Widget _puntino() => Container(
+    width: 20,
+    height: 20,
+    decoration: BoxDecoration(
+      color: Colori.cobalto,
+      shape: BoxShape.circle,
+      border: Border.all(color: Colori.bianco, width: 3),
+      boxShadow: [
+        BoxShadow(
+          color: Colori.cobalto.withValues(alpha: 0.15),
+          spreadRadius: 6,
+        ),
+      ],
+    ),
+  );
+}
+
+/// Il cono della direzione: dal centro verso l'alto, che sfuma.
+class _Cono extends CustomPainter {
+  const _Cono();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centro = size.center(Offset.zero);
+    final raggio = size.width / 2;
+    const apertura = 0.5;
+    final cono = Path()
+      ..moveTo(centro.dx, centro.dy)
+      ..arcTo(
+        Rect.fromCircle(center: centro, radius: raggio),
+        -pi / 2 - apertura,
+        2 * apertura,
+        false,
+      )
+      ..close();
+    canvas.drawPath(
+      cono,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Colori.cobalto.withValues(alpha: 0.35),
+            Colori.cobalto.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromCircle(center: centro, radius: raggio)),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_Cono vecchio) => false;
 }
 
 /// Il numero di una tappa in una riga o in una scheda: il cerchio della

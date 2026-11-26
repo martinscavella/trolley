@@ -104,11 +104,16 @@ class SegnoMappa {
     this.lato = 48,
     this.onTap,
     this.sopra = false,
+    this.rotazione,
   });
 
   final String id;
   final Coordinate posto;
   final Widget disegno;
+
+  /// Girato di tanti gradi dal nord, e appoggiato sulla mappa, che lo gira
+  /// con sé: il cono della direzione del puntino.
+  final double? rotazione;
 
   /// Cosa cambia il disegno: due segni con lo stesso aspetto hanno la
   /// stessa immagine, che si fa una volta sola.
