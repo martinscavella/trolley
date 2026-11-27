@@ -15,8 +15,10 @@ import '../dati/lettura.dart';
 import '../dati/mappe.dart';
 import '../dati/posizione.dart';
 import '../dominio/mappa.dart';
+import '../dominio/tragitti.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
+import 'mezzi.dart';
 import 'navigazione.dart';
 import 'permesso_posizione.dart';
 
@@ -93,10 +95,13 @@ Future<void> portamiAllaTappa(
     }
   }
 
+  // Con i mezzi pubblici la guida non c'è: il percorso a passi (CR-07,
+  // passo 3; tela, 164).
+  final coiMezzi = tappa.mezzoTappa == Mezzo.mezzi;
   if (posto == null ||
       !servizi.rete.disponibile ||
       !servizi.mappe.disponibili ||
-      !servizi.guida.disponibile) {
+      (!coiMezzi && !servizi.guida.disponibile)) {
     return alleMappe();
   }
   final permesso = await chiediLaPosizione(context, viaggio: viaggio);
@@ -112,6 +117,13 @@ Future<void> portamiAllaTappa(
   }
   await apriAPienoSchermo<void>(
     context,
-    SchermataNavigazione(viaggio: viaggio, tappa: tappa, numero: numero),
+    coiMezzi
+        ? SchermataMezzi(
+            viaggio: viaggio,
+            tappa: tappa,
+            numero: numero,
+            da: DaDoveMezzi.portami,
+          )
+        : SchermataNavigazione(viaggio: viaggio, tappa: tappa, numero: numero),
   );
 }

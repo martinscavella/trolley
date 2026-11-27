@@ -29,6 +29,7 @@ import 'package:http/http.dart' as http;
 
 import '../dominio/apertura.dart';
 import '../dominio/mappa.dart';
+import '../dominio/mezzi_pubblici.dart';
 import 'errori.dart';
 import 'mappa_google.dart';
 
@@ -211,6 +212,7 @@ class ConsumoMappe {
     this.dettagli = 0,
     this.schede = 0,
     this.destinazioni = 0,
+    this.mezzi = 0,
     this.fermati = 0,
   });
 
@@ -226,6 +228,9 @@ class ConsumoMappe {
   /// Le guide partite verso una tappa: ognuna è una destinazione del
   /// Navigation SDK, che si paga.
   final int destinazioni;
+
+  /// I percorsi con i mezzi pubblici chiesti a Google (Routes API).
+  final int mezzi;
   final int fermati;
 
   bool get nullo =>
@@ -233,6 +238,7 @@ class ConsumoMappe {
       dettagli == 0 &&
       schede == 0 &&
       destinazioni == 0 &&
+      mezzi == 0 &&
       fermati == 0;
 
   ConsumoMappe operator -(ConsumoMappe prima) => ConsumoMappe(
@@ -240,6 +246,7 @@ class ConsumoMappe {
     dettagli: dettagli - prima.dettagli,
     schede: schede - prima.schede,
     destinazioni: destinazioni - prima.destinazioni,
+    mezzi: mezzi - prima.mezzi,
     fermati: fermati - prima.fermati,
   );
 
@@ -249,6 +256,7 @@ class ConsumoMappe {
     'dettagli': dettagli,
     'schede': schede,
     'destinazioni': destinazioni,
+    'mezzi': mezzi,
     'fermati': fermati,
   };
 }
@@ -316,6 +324,17 @@ abstract interface class Mappe {
   /// destinazione sul tetto di oggi (U.2), perché ognuna si paga. Lo dice
   /// con un errore: senza rete, o al tetto.
   Future<void> guidaConsentita({required String viaggioId});
+
+  /// Il percorso con i mezzi pubblici da [da] alla tappa in [a] (CR-07,
+  /// passo 3): a [placeId], se la tappa ce l'ha. [da] va a Google arrotondato
+  /// a circa 100 metri. Si conta sul tetto come una guida. `null` se Google
+  /// non ne trova uno; senza rete, o al tetto, lo dice con un errore.
+  Future<PercorsoMezzi?> mezzi({
+    required String viaggioId,
+    required Coordinate da,
+    required Coordinate a,
+    String? placeId,
+  });
 
   /// Rinnova le coordinate di Google delle tappe del viaggio che le hanno da
   /// più di [giorni] giorni (da 1 a 29), o non le hanno più: Google le lascia
@@ -385,6 +404,14 @@ class MappeAssenti implements Mappe {
       Future.error(const ErroreTrolley(_nonDisponibili));
 
   @override
+  Future<PercorsoMezzi?> mezzi({
+    required String viaggioId,
+    required Coordinate da,
+    required Coordinate a,
+    String? placeId,
+  }) => Future.error(const ErroreTrolley(_nonDisponibili));
+
+  @override
   Future<RinnovoCoordinate> rinnovaCoordinate({
     required String viaggioId,
     int giorni = giorniPerRinnovare,
@@ -439,6 +466,7 @@ class MappeGoogle implements Mappe {
   var _dettagli = 0;
   var _schede = 0;
   var _destinazioni = 0;
+  var _mezzi = 0;
   var _fermati = 0;
 
   @override
@@ -450,6 +478,7 @@ class MappeGoogle implements Mappe {
     dettagli: _dettagli,
     schede: _schede,
     destinazioni: _destinazioni,
+    mezzi: _mezzi,
     fermati: _fermati,
   );
 
@@ -559,6 +588,29 @@ class MappeGoogle implements Mappe {
       conta: () => _destinazioni++,
       tetto: _tettoGuide,
     );
+  }
+
+  @override
+  Future<PercorsoMezzi?> mezzi({
+    required String viaggioId,
+    required Coordinate da,
+    required Coordinate a,
+    String? placeId,
+  }) async {
+    final qui = arrotondataACento(da);
+    final json = await _chiedi(
+      'mezzi',
+      viaggioId,
+      {
+        'da': {'lat': qui.lat, 'lon': qui.lon},
+        'a': {'lat': a.lat, 'lon': a.lon},
+        if (placeId != null && placeId.isNotEmpty) 'posto': placeId,
+        'lingua': 'it',
+      },
+      conta: () => _mezzi++,
+      tetto: _tettoGuide,
+    );
+    return percorsoDaGoogle(json);
   }
 
   @override

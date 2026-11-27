@@ -51,11 +51,14 @@ Future<T?> apri<T>(
       ).push<T>(rotta<T>(pagina));
 
 /// Apre [pagina] a tutto schermo, salendo dal basso: un documento da guardare.
-Future<T?> apriAPienoSchermo<T>(
-  BuildContext context,
-  Widget pagina,
-) => Navigator.of(context, rootNavigator: true).push<T>(
-  suIOS
-      ? CupertinoPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true)
-      : MaterialPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true),
-);
+Future<T?> apriAPienoSchermo<T>(BuildContext context, Widget pagina) =>
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push<T>(rottaAPienoSchermo<T>(pagina));
+
+/// La rotta di [apriAPienoSchermo]: per chi sostituisce una pagina a pieno
+/// schermo con un'altra.
+Route<T> rottaAPienoSchermo<T>(Widget pagina) => suIOS
+    ? CupertinoPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true)
+    : MaterialPageRoute<T>(builder: (_) => pagina, fullscreenDialog: true);

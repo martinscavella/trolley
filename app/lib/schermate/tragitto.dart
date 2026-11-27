@@ -221,7 +221,7 @@ class FoglioMezzoDellaGuida extends StatelessWidget {
         scelto: scelto,
         stima: (m) => metri == null ? null : m.stima(metri!),
         nota: (m) => switch (m) {
-          Mezzo.mezzi => 'Apre Google Maps',
+          Mezzo.mezzi => 'Il percorso a passi',
           Mezzo.monopattino => 'Guida come in bici',
           Mezzo.taxi => 'Guida come in auto',
           _ => null,

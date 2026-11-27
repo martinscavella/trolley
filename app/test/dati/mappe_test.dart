@@ -11,6 +11,10 @@ import 'package:trolley/dati/guida.dart';
 import 'package:trolley/dati/guida_google.dart';
 import 'package:trolley/dati/mappa_google.dart';
 import 'package:trolley/dati/mappe.dart';
+import 'package:trolley/dominio/tragitti.dart';
+
+import '../dominio/mezzi_pubblici_test.dart' show rispostaDiGoogle;
+
 import 'package:trolley/dati/mappe_del_telefono.dart';
 import 'package:trolley/dominio/mappa.dart';
 
@@ -301,6 +305,46 @@ void main() {
       },
     );
 
+    test('i mezzi: dove si è va arrotondato a circa cento metri, con il '
+        'posto di Google; si contano come mezzi', () async {
+      risponde = (_) => http.Response(
+        jsonEncode(rispostaDiGoogle()),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+      final m = mappe();
+      final percorso = await m.mezzi(
+        viaggioId: 'porto',
+        da: (lat: 55.68049, lon: 12.58361),
+        a: (lat: 55.6857, lon: 12.5773),
+        placeId: 'ChIJ-rosenborg',
+      );
+
+      final r = chieste.single;
+      expect(r.url.path, '/functions/v1/mappe/mezzi');
+      expect(corpo(r)['viaggio'], 'porto');
+      expect(parametri(r), {
+        'da': {'lat': 55.68, 'lon': 12.584},
+        'a': {'lat': 55.6857, 'lon': 12.5773},
+        'posto': 'ChIJ-rosenborg',
+        'lingua': 'it',
+      });
+      expect(percorso!.passi, hasLength(4));
+      expect(m.consumo.mezzi, 1);
+    });
+
+    test('i mezzi, senza un percorso: niente', () async {
+      risponde = (_) => http.Response('{}', 200);
+      expect(
+        await mappe().mezzi(
+          viaggioId: 'porto',
+          da: (lat: 55.68, lon: 12.58),
+          a: (lat: 55.68, lon: 12.57),
+        ),
+        isNull,
+      );
+    });
+
     test('senza rete lo dice, e propone le Mappe del telefono', () async {
       final m = MappeGoogle(
         indirizzo: indirizzo,
@@ -423,19 +467,47 @@ void main() {
 
   test('il consumo di una schermata è la differenza', () {
     const prima = ConsumoMappe(ricerche: 1, schede: 2);
-    const dopo = ConsumoMappe(ricerche: 1, schede: 3, destinazioni: 2);
+    const dopo = ConsumoMappe(
+      ricerche: 1,
+      schede: 3,
+      destinazioni: 2,
+      mezzi: 1,
+    );
     final fatto = dopo - prima;
     expect(fatto.proprieta, {
       'ricerche': 0,
       'dettagli': 0,
       'schede': 1,
       'destinazioni': 2,
+      'mezzi': 1,
       'fermati': 0,
     });
     expect((prima - prima).nullo, isTrue);
   });
 
   group('le Mappe del telefono', () {
+    test('con un mezzo: i mezzi pubblici, l\'auto, la bici', () {
+      const posto = (lat: 41.14686, lon: -8.61479);
+      Uri google(Mezzo m) => indirizzoPerLeMappe(
+        nome: 'Lello',
+        posto: posto,
+        apple: false,
+        mezzo: m,
+      )!;
+      expect(google(Mezzo.mezzi).queryParameters['travelmode'], 'transit');
+      expect(google(Mezzo.taxi).queryParameters['travelmode'], 'driving');
+      expect(
+        google(Mezzo.monopattino).queryParameters['travelmode'],
+        'bicycling',
+      );
+      final apple = indirizzoPerLeMappe(
+        nome: 'Lello',
+        posto: posto,
+        mezzo: Mezzo.mezzi,
+      )!;
+      expect(apple.queryParameters['dirflg'], 'r');
+    });
+
     test('con il posto: le indicazioni a piedi fino alle coordinate', () {
       final u = indirizzoPerLeMappe(
         nome: 'Livraria Lello',

@@ -7,6 +7,7 @@ import '../aspetto/formati.dart';
 import '../aspetto/mezzi.dart';
 import '../aspetto/movimento.dart';
 import '../aspetto/pagina.dart';
+import '../aspetto/piattaforma.dart';
 import '../aspetto/segni_mappa.dart';
 import '../aspetto/tavolozza.dart';
 import '../aspetto/testi.dart';
@@ -21,6 +22,7 @@ import '../dominio/tragitti.dart';
 import '../servizi.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
+import 'mezzi.dart';
 import 'salta.dart';
 import 'tragitto.dart';
 
@@ -248,8 +250,17 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
         );
       }
       if (!scelto.guidabile) {
-        await _aGoogleMaps(mezzo: scelto);
-        if (mounted) Navigator.of(context).pop();
+        // Con i mezzi, al posto della guida il percorso a passi (tela, 164).
+        await Navigator.of(context, rootNavigator: true).pushReplacement(
+          rottaAPienoSchermo<void>(
+            SchermataMezzi(
+              viaggio: widget.viaggio,
+              tappa: tappa,
+              numero: widget.numero,
+              da: DaDoveMezzi.guida,
+            ),
+          ),
+        );
         return;
       }
       // Una strada nuova è una destinazione nuova: si conta sul tetto.

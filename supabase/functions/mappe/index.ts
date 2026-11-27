@@ -21,6 +21,15 @@
 //   POST /mappe/guida     { viaggio }             → nessuno: conta la guida
 //   POST /mappe/rinnova   { viaggio, parametri }  → Google, places/{id}, per le
 //                                                   coordinate da rinnovare
+//   POST /mappe/mezzi     { viaggio, parametri }  → Google, Routes computeRoutes
+//                                                   con i mezzi pubblici
+//
+// I mezzi (CR-07, passo 3; tela, 164): il percorso a passi da dove si è
+// alla tappa, con i mezzi pubblici, che la guida non ha. Dove si è arriva
+// già arrotondato a circa 100 metri dal telefono, e qui lo si arrotonda di
+// nuovo: va a Google e torna, senza restare (04, regola 39; decisioni,
+// CR-05). Si conta sul tetto come una guida (`percorsi`). Il percorso torna
+// com'è: il telefono lo mostra finché è aperto, e non lo tiene.
 //
 // La guida (il Navigation SDK, sul telefono) si paga a destinazione: prima
 // di partire l'app chiede qui, e la destinazione si conta sul tetto come
@@ -245,6 +254,78 @@ async function guida(richiesta: Request): Promise<Response> {
   });
 }
 
+// ─── I mezzi pubblici ───────────────────────────────────────────────────
+
+const routes = 'https://routes.googleapis.com/directions/v2:computeRoutes';
+
+/// Solo quello che il percorso a passi mostra: niente traffico, niente
+/// pedaggi, niente indicazioni svolta per svolta a piedi.
+const campiMezzi = [
+  'routes.duration',
+  'routes.distanceMeters',
+  'routes.polyline.encodedPolyline',
+  'routes.legs.steps.travelMode',
+  'routes.legs.steps.distanceMeters',
+  'routes.legs.steps.staticDuration',
+  'routes.legs.steps.startLocation',
+  'routes.legs.steps.endLocation',
+  'routes.legs.steps.transitDetails',
+].join(',');
+
+/// Un punto `{ lat, lon }`, o niente.
+function punto(valore: unknown): { lat: number; lon: number } | undefined {
+  if (!valore || typeof valore !== 'object') return undefined;
+  const v = valore as Record<string, unknown>;
+  const lat = numero(v.lat, -90, 90);
+  const lon = numero(v.lon, -180, 180);
+  return lat === undefined || lon === undefined ? undefined : { lat, lon };
+}
+
+/// Circa 100 metri: tre decimali.
+const arrotonda = (x: number) => Math.round(x * 1000) / 1000;
+
+/// I mezzi: `{ da: {lat, lon}, a: {lat, lon}, posto?, lingua? }` → il
+/// percorso di Google, com'è. `posto` è il place_id della tappa, che sa
+/// dov'è l'ingresso.
+async function mezzi(richiesta: Request): Promise<Response> {
+  const corpo = await leggiCorpo(richiesta);
+  if (!corpo) return errore(400, 'corpo');
+  const p = corpo.parametri ?? {};
+  const da = punto(p.da);
+  const a = punto(p.a);
+  if (!da || !a) return errore(400, 'parametri');
+  const posto = testo(p.posto, 300);
+  if (posto && !/^[A-Za-z0-9_-]+$/.test(posto)) return errore(400, 'parametri');
+  const no = await consuma(richiesta, corpo.viaggio, 'percorsi');
+  if (no) return no;
+  const chiesta = {
+    origin: {
+      location: { latLng: { latitude: arrotonda(da.lat), longitude: arrotonda(da.lon) } },
+    },
+    destination: posto
+      ? { placeId: posto }
+      : { location: { latLng: { latitude: a.lat, longitude: a.lon } } },
+    travelMode: 'TRANSIT',
+    computeAlternativeRoutes: false,
+    languageCode: testo(p.lingua, 10) ?? 'it',
+    units: 'METRIC',
+  };
+  try {
+    const risposta = await fetch(routes, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-goog-api-key': chiaveGoogle,
+        'x-goog-fieldmask': campiMezzi,
+      },
+      body: JSON.stringify(chiesta),
+    });
+    return dalFornitore(risposta, ['content-type']);
+  } catch {
+    return errore(502, 'fornitore');
+  }
+}
+
 // ─── Il rinnovo delle coordinate ────────────────────────────────────────
 
 /// Chiama una funzione del database con l'accesso di chi chiama.
@@ -354,6 +435,10 @@ Deno.serve((richiesta) => {
   const [cosa, ...resto] = parti.slice(parti.indexOf('mappe') + 1);
   const post = richiesta.method === 'POST' && resto.length === 0;
   if (post && cosa === 'guida') return guida(richiesta);
+  if (post && cosa === 'mezzi') {
+    if (!chiaveGoogle) return errore(502, 'fornitore');
+    return mezzi(richiesta);
+  }
   if (post && cosa === 'rinnova') {
     if (!chiaveGoogle) return errore(502, 'fornitore');
     return rinnova(richiesta);

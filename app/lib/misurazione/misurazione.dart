@@ -121,6 +121,7 @@ abstract final class Eventi {
   /// prima ci si stava. Dice se i mezzi si scelgono, e se l'avviso serve.
   /// Mai le tappe, mai dove.
   static const tragittoSistemato = 'tragitto_sistemato';
+  static const percorsoCoiMezzi = 'percorso_coi_mezzi';
 }
 
 class Misurazione {

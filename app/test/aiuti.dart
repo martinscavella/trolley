@@ -38,6 +38,7 @@ import 'package:trolley/dati/promemoria.dart';
 import 'package:trolley/dati/rete.dart';
 import 'package:trolley/dati/telefono.dart';
 import 'package:trolley/dominio/mappa.dart';
+import 'package:trolley/dominio/mezzi_pubblici.dart';
 import 'package:trolley/dominio/notifiche.dart';
 import 'package:trolley/dominio/tragitti.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
@@ -1864,6 +1865,7 @@ class MappeFinte implements Mappe {
       dettagli: _consumo.dettagli,
       schede: _consumo.schede,
       destinazioni: _consumo.destinazioni,
+      mezzi: _consumo.mezzi,
       fermati: _consumo.fermati + 1,
     );
     return ErroreTrolley(messaggio, codice: CodiciServer.tettoMappe);
@@ -1888,6 +1890,7 @@ class MappeFinte implements Mappe {
       dettagli: _consumo.dettagli,
       schede: _consumo.schede,
       destinazioni: _consumo.destinazioni,
+      mezzi: _consumo.mezzi,
       fermati: _consumo.fermati,
     );
     return [
@@ -1912,6 +1915,7 @@ class MappeFinte implements Mappe {
       dettagli: _consumo.dettagli + 1,
       schede: _consumo.schede,
       destinazioni: _consumo.destinazioni,
+      mezzi: _consumo.mezzi,
       fermati: _consumo.fermati,
     );
     final posto = posti[id];
@@ -1931,10 +1935,40 @@ class MappeFinte implements Mappe {
       dettagli: _consumo.dettagli,
       schede: _consumo.schede + 1,
       destinazioni: _consumo.destinazioni,
+      mezzi: _consumo.mezzi,
       fermati: _consumo.fermati,
     );
     return schedaDelPosto?.call(id) ??
         SchedaPosto(id: id, indirizzo: indirizzoDelPosto);
+  }
+
+  /// Il percorso con i mezzi che dà [mezzi]; `null`: Google non ne trova.
+  PercorsoMezzi? percorsoMezzi;
+
+  /// I percorsi con i mezzi chiesti: da dove, verso dove.
+  final mezziChiesti =
+      <({String viaggioId, Coordinate da, Coordinate a, String? placeId})>[];
+
+  @override
+  Future<PercorsoMezzi?> mezzi({
+    required String viaggioId,
+    required Coordinate da,
+    required Coordinate a,
+    String? placeId,
+  }) async {
+    if (tetto) {
+      throw _fermato('Per oggi, in questo viaggio, le guide sono finite.');
+    }
+    mezziChiesti.add((viaggioId: viaggioId, da: da, a: a, placeId: placeId));
+    _consumo = ConsumoMappe(
+      ricerche: _consumo.ricerche,
+      dettagli: _consumo.dettagli,
+      schede: _consumo.schede,
+      destinazioni: _consumo.destinazioni,
+      mezzi: _consumo.mezzi + 1,
+      fermati: _consumo.fermati,
+    );
+    return percorsoMezzi;
   }
 
   @override
@@ -1949,6 +1983,7 @@ class MappeFinte implements Mappe {
       dettagli: _consumo.dettagli,
       schede: _consumo.schede,
       destinazioni: _consumo.destinazioni + 1,
+      mezzi: _consumo.mezzi,
       fermati: _consumo.fermati,
     );
   }

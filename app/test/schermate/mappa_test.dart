@@ -7,15 +7,18 @@ import 'package:trolley/aspetto/segni_mappa.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/posizione.dart';
 import 'package:trolley/dominio/calendario.dart';
+import 'package:trolley/dominio/mezzi_pubblici.dart';
 import 'package:trolley/dominio/tragitti.dart';
 import 'package:trolley/dati/guida.dart';
 import 'package:trolley/schermate/giornata.dart';
 import 'package:trolley/schermate/mappa.dart';
+import 'package:trolley/schermate/mezzi.dart';
 import 'package:trolley/schermate/navigazione.dart';
 
 import 'package:trolley/schermate/dettaglio_tappa.dart';
 
 import '../aiuti.dart';
+import '../dominio/mezzi_pubblici_test.dart' show rispostaDiGoogle;
 
 /// La mappa (fase 3.2, 08-mappa.md; tela, 50–56): le tappe di oggi in
 /// ordine, la prossima da segnare o da raggiungere, tutto il viaggio a
@@ -537,7 +540,7 @@ void main() {
       await tester.tap(find.bySemanticsLabel('A piedi: cambia il mezzo'));
       await tester.pumpAndSettle();
       expect(find.text('Come ci vai?'), findsOneWidget);
-      expect(find.text('Apre Google Maps'), findsOneWidget);
+      expect(find.text('Il percorso a passi'), findsWidgets);
       expect(find.text('Guida come in bici'), findsOneWidget);
 
       await tester.tap(find.text('In bici'));
@@ -567,24 +570,102 @@ void main() {
       expect(await statoDi(tester, 'lello'), 'completata');
     });
 
-    testWidgets('con i mezzi la guida si chiude e si apre Google Maps sui '
-        'mezzi', (tester) async {
+    testWidgets('con i mezzi la guida lascia il posto al percorso a passi, '
+        'da dove si è arrotondato a circa cento metri (tela, 164)', (
+      tester,
+    ) async {
+      ambiente.posizione.dove = (lat: 41.14751, lon: -8.61604);
+      ambiente.mappe.percorsoMezzi = percorsoDaGoogle(rispostaDiGoogle());
       await portami(tester);
       await tester.tap(find.bySemanticsLabel('A piedi: cambia il mezzo'));
       await tester.pumpAndSettle();
+      expect(find.text('Il percorso a passi'), findsOneWidget);
       await tester.tap(find.text('Con i mezzi'));
       await aspetta(tester);
 
-      final aperta = ambiente.mappeDelTelefono.aperte.single;
-      expect(aperta.mezzo, Mezzo.mezzi);
-      expect(aperta.conGoogle, isTrue);
       expect(find.byType(SchermataNavigazione), findsNothing);
+      expect(find.byType(SchermataMezzi), findsOneWidget);
       final lello = ambiente.server.tappe.singleWhere(
         (t) => t['id'] == 'lello',
       );
       expect(lello['mezzo'], 'mezzi');
-      // Una sola strada: quella a piedi dell'inizio.
+      final chiesto = ambiente.mappe.mezziChiesti.single;
+      expect(chiesto.da, (lat: 41.148, lon: -8.616));
+      expect(chiesto.a, (lat: 41.14686, lon: -8.61479));
+      // Una sola guida: quella a piedi dell'inizio.
       expect(ambiente.guida.partite, hasLength(1));
+
+      expect(find.text('In metro'), findsOneWidget);
+      expect(find.textContaining('un cambio'), findsOneWidget);
+      expect(find.text('A piedi fino a Kongens Nytorv'), findsOneWidget);
+      expect(find.text('Metro M1, direzione Vanløse'), findsOneWidget);
+      expect(find.text('Scendi a Nørreport'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Google Maps'), 100);
+      expect(find.text('A piedi fino a Livraria Lello'), findsOneWidget);
+      expect(await evento(tester, 'percorso_coi_mezzi'), {
+        'viaggio_id': 'v',
+        'da': 'guida',
+        'esito': 'ok',
+        'passi': 4,
+        'cambi': 1,
+      });
+    });
+
+    testWidgets('«Portami» su una tappa con i mezzi apre i passi, non la '
+        'guida; il passo di adesso segue la posizione', (tester) async {
+      ambiente.posizione.dove = (lat: 55.6801, lon: 12.5805);
+      ambiente.mappe.percorsoMezzi = percorsoDaGoogle(rispostaDiGoogle());
+      await viaggio(tester);
+      ambiente.server.tappe.singleWhere((t) => t['id'] == 'lello')['mezzo'] =
+          'mezzi';
+      await tester.runAsync(ambiente.archivio.aggiornaCopia);
+      await mappa(tester);
+      await tester.tap(find.text('Portami'));
+      await aspetta(tester);
+
+      expect(find.byType(SchermataMezzi), findsOneWidget);
+      expect(ambiente.guida.partite, isEmpty);
+      bool acceso(String testo) =>
+          tester
+              .widget<Semantics>(
+                find.byWidgetPredicate(
+                  (w) =>
+                      w is Semantics &&
+                      (w.properties.label?.startsWith(testo) ?? false),
+                ),
+              )
+              .properties
+              .selected ??
+          false;
+      expect(acceso('A piedi fino a Kongens Nytorv'), isTrue);
+
+      ambiente.posizione.vai((lat: 55.6820, lon: 12.5780));
+      await aspetta(tester);
+      expect(acceso('A piedi fino a Kongens Nytorv'), isFalse);
+      expect(acceso('Metro M1, direzione Vanløse'), isTrue);
+      expect((await evento(tester, 'percorso_coi_mezzi'))['da'], 'portami');
+    });
+
+    testWidgets('se Google non trova un percorso lo dice, e resta Google '
+        'Maps', (tester) async {
+      ambiente.posizione.dove = (lat: 41.1475, lon: -8.6160);
+      await viaggio(tester);
+      ambiente.server.tappe.singleWhere((t) => t['id'] == 'lello')['mezzo'] =
+          'mezzi';
+      await tester.runAsync(ambiente.archivio.aggiornaCopia);
+      await mappa(tester);
+      await tester.tap(find.text('Portami'));
+      await aspetta(tester);
+
+      expect(find.text('Niente percorso.', findRichText: true), findsNothing);
+      expect(
+        find.textContaining('Google non trova un percorso', findRichText: true),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Apri in Google Maps'));
+      await aspetta(tester);
+      expect(ambiente.mappeDelTelefono.aperte.single.mezzo, Mezzo.mezzi);
+      expect((await evento(tester, 'percorso_coi_mezzi'))['esito'], 'nessuno');
     });
 
     testWidgets('la voce si toglie e si rimette dal pulsante', (tester) async {
