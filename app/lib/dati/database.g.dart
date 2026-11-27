@@ -3109,6 +3109,15 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _mezzoMeta = const VerificationMeta('mezzo');
+  @override
+  late final GeneratedColumn<String> mezzo = GeneratedColumn<String>(
+    'mezzo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _durataStimataMinMeta = const VerificationMeta(
     'durataStimataMin',
   );
@@ -3225,6 +3234,7 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
     lon,
     placeId,
     coordinateIl,
+    mezzo,
     durataStimataMin,
     oraInizio,
     stato,
@@ -3343,6 +3353,12 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
           data['coordinate_il']!,
           _coordinateIlMeta,
         ),
+      );
+    }
+    if (data.containsKey('mezzo')) {
+      context.handle(
+        _mezzoMeta,
+        mezzo.isAcceptableOrUnknown(data['mezzo']!, _mezzoMeta),
       );
     }
     if (data.containsKey('durata_stimata_min')) {
@@ -3478,6 +3494,10 @@ class $TappeTable extends Tappe with TableInfo<$TappeTable, Tappa> {
         DriftSqlType.string,
         data['${effectivePrefix}coordinate_il'],
       ),
+      mezzo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mezzo'],
+      ),
       durataStimataMin: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}durata_stimata_min'],
@@ -3546,6 +3566,10 @@ class Tappa extends DataClass implements Insertable<Tappa> {
   /// Quando sono arrivate da Google [lat] e [lon]: dopo 30 giorni il server
   /// le toglie, se nessuno le ha rinnovate.
   final String? coordinateIl;
+
+  /// Come ci si arriva dalla tappa prima dello stesso giorno (CR-07,
+  /// ADR-015): un `Mezzo` per nome. `null` è «Come ci vai?».
+  final String? mezzo;
   final int durataStimataMin;
   final String? oraInizio;
   final String stato;
@@ -3576,6 +3600,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     this.lon,
     this.placeId,
     this.coordinateIl,
+    this.mezzo,
     required this.durataStimataMin,
     this.oraInizio,
     required this.stato,
@@ -3613,6 +3638,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     }
     if (!nullToAbsent || coordinateIl != null) {
       map['coordinate_il'] = Variable<String>(coordinateIl);
+    }
+    if (!nullToAbsent || mezzo != null) {
+      map['mezzo'] = Variable<String>(mezzo);
     }
     map['durata_stimata_min'] = Variable<int>(durataStimataMin);
     if (!nullToAbsent || oraInizio != null) {
@@ -3655,6 +3683,9 @@ class Tappa extends DataClass implements Insertable<Tappa> {
       coordinateIl: coordinateIl == null && nullToAbsent
           ? const Value.absent()
           : Value(coordinateIl),
+      mezzo: mezzo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mezzo),
       durataStimataMin: Value(durataStimataMin),
       oraInizio: oraInizio == null && nullToAbsent
           ? const Value.absent()
@@ -3690,6 +3721,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
       lon: serializer.fromJson<double?>(json['lon']),
       placeId: serializer.fromJson<String?>(json['placeId']),
       coordinateIl: serializer.fromJson<String?>(json['coordinateIl']),
+      mezzo: serializer.fromJson<String?>(json['mezzo']),
       durataStimataMin: serializer.fromJson<int>(json['durataStimataMin']),
       oraInizio: serializer.fromJson<String?>(json['oraInizio']),
       stato: serializer.fromJson<String>(json['stato']),
@@ -3720,6 +3752,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
       'lon': serializer.toJson<double?>(lon),
       'placeId': serializer.toJson<String?>(placeId),
       'coordinateIl': serializer.toJson<String?>(coordinateIl),
+      'mezzo': serializer.toJson<String?>(mezzo),
       'durataStimataMin': serializer.toJson<int>(durataStimataMin),
       'oraInizio': serializer.toJson<String?>(oraInizio),
       'stato': serializer.toJson<String>(stato),
@@ -3748,6 +3781,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     Value<double?> lon = const Value.absent(),
     Value<String?> placeId = const Value.absent(),
     Value<String?> coordinateIl = const Value.absent(),
+    Value<String?> mezzo = const Value.absent(),
     int? durataStimataMin,
     Value<String?> oraInizio = const Value.absent(),
     String? stato,
@@ -3771,6 +3805,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     lon: lon.present ? lon.value : this.lon,
     placeId: placeId.present ? placeId.value : this.placeId,
     coordinateIl: coordinateIl.present ? coordinateIl.value : this.coordinateIl,
+    mezzo: mezzo.present ? mezzo.value : this.mezzo,
     durataStimataMin: durataStimataMin ?? this.durataStimataMin,
     oraInizio: oraInizio.present ? oraInizio.value : this.oraInizio,
     stato: stato ?? this.stato,
@@ -3803,6 +3838,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
       coordinateIl: data.coordinateIl.present
           ? data.coordinateIl.value
           : this.coordinateIl,
+      mezzo: data.mezzo.present ? data.mezzo.value : this.mezzo,
       durataStimataMin: data.durataStimataMin.present
           ? data.durataStimataMin.value
           : this.durataStimataMin,
@@ -3835,6 +3871,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           ..write('lon: $lon, ')
           ..write('placeId: $placeId, ')
           ..write('coordinateIl: $coordinateIl, ')
+          ..write('mezzo: $mezzo, ')
           ..write('durataStimataMin: $durataStimataMin, ')
           ..write('oraInizio: $oraInizio, ')
           ..write('stato: $stato, ')
@@ -3863,6 +3900,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
     lon,
     placeId,
     coordinateIl,
+    mezzo,
     durataStimataMin,
     oraInizio,
     stato,
@@ -3890,6 +3928,7 @@ class Tappa extends DataClass implements Insertable<Tappa> {
           other.lon == this.lon &&
           other.placeId == this.placeId &&
           other.coordinateIl == this.coordinateIl &&
+          other.mezzo == this.mezzo &&
           other.durataStimataMin == this.durataStimataMin &&
           other.oraInizio == this.oraInizio &&
           other.stato == this.stato &&
@@ -3915,6 +3954,7 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
   final Value<double?> lon;
   final Value<String?> placeId;
   final Value<String?> coordinateIl;
+  final Value<String?> mezzo;
   final Value<int> durataStimataMin;
   final Value<String?> oraInizio;
   final Value<String> stato;
@@ -3939,6 +3979,7 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     this.lon = const Value.absent(),
     this.placeId = const Value.absent(),
     this.coordinateIl = const Value.absent(),
+    this.mezzo = const Value.absent(),
     this.durataStimataMin = const Value.absent(),
     this.oraInizio = const Value.absent(),
     this.stato = const Value.absent(),
@@ -3964,6 +4005,7 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     this.lon = const Value.absent(),
     this.placeId = const Value.absent(),
     this.coordinateIl = const Value.absent(),
+    this.mezzo = const Value.absent(),
     required int durataStimataMin,
     this.oraInizio = const Value.absent(),
     required String stato,
@@ -4001,6 +4043,7 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     Expression<double>? lon,
     Expression<String>? placeId,
     Expression<String>? coordinateIl,
+    Expression<String>? mezzo,
     Expression<int>? durataStimataMin,
     Expression<String>? oraInizio,
     Expression<String>? stato,
@@ -4026,6 +4069,7 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
       if (lon != null) 'lon': lon,
       if (placeId != null) 'place_id': placeId,
       if (coordinateIl != null) 'coordinate_il': coordinateIl,
+      if (mezzo != null) 'mezzo': mezzo,
       if (durataStimataMin != null) 'durata_stimata_min': durataStimataMin,
       if (oraInizio != null) 'ora_inizio': oraInizio,
       if (stato != null) 'stato': stato,
@@ -4054,6 +4098,7 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     Value<double?>? lon,
     Value<String?>? placeId,
     Value<String?>? coordinateIl,
+    Value<String?>? mezzo,
     Value<int>? durataStimataMin,
     Value<String?>? oraInizio,
     Value<String>? stato,
@@ -4079,6 +4124,7 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
       lon: lon ?? this.lon,
       placeId: placeId ?? this.placeId,
       coordinateIl: coordinateIl ?? this.coordinateIl,
+      mezzo: mezzo ?? this.mezzo,
       durataStimataMin: durataStimataMin ?? this.durataStimataMin,
       oraInizio: oraInizio ?? this.oraInizio,
       stato: stato ?? this.stato,
@@ -4135,6 +4181,9 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
     if (coordinateIl.present) {
       map['coordinate_il'] = Variable<String>(coordinateIl.value);
     }
+    if (mezzo.present) {
+      map['mezzo'] = Variable<String>(mezzo.value);
+    }
     if (durataStimataMin.present) {
       map['durata_stimata_min'] = Variable<int>(durataStimataMin.value);
     }
@@ -4186,6 +4235,7 @@ class TappeCompanion extends UpdateCompanion<Tappa> {
           ..write('lon: $lon, ')
           ..write('placeId: $placeId, ')
           ..write('coordinateIl: $coordinateIl, ')
+          ..write('mezzo: $mezzo, ')
           ..write('durataStimataMin: $durataStimataMin, ')
           ..write('oraInizio: $oraInizio, ')
           ..write('stato: $stato, ')
@@ -11138,6 +11188,7 @@ typedef $$TappeTableCreateCompanionBuilder = TappeCompanion Function({
   Value<double?> lon,
   Value<String?> placeId,
   Value<String?> coordinateIl,
+  Value<String?> mezzo,
   required int durataStimataMin,
   Value<String?> oraInizio,
   required String stato,
@@ -11163,6 +11214,7 @@ typedef $$TappeTableUpdateCompanionBuilder = TappeCompanion Function({
   Value<double?> lon,
   Value<String?> placeId,
   Value<String?> coordinateIl,
+  Value<String?> mezzo,
   Value<int> durataStimataMin,
   Value<String?> oraInizio,
   Value<String> stato,
@@ -11246,6 +11298,11 @@ class $$TappeTableFilterComposer
 
   ColumnFilters<String> get coordinateIl => $composableBuilder(
     column: $table.coordinateIl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mezzo => $composableBuilder(
+    column: $table.mezzo,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11369,6 +11426,11 @@ class $$TappeTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get mezzo => $composableBuilder(
+    column: $table.mezzo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get durataStimataMin => $composableBuilder(
     column: $table.durataStimataMin,
     builder: (column) => ColumnOrderings(column),
@@ -11469,6 +11531,9 @@ class $$TappeTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get mezzo =>
+      $composableBuilder(column: $table.mezzo, builder: (column) => column);
+
   GeneratedColumn<int> get durataStimataMin => $composableBuilder(
     column: $table.durataStimataMin,
     builder: (column) => column,
@@ -11542,6 +11607,7 @@ class $$TappeTableTableManager
                 Value<double?> lon = const Value.absent(),
                 Value<String?> placeId = const Value.absent(),
                 Value<String?> coordinateIl = const Value.absent(),
+                Value<String?> mezzo = const Value.absent(),
                 Value<int> durataStimataMin = const Value.absent(),
                 Value<String?> oraInizio = const Value.absent(),
                 Value<String> stato = const Value.absent(),
@@ -11566,6 +11632,7 @@ class $$TappeTableTableManager
                 lon: lon,
                 placeId: placeId,
                 coordinateIl: coordinateIl,
+                mezzo: mezzo,
                 durataStimataMin: durataStimataMin,
                 oraInizio: oraInizio,
                 stato: stato,
@@ -11592,6 +11659,7 @@ class $$TappeTableTableManager
                 Value<double?> lon = const Value.absent(),
                 Value<String?> placeId = const Value.absent(),
                 Value<String?> coordinateIl = const Value.absent(),
+                Value<String?> mezzo = const Value.absent(),
                 required int durataStimataMin,
                 Value<String?> oraInizio = const Value.absent(),
                 required String stato,
@@ -11616,6 +11684,7 @@ class $$TappeTableTableManager
                 lon: lon,
                 placeId: placeId,
                 coordinateIl: coordinateIl,
+                mezzo: mezzo,
                 durataStimataMin: durataStimataMin,
                 oraInizio: oraInizio,
                 stato: stato,

@@ -22,6 +22,7 @@ import '../aspetto/movimento.dart';
 import '../aspetto/segni_mappa.dart';
 import '../aspetto/tavolozza.dart';
 import '../dominio/mappa.dart';
+import '../dominio/tragitti.dart';
 import 'guida.dart';
 import 'mappa_google.dart';
 import 'mappe.dart';
@@ -132,6 +133,7 @@ class GuidaGoogle implements Guida {
     required String titolo,
     required Coordinate posto,
     String? placeId,
+    Mezzo mezzo = Mezzo.aPiedi,
   }) async {
     final destinazioni = g.Destinations(
       waypoints: [
@@ -145,9 +147,7 @@ class GuidaGoogle implements Guida {
       ],
       // Il segno della tappa è il nostro.
       displayOptions: g.NavigationDisplayOptions(showDestinationMarkers: false),
-      routingOptions: g.RoutingOptions(
-        travelMode: g.NavigationTravelMode.walking,
-      ),
+      routingOptions: g.RoutingOptions(travelMode: modoDiGoogle(mezzo)),
     );
     try {
       var stato = await g.GoogleMapsNavigator.setDestinations(destinazioni);
@@ -277,6 +277,14 @@ EsitoGuida esitoDaGoogle(g.NavigationRouteStatus stato) => switch (stato) {
   g.NavigationRouteStatus.statusCanceled ||
   g.NavigationRouteStatus.travelModeUnsupported ||
   g.NavigationRouteStatus.unknown => EsitoGuida.nonDisponibile,
+};
+
+/// Come guida Google con [mezzo]: il monopattino come la bici, il taxi come
+/// l'auto. I mezzi pubblici non li ha: la schermata non li chiede.
+g.NavigationTravelMode modoDiGoogle(Mezzo mezzo) => switch (mezzo) {
+  Mezzo.bici || Mezzo.monopattino => g.NavigationTravelMode.cycling,
+  Mezzo.auto || Mezzo.taxi => g.NavigationTravelMode.driving,
+  Mezzo.aPiedi || Mezzo.mezzi => g.NavigationTravelMode.walking,
 };
 
 /// L'indicazione di adesso, dai dati della guida; `null` se non c'è un

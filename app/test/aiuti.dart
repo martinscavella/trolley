@@ -39,6 +39,7 @@ import 'package:trolley/dati/rete.dart';
 import 'package:trolley/dati/telefono.dart';
 import 'package:trolley/dominio/mappa.dart';
 import 'package:trolley/dominio/notifiche.dart';
+import 'package:trolley/dominio/tragitti.dart';
 import 'package:trolley/invito/ingresso_da_invito.dart';
 import 'package:trolley/misurazione/misurazione.dart';
 import 'package:trolley/servizi.dart';
@@ -155,6 +156,7 @@ Map<String, Object?> rigaDiTappa(
   double? lon,
   String? placeId,
   String? coordinateIl,
+  String? mezzo,
 }) => {
   'id': id,
   'viaggio_id': viaggio,
@@ -171,6 +173,7 @@ Map<String, Object?> rigaDiTappa(
         ? null
         : coordinateIl ?? DateTime.now().toUtc().toIso8601String(),
   },
+  'mezzo': ?mezzo,
   'durata_stimata_min': durata,
   'ora_inizio': ora,
   'stato': stato,
@@ -1978,7 +1981,8 @@ class GuidaFinta implements Guida {
   EsitoGuida partenza = EsitoGuida.ok;
 
   /// Le destinazioni chieste, in ordine.
-  final partite = <({String titolo, Coordinate posto, String? placeId})>[];
+  final partite =
+      <({String titolo, Coordinate posto, String? placeId, Mezzo mezzo})>[];
   int preparazioni = 0;
   int fermate = 0;
 
@@ -2049,8 +2053,9 @@ class GuidaFinta implements Guida {
     required String titolo,
     required Coordinate posto,
     String? placeId,
+    Mezzo mezzo = Mezzo.aPiedi,
   }) async {
-    partite.add((titolo: titolo, posto: posto, placeId: placeId));
+    partite.add((titolo: titolo, posto: posto, placeId: placeId, mezzo: mezzo));
     return partenza;
   }
 
@@ -2175,6 +2180,7 @@ class MappeDelTelefonoFinte implements MappeDelTelefono {
           String? indirizzo,
           String? placeId,
           bool conGoogle,
+          Mezzo mezzo,
         })
       >[];
 
@@ -2185,6 +2191,7 @@ class MappeDelTelefonoFinte implements MappeDelTelefono {
     String? indirizzo,
     String? placeId,
     bool conGoogle = false,
+    Mezzo mezzo = Mezzo.aPiedi,
   }) async {
     aperte.add((
       nome: nome,
@@ -2192,6 +2199,7 @@ class MappeDelTelefonoFinte implements MappeDelTelefono {
       indirizzo: indirizzo,
       placeId: placeId,
       conGoogle: conGoogle,
+      mezzo: mezzo,
     ));
     return true;
   }

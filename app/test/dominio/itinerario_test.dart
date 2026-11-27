@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:trolley/dominio/giornate.dart';
 import 'package:trolley/dominio/itinerario.dart';
 import 'package:trolley/dominio/tappe.dart';
+import 'package:trolley/dominio/tragitti.dart';
 
 FinestraGiorno giorno(int d, {int da = 0, int a = 24}) => FinestraGiorno(
   data: DateTime.utc(2026, 10, d),
@@ -90,6 +91,13 @@ void main() {
       },
     );
 
+    test('chiede il mezzo di ogni tappa, e l\'esempio lo mostra (CR-07)', () {
+      expect(testo, contains('mezzo, indirizzo (o la zona), coordinate'));
+      expect(testo, contains('a piedi, bici, mezzi, monopattino, auto, taxi'));
+      expect(testo, contains('| 90 | - | Via e numero |'));
+      expect(testo, contains('| 75 | a piedi | Via e numero |'));
+    });
+
     test('senza preferenze non scrive righe vuote di senso', () {
       final semplice = scriviRichiesta(
         Richiesta(
@@ -144,6 +152,47 @@ Buon viaggio! Se volete posso aggiungere dei ristoranti.
       expect(lello.luogo, 'Rua das Carmelitas 144');
       expect(letto.giorni.first.tappe[1].luogo, isNull);
       expect(letto.righeNonCapite, 0);
+    });
+
+    test('il mezzo: come si arriva dalla tappa prima, il trattino per la '
+        'prima del giorno (CR-07)', () {
+      final letto = leggiItinerario('''
+```
+TROLLEY ITINERARIO
+GIORNO 1 · 2026-10-10
+10:30 | Livraria Lello | visita | 60 | - | Rua das Carmelitas 144 | 41.14686, -8.61479
+12:00 | Pranzo al Mercado do Bolhão | pasto | 90 | a piedi | Rua Formosa
+15:00 | Gaia | visita | 120 | Metro | Vila Nova de Gaia
+18:00 | Foz | passeggiata | 60 | Uber
+20:00 | Cena | pasto | 90 | in bici | Ribeira
+```
+''');
+      final tappe = letto.giorni.single.tappe;
+      expect(
+        [for (final t in tappe) t.mezzo],
+        [null, Mezzo.aPiedi, Mezzo.mezzi, Mezzo.taxi, Mezzo.bici],
+      );
+      // Il trattino non è il luogo, e il mezzo non lo è.
+      expect(tappe.first.luogo, 'Rua das Carmelitas 144');
+      expect(tappe.first.posto, (lat: 41.14686, lon: -8.61479));
+      expect(tappe[1].luogo, 'Rua Formosa');
+      expect(tappe[3].luogo, isNull);
+      expect(letto.righeNonCapite, 0);
+    });
+
+    test('senza il mezzo, come prima: nessun mezzo', () {
+      final t = leggiItinerario('10:30 Livraria Lello (visita, 60 min)')
+          .giorni
+          .single
+          .tappe
+          .single;
+      expect(t.mezzo, isNull);
+      final f = leggiItinerario('10:30 Ponte (passeggiata, 60 min, in metro)')
+          .giorni
+          .single
+          .tappe
+          .single;
+      expect(f.mezzo, Mezzo.mezzi);
     });
 
     test('una tabella in markdown, con grassetti e intestazione', () {

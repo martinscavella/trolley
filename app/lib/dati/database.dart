@@ -138,6 +138,10 @@ class Tappe extends Table with RigaCopiata {
   /// Quando sono arrivate da Google [lat] e [lon]: dopo 30 giorni il server
   /// le toglie, se nessuno le ha rinnovate.
   TextColumn get coordinateIl => text().nullable()();
+
+  /// Come ci si arriva dalla tappa prima dello stesso giorno (CR-07,
+  /// ADR-015): un `Mezzo` per nome. `null` è «Come ci vai?».
+  TextColumn get mezzo => text().nullable()();
   IntColumn get durataStimataMin => integer()();
   TextColumn get oraInizio => text().nullable()();
   TextColumn get stato => text()();
@@ -437,8 +441,9 @@ class DatabaseLocale extends _$DatabaseLocale {
   /// 11 (fase 4.3): i giorni che si ricordano di un viaggio passato.
   /// 12 (26 ottobre 2026): il budget del viaggio.
   /// 13 (26 novembre 2026): il posto di Google delle tappe (CR-06).
+  /// 14 (27 novembre 2026): il mezzo dei tragitti (CR-07).
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   /// Le tabelle che sono una copia del server.
   List<TableInfo> get tabelleCopia => [
@@ -515,6 +520,9 @@ class DatabaseLocale extends _$DatabaseLocale {
       if (da >= 2 && da < 13) {
         await _aggiungiSeManca(m, tappe, tappe.placeId);
         await _aggiungiSeManca(m, tappe, tappe.coordinateIl);
+      }
+      if (da >= 2 && da < 14) {
+        await _aggiungiSeManca(m, tappe, tappe.mezzo);
       }
     },
   );

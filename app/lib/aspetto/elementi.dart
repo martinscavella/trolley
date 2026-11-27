@@ -881,6 +881,9 @@ class Gettone extends StatelessWidget {
     required this.scelto,
     required this.onTap,
     this.spunta = false,
+    this.simbolo,
+    this.aggiunta,
+    this.aggiuntaInRosso = false,
   });
 
   final String etichetta;
@@ -890,18 +893,24 @@ class Gettone extends StatelessWidget {
   /// Una scelta fra tante insieme («Per chi»): scelto, mostra la spunta.
   final bool spunta;
 
+  /// L'icona prima del testo, e un'aggiunta più leggera dopo («circa 15
+  /// min»), in rosso se dice che non va (tela, 170).
+  final IconData? simbolo;
+  final String? aggiunta;
+  final bool aggiuntaInRosso;
+
   @override
   Widget build(BuildContext context) => Semantics(
     selected: scelto,
     child: Premibile(
       onTap: onTap,
       scala: 0.94,
-      etichetta: etichetta,
+      etichetta: [etichetta, ?aggiunta].join(', '),
       child: AnimatedContainer(
         duration: Ritmo.breve,
         curve: Ritmo.curva,
         height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: EdgeInsets.only(left: simbolo == null ? 14 : 10, right: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           color: scelto ? Colori.inchiostro : Colori.bianco,
@@ -920,6 +929,14 @@ class Gettone extends StatelessWidget {
                 const Icon(Icons.check_rounded, size: 16, color: Colori.bianco),
                 const SizedBox(width: 6),
               ],
+              if (simbolo case final s?) ...[
+                Icon(
+                  s,
+                  size: 17,
+                  color: scelto ? Colori.bianco : Colori.cobalto,
+                ),
+                const SizedBox(width: 6),
+              ],
               Flexible(
                 child: Text(
                   etichetta,
@@ -930,6 +947,21 @@ class Gettone extends StatelessWidget {
                   ),
                 ),
               ),
+              if (aggiunta case final a?) ...[
+                const SizedBox(width: 6),
+                Text(
+                  a,
+                  style: Testi.secondario.copyWith(
+                    color: scelto
+                        ? Colori.bianco.withValues(alpha: 0.8)
+                        : aggiuntaInRosso
+                        ? Colori.pericolo
+                        : Colori.grafite,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

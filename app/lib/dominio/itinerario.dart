@@ -17,6 +17,7 @@ import 'giornate.dart';
 import 'mappa.dart';
 import 'tappe.dart';
 import 'testo.dart';
+import 'tragitti.dart';
 
 // ─── La richiesta ─────────────────────────────────────────────────────────
 
@@ -136,14 +137,19 @@ String scriviRichiesta(Richiesta r) {
     intestazioneItinerario,
     'DESTINAZIONE: ${r.destinazione}',
     'GIORNO 1 · ${scriviData(esempio)}',
-    '10:30 | Nome della tappa | visita | 90 | Via e numero | 41.14686, -8.61479',
-    '13:00 | Nome del ristorante | pasto | 75 | Via e numero | 41.14522, -8.61131',
+    '10:30 | Nome della tappa | visita | 90 | - | Via e numero | 41.14686, -8.61479',
+    '13:00 | Nome del ristorante | pasto | 75 | a piedi | Via e numero | 41.14522, -8.61131',
     '```',
     '',
     'Regole del formato:',
     '- una riga GIORNO per ogni giorno, con il numero e la data come sopra;',
     '- una riga per tappa: ora di inizio, nome, tipo, durata in minuti, '
-        'indirizzo (o la zona), coordinate, separati da «|»;',
+        'mezzo, indirizzo (o la zona), coordinate, separati da «|»;',
+    '- il mezzo è come si arriva a quella tappa dalla tappa prima dello '
+        'stesso giorno, una di queste parole: '
+        '${[for (final m in Mezzo.values) _parolaMezzo[m]].join(', ')}; '
+        'scegli quello che useresti davvero lì, con il tempo che c\'è fra le '
+        'due tappe; per la prima tappa del giorno metti un trattino;',
     '- le coordinate sono quelle del posto, latitudine e longitudine in '
         'gradi decimali con cinque decimali, separate da una virgola; se non '
         'sei sicuro del punto esatto lascia il campo vuoto: meglio vuoto che '
@@ -184,6 +190,7 @@ class TappaProposta {
     this.ora,
     this.luogo,
     this.posto,
+    this.mezzo,
   });
 
   final String titolo;
@@ -199,9 +206,12 @@ class TappaProposta {
   /// nel viaggio si controlla che sia vicino alla meta ([postoPlausibile]).
   final Coordinate? posto;
 
+  /// Come ci si arriva dalla tappa prima (CR-07): lo sceglie l'assistente.
+  final Mezzo? mezzo;
+
   @override
   String toString() =>
-      'TappaProposta($ora $titolo $tipo $durata $luogo $posto)';
+      'TappaProposta($ora $titolo $tipo $durata $luogo $posto $mezzo)';
 }
 
 /// Un giorno della risposta, riconosciuto dal numero, dalla data o da tutti e
@@ -408,9 +418,11 @@ _Lettura _componi(Duration? ora, List<String> campi) {
   Duration? durata;
   String? luogo;
   Coordinate? posto;
+  Mezzo? mezzo;
   for (var i = 0; i < restanti.length; i++) {
     final c = restanti[i];
-    if (c.isEmpty) continue;
+    // Il trattino è il mezzo della prima tappa del giorno: nessuno.
+    if (c.isEmpty || const {'-', '–', '—'}.contains(c)) continue;
     if (posto == null) {
       // «41.14686, -8.61479» in un campo, o latitudine e longitudine in due.
       final coppia = _leggiCoordinate(c);
@@ -432,6 +444,13 @@ _Lettura _componi(Duration? ora, List<String> campi) {
       final t = _leggiTipo(c);
       if (t != null) {
         tipo = t;
+        continue;
+      }
+    }
+    if (mezzo == null) {
+      final m = _leggiMezzo(c);
+      if (m != null) {
+        mezzo = m;
         continue;
       }
     }
@@ -460,6 +479,7 @@ _Lettura _componi(Duration? ora, List<String> campi) {
       ora: ora,
       luogo: luogo,
       posto: posto,
+      mezzo: mezzo,
     ),
   );
 }
@@ -502,6 +522,8 @@ const _intestazioni = {
   'duration',
   'minuti',
   'luogo',
+  'mezzo',
+  'transport',
   'zona',
   'indirizzo',
   'dove',
@@ -579,6 +601,52 @@ const _sinonimi = {
   TipoTappa.pausa: ['pausa', 'break', 'riposo', 'relax', 'caffe', 'coffee'],
   TipoTappa.altro: ['altro', 'other', 'shopping'],
 };
+
+/// La parola di ogni mezzo nella richiesta all'assistente.
+const _parolaMezzo = {
+  Mezzo.aPiedi: 'a piedi',
+  Mezzo.bici: 'bici',
+  Mezzo.mezzi: 'mezzi',
+  Mezzo.monopattino: 'monopattino',
+  Mezzo.auto: 'auto',
+  Mezzo.taxi: 'taxi',
+};
+
+const _sinonimiMezzo = {
+  Mezzo.aPiedi: ['a piedi', 'piedi', 'on foot', 'walking', 'by foot'],
+  Mezzo.bici: ['bici', 'in bici', 'bicicletta', 'bike', 'bicycle', 'cycling'],
+  Mezzo.mezzi: [
+    'mezzi',
+    'mezzi pubblici',
+    'con i mezzi',
+    'metro',
+    'in metro',
+    'metropolitana',
+    'bus',
+    'autobus',
+    'in bus',
+    'tram',
+    'treno',
+    'traghetto',
+    'transit',
+    'public transport',
+    'subway',
+    'train',
+    'ferry',
+  ],
+  Mezzo.monopattino: ['monopattino', 'in monopattino', 'scooter', 'e scooter'],
+  Mezzo.auto: ['auto', 'in auto', 'macchina', 'in macchina', 'car', 'driving'],
+  Mezzo.taxi: ['taxi', 'in taxi', 'uber', 'cab'],
+};
+
+/// Un campo che è proprio un mezzo: «a piedi», «Metro».
+Mezzo? _leggiMezzo(String campo) {
+  final c = normalizza(campo);
+  for (final MapEntry(key: mezzo, value: parole) in _sinonimiMezzo.entries) {
+    if (parole.contains(c)) return mezzo;
+  }
+  return null;
+}
 
 /// Un campo che è proprio un tipo: «visita», «Lunch».
 TipoTappa? _leggiTipo(String campo) {

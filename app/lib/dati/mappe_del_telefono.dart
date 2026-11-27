@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../dominio/mappa.dart';
+import '../dominio/tragitti.dart';
 
 abstract interface class MappeDelTelefono {
   /// Apre le Mappe con le indicazioni a piedi fino a [posto], o fino a
@@ -23,6 +24,7 @@ abstract interface class MappeDelTelefono {
     String? indirizzo,
     String? placeId,
     bool conGoogle = false,
+    Mezzo mezzo = Mezzo.aPiedi,
   });
 }
 
@@ -37,6 +39,7 @@ class MappeDiSistema implements MappeDelTelefono {
     String? indirizzo,
     String? placeId,
     bool conGoogle = false,
+    Mezzo mezzo = Mezzo.aPiedi,
   }) async {
     final indirizzoWeb = indirizzoPerLeMappe(
       nome: nome,
@@ -44,6 +47,7 @@ class MappeDiSistema implements MappeDelTelefono {
       indirizzo: indirizzo,
       placeId: placeId,
       apple: !conGoogle && !Platform.isAndroid,
+      mezzo: mezzo,
     );
     if (indirizzoWeb == null) return false;
     try {
@@ -57,7 +61,8 @@ class MappeDiSistema implements MappeDelTelefono {
   }
 }
 
-/// Il link che apre le Mappe sulle indicazioni a piedi. `null` se non c'è
+/// Il link che apre le Mappe sulle indicazioni, a piedi se non si dice
+/// [mezzo]. `null` se non c'è
 /// né un posto né un indirizzo. Google Maps va dritto al posto di Google
 /// [placeId], se c'è; il link apre l'app se c'è, altrimenti il sito.
 Uri? indirizzoPerLeMappe({
@@ -66,6 +71,7 @@ Uri? indirizzoPerLeMappe({
   String? indirizzo,
   String? placeId,
   bool apple = true,
+  Mezzo mezzo = Mezzo.aPiedi,
 }) {
   final dove = posto != null
       ? '${posto.lat},${posto.lon}'
@@ -76,7 +82,11 @@ Uri? indirizzoPerLeMappe({
   return apple
       ? Uri.https('maps.apple.com', '/', {
           'daddr': dove,
-          'dirflg': 'w',
+          'dirflg': switch (mezzo) {
+            Mezzo.mezzi => 'r',
+            Mezzo.auto || Mezzo.taxi => 'd',
+            Mezzo.aPiedi || Mezzo.bici || Mezzo.monopattino => 'w',
+          },
           if (posto != null) 'q': nome,
         })
       : Uri.https('www.google.com', '/maps/dir/', {
@@ -84,6 +94,11 @@ Uri? indirizzoPerLeMappe({
           'destination': dove,
           if (placeId != null && placeId.isNotEmpty)
             'destination_place_id': placeId,
-          'travelmode': 'walking',
+          'travelmode': switch (mezzo) {
+            Mezzo.mezzi => 'transit',
+            Mezzo.auto || Mezzo.taxi => 'driving',
+            Mezzo.bici || Mezzo.monopattino => 'bicycling',
+            Mezzo.aPiedi => 'walking',
+          },
         });
 }

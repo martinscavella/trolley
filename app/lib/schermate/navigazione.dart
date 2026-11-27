@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
+import '../aspetto/mezzi.dart';
 import '../aspetto/movimento.dart';
 import '../aspetto/pagina.dart';
 import '../aspetto/segni_mappa.dart';
@@ -16,10 +17,12 @@ import '../dati/lettura.dart';
 import '../dati/mappe.dart';
 import '../dominio/mappa.dart';
 import '../dominio/tappe.dart';
+import '../dominio/tragitti.dart';
 import '../servizi.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
 import 'salta.dart';
+import 'tragitto.dart';
 
 /// La guida verso una tappa, dentro Trolley (08-mappa.md, regola 2; CR-06,
 /// passo 4; tela, 163): la mappa di Google che segue la persona, in alto la
@@ -109,6 +112,16 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
 
   Coordinate get _posto => widget.tappa.posto!;
 
+  /// Il mezzo con cui si guida: quello della tappa, se la guida lo porta;
+  /// altrimenti a piedi (CR-07; tela, 171).
+  late Mezzo _mezzo = switch (widget.tappa.mezzoTappa) {
+    final m? when m.guidabile => m,
+    _ => Mezzo.aPiedi,
+  };
+
+  /// Si sta ricalcolando la strada per un mezzo nuovo.
+  bool _cambio = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -185,12 +198,86 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
       titolo: widget.tappa.titolo,
       posto: _posto,
       placeId: widget.tappa.placeId,
+      mezzo: _mezzo,
     );
     if (!mounted) return;
     if (partita != EsitoGuida.ok) return _ferma(messaggioDellaGuida(partita));
     setState(() => _fase = _Fase.guida);
     // Partiti, la mappa segue la persona.
     unawaited(_tornaDoveSei());
+  }
+
+  /// La tappa com'è adesso nella copia: dopo aver cambiato il mezzo ha una
+  /// versione nuova, e segnarla con quella di prima sarebbe un conflitto.
+  Future<Tappa> _tappaAdesso() async {
+    final tappe = await _servizi.archivio.osservaTappe(widget.viaggio.id).first;
+    return tappe.where((t) => t.id == widget.tappa.id).firstOrNull ??
+        widget.tappa;
+  }
+
+  /// «Come ci vai?» dalla guida (tela, 172): il mezzo nuovo si scrive nella
+  /// tappa, per tutti, e la strada si ricalcola. Con i mezzi pubblici, che
+  /// la guida non ha, si apre Google Maps e la guida si chiude.
+  Future<void> _cambiaMezzo() async {
+    final qui = _qui;
+    final scelto = await apriFoglio<Mezzo>(
+      context,
+      FoglioMezzoDellaGuida(
+        a: widget.tappa.titolo,
+        scelto: _mezzo,
+        metri: qui == null ? null : distanzaInMetri(qui, _posto),
+      ),
+    );
+    if (scelto == null || !mounted) return;
+    final tappa = await _tappaAdesso();
+    if (!mounted) return;
+    setState(() => _cambio = true);
+    try {
+      final prima = tappa.mezzoTappa;
+      if (scelto != prima) {
+        final scritto = await scriviIlMezzo(context, tappa, scelto);
+        if (!scritto || !mounted) return;
+        unawaited(
+          registraIlMezzo(
+            _servizi,
+            viaggioId: widget.viaggio.id,
+            mezzo: scelto,
+            prima: prima,
+            da: DaDove.guida,
+          ),
+        );
+      }
+      if (!scelto.guidabile) {
+        await _aGoogleMaps(mezzo: scelto);
+        if (mounted) Navigator.of(context).pop();
+        return;
+      }
+      // Una strada nuova è una destinazione nuova: si conta sul tetto.
+      try {
+        await _servizi.mappe.guidaConsentita(viaggioId: widget.viaggio.id);
+      } on ErroreTrolley catch (e) {
+        if (mounted) mostraMessaggio(context, e.messaggio, errore: true);
+        return;
+      }
+      final partita = await _servizi.guida.parti(
+        titolo: widget.tappa.titolo,
+        posto: _posto,
+        placeId: widget.tappa.placeId,
+        mezzo: scelto,
+      );
+      if (!mounted) return;
+      if (partita != EsitoGuida.ok) {
+        mostraMessaggio(context, messaggioDellaGuida(partita), errore: true);
+        return;
+      }
+      setState(() {
+        _mezzo = scelto;
+        _rimasto = null;
+        _indicazione = null;
+      });
+    } finally {
+      if (mounted) setState(() => _cambio = false);
+    }
   }
 
   Future<void> _cambiaVoce() async {
@@ -232,13 +319,14 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
     unawaited(_arrivo());
   }
 
-  Future<void> _aGoogleMaps() async {
+  Future<void> _aGoogleMaps({Mezzo? mezzo}) async {
     final aperte = await _servizi.mappeDelTelefono.portami(
       nome: widget.tappa.titolo,
       posto: _posto,
       indirizzo: widget.tappa.luogoNome,
       placeId: widget.tappa.placeId,
       conGoogle: true,
+      mezzo: mezzo ?? _mezzo,
     );
     if (!aperte && mounted) {
       mostraMessaggio(context, 'Google Maps non si è aperto.', errore: true);
@@ -254,14 +342,16 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
       _FoglioArrivo(titolo: widget.tappa.titolo, segnabili: segnabili),
     );
     if (scelta == null || !mounted) return;
+    final tappa = await _tappaAdesso();
+    if (!mounted) return;
     if (scelta == StatoTappa.saltata) {
       // Chiede se rimandarla o saltarla e basta (tela, 152).
-      await saltaLaTappa(context, viaggio: widget.viaggio, tappa: widget.tappa);
+      await saltaLaTappa(context, viaggio: widget.viaggio, tappa: tappa);
     } else {
       await segnaLaTappa(
         context,
         viaggio: widget.viaggio,
-        tappa: widget.tappa,
+        tappa: tappa,
         stato: scelta,
       );
     }
@@ -388,6 +478,8 @@ class _SchermataNavigazioneState extends State<SchermataNavigazione> {
                 tappa: widget.tappa,
                 rimasto: _rimasto,
                 adesso: widget.orologio(),
+                mezzo: _mezzo,
+                onMezzo: _fase == _Fase.guida && !_cambio ? _cambiaMezzo : null,
                 onFine: () => Navigator.of(context).pop(),
                 onGoogleMaps: _aGoogleMaps,
               ),
@@ -422,7 +514,7 @@ String messaggioDellaGuida(EsitoGuida esito) => switch (esito) {
   EsitoGuida.condizioniRifiutate =>
     'Senza le condizioni di Google la guida non parte.',
   EsitoGuida.senzaPosizione => 'Il telefono non sa dove sei.',
-  EsitoGuida.nonTrovata => 'Non c\'è una strada a piedi fino alla tappa.',
+  EsitoGuida.nonTrovata => 'Non c\'è una strada fino alla tappa.',
   EsitoGuida.senzaRete => 'Senza rete la strada non si calcola.',
   EsitoGuida.tetto => 'Per questo mese le guide sono finite.',
   EsitoGuida.nonDisponibile => 'La guida non risponde.',
@@ -559,6 +651,8 @@ class _QuantoManca extends StatelessWidget {
     required this.tappa,
     required this.rimasto,
     required this.adesso,
+    required this.mezzo,
+    required this.onMezzo,
     required this.onFine,
     required this.onGoogleMaps,
   });
@@ -567,6 +661,10 @@ class _QuantoManca extends StatelessWidget {
   final Tappa tappa;
   final Rimasto? rimasto;
   final DateTime adesso;
+
+  /// Il mezzo con cui si guida: toccato, si cambia (tela, 171).
+  final Mezzo mezzo;
+  final VoidCallback? onMezzo;
   final VoidCallback onFine;
   final VoidCallback onGoogleMaps;
 
@@ -576,8 +674,8 @@ class _QuantoManca extends StatelessWidget {
     final sotto = r == null
         ? (tappa.luogoNome?.trim().isNotEmpty ?? false)
               ? tappa.luogoNome!.trim()
-              : 'A piedi'
-        : '${tempoAPiedi(r.tempo)} a piedi · '
+              : nomeMezzo(mezzo)
+        : '${tempoAPiedi(r.tempo)} · '
               'arrivi alle ${ora(_orario(adesso.add(r.tempo)))}';
     return Container(
       padding: const EdgeInsets.all(16),
@@ -595,36 +693,46 @@ class _QuantoManca extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Semantics(
-            label: '${tappa.titolo}, $sotto',
-            excludeSemantics: true,
-            child: Row(
-              children: [
-                NumeroTappa(numero: numero, segno: SegnoTappa.prossima),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  label: '${tappa.titolo}, $sotto',
+                  excludeSemantics: true,
+                  child: Row(
                     children: [
-                      Text(
-                        tappa.titolo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Testi.evidenza.copyWith(
-                          color: Colori.inchiostro,
+                      NumeroTappa(numero: numero, segno: SegnoTappa.prossima),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tappa.titolo,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Testi.evidenza.copyWith(
+                                color: Colori.inchiostro,
+                              ),
+                            ),
+                            Text(
+                              sotto,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Testi.didascalia.copyWith(
+                                color: Colori.grafite,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        sotto,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Testi.didascalia.copyWith(color: Colori.grafite),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              _MezzoDellaGuida(mezzo: mezzo, onTap: onMezzo),
+            ],
           ),
           const SizedBox(height: 14),
           Row(
@@ -684,6 +792,59 @@ class _QuantoManca extends StatelessWidget {
 
   static Duration _orario(DateTime d) =>
       Duration(hours: d.hour, minutes: d.minute);
+}
+
+/// Il mezzo della guida, nella scheda in basso (tela, 171): toccato apre
+/// «Come ci vai?».
+class _MezzoDellaGuida extends StatelessWidget {
+  const _MezzoDellaGuida({required this.mezzo, required this.onTap});
+
+  final Mezzo mezzo;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    enabled: onTap != null,
+    child: Premibile(
+      onTap: onTap,
+      etichetta: '${nomeMezzo(mezzo)}: cambia il mezzo',
+      child: ExcludeSemantics(
+        child: Opacity(
+          opacity: onTap == null ? 0.5 : 1,
+          child: Container(
+            height: 40,
+            padding: const EdgeInsets.only(left: 9, right: 8),
+            decoration: BoxDecoration(
+              color: Colori.bianco,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colori.cenere, width: 2),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(iconaMezzo(mezzo), size: 18, color: Colori.cobalto),
+                const SizedBox(width: 5),
+                Text(
+                  nomeMezzo(mezzo),
+                  style: Testi.secondario.copyWith(
+                    color: Colori.inchiostro,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                const Icon(
+                  Icons.expand_more_rounded,
+                  size: 18,
+                  color: Colori.grafite,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 /// «Sei qui» (tela, 52): fatta, saltata, o dopo.

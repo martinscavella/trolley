@@ -15,6 +15,7 @@ library;
 import 'package:flutter/widgets.dart';
 
 import '../dominio/mappa.dart';
+import '../dominio/tragitti.dart';
 import 'mappe.dart';
 
 /// Com'è andata una richiesta alla guida.
@@ -118,12 +119,15 @@ abstract interface class Guida {
     void Function(bool segue)? onSegue,
   });
 
-  /// Parte, a piedi, verso [posto]: se la tappa ha il posto di Google
-  /// ([placeId]) verso quello, che sa dov'è l'ingresso.
+  /// Parte verso [posto] con [mezzo]: se la tappa ha il posto di Google
+  /// ([placeId]) verso quello, che sa dov'è l'ingresso. Il monopattino
+  /// guida come la bici, il taxi come l'auto; i mezzi pubblici la guida non
+  /// li ha (CR-07; tela, 172). Chiamata di nuovo, ricalcola la strada.
   Future<EsitoGuida> parti({
     required String titolo,
     required Coordinate posto,
     String? placeId,
+    Mezzo mezzo = Mezzo.aPiedi,
   });
 
   /// Quanto manca, mentre si cammina.
@@ -170,6 +174,7 @@ class GuidaAssente implements Guida {
     required String titolo,
     required Coordinate posto,
     String? placeId,
+    Mezzo mezzo = Mezzo.aPiedi,
   }) async => EsitoGuida.nonDisponibile;
 
   @override

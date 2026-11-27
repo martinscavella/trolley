@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
+import '../aspetto/mezzi.dart';
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/movimento.dart';
@@ -912,6 +913,7 @@ class _SchermataAnteprimaState extends State<SchermataAnteprima> {
             posto: posto != null && postoPlausibile(posto, vicinoA: centro)
                 ? posto
                 : null,
+            mezzo: p.mezzo,
           ),
         );
       }
@@ -1236,6 +1238,8 @@ class _Proposta extends StatelessWidget {
         : [
             if (p.tipo != null) nomeTipo(p.tipo!),
             durataBreve(p.durata),
+            // Come ci si arriva (CR-07): lo dice l'assistente.
+            if (p.mezzo != null) 'ci vai ${mezzoInFrase(p.mezzo!)}',
             ?p.luogo,
           ].join(' · ');
     return Semantics(

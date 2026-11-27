@@ -56,6 +56,43 @@ class BloccoLinea {
   Duration get fine => inizio + durata;
 }
 
+/// Com'è un tragitto fra due tappe (tela, 166).
+enum AspettoTragitto {
+  /// Il mezzo c'è, e ci si sta (o non si sa quanto ci vuole).
+  scelto,
+
+  /// «Come ci vai?»: tratteggiato.
+  daScegliere,
+
+  /// Con quel mezzo non ci si sta: rosso. Non blocca niente.
+  stretto,
+}
+
+/// Un tragitto sulla linea: nello spazio fra la fine di una tappa e
+/// l'inizio della dopo.
+class TragittoLinea {
+  const TragittoLinea({
+    required this.id,
+    required this.partenza,
+    required this.arrivo,
+    required this.icona,
+    required this.testo,
+    required this.etichetta,
+    required this.aspetto,
+  });
+
+  /// La tappa a cui si arriva, che tiene il mezzo.
+  final String id;
+  final Duration partenza;
+  final Duration arrivo;
+  final IconData icona;
+  final String testo;
+
+  /// Cosa legge VoiceOver.
+  final String etichetta;
+  final AspettoTragitto aspetto;
+}
+
 class LineaDelTempo extends StatefulWidget {
   const LineaDelTempo({
     super.key,
@@ -72,6 +109,8 @@ class LineaDelTempo extends StatefulWidget {
     this.onSposta,
     this.onNonSpostabile,
     this.onNuova,
+    this.tragitti = const [],
+    this.onTragitto,
   });
 
   /// Da quando a quando si può stare: l'arrivo e la partenza, o mezzanotte.
@@ -105,6 +144,10 @@ class LineaDelTempo extends StatefulWidget {
 
   /// Toccato uno spazio libero: una tappa nuova a quell'ora.
   final ValueChanged<Duration>? onNuova;
+
+  /// I tragitti fra le tappe (CR-07): toccati, si aprono.
+  final List<TragittoLinea> tragitti;
+  final ValueChanged<String>? onTragitto;
 
   /// Quanto è alta un'ora.
   static const ora = 64.0;
@@ -323,11 +366,107 @@ class _LineaDelTempoState extends State<LineaDelTempo> {
             ),
           for (final b in widget.blocchi)
             if (b.id != _preso) _posizionato(b, colonne[b.id]!, area, ridotto),
+          // Mentre una tappa si trascina i tragitti non sono più quelli.
+          if (_preso == null)
+            for (final t in widget.tragitti) _tragitto(t),
           // Quella che si trascina sta sopra tutte, a larghezza piena.
           for (final b in widget.blocchi)
             if (b.id == _preso) _posizionato(b, (0, 1), area, ridotto),
           if (widget.adesso case final adesso?) ..._adesso(adesso),
         ],
+      ),
+    );
+  }
+
+  /// La pillola del tragitto (tela, 166): appena sotto la tappa da cui si
+  /// parte; in uno spazio stretto a cavallo dei due bordi, dopo il cerchio
+  /// della tappa dopo, perché il cerchio resti da toccare.
+  Widget _tragitto(TragittoLinea t) {
+    const alta = 26.0;
+    final spazio = _y(t.arrivo) - _y(t.partenza);
+    final stretto = spazio < alta;
+    final centro =
+        _y(t.partenza) + (stretto ? spazio / 2 : min(spazio, 34) / 2);
+    final (bordo, fondo, testo) = switch (t.aspetto) {
+      AspettoTragitto.scelto => (Colori.cenere, Colori.bianco, Colori.ardesia),
+      AspettoTragitto.daScegliere => (
+        Colori.cobalto,
+        Colori.bianco,
+        Colori.cobaltoScuro,
+      ),
+      AspettoTragitto.stretto => (
+        Colori.pericolo,
+        Colori.rosa,
+        Colori.pericolo,
+      ),
+    };
+    final colore = switch (t.aspetto) {
+      AspettoTragitto.scelto || AspettoTragitto.daScegliere => Colori.cobalto,
+      AspettoTragitto.stretto => Colori.pericolo,
+    };
+    // Dentro la linea: una pillola che uscisse non si toccherebbe.
+    return Positioned(
+      key: ValueKey('tragitto-${t.id}'),
+      left: _ore + (stretto ? 52 : 20),
+      right: 8,
+      top: centro - alta / 2,
+      height: alta,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Semantics(
+          container: true,
+          button: widget.onTragitto != null,
+          label: t.etichetta,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTragitto == null
+                ? null
+                : () => widget.onTragitto!(t.id),
+            child: ExcludeSemantics(
+              child: CustomPaint(
+                foregroundPainter: t.aspetto == AspettoTragitto.daScegliere
+                    ? const _BordoTratteggiato(
+                        Colori.cobalto,
+                        raggio: alta / 2,
+                        spessore: 1.5,
+                      )
+                    : null,
+                child: Container(
+                  padding: const EdgeInsets.only(left: 8, right: 10),
+                  decoration: BoxDecoration(
+                    color: fondo,
+                    borderRadius: BorderRadius.circular(alta / 2),
+                    border: t.aspetto == AspettoTragitto.daScegliere
+                        ? null
+                        : Border.all(color: bordo, width: 1.5),
+                    boxShadow: const [
+                      BoxShadow(color: Colori.bianco, spreadRadius: 3),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(t.icona, size: 15, color: colore),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          t.testo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Testi.didascalia.copyWith(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: testo,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -776,23 +915,25 @@ class _Cerchio extends StatelessWidget {
 
 /// Il bordo di una tappa in coda, o con l'orario proposto.
 class _BordoTratteggiato extends CustomPainter {
-  const _BordoTratteggiato(this.colore);
+  const _BordoTratteggiato(this.colore, {this.raggio = 14, this.spessore = 2});
 
   final Color colore;
+  final double raggio;
+  final double spessore;
 
   @override
   void paint(Canvas canvas, Size size) {
     final forma = Path()
       ..addRRect(
         RRect.fromRectAndRadius(
-          (Offset.zero & size).deflate(1),
-          const Radius.circular(14),
+          (Offset.zero & size).deflate(spessore / 2),
+          Radius.circular(raggio),
         ),
       );
     final pennello = Paint()
       ..color = colore
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = spessore;
     for (final m in forma.computeMetrics()) {
       for (var d = 0.0; d < m.length; d += 9) {
         canvas.drawPath(m.extractPath(d, min(d + 5, m.length)), pennello);
@@ -801,7 +942,10 @@ class _BordoTratteggiato extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BordoTratteggiato vecchio) => vecchio.colore != colore;
+  bool shouldRepaint(_BordoTratteggiato vecchio) =>
+      vecchio.colore != colore ||
+      vecchio.raggio != raggio ||
+      vecchio.spessore != spessore;
 }
 
 /// La giornata chiusa, prima dell'arrivo e dopo la partenza.

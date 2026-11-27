@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../aspetto/mezzi.dart';
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/linea_del_tempo.dart';
@@ -17,6 +18,7 @@ import '../dati/coda.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
+import '../dominio/tragitti.dart';
 import '../dominio/calendario.dart';
 import '../dominio/chiusura.dart';
 import '../dominio/giornate.dart';
@@ -193,6 +195,52 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
         c.durata,
       );
       return p == null ? null : problemaInBreve(p);
+    }
+
+    // Fra una tappa e la dopo, il tragitto (CR-07; tela, 166).
+    final tragitti = tragittiDelGiorno([
+      for (final c in collocate)
+        (
+          id: c.tappa.id,
+          inizio: c.inizio,
+          fine: c.fine,
+          saltata: c.tappa.statoTappa == StatoTappa.saltata,
+          mezzo: c.tappa.mezzoTappa,
+          posto: c.tappa.posto,
+        ),
+    ]);
+
+    TragittoLinea sullaLinea(Tragitto t) {
+      final mezzo = t.mezzo;
+      final stima = t.stima();
+      final a = perId[t.aId]!.tappa.titolo;
+      return TragittoLinea(
+        id: t.aId,
+        partenza: t.partenza,
+        arrivo: t.arrivo,
+        icona: iconaMezzo(mezzo),
+        aspetto: mezzo == null
+            ? AspettoTragitto.daScegliere
+            : t.nonCiStai
+            ? AspettoTragitto.stretto
+            : AspettoTragitto.scelto,
+        testo: mezzo == null
+            ? 'Come ci vai?'
+            : [
+                nomeMezzo(mezzo),
+                if (stima != null) circa(stima),
+                if (t.nonCiStai) 'non ci stai',
+              ].join(' · '),
+        etichetta: mezzo == null
+            ? 'Fino a $a: come ci vai?'
+            : [
+                'Fino a $a ${mezzoInFrase(mezzo)}',
+                if (stima != null) circa(stima),
+                if (t.nonCiStai)
+                  'non ci stai: fra le due tappe ci sono '
+                      '${durataBreve(t.spazio)}',
+              ].join(', '),
+      );
     }
 
     BloccoLinea blocco(Collocata<Tappa> c) {
@@ -396,6 +444,13 @@ class _SchermataGiornataState extends State<SchermataGiornata> {
                         ? (alle) => apriTappa(alle: alle)
                         : null,
                     piede: piede,
+                    // Il tragitto si vede soltanto: il mezzo si sceglie nella
+                    // tappa o nella guida (tela, 166 e 170). Un viaggio
+                    // concluso mostra solo quelli scelti.
+                    tragitti: [
+                      for (final t in tragitti)
+                        if (aggiungibili || t.mezzo != null) sullaLinea(t),
+                    ],
                   ),
                 ).entra(context, ritardo: Ritmo.passo * 2),
               ),

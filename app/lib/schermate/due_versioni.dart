@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../aspetto/mezzi.dart';
 import '../aspetto/elementi.dart';
 import '../aspetto/formati.dart';
 import '../aspetto/movimento.dart';
@@ -13,6 +14,7 @@ import '../dati/conflitti.dart';
 import '../dati/database.dart';
 import '../dati/errori.dart';
 import '../dati/lettura.dart';
+import '../dominio/tragitti.dart';
 import '../dominio/calendario.dart';
 import '../dominio/divisione.dart';
 import '../dominio/giornate.dart';
@@ -560,6 +562,10 @@ List<_RigaConfronto> _righe(Conflitto c, _Contesto contesto) {
           v['place_id'] as String?,
         ),
       ),
+      riga('Come ci arrivi', ['mezzo'], (v) {
+        final m = Mezzo.leggi(v['mezzo'] as String?);
+        return m == null ? null : nomeMezzo(m);
+      }),
       riga('Giorno', ['giorno_id'], (v) {
         final data = contesto.giorni[v['giorno_id']];
         return data == null ? null : giornoCorto(data);

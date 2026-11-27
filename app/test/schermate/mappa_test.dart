@@ -7,6 +7,7 @@ import 'package:trolley/aspetto/segni_mappa.dart';
 import 'package:trolley/dati/mappe.dart';
 import 'package:trolley/dati/posizione.dart';
 import 'package:trolley/dominio/calendario.dart';
+import 'package:trolley/dominio/tragitti.dart';
 import 'package:trolley/dati/guida.dart';
 import 'package:trolley/schermate/giornata.dart';
 import 'package:trolley/schermate/mappa.dart';
@@ -491,10 +492,7 @@ void main() {
 
       guida.manca(450, const Duration(minutes: 6));
       await aspetta(tester);
-      expect(
-        find.textContaining('6 min a piedi · arrivi alle'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('6 min · arrivi alle'), findsOneWidget);
     });
 
     testWidgets('spostata la mappa, il pulsante tondo la riporta dove si '
@@ -525,6 +523,68 @@ void main() {
       ambiente.posizione.gira(135);
       await aspetta(tester);
       expect(ambiente.guida.verso, 135);
+    });
+
+    testWidgets('il mezzo sta nella scheda: cambiato, la strada si '
+        'ricalcola e il mezzo resta nella tappa (tela, 171–172)', (
+      tester,
+    ) async {
+      await portami(tester);
+      final guida = ambiente.guida;
+      expect(guida.partite.single.mezzo, Mezzo.aPiedi);
+      expect(find.bySemanticsLabel('A piedi: cambia il mezzo'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('A piedi: cambia il mezzo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Come ci vai?'), findsOneWidget);
+      expect(find.text('Apre Google Maps'), findsOneWidget);
+      expect(find.text('Guida come in bici'), findsOneWidget);
+
+      await tester.tap(find.text('In bici'));
+      await aspetta(tester);
+
+      // La strada di nuovo, in bici, contata sul tetto un'altra volta.
+      expect(guida.partite.map((p) => p.mezzo), [Mezzo.aPiedi, Mezzo.bici]);
+      expect(ambiente.mappe.guide, ['v', 'v']);
+      final lello = ambiente.server.tappe.singleWhere(
+        (t) => t['id'] == 'lello',
+      );
+      expect(lello['mezzo'], 'bici');
+      expect(find.bySemanticsLabel('In bici: cambia il mezzo'), findsOneWidget);
+      expect(await evento(tester, 'tragitto_sistemato'), {
+        'viaggio_id': 'v',
+        'mezzo': 'bici',
+        'prima': 'nessuno',
+        'da': 'guida',
+        'non_ci_stava': false,
+      });
+
+      // Arrivati, la si segna con la versione nuova: niente due versioni.
+      guida.arriva();
+      await aspetta(tester);
+      await tester.tap(find.text('Fatta').last);
+      await aspetta(tester);
+      expect(await statoDi(tester, 'lello'), 'completata');
+    });
+
+    testWidgets('con i mezzi la guida si chiude e si apre Google Maps sui '
+        'mezzi', (tester) async {
+      await portami(tester);
+      await tester.tap(find.bySemanticsLabel('A piedi: cambia il mezzo'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Con i mezzi'));
+      await aspetta(tester);
+
+      final aperta = ambiente.mappeDelTelefono.aperte.single;
+      expect(aperta.mezzo, Mezzo.mezzi);
+      expect(aperta.conGoogle, isTrue);
+      expect(find.byType(SchermataNavigazione), findsNothing);
+      final lello = ambiente.server.tappe.singleWhere(
+        (t) => t['id'] == 'lello',
+      );
+      expect(lello['mezzo'], 'mezzi');
+      // Una sola strada: quella a piedi dell'inizio.
+      expect(ambiente.guida.partite, hasLength(1));
     });
 
     testWidgets('la voce si toglie e si rimette dal pulsante', (tester) async {
@@ -657,10 +717,7 @@ void main() {
       await portami(tester);
 
       expect(find.text('Niente strada'), findsOneWidget);
-      expect(
-        find.textContaining('Non c\'è una strada a piedi'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Non c\'è una strada fino'), findsOneWidget);
       expect(find.text('Apri in Google Maps'), findsOneWidget);
     });
 

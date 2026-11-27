@@ -21,6 +21,7 @@ import '../dominio/giornate.dart';
 import '../dominio/orari.dart';
 import '../dominio/mappa.dart';
 import '../dominio/tappe.dart';
+import '../dominio/tragitti.dart';
 import '../dominio/valute.dart';
 import 'database.dart';
 import 'errori.dart';
@@ -41,6 +42,7 @@ class NuovaTappa {
     this.posto,
     this.placeId,
     this.coordinateIl,
+    this.mezzo,
   });
 
   /// Generato sul telefono: rimandarla non la aggiunge due volte.
@@ -62,6 +64,9 @@ class NuovaTappa {
   final String? placeId;
   final DateTime? coordinateIl;
 
+  /// Come ci si arriva dalla tappa prima (CR-07).
+  final Mezzo? mezzo;
+
   /// La riga come la scrive il server.
   Map<String, Object?> get riga {
     final dove = luogo?.trim();
@@ -81,6 +86,9 @@ class NuovaTappa {
       'coordinate_il': posto == null || placeId == null
           ? null
           : (coordinateIl ?? DateTime.now()).toUtc().toIso8601String(),
+      // Solo se c'è: una riga senza il campo vale anche per un server di
+      // prima della migrazione mezzo_della_tappa.
+      if (mezzo != null) 'mezzo': mezzo!.codice,
     };
   }
 }
@@ -220,6 +228,7 @@ TappeCompanion rigaTappa(Map<String, dynamic> r, DateTime adesso) =>
       lon: Value((r['lon'] as num?)?.toDouble()),
       placeId: Value(r['place_id'] as String?),
       coordinateIl: Value(r['coordinate_il'] as String?),
+      mezzo: Value(r['mezzo'] as String?),
       durataStimataMin: r['durata_stimata_min'] as int,
       oraInizio: Value(r['ora_inizio'] as String?),
       stato: r['stato'] as String,
@@ -678,6 +687,8 @@ class Coda {
                 // Uno messo in coda prima della CR-06 nemmeno queste.
                 placeId: Value(c['place_id'] as String?),
                 coordinateIl: Value(c['coordinate_il'] as String?),
+                // E prima della CR-07 il mezzo.
+                mezzo: Value(c['mezzo'] as String?),
                 durataStimataMin: c['durata_stimata_min']! as int,
                 oraInizio: Value(c['ora_inizio'] as String?),
                 stato: StatoTappa.daFare.codice,

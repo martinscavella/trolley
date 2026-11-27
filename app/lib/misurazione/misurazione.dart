@@ -115,6 +115,12 @@ abstract final class Eventi {
   /// numero che dice quanto costa tenere le coordinate. Mai quali tappe, mai
   /// dove.
   static const coordinateRinnovate = 'coordinate_rinnovate';
+
+  /// Un tragitto sistemato dal suo foglio (CR-07; 04, regole 34–36): il
+  /// mezzo scelto, o la tappa dopo spostata per arrivarci; da dove, e se
+  /// prima ci si stava. Dice se i mezzi si scelgono, e se l'avviso serve.
+  /// Mai le tappe, mai dove.
+  static const tragittoSistemato = 'tragitto_sistemato';
 }
 
 class Misurazione {

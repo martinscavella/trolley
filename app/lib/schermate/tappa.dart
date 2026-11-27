@@ -25,6 +25,7 @@ import '../dominio/mappa.dart';
 import '../dominio/orari.dart';
 import '../dominio/tappe.dart';
 import '../dominio/testo.dart';
+import '../dominio/tragitti.dart';
 import '../misurazione/misurazione.dart';
 import '../servizi.dart';
 import 'con_la_rete.dart';
@@ -32,6 +33,7 @@ import 'due_versioni.dart';
 import 'gesti_mappa.dart';
 import 'gesti_tappa.dart';
 import 'luogo.dart';
+import 'tragitto.dart';
 
 /// Una tappa: nuova, o da cambiare (04-itinerario.md, "Nuova tappa"; tela,
 /// 8, 128 e 129). Cosa, che tipo — che propone la durata, sempre
@@ -102,6 +104,10 @@ class _SchermataTappaState extends State<SchermataTappa> {
       : widget.tappa!.tipoTappa;
   late Duration _durata =
       widget.tappa?.durata ?? TipoTappa.visita.durataProposta;
+
+  /// Come ci si arriva dalla tappa prima (CR-07; tela, 170); `null` è «Come
+  /// ci vai?».
+  late Mezzo? _mezzo = widget.tappa?.mezzoTappa;
   late String? _giornoId = _giornoValido(widget.giornoId);
 
   /// A che ora comincia: quella della tappa, o la proposta.
@@ -238,6 +244,53 @@ class _SchermataTappaState extends State<SchermataTappa> {
         .firstOrNull;
   }
 
+  /// Il tragitto dalla tappa prima dello stesso giorno, con l'ora, il posto
+  /// e il mezzo del foglio; `null` per la prima del giorno, o se si
+  /// sovrappone alla tappa prima.
+  ({Tragitto tragitto, Tappa da})? get _tragitto {
+    final g = _giorno;
+    if (g == null) return null;
+    const qui = '';
+    final tragitti = tragittiDelGiorno([
+      for (final o in _occupati(g))
+        (
+          id: o.chi.id,
+          inizio: o.inizio,
+          fine: o.fine,
+          saltata: o.chi.statoTappa == StatoTappa.saltata,
+          mezzo: o.chi.mezzoTappa,
+          posto: o.chi.posto,
+        ),
+      (
+        id: qui,
+        inizio: _ora,
+        fine: _ora + _durata,
+        saltata: false,
+        mezzo: _mezzo,
+        posto: _posto,
+      ),
+    ]);
+    final t = tragitti.where((t) => t.aId == qui).firstOrNull;
+    if (t == null) return null;
+    final da = widget.tappe.where((x) => x.id == t.daId).firstOrNull;
+    return da == null ? null : (tragitto: t, da: da);
+  }
+
+  /// Il tragitto com'era col mezzo di prima: se allora non ci si stava
+  /// (`tragitto_sistemato`, 07).
+  Tragitto? get _tragittoDiPrima {
+    final t = _tragitto?.tragitto;
+    if (t == null) return null;
+    return Tragitto(
+      daId: t.daId,
+      aId: t.aId,
+      partenza: t.partenza,
+      arrivo: t.arrivo,
+      mezzo: widget.tappa?.mezzoTappa,
+      metri: t.metri,
+    );
+  }
+
   /// Cosa è cambiato, nei nomi del server. Vuoto per una tappa nuova.
   Map<String, Object?> get _cambiamenti {
     final t = widget.tappa;
@@ -249,6 +302,7 @@ class _SchermataTappaState extends State<SchermataTappa> {
       if (_durata != t.durata) 'durata_stimata_min': _durata.inMinutes,
       // Un orario proposto si conferma salvando (regola 27).
       if (_ora != t.ora) 'ora_inizio': scriviOra(_ora),
+      if (_mezzo != t.mezzoTappa) 'mezzo': _mezzo?.codice,
       // Il posto va col suo nome: cambia l'uno, cambiano insieme.
       if (luogo != (t.luogoNome ?? '') ||
           _posto != t.posto ||
@@ -430,12 +484,25 @@ class _SchermataTappaState extends State<SchermataTappa> {
       if (!mounted) return;
       // Se qualcuno l'ha cambiata intanto, si sceglie fra le due versioni;
       // tornando indietro senza scegliere, quello che si è scritto è qui.
+      final nonCiStava = _tragittoDiPrima?.nonCiStai ?? false;
       final scelta = await salvaOScegli(
         context,
         () => archivio.modificaTappa(tappa, valori),
       );
       if (scelta != null && mounted) {
         _finita = true;
+        if (valori.containsKey('mezzo') && _mezzo != null) {
+          unawaited(
+            registraIlMezzo(
+              Servizi.of(context),
+              viaggioId: widget.viaggio.id,
+              mezzo: _mezzo!,
+              prima: tappa.mezzoTappa,
+              da: DaDove.tappa,
+              nonCiStava: nonCiStava,
+            ),
+          );
+        }
         Navigator.of(context).pop();
       }
     } on ErroreTrolley catch (e) {
@@ -474,10 +541,22 @@ class _SchermataTappaState extends State<SchermataTappa> {
             coordinateIl: _coordinateIl == null
                 ? null
                 : DateTime.parse(_coordinateIl!),
+            mezzo: _mezzo,
           ),
         ],
       );
       _finita = true;
+      if (_mezzo != null && mounted) {
+        unawaited(
+          registraIlMezzo(
+            Servizi.of(context),
+            viaggioId: viaggio.id,
+            mezzo: _mezzo!,
+            prima: null,
+            da: DaDove.tappa,
+          ),
+        );
+      }
       if (mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _inCorso = false);
@@ -723,6 +802,14 @@ class _SchermataTappaState extends State<SchermataTappa> {
                     ),
                   ),
           ),
+          if (_tragitto case (:final tragitto, :final da)) ...[
+            const SizedBox(height: 16),
+            ComeCiArrivi(
+              tragitto: tragitto,
+              da: da.titolo,
+              onScegli: (m) => setState(() => _mezzo = m),
+            ),
+          ],
           const SizedBox(height: 16),
           CampoScelta(
             etichetta: 'Giorno',

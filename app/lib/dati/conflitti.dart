@@ -90,6 +90,7 @@ Map<String, Object?> ritrattoTappa(Map<String, Object?> r) => {
   'place_id': r['place_id'],
   // Va con le coordinate: senza, il server non le accetta (ADR-014).
   'coordinate_il': _istante(r['coordinate_il']),
+  'mezzo': r['mezzo'],
   'giorno_id': r['giorno_id'],
   campoEliminato: r['eliminato_il'] != null,
 };
@@ -173,6 +174,7 @@ Map<String, Object?> rigaDellaTappa(Tappa t) => {
   'lon': t.lon,
   'place_id': t.placeId,
   'coordinate_il': t.coordinateIl,
+  'mezzo': t.mezzo,
   'giorno_id': t.giornoId,
   'eliminato_il': t.eliminatoIl,
 };

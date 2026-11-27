@@ -130,7 +130,7 @@ void main() {
       final versione = await dopo
           .customSelect('PRAGMA user_version')
           .getSingle();
-      expect(versione.read<int>('user_version'), 13);
+      expect(versione.read<int>('user_version'), 14);
     },
   );
 
@@ -202,7 +202,7 @@ void main() {
         );
     expect(await dopo.select(dopo.documenti).get(), hasLength(1));
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 3 alla 4 rifà solo la copia delle spese, e '
@@ -288,7 +288,7 @@ void main() {
     );
     expect(await dopo.select(dopo.tassiCambio).get(), isEmpty);
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 4 alla 5 rifà solo la copia delle voci, e '
@@ -374,7 +374,7 @@ void main() {
       containsAll(['quantita', 'creato_da', 'creato_il']),
     );
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 5 alla 6 aggiunge note e configurazione, e '
@@ -432,7 +432,7 @@ void main() {
     expect(await dopo.select(dopo.note).get(), isEmpty);
     expect(await dopo.select(dopo.configurazioni).get(), isEmpty);
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 6 alla 7 aggiunge rimborso e date delle '
@@ -512,7 +512,7 @@ void main() {
     expect(coda.gesto, GestoOffline.registraSpesa);
     expect(coda.carico, '{"id":"s1","importo":"12.40"}');
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 7 alla 8 aggiunge chi portava una voce, e '
@@ -585,7 +585,7 @@ void main() {
       'benvenuto:v1',
     );
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 8 alla 9 aggiunge chi è stato sul posto, e '
@@ -670,7 +670,7 @@ void main() {
       'sul_posto:v1',
     );
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 9 alla 10 aggiunge la verifica, la deroga e '
@@ -731,7 +731,7 @@ void main() {
     expect(coda.carico, contains('"tappa_id":"t1"'));
     expect(await dopo.select(dopo.traguardi).get(), isEmpty);
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 10 alla 11 aggiunge i giorni ricordati, e '
@@ -802,7 +802,7 @@ void main() {
     final segno = (await dopo.select(dopo.impostazioni).get()).single;
     expect(segno.chiave, 'scoperto:u1:PT');
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 11 alla 12 aggiunge il budget, e lascia '
@@ -873,7 +873,7 @@ void main() {
     final segno = (await dopo.select(dopo.impostazioni).get()).single;
     expect(segno.valore, '30000 EUR');
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('passare dalla versione 12 alla 13 aggiunge il posto di Google alle '
@@ -940,7 +940,74 @@ void main() {
     expect(coda.gesto, GestoOffline.aggiungiTappa);
     expect(coda.carico, contains('"luogo_nome":"Nyhavn"'));
     final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
-    expect(versione.read<int>('user_version'), 13);
+    expect(versione.read<int>('user_version'), 14);
+  });
+
+  test('passare dalla versione 13 alla 14 aggiunge il mezzo alle tappe, e '
+      'lascia copia e coda com\'erano', () async {
+    final cartella = await Directory.systemTemp.createTemp('trolley');
+    addTearDown(() => cartella.delete(recursive: true));
+    final file = File('${cartella.path}/trolley.sqlite');
+
+    final prima = DatabaseLocale(NativeDatabase(file));
+    final adesso = DateTime.utc(2026, 11, 27, 10);
+    await prima
+        .into(prima.tappe)
+        .insert(
+          TappeCompanion.insert(
+            id: 't0',
+            versione: 3,
+            scaricatoIl: adesso,
+            viaggioId: 'v1',
+            giornoId: 'g1',
+            ordine: 1,
+            titolo: 'Rosenborg',
+            placeId: const Value('ChIJ-rosenborg'),
+            lat: const Value(55.6858),
+            lon: const Value(12.577),
+            coordinateIl: const Value('2026-11-26T10:00:00Z'),
+            durataStimataMin: 90,
+            stato: 'da_fare',
+            marcataDuranteIlViaggio: false,
+            eccedente: false,
+            creatoDa: 'u1',
+            creatoIl: '2026-11-20T08:00:00Z',
+          ),
+        );
+    // Una tappa aggiunta senza rete, prima della CR-07, aspetta in coda.
+    await prima
+        .into(prima.codaScrittura)
+        .insert(
+          CodaScritturaCompanion.insert(
+            id: 'op1',
+            viaggioId: 'v1',
+            gesto: GestoOffline.aggiungiTappa,
+            carico: '{"id":"t1","titolo":"Nyhavn","place_id":"ChIJ-nyhavn"}',
+            creataIl: adesso,
+          ),
+        );
+    await prima.close();
+
+    // Com'era la versione 13: le tappe senza il mezzo.
+    final dopo = DatabaseLocale(
+      NativeDatabase(
+        file,
+        setup: (grezzo) => grezzo
+          ..execute('ALTER TABLE tappa DROP COLUMN mezzo')
+          ..execute('PRAGMA user_version = 13'),
+      ),
+    );
+    addTearDown(dopo.close);
+
+    final tappa = (await dopo.select(dopo.tappe).get()).single;
+    expect(tappa.placeId, 'ChIJ-rosenborg');
+    expect((tappa.lat, tappa.coordinateIl), (55.6858, '2026-11-26T10:00:00Z'));
+    expect(tappa.mezzo, isNull);
+    final coda = (await dopo.select(dopo.codaScrittura).get()).single;
+    expect(coda.gesto, GestoOffline.aggiungiTappa);
+    expect(coda.carico, contains('"place_id":"ChIJ-nyhavn"'));
+    final versione = await dopo.customSelect('PRAGMA user_version').getSingle();
+    expect(versione.read<int>('user_version'), 14);
   });
 
   test('una spunta in coda sopravvive alla copia ricreata', () async {

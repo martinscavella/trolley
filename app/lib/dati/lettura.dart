@@ -16,6 +16,7 @@ import '../dominio/ricordo.dart';
 import '../dominio/spese.dart';
 import '../dominio/stato_viaggio.dart';
 import '../dominio/tappe.dart';
+import '../dominio/tragitti.dart';
 import '../dominio/valute.dart';
 import 'database.dart';
 import 'destinazioni.dart';
@@ -162,6 +163,9 @@ extension LetturaTappa on Tappa {
   /// Dove sta; `null` se non ha un posto riconoscibile, e allora resta
   /// nell'itinerario ma non sulla mappa (08, casi limite).
   Coordinate? get posto => coordinate(lat, lon);
+
+  /// Come ci si arriva dalla tappa prima (CR-07); `null`: «Come ci vai?».
+  Mezzo? get mezzoTappa => Mezzo.leggi(mezzo);
 }
 
 /// Le tappe di [giorno] al loro posto sulla linea del tempo, in ordine
