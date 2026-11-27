@@ -128,7 +128,7 @@ Non erano nel piano: dopo il viaggio a Copenaghen, il 25 novembre 2026, l'utente
 |---|---|
 | CR-04 | **Rimandare una tappa saltata**: «Salta» chiede «Rimandala» o «Saltala e basta» ([04](prodotto/04-itinerario.md), 31–33; tela, 152–155). 25 novembre 2026 |
 | CR-06 | **Google al posto di Geoapify**: mappa nativa, ricerca con il `place_id`, guida con il Navigation SDK, tetto unico alle quote gratuite, il rinnovo delle coordinate ([ADR-014](tecnico/adr/014-google-maps-platform.md)). Costruita fra il 26 e il 27 novembre 2026 |
-| CR-07 | **I tragitti e i mezzi**: un mezzo per tragitto, scelto dall'assistente o chiesto; il tragitto sulla linea del tempo; i mezzi pubblici a passi ([04](prodotto/04-itinerario.md), 34–39) |
+| CR-07 | **I tragitti e i mezzi**: un mezzo per tragitto, scelto dall'assistente o chiesto; il tragitto sulla linea del tempo; i mezzi pubblici a passi ([04](prodotto/04-itinerario.md), 34–39; [ADR-015](tecnico/adr/015-i-tragitti.md)). Il passo 1 (il mezzo, la stima, «Come ci vai?») il 27 novembre 2026 |
 | CR-05 | **Adesso sa quando partire**, la notifica per partire e le notifiche localizzate ([09](prodotto/09-durante-il-viaggio.md), 13–17) |
 | CR-02 | **La mappa di dove sei** ([08](prodotto/08-mappa.md), 8) |
 | CR-03 | **Qui vicino e gli orari delle tappe** ([08](prodotto/08-mappa.md), 9–10) |

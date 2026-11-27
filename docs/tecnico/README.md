@@ -37,3 +37,4 @@ Le decisioni architetturali che vale la pena motivare per iscritto vivono in `ad
 - [**ADR-012** — Le notifiche, prima parte: i promemoria programmati dal telefono](adr/012-notifiche-locali.md) ✅
 - [**ADR-013** — Le sezioni: una barra sola, una pila per sezione](adr/013-le-sezioni.md) ✅
 - [**ADR-014** — Google Maps Platform al posto di Geoapify](adr/014-google-maps-platform.md) ✅ *(CR-06: passi 1–5 costruiti, il 5 è il rinnovo delle coordinate)*
+- [**ADR-015** — I tragitti: il mezzo nella tappa, i tempi stimati da noi, Google quando si apre](adr/015-i-tragitti.md) *(CR-07: passo 1 costruito il 27 novembre 2026)*
